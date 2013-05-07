@@ -1,0 +1,2 @@
+# requirements/common.txt
+Django==1.5

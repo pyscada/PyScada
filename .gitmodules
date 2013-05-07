@@ -1,0 +1,3 @@
+[submodule "scada/static/scada/js/flot"]
+	path = scada/static/scada/js/flot
+	url = git://github.com/flot/flot.git

@@ -1,0 +1,2 @@
+# Install all of our production dependencies only.
+-r requirements/common.txt
