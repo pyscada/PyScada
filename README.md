@@ -1,4 +1,4 @@
 PyScada
 =======
 
-a Python, Django, ExtJS based Open Source Scada System
+An Python, Django, ExtJS based Open Source Scada System
