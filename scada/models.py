@@ -27,7 +27,7 @@ class ControllerConfig(models.Model):
 	key 			= models.CharField(max_length=400, default='', verbose_name="key")
 	value			= models.CharField(max_length=400, default='', verbose_name="value")
 	def __unicode__(self):
-		return self.variable_name
+		return self.value
 
 
 class ScalingConfig(models.Model):
