@@ -2,7 +2,7 @@ include AUTHORS
 include LICENSE
 include README.md
 include CHANGELOG.txt
-recursive-include cms/templates *
-recursive-include cms/static *
+recursive-include scada/templates *
+recursive-include scada/static *
 recursive-include docs *
 recursive-exclude * *.pyc
