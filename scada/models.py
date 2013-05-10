@@ -14,16 +14,16 @@ class GlobalConfig(models.Model):
 	description 	= models.TextField(default='', verbose_name="Description")
 
 
-class Controllers(models.Model):
+class Clients(models.Model):
 	id 			= models.AutoField(primary_key=True)
 	description = models.TextField(default='', verbose_name="Description")
 	def __unicode__(self):
 		return self.description
 
 
-class ControllerConfig(models.Model):
+class ClientConfig(models.Model):
 	id 				= models.AutoField(primary_key=True)
-	controller		= models.ForeignKey('Controllers',null=True, on_delete=models.SET_NULL)
+	client			= models.ForeignKey('Clients',null=True, on_delete=models.SET_NULL)
 	key 			= models.CharField(max_length=400, default='', verbose_name="key")
 	value			= models.CharField(max_length=400, default='', verbose_name="value")
 	def __unicode__(self):
@@ -52,7 +52,7 @@ class Variables(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	variable_name 	= models.SlugField(max_length=80, verbose_name="variable name")
 	description 	= models.TextField(default='', verbose_name="Description")
-	controller		= models.ForeignKey('Controllers',null=True, on_delete=models.SET_NULL)
+	client			= models.ForeignKey('Clients',null=True, on_delete=models.SET_NULL)
 	active			= models.BooleanField()
 	def __unicode__(self):
 		return self.variable_name

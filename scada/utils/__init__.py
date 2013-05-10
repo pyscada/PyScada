@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from scada.utils import modbus
-from scada.models import Controllers
-from scada.models import ControllerConfig
+from scada.models import Clients
+from scada.models import ClientConfig
 from scada.models import Variables
 from scada.models import InputConfig
 from struct import *
@@ -49,7 +49,7 @@ def getClientSettings(controller_id):
 	getClientData
 	"""
 	output = {};
-	for entrie in ControllerConfig.objects.filter(controllers=controller_id):
+	for entrie in ClientConfig.objects.filter(slients=client_id):
 		output[entrie.key] = entrie.value;
 	return output
 
@@ -68,9 +68,9 @@ def getAllActiveClientSettings():
 	getActiveControllerData
 	"""	
 	output = [];
-	for controller in ControllerConfig.objects.all():
-		if Variables.objects.filter(active='1',controller=controller.controller_id).count()!=0:
-			output.append(getClientData(controller.controllers_id))
+	for client in ClientConfig.objects.all():
+		if Variables.objects.filter(active='1',client=client.client_id).count()!=0:
+			output.append(getClientSettings(client.client_id))
 	return output
 
 def getAllActiveVariableSettings(controller_id):
