@@ -1,2 +1,8 @@
 # requirements/common.txt
 Django==1.5
+pymodbus>=1.2.0
+numpy>=1.6.0
+scipy>=0.10.0
+h5py>=2.1.1
+
+
