@@ -1,18 +1,5 @@
 # -*- coding: utf-8 -*-
-import MySQLdb as mdb
-import sys
-import time
-from datetime import timedelta
-from datetime import datetime
 import threading
-from pymodbus.client.sync import ModbusTcpClient as ModbusClient
-from twisted.internet import reactor, protocol
-from scada.models import InputConfig
-from scada.models import ControllerConfig
-from scada.models import ScalingConfig
-from scada.models import UnitConfig
-from scada.models import RecordedData
-from scada.models import RecordedTime
 from scada.models import GlobalConfig
 from scada.clients import ModbusMaster
 
