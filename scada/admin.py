@@ -4,8 +4,8 @@ from scada.models import InputConfig
 from scada.models import ControllerConfig
 from scada.models import ScalingConfig
 from scada.models import UnitConfig
-from scada.models import recordedData
-from scada.models import recordedTime
+from scada.models import RecordedData
+from scada.models import RecordedTime
 
 
 
