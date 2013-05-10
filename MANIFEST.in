@@ -4,5 +4,6 @@ include README.md
 include CHANGELOG.txt
 recursive-include scada/templates *
 recursive-include scada/static *
+recursive-include scada/sql *
 recursive-include docs *
 recursive-exclude * *.pyc
