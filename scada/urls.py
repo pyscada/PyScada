@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from scada.views import index, json_data, json_log
-from django.conf.urls.defaults import url, patterns
-
+from django.conf.urls import patterns, include, url
 
 urlpatterns = [
     # Public pages
