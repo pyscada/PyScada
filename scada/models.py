@@ -23,7 +23,7 @@ class Controllers(models.Model):
 
 class ControllerConfig(models.Model):
 	id 				= models.AutoField(primary_key=True)
-	controllers		= models.ForeignKey('Controllers',null=True, on_delete=models.SET_NULL)
+	controller		= models.ForeignKey('Controllers',null=True, on_delete=models.SET_NULL)
 	key 			= models.CharField(max_length=400, default='', verbose_name="key")
 	value			= models.CharField(max_length=400, default='', verbose_name="value")
 	def __unicode__(self):
@@ -60,7 +60,7 @@ class Variables(models.Model):
 
 class InputConfig(models.Model):
 	id 				= models.AutoField(primary_key=True)
-	variable_name 	= models.ForeignKey('Variables',null=True, on_delete=models.SET_NULL)
+	variable	 	= models.ForeignKey('Variables',null=True, on_delete=models.SET_NULL)
 	key 			= models.CharField(max_length=400, default='', verbose_name="key")
 	value			= models.CharField(max_length=400, default='', verbose_name="value")
 	def __unicode__(self):
@@ -78,7 +78,7 @@ class RecordedTime(models.Model):
 		
 class RecordedDataFloat(models.Model): 
 	value			= models.FloatField()	
-	variable_name 	= models.ForeignKey('Variables',null=True, on_delete=models.SET_NULL)
+	variable	 	= models.ForeignKey('Variables',null=True, on_delete=models.SET_NULL)
 	time			= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
 	def __unicode__(self):
 		return unicode(self.value,self.variable_name.variable_name)
@@ -86,7 +86,7 @@ class RecordedDataFloat(models.Model):
 
 class RecordedDataBoolean(models.Model): 
 	value			= models.BooleanField()	
-	variable_name 	= models.ForeignKey('Variables',null=True, on_delete=models.SET_NULL)
+	variable	 	= models.ForeignKey('Variables',null=True, on_delete=models.SET_NULL)
 	time			= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
 	def __unicode__(self):
 		return unicode(self.value,self.variable_name.variable_name)
