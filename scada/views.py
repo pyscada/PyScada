@@ -4,19 +4,20 @@ from scada.models import ControllerConfig
 from scada.models import RecordedTime
 from scada.models import RecordedData
 from scada.models import InputConfig
+from django.shortcuts import render
 from django.http import HttpResponse
-from django.utils import simplejson
 from django.core import serializers
 from django.utils import timezone
+import json
 
 def index(request):
-	t = loader.get_template('index.html')	
+	t = loader.get_template('content.html')	
 	Inputs = InputConfig.objects.filter(active=1)
 	c = Context({
 		'inputValues' : Inputs,
         'title': 'DataView'
     })
-	return HttpResponse(t.render(c))
+	return render(request, 'content.html', c, content_type="application/xhtml+xml")
 
     
 def data(request):
@@ -63,7 +64,7 @@ def json_data(request):
 			'yaxislabel':''
 			})
 		
-	data = simplejson.dumps(qList,indent=2)
+	data = json.dumps(qList,indent=2)
 	#data = serializers.serialize('json', tValues,fields=('Value','VariableName','Unit','time'),indent=2,use_natural_keys=True)
 	return HttpResponse(data, mimetype='application/json')
 
@@ -80,5 +81,5 @@ def json_log(request):
 			'yaxis': 1,
 			'yaxislabel':''
 			}
-	data = simplejson.dumps(qList,indent=2)
+	data = json.dumps(qList,indent=2)
 	return HttpResponse(data, mimetype='application/json')
