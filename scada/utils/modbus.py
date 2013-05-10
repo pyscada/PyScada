@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from struct import *
-
 
 
 def decode_address(address):
@@ -30,9 +28,3 @@ def decode_address(address):
 	return ModAddress
 
 
-def decode_float(value):
-	""" this is a function to convert two UINT values to float value
-
-	"""
-	return unpack('f',pack('2H',value[0],value[1]))[0]
-	
