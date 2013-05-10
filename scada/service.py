@@ -5,12 +5,14 @@ from scada.clients import ModbusMaster
 
 class DataAcquisition():
 	def __init__(self):
-		self.s = 5.0			# time in seconds between the measurement
-		self.n = 0				# number of repeatings, 0 run as service
+		# time in seconds between the measurement
+		self.s = GlobalConfig.objects.get(key='stepsize').value			
+		# number of repeatings, 0 run as service
+		self.n = GlobalConfig.objects.get(key='repeatings').value 
 		self.status = "stop"	# status of the service
 		self.i = 1				# 
 		self.ModMaster = ModbusMaster()
-		self.silentMode = 1
+		self.silentMode = GlobalConfig.objects.get(key='silentMode').value
 	
 	def reinit(self):
 		self.status = "stop"	# status of the service
@@ -30,7 +32,7 @@ class DataAcquisition():
 				if x == "yes":
 					self.n = 0
 				else:
-					self.n = input('repeatings:')
+					self.n = input('repeatings [{0:.1f}s]:') .format(self.n)
 			else:
 				x = None
 				limit = limit+1
