@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-class lib:
+class modbus:
 	""" this is a class with tools
 
 	"""
@@ -29,9 +29,6 @@ class lib:
 			if (ModAddress < 0 or ModAddress > 24575): ModAddress = -1
 		return ModAddress
 	
-	def scale_input(self,Input,scaling):
-		sInput = (float(Input)/float(2**scaling.bit))*(scaling.max_value-scaling.min_value)+scaling.min_value
-		return sInput
 
 	def decode_modbus_float(self,value):
 		""" this is a function to convert two UINT values to float value
