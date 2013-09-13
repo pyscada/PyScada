@@ -28,3 +28,10 @@ def decode_address(address):
 	return ModAddress
 
 
+def prepare_input_config(controller_id):
+	""" 
+		
+	"""
+	variable_config = {}
+	
+	return variable_config

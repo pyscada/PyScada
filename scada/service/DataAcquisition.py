@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
 import threading
 from scada.models import GlobalConfig
-from scada.clients import ModbusMaster
+from scada.clients import client
 
 class DataAcquisition():
 	def __init__(self):
 		# time in seconds between the measurement
-		self.s = GlobalConfig.objects.get(key='stepsize').value			
+		self.s = GlobalConfig.objects.get_value_by_key('stepsize')		
 		# number of repeatings, 0 run as service
-		self.n = GlobalConfig.objects.get(key='repeatings').value 
+		self.n = GlobalConfig.objects.get_value_by_key('repeatings')
 		self.status = "stop"	# status of the service
 		self.i = 1				# 
-		self.ModMaster = ModbusMaster()
-		self.silentMode = GlobalConfig.objects.get(key='silentMode').value
+		self.ModMaster = client()
+		self.silentMode = GlobalConfig.objects.get_value_by_key('silentMode')
 	
 	def reinit(self):
 		self.status = "stop"	# status of the service
 		self.i = 1				# 
-		self.ModMaster = ModbusMaster()
+		self.ModMaster = client()
 	
 	def config(self):
 		""" configuration of the service
@@ -47,7 +47,7 @@ class DataAcquisition():
 	def service(self):
 		if (self.i<=self.n and self.status == "runnig"):
 			try:
-				self.ModMaster.request()
+				self.ModMaster.request_data()
 				if (self.silentMode == 0):
 					print "%d/%d" % (self.i,self.n)
 			except:

@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 from django.template import Context, loader
-from scada.models import ControllerConfig
+from scada.models import Clients
+from scada.models import ClientConfig
 from scada.models import RecordedTime
-from scada.models import RecordedData
+from scada.models import RecordedDataFloat
+from scada.models import RecordedDataBoolean
+from scada.models import Variables
 from scada.models import InputConfig
 from django.shortcuts import render
 from django.http import HttpResponse
