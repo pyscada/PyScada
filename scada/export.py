@@ -25,7 +25,7 @@ class DatabaseExport():
 	def gen_data_row(self,timestamp,RowData):
 		row = '';
 		#row += timestamp.strftime("%d-%b-%Y %H:%M:%S, ")
-		row += '%1.10f, '%self.datetime_to_matlab_datenum(timestamp)
+		row += '%1.10f, ' %self.datetime_to_matlab_datenum(timestamp)
 		ColCount = len(self.variables.viewkeys())
 		for variableKey in self.variables.viewkeys():
 			if RowData.has_key(variableKey):

@@ -1,10 +1,11 @@
-{% load i18n %}
+{% load i18n static %}
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" dir="ltr" lang="en" xml:lang="en">
 	<head>
 		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 		<title>{{ title }}</title>
-		<meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" />
+		<!-- <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;" /> -->
+		<link rel="stylesheet" href="{{ STATIC_URL }}scada/css/smoothness/jquery-ui-1.10.0.custom.min.css" type="text/css" />
 		<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}scada/js/jquery-1.9.0.min.js"></script>
 		<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}scada/js/jquery-ui-1.10.0.custom.min.js"></script>
 		<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}scada/js/jquery.cookie.js"></script>
@@ -14,7 +15,7 @@
 		<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}scada/js/flot/jquery.flot.time.js"></script>
     	<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}scada/js/flot/jquery.flot.selection.js"></script>
     	<script language="javascript" type="text/javascript" src="{{ STATIC_URL }}scada/js/flot/jquery.flot.crosshair.js"></script>
-		<link rel="stylesheet" href="{{ STATIC_URL }}scada/css/smoothness/jquery-ui-1.10.0.custom.min.css" type="text/css" />
+		
 		<style type="text/css">
 		/*<![CDATA[*/
 			.content {
@@ -58,9 +59,9 @@
 		</style>
 	</head>
 	<body>
-	<div id="container">
-		<div id="tabs">
-			<ul>
+		<div id="container">
+			<div id="tabs">
+				<ul>
 				<li><a href="#tabs-home">home</a></li>
 				<li><a href="#tabs-plotMulti">Plot Multi</a></li>
 				<li><a href="#tabs-plotFull">Plot Full</a></li>
@@ -68,44 +69,52 @@
 				<li><a href="#tabs-config">Config</a></li>
 				<li><a href="#tabs-info">Info</a></li>
 			</ul>
-			<div id="tabs-home"></div>
-			<div id="tabs-plotMulti"></div>
-			<div id="tabs-plotFull">
-				<div class="content">
-					<div id="fullPlot" style="width:600px;height:300px;padding: 10px 5px 0 0;margin-top:20px;position: relative;display:none"></div>
-					<div id="fullPlotOverview" style="margin-left:50px;margin-top:20px;width:400px;height:50px;display:none"></div>
-					<div id="fullPlotMenu">	
-						{% for inpVal in inputValues %}
-							<input class="fetchSeries" type="button" value="{{ inpVal.VariableName }} [{{ inpVal.Unit.Unit }}]" onclick="addQueryVarPlotDataJson({{inpVal.pk}})"> 
-						{% endfor %}
-						<p><input type="button" id="autoUpdate" value="start autoupdate"/></p><p>Start Zeit:<input type="text" id="datepicker" /><input type="text" id="actualDate" /><input type="checkbox" id="useActualDate" /> benutze diese Zeit</p>
-					</div>					
+				<div id="tabs-home">
+			</div>
+				<div id="tabs-plotMulti">
+			</div>
+				<div id="tabs-plotFull">
+					<div class="content">
+						<div id="fullPlot" style="width:600px;height:300px;padding: 10px 5px 0 0;margin-top:20px;position: relative;display:none">
+					</div>
+						<div id="fullPlotOverview" style="margin-left:50px;margin-top:20px;width:400px;height:50px;display:none">
+					</div>
+						<div id="fullPlotMenu">
+							{% csrf_token %}
+							{% for inpVal in inputValues %}
+							<input class="fetchSeries" type="button" value="{{ inpVal.VariableName }} [{{ inpVal.Unit.Unit }}]" onclick="addQueryVarPlotDataJson({{inpVal.pk}})"/> 
+							{% endfor %}
+							<p>
+								<input type="button" id="autoUpdate" value="start autoupdate"/>
+							</p>
+							<p>Start Zeit:
+								<input type="text" id="datepicker" />
+								<input type="text" id="actualDate" />
+								<input type="checkbox" id="useActualDate" /> benutze diese Zeit
+							</p>
+						</div>
 					</div>
 				</div>
-			<div id="tabs-dataTable"></div>
-			<div id="tabs-config"></div>
-			<div id="tabs-info"></div>
+				<div id="tabs-dataTable">
+			</div>
+				<div id="tabs-config">
+			</div>
+				<div id="tabs-info">
+			</div>
+			</div>
+			<div style="clear: both;">
 		</div>
-		<div style="clear: both;"></div>
-		<div id="logWindow"></div>
-	</div>
+			<div id="logWindow">
+		</div>
+		</div>
 		<!-- Script  -->	
 		<script type="text/javascript">
 			//<!--
 			// init window
-			$( "#container").height($(window).height()-14);
 			$(".content").css('font-size',12);
 			
-			$( "#tabs" ).tabs({ heightStyle: "content" });
-			//$( "#tabs" ).tabs( "option", "heightStyle", "content" );
-			$(".content").height($(window).innerHeight()-$('#tabs .ui-tabs-nav').height()-82);
+			$( "#tabs" ).tabs();
 			// set functions for resize
-			$(window).resize(function(){
-				
-				//$( "#container").height($(window).innerHeight()-14);
-				$(".content").height($(window).innerHeight()-$('#tabs .ui-tabs-nav').height()-82);
-				//$( "#tabs" ).tabs( "refresh" );
-			});
 			$("#datepicker").datetimepicker();
 			// init Plot area
 			initPlot('fullPlot','fullPlotOverview');
@@ -113,7 +122,7 @@
 			//<!--
 			function resizeDiv(id){
 					$("#"+id).height($("#"+id).contents().height());
-			}
+			};
 			//-->
 		</script>
 	</body>
