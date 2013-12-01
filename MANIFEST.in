@@ -2,8 +2,10 @@ include AUTHORS
 include LICENSE
 include README.md
 include CHANGELOG.txt
-recursive-include scada/templates *
-recursive-include scada/static *
-recursive-include scada/sql *
+include PyScadaDataAcquisitionDaemon.pyx
+include pyscada/export/HDF5_MatlabMaster.h5
+recursive-include pyscada/templates *
+recursive-include pyscada/static *
+recursive-include pyscada/sql *
 recursive-include docs *
 recursive-exclude * *.pyc
