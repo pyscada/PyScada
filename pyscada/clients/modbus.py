@@ -9,7 +9,7 @@ from pyscada.models import GlobalConfig
 import random
 
 class RegisterBlock:
-    def __init__(self,client_address,client_port):
+    def __init__(self,client_address,client_port,sim=False):
         self.variable_address     = [] #
         self.variable_length     = [] # in bytes
         self.variable_class     = [] #
@@ -17,7 +17,7 @@ class RegisterBlock:
         self.slave                = False # instance of the
         self._address             = client_address
         self._port                 = client_port
-        self._sim               = True
+        self._sim               = sim
 
 
     def insert_item(self,variable_name,variable_address,variable_class,variable_length):
@@ -74,13 +74,13 @@ class RegisterBlock:
                 return index
 
 class CoilBlock:
-    def __init__(self,client_address,client_port):
-        self.variable_address     = {} #
-        self.variable_name         = {} #
-        self.slave                = False # instance of the
-        self._address             = client_address
-        self._port                 = client_port
-        self._sim   = True
+    def __init__(self,client_address,client_port,sim=False):
+        self.variable_address       = {} #
+        self.variable_name          = {} #
+        self.slave                  = False # instance of the
+        self._address               = client_address
+        self._port                  = client_port
+        self._sim                   = sim
 
 
     def insert_item(self,variable_name,variable_address):
@@ -123,11 +123,12 @@ class client:
     Modbus client (Master) class
     """
     def __init__(self,client_config):
-        self._address = client_config['modbus_ip']['ip']
-        self._port = client_config['modbus_ip']['port']
-        self._variable_config = self._prepare_variable_config(client_config['variable_input_config'])
-        self._silentMode         = GlobalConfig.objects.get_value_by_key('silentMode')
-        self._sim                = True
+        self._address           = client_config['modbus_ip']['ip']
+        self._port              = client_config['modbus_ip']['port']
+        self._silentMode        = GlobalConfig.objects.get_value_by_key('silentMode')
+        self._sim               = bool(int(GlobalConfig.objects.get_value_by_key('simulation')))
+        self._variable_config   = self._prepare_variable_config(client_config['variable_input_config'])
+        
 
     def _prepare_variable_config(self,variable_config):
         trans_variable_config = []
@@ -149,7 +150,7 @@ class client:
         for entry in trans_variable_config:
             if (entry[0] != old) or regcount >122:
                 regcount = 0
-                out.append(RegisterBlock(self._address,self._port)) # start new register block
+                out.append(RegisterBlock(self._address,self._port,self._sim)) # start new register block
             out[-1].insert_item(entry[3],entry[0],entry[1],entry[2]) # add item to block
             old = entry[0] + entry[2]/16
             regcount += entry[2]/16
@@ -158,7 +159,7 @@ class client:
         old = -2
         for entry in trans_variable_bit_config:
             if (entry[0][0] != old and entry[0][0] != old+1):
-                out.append(CoilBlock(self._address,self._port)) # start new coil block
+                out.append(CoilBlock(self._address,self._port,self._sim)) # start new coil block
             out[-1].insert_item(entry[1],entry[0])
             old = entry[0][0]
         return out
