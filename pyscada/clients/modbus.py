@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from pymodbus.client.sync import ModbusTcpClient
-#from twisted.internet import reactor, protocol
+from pymodbus.client.sync import ModbusTcpClient as ModbusClient
+#from pymodbus.client.sync import ModbusUdpClient as ModbusClient
 from pyscada.utils import decode_value
 from pyscada.utils import get_bits_by_class
 from pyscada.utils.modbus import decode_address
@@ -53,6 +53,10 @@ class RegisterBlock:
             if not hasattr(result, 'registers'):
                 return result
 
+        return self.decode_data(result)
+        
+        
+    def decode_data(self,result):
         out = {}
         #var_count = 0
         for idx in range(len(self.variable_length)):
@@ -100,6 +104,12 @@ class CoilBlock:
             if not hasattr(result, 'registers'):
                 return result
 
+
+        return self.decode_data(result)
+        
+
+        
+    def decode_data(self,result):
         out = {}
         for register in self.variable_address:
             if not self._sim:
@@ -172,15 +182,11 @@ class client:
         if self._sim:
             self.slave = []
             return True
-        self.slave = ModbusTcpClient(self._address,self._port)
+        self.slave = ModbusClient(self._address,self._port)
         status = self.slave.connect()
-        if not self._silentMode:
-            if status:
-                print "connected %s:%d" % (self._address, self._port)
-            else:
-                print "Failed to connect: %s:%d" % (self._address, self._port)
         return status
-
+        
+   
 
     def _disconnect(self):
         """
@@ -190,7 +196,7 @@ class client:
             return True
         self.slave.close()
 
-    def    request_data(self):
+    def request_data(self):
         """
 
         """
@@ -199,10 +205,15 @@ class client:
             return False
         for register_block in self._variable_config:
             result = register_block.request_data(self.slave)
+            if result is None:
+                self._disconnect()
+                self._connect()
+                result = register_block.request_data(self.slave)
+            
             if result is not None:
                 data = dict(data.items() + result.items())
             else:
                 for name in register_block.variable_name:
-                    data[name] = "NaN"
+                    data[name] = None
         self._disconnect()
         return data
