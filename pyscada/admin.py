@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""
 from django.contrib import admin
 from pyscada.models import InputConfig
 from pyscada.models import ControllerConfig
@@ -44,3 +45,4 @@ class RecordedDataAdmin(admin.ModelAdmin):
     list_display = ('time','value')
     list_filter = ['time']
 admin.site.register(RecordedData,RecordedDataAdmin)
+"""

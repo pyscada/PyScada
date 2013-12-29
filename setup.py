@@ -13,11 +13,10 @@ CLASSIFIERS = [
     'Operating System :: OS Independent',
     'Programming Language :: Python',
     'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
-    'Topic :: Scientific/Engineering :: Visualization',
-    'Topic :: Scientific/Engineering :: Visualization',
+    'Topic :: Scientific/Engineering :: Visualization'
 ]
 setup(
-    author="Martin Schröder",
+    author=__author__,
     author_email="info@martin-schroeder.net",
     name='PyScada',
     version=pyscada.__version__,
@@ -28,7 +27,10 @@ setup(
     platforms=['OS Independent'],
     classifiers=CLASSIFIERS,
     install_requires=[
-        'Django>=1.4',
+        'django>=1.5',
+        'pymodbus>=1.2',
+        'numpy>=1.6.0',
+        'h5py>=2.1.1'
     ],
     scripts = ['PyScadaDataAcquisitionDaemon.pyw'],
     packages=find_packages(exclude=["project", "project.*"]),

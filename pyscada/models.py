@@ -15,83 +15,16 @@ import time
 #
 
 class UnixTimestampField(models.FloatField):
-    """UnixTimestampField: creates a timestamp field that is represented on the
-    database as a double field rather than the usual DATETIME field.
-    """
-    def get_db_prep_value(self, value, connection, prepared=False):
-        if self.auto_created:
-            return  time.time()
-        if value==None:
-            return None
-        return time.mktime(value.timetuple())
+	"""UnixTimestampField: creates a timestamp field that is represented on the
+	database as a double field rather than the usual DATETIME field.
+	"""
+	def get_db_prep_value(self, value, connection, prepared=False):
+		if self.auto_created:
+			return  time.time()
+		if value==None:
+			return None
+		return time.mktime(value.timetuple())
 
-"""
-    def __init__(self, null=False, blank=False, **kwargs):
-        super(UnixTimestampField, self).__init__(**kwargs)
-        # default for TIMESTAMP is NOT NULL unlike most fields, so we have to
-        # cheat a little:
-        # self.blank, self.isnull = blank, null
-        # self.null = True # To prevent the framework from shoving in "not null".
-
-    def db_type(self, connection):
-        typ=['int']
-        # See above!
-        if self.null:
-            typ += ['NULL']
-        return ' '.join(typ)
-
-    def get_db_prep_value(self, value, connection, prepared=False):
-        if self.auto_created:
-            return  int(time.time()*1000)
-        if value==None:
-            return None
-        return int(1000*time.mktime(value.timetuple()))
-
-    def to_python(self, value):
-        if value is None:
-            return value
-        return float(value)/1000.0
-
-
-class BigAutoField(fields.AutoField):
-
-    def db_type(self):
-        if settings.DATABASE_ENGINE == 'mysql':
-            return "bigint AUTO_INCREMENT"
-        elif settings.DATABASE_ENGINE == 'oracle':
-            return "NUMBER(19)"
-        elif settings.DATABASE_ENGINE[:8] == 'postgres':
-            return "bigserial"
-        else:
-            raise NotImplemented
-
-    def get_internal_type(self):
-        return "BigAutoField"
-
-    def to_python(self, value):
-        if value is None:
-            return value
-        try:
-            return long(value)
-        except (TypeError, ValueError):
-            raise exceptions.ValidationError(
-                _("This value must be a long integer."))
-
-class BigForeignKey(fields.related.ForeignKey):
-
-    def db_type(self):
-        rel_field = self.rel.get_related_field()
-        # next lines are the "bad tooth" in the original code:
-        if (isinstance(rel_field, BigAutoField) or
-                (not conn.features.related_fields_match_type and
-                isinstance(rel_field, models.BigIntegerField))):
-            # because it continues here in the django code:
-            # return IntegerField().db_type()
-            # thereby fixing any AutoField as IntegerField
-            return models.BigIntegerField().db_type()
-        return rel_field.db_type()
-
-"""
 #
 # Manager
 #
@@ -214,10 +147,10 @@ class ClientConfigManager(models.Manager):
 # Model
 #
 class GlobalConfig(models.Model):
-	id 			= models.AutoField(primary_key=True)
+	id 				= models.AutoField(primary_key=True)
 	key 			= models.CharField(max_length=400, default='', verbose_name="key")
 	value			= models.CharField(max_length=400, default='', verbose_name="value")
-	description 	      = models.TextField(default='', verbose_name="Description")
+	description 	= models.TextField(default='', verbose_name="Description")
 	objects 		= KeyValueManager()
 
 class Clients(models.Model):
@@ -297,43 +230,39 @@ class RecordedTime(models.Model):
 
 
 class RecordedDataFloat(models.Model):
-    id            = models.AutoField(primary_key=True)
-    value	      = models.FloatField()
-    variable	 	= models.ForeignKey('Variables',null=True, on_delete=models.SET_NULL)
-    time		= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
-    objects 		= RecordedDataValueManager()
-    def __unicode__(self):
-        return unicode(self.value)
+	id            = models.AutoField(primary_key=True)
+	value	      = models.FloatField()
+	variable	 	= models.ForeignKey('Variables',null=True, on_delete=models.SET_NULL)
+	time		= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
+	objects 		= RecordedDataValueManager()
+	def __unicode__(self):
+		return unicode(self.value)
 
 class RecordedDataInt(models.Model):
-    id          = models.AutoField(primary_key=True)
-    value       = models.IntegerField()
-    variable    = models.ForeignKey('Variables',null=True, on_delete=models.SET_NULL)
-    time        = models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
-    objects     = RecordedDataValueManager()
-    def __unicode__(self):
-        return unicode(self.value)
+	id          = models.AutoField(primary_key=True)
+	value       = models.IntegerField()
+	variable    = models.ForeignKey('Variables',null=True, on_delete=models.SET_NULL)
+	time        = models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
+	objects     = RecordedDataValueManager()
+	def __unicode__(self):
+		return unicode(self.value)
 
 class RecordedDataBoolean(models.Model):
-    id          = models.AutoField(primary_key=True)
-    value       = models.NullBooleanField()
-    variable    = models.ForeignKey('Variables',null=True, on_delete=models.SET_NULL)
-    time        = models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
-    objects     = RecordedDataValueManager()
-    def __unicode__(self):
-        return unicode(self.value)
-
-class MessageIds(models.Model):
-	id 	         = models.PositiveIntegerField(primary_key=True)
-	level	         = models.PositiveIntegerField(default=0, verbose_name="error level")
-	description 	  = models.TextField(default='', verbose_name="Description")
+	id          = models.AutoField(primary_key=True)
+	value       = models.NullBooleanField()
+	variable    = models.ForeignKey('Variables',null=True, on_delete=models.SET_NULL)
+	time        = models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
+	objects     = RecordedDataValueManager()
+	def __unicode__(self):
+		return unicode(self.value)
 
 
 class Log(models.Model):
 	id 				= models.AutoField(primary_key=True)
-	message_id		= models.ForeignKey('MessageIds',null=True, on_delete=models.SET_NULL)
-	timestamp 		= models.DateTimeField(auto_now=False, auto_now_add=True)
+	level			= models.IntegerField(default=0, verbose_name="error level")
+	timestamp 		= UnixTimestampField(auto_created=True)
 	message_short	= models.CharField(max_length=400, default='', verbose_name="short message")
 	message 		= models.TextField(default='', verbose_name="message")
-
+	def __unicode__(self):
+		return unicode(self.message)
 
