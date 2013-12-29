@@ -16,35 +16,20 @@ class DataAcquisition():
         self._dt        = GlobalConfig.objects.get_value_by_key('stepsize')
         self._com_dt    = 0
         self._cl        = client()                  # init a client Instance for field data query
-        self._backup_file_name = 'measurement_data' # name of the backupfile
-        self._backup_file_path = os.path.expanduser('~/measurement_data') # default path to store the backupfiles
-        if not os.path.exists(self._backup_file_path ):
-            os.mkdir(self._backup_file_path)
-        self.new_backupfile()
         
         
     def run(self):
         dt = time()
        ## second start the query
         self._cl.request();
-        ## third start the backup thread
-        if self._cl.backup_data:
-            self._save_backup_data(self._cl.backup_data,self._filename)
         if self._cl.db_data:
             self._save_db_data(self._cl.db_data)
         return float(self._dt) -(time()-dt)
 
 
-    def new_backupfile(self):
-        """
-        trigger a new backupfile
-        """
-        cdstr = strftime("%Y_%m_%d_%H%M",localtime())
-        self._filename = os.path.join(self._backup_file_path,self._backup_file_name + '_' + cdstr + '.mat')
-        
     def _save_db_data(self,data):
         """
-        save changed values to the database
+        save changed values in the database
         """
         dvf = []
         dvi = []
@@ -64,14 +49,6 @@ class DataAcquisition():
                 elif variable_class.upper() in ['BOOL']:
                     dvb.append(RecordedDataBoolean(time=timestamp,variable_id=var_idx,value=data[variable_class][var_idx]))
         
-        
         RecordedDataFloat.objects.bulk_create(dvf)
         RecordedDataInt.objects.bulk_create(dvi)
         RecordedDataBoolean.objects.bulk_create(dvb)
-        
-    def _save_backup_data(self,data,filename):
-        bf    = mat(filename)
-        bf.batch_write(data)
-        bf.close_file()
-        
-

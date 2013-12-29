@@ -5,12 +5,12 @@ from pyscada.clients import modbus as mb
 from time import time
 class client():
     def __init__(self):
-        self.clients        = {}
+        self.clients          = {}
         self.client_config    = {}
         self.data             = {}
         self.prev_data        = {}
         self._prepare_clients()
-        self.backup_data      = {}
+
     def _prepare_clients(self):
         """
         prepare clients for query
@@ -34,20 +34,15 @@ class client():
                 if not self.prev_data[idx]:
                     self.prev_data = {}
        
-        self.backup_data            = {}
         self.db_data                = {}
         if not self.data:
             return
         ## set time
-        self.backup_data['time']    = (float64(self.time)/86400)+719529
         self.db_data['time']        = self.time
         
         for idx in self.clients:
             for var_idx in self.client_config[idx]['variable_input_config']:
                 variable_class = self.client_config[idx]['variable_input_config'][var_idx]['class'].replace(' ','')
-                name = self.client_config[idx]['variable_input_config'][var_idx]['variable_name']
-
-
                 store_value = False
                 value = 0
                 if self.data[idx]:
@@ -65,26 +60,11 @@ class client():
                                 elif not store_value:
                                     value = self.prev_data[idx][var_idx]
                 
-                self._prepare_backup(name,variable_class,value)
                 if store_value:
-                    self._prepare_save(var_idx,variable_class,value)
-                    
-    
-    def _prepare_backup(self,name,variable_class,value):
-        if variable_class.upper() in ['FLOAT','FLOAT64','DOUBLE'] :
-            self.backup_data[name] = float64(value)
-        elif variable_class.upper() in ['FLOAT32','SINGLE','REAL'] :
-            self.backup_data[name] = float32(value)
-        elif  variable_class.upper() in ['INT32']:
-            self.backup_data[name] = int32(value)
-        elif  variable_class.upper() in ['WORD','UINT','UINT16']:
-            self.backup_data[name] = uint16(value)    
-        elif  variable_class.upper() in ['INT16','INT']:
-            self.backup_data[name] = int16(value)
-        elif variable_class.upper() in ['BOOL']:
-            self.backup_data[name] = uint8(value)
-            
-    def _prepare_save(self,var_idx,variable_class,value):
+                    self._prepare_db_data(var_idx,variable_class,value)
+
+
+    def _prepare_db_data(self,var_idx,variable_class,value):
         if not self.db_data.has_key(variable_class):
             self.db_data[variable_class.upper()] = {}
         
