@@ -16,7 +16,7 @@ CLASSIFIERS = [
     'Topic :: Scientific/Engineering :: Visualization'
 ]
 setup(
-    author=__author__,
+    author=pyscada.__author__,
     author_email="info@martin-schroeder.net",
     name='PyScada',
     version=pyscada.__version__,
