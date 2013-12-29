@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 #from pymodbus.client.sync import ModbusUdpClient as ModbusClient
+from pyscada import log
 from pyscada.utils import decode_value
 from pyscada.utils import get_bits_by_class
 from pyscada.utils.modbus import decode_address
@@ -10,39 +11,39 @@ import random
 
 class RegisterBlock:
     def __init__(self,client_address,client_port,sim=False):
-        self.variable_address     = [] #
-        self.variable_length     = [] # in bytes
+        self.variable_address   = [] #
+        self.variable_length    = [] # in bytes
         self.variable_class     = [] #
-        self.variable_name         = [] #
-        self.slave                = False # instance of the
-        self._address             = client_address
-        self._port                 = client_port
+        self.variable_id        = [] #
+        self.slave              = False # instance of the
+        self._address           = client_address
+        self._port              = client_port
         self._sim               = sim
 
 
-    def insert_item(self,variable_name,variable_address,variable_class,variable_length):
+    def insert_item(self,variable_id,variable_address,variable_class,variable_length):
         if not self.variable_address:
             self.variable_address.append(variable_address)
             self.variable_length.append(variable_length)
             self.variable_class.append(variable_class)
-            self.variable_name.append(variable_name)
+            self.variable_id.append(variable_id)
         elif max(self.variable_address) < variable_address:
             self.variable_address.append(variable_address)
             self.variable_length.append(variable_length)
             self.variable_class.append(variable_class)
-            self.variable_name.append(variable_name)
+            self.variable_id.append(variable_id)
         elif min(self.variable_address) > variable_address:
             self.variable_address.insert(0,variable_address)
             self.variable_length.insert(0,variable_length)
             self.variable_class.insert(0,variable_class)
-            self.variable_name.insert(0,variable_name)
+            self.variable_id.insert(0,variable_id)
         else:
             i = self.find_gap(self.variable_address,variable_address)
             if (i is not None):
                 self.variable_address.insert(i,variable_address)
                 self.variable_length.insert(i,variable_length)
                 self.variable_class.insert(i,variable_class)
-                self.variable_name.insert(i,variable_name)
+                self.variable_id.insert(i,variable_id)
 
 
     def request_data(self,slave):
@@ -66,7 +67,7 @@ class RegisterBlock:
                     tmp.append(int(random.randint(0,32000)))
                 else:
                     tmp.append(result.registers.pop(0))
-            out[self.variable_name[idx]] = decode_value(tmp,self.variable_class[idx])
+            out[self.variable_id[idx]] = decode_value(tmp,self.variable_class[idx])
         return out
 
 
@@ -80,19 +81,19 @@ class RegisterBlock:
 class CoilBlock:
     def __init__(self,client_address,client_port,sim=False):
         self.variable_address       = {} #
-        self.variable_name          = {} #
+        self.variable_id            = {} #
         self.slave                  = False # instance of the
         self._address               = client_address
         self._port                  = client_port
         self._sim                   = sim
 
 
-    def insert_item(self,variable_name,variable_address):
+    def insert_item(self,variable_id,variable_address):
             if not variable_address[0] in self.variable_address:
                 self.variable_address[variable_address[0]] = []
-                self.variable_name[variable_address[0]] = []
+                self.variable_id[variable_address[0]] = []
             self.variable_address[variable_address[0]].append(variable_address[1])
-            self.variable_name[variable_address[0]].append(variable_name)
+            self.variable_id[variable_address[0]].append(variable_id)
 
 
 
@@ -117,7 +118,7 @@ class CoilBlock:
             else:
                 tmp = decode_bits(int(random.randint(0,65535)))
             for idx,bit in enumerate(self.variable_address[register]):
-                out[self.variable_name[register][idx]] = tmp[bit]
+                out[self.variable_id[register][idx]] = tmp[bit]
 
         return out
 
@@ -144,8 +145,8 @@ class client:
         trans_variable_config = []
         trans_variable_bit_config = []
         for idx in variable_config:
-            Address = decode_address(variable_config[idx]['modbus_ip']['address'])
-            bits_to_read =     get_bits_by_class(variable_config[idx]['class']);
+            Address      = decode_address(variable_config[idx]['modbus_ip']['address'])
+            bits_to_read = get_bits_by_class(variable_config[idx]['class']);
             if isinstance(Address, list):
                 trans_variable_bit_config.append([Address,idx])
             else:
@@ -213,7 +214,9 @@ class client:
             if result is not None:
                 data = dict(data.items() + result.items())
             else:
-                for name in register_block.variable_name:
-                    data[name] = None
+                for variable_id in register_block.variable_id:
+                    log.error(("variable with id: %d is not accessible")%(variable_id))
+                    data[variable_id] = None
+            
         self._disconnect()
         return data
