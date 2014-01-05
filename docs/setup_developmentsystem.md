@@ -100,7 +100,124 @@ Installation Of A Crunchbang Based Development System
 
 ### 4.2 install and setup Django
 
-	sudo install python-pip
+	´´´
+	sudo apt-get install python-pip libhdf5-7 libhdf5-dev python-dev
+	cd
+	mkdir www
+	mkdir PyScadaDev
+	cd PyScadaDev
+	git clone https://github.com/trombastic/PyScada.git
+	cd PyScada
+	python setup.py install
+	cd 
+	cd www
+	django-admin.py startproject PyScadaServer
+	cd PyScadaServer/
+	```
+#### 4.2.1 settings
+
+open settings
+	```
+	nano PyScadaServer/settings.py
+	´´´
+settings.py
+	´´´
+	INSTALLED_APPS = (
+	...
+		pyscada	
+	...
+	)
+	...
+	DATABASES = {
+		'default': {
+			'ENGINE': 'django.db.backends.mysql', 	
+			'NAME': 'FAkS_db',                  	
+			'USER': 'FAkS-user',                
+			'PASSWORD': 'FAkS-user-password' 		
+		}
+	}
+	...
+	STATIC_ROOT = BASE_DIR + '/static/'
+	´´´
+#### 4.2.2 urls config
+
+open urls	
+	´´´
+	nano PyScadaServer/urls.py
+	´´´
+	
+urls.py
+	```
+	urlpatterns = patterns('',
+	...
+		url(r'^', include('pyscada.urls')),
+	...
+	)
+	```
+	
+
+## 5 install and setup apache 
+### 5.1 install nginx
+
+	```
+	sudo apt-get install nginx uwsgi
+	python ./manage.py runfcgi host=127.0.0.1 port=8080
+	```
+### 5.2 setup nginx
+
+#### 5.2.1 sync the database 
+
+	´´´
+	python manage.py syncdb
+	
+	´´´
+#### 5.2.2 copy all static files to the local static folder
+
+	```
+	python manage.py collectstatic
+	```
+#### 5.2.3 edit the nginx config
+
+	```
+	sudo touch /etc/nginx/sites-available/pyscada-server.conf
+	sudo rm /etc/nginx/sites-enabled/default
+	sudo ln -s /etc/nginx/sites-available/pyscada-server.conf /etc/nginx/sites-enabled/pyscada-server.conf
+	nano /etc/nginx/sites-available/pyscada-server.conf
+	```
+add the following lines
+```
+server {
+    listen 80;
+    server_name myhostname.com;
+    access_log /var/log/nginx/pyscada-server.access.log;
+    error_log /var/log/nginx/pyscada-server.error.log;
+
+    # https://docs.djangoproject.com/en/dev/howto/static-files/#serving-static-files-in-production
+    location /static/ { # STATIC_URL
+        alias /home/faks/www/PyScadaServer/static/; # STATIC_ROOT
+        expires 30d;
+    }
+
+    location /media/ { # MEDIA_URL
+        alias /home/faks/www/PyScadaServer/static/; # MEDIA_ROOT
+        expires 30d;
+    }
+
+    location / {
+        include fastcgi_params;
+        fastcgi_pass 127.0.0.1:8080;
+    }
+}
+```
+reload nginx
+```
+sudo /etc/init.d/nginx reload
+```
+## 6 setup pyscada
+
+### 6.1 set the configuration of field clients 
+
+### 6.2 create and import the variables configuration
 
 
 

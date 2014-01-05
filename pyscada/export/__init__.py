@@ -7,7 +7,7 @@ from time import time, localtime, strftime
 from numpy import float64,float32,int32,uint16,int16,uint8, nan
 
 from pyscada import log
-from pyscada.models import Variables
+from pyscada.models import Variable
 from pyscada.models import RecordedDataFloat
 from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
@@ -49,7 +49,7 @@ def export_database_to_mat(filename=None,time_id_min=None,time_id_max=None):
     bf.write_data('time',float64(timevalues))
     
 
-    for val in Variables.objects.all():
+    for val in Variable.objects.all():
         variable_class = InputConfig.objects.get_value_by_key('class',variable_id=val.pk).replace(' ','')
         if variable_class.upper() in ['FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'] :
             r_time_ids = list(RecordedDataFloat.objects.filter(variable_id=val.pk,time_id__lte=last_time_id, time_id__gte=first_time_id).values_list('time_id',flat=True))

@@ -1,13 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.db import models
-#from django.db.models import fields
-#from django.core import exceptions
-#from django.conf import settings
-#from django.db import connection as conn
-#from django.utils.translation import ugettext as _
-#from datetime import datetime
 from django.utils import timezone
-#from datetime import datetime
 import time
 
 #
@@ -37,65 +30,6 @@ class RecordedDataValueManager(models.Manager):
 			output[val.variable.variable_name] = val.value()
 		return output
 
-	def full_matrix_row_by_time_id(self,time_id):
-		data = {}
-		if super(RecordedDataValueManager, self).get_query_set().filter(time_id=time_id).count()==0:
-			return data
-		for val in Variables.objects.filter(active=1):
-			if super(RecordedDataValueManager, self).get_query_set().filter(time_id__lt=time_id,variable=val).count() > 0:
-				data[val.pk] = super(RecordedDataValueManager, self).get_query_set().filter(time_id__lt=time_id,variable=val).last().value()
-			else:
-				data[val.pk] = 0
-		return data
-
-	def variable_data_column(self,var_id,time_id_min,time_id_max):
-		data = [];
-		if not super(RecordedDataValueManager, self).get_query_set().filter(time_id__lt=time_id_max):
-			return data
-		if not super(RecordedDataValueManager, self).get_query_set().filter(time_id__gt=time_id_min):
-			return data
-		if not super(RecordedDataValueManager, self).get_query_set().filter(time_id__lt=time_id_min,variable_id=var_id):
-			return data
-		for t in RecordedTime.objects.filter(id__gt=time_id_min,id__lt=time_id_max):
-			if super(RecordedDataValueManager, self).get_query_set().get(time_id=t.pk,variable_id=var_id):
-				data.append(super(RecordedDataValueManager, self).get_query_set().filter(time_id=t.pk,variable_id=var_id).value())
-			else:
-				data.append(data[-1])
-		return data
-
-	def time_data_column(self,time_id_min,time_id_max):
-		data = [];
-		if RecordedTime.objects.filter(id__lt=time_id_max).count()==0:
-			return data
-		if RecordedTime.objects.filter(id__gt=time_id_min).count()==0:
-			return data
-		data = RecordedTime.objects.filter(id__gt=time_id_min,id__lt=time_id_max).values_list('timestamp',flat=True)
-		return data
-
-	def all(self):
-		data = super(RecordedDataValueManager, self).get_query_set().all()
-		output = {}
-		for val in data:
-			if not output.has_key(val.time.natural_key()):
-				output[val.time.natural_key()] = {}
-			output[val.time.natural_key()][val.variable.variable_name] = val.value()
-		return output
-
-	def later_then(self,timedelta):
-		val_time = timezone.localtime(timezone.now())
-		if timedelta.__class__.__name__ == 'timedelta':
-			val_time = val_time - timedelta
-		if timedelta.__class__.__name__ == 'datetime':
-			val_time = timezone.localtime(timedelta)
-
-		data = super(RecordedDataValueManager, self).get_query_set().filter(time__timestamp__gt = val_time)
-		output = {}
-		for val in data:
-			if not output.has_key(val.time.natural_key()):
-				output[val.time.natural_key()] = {}
-			output[val.time.natural_key()][val.variable.variable_name] = val.value()
-		return output
-
 
 class KeyValueManager(models.Manager):
 	def get_value_by_key(self,key,**kwargs):
@@ -104,9 +38,9 @@ class KeyValueManager(models.Manager):
 
 class VariableConfigManager(models.Manager):
 	def get_variable_input_config(self,client_id):
-		variables = super(VariableConfigManager, self).get_query_set().filter(client_id=client_id,active=1)
+		Variable = super(VariableConfigManager, self).get_query_set().filter(client_id=client_id,active=1)
 		variable_config = {}
-		for variable in variables:
+		for variable in Variable:
 			output = {};
 			for entry in InputConfig.objects.filter(variable=variable.pk):
 				if entry.key.find('.')==-1:
@@ -134,12 +68,14 @@ class ClientConfigManager(models.Manager):
 				if not config.has_key(key_key):
 					config[key_key] = {}
 				config[key_key][attr] = entry.decoded_value()
-		config['variable_input_config'] = Variables.objects.get_variable_input_config(client_id)
+		config['variable_input_config'] = Variable.objects.get_variable_input_config(client_id)
 		return config
+
+
 	def get_active_client_config(self):
 		config = {}
-		for entry in Clients.objects.all():
-			if Variables.objects.filter(client_id=entry.pk,active=1).count()>0:
+		for entry in Client.objects.all():
+			if Variable.objects.filter(client_id=entry.pk,active=1).count()>0:
 				config[entry.pk] = self.get_client_config(entry.pk)
 		return config
 
@@ -153,7 +89,7 @@ class GlobalConfig(models.Model):
 	description 	= models.TextField(default='', verbose_name="Description")
 	objects 		= KeyValueManager()
 
-class Clients(models.Model):
+class Client(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	description 	= models.TextField(default='', verbose_name="Description")
 
@@ -166,10 +102,10 @@ class Clients(models.Model):
 
 class ClientConfig(models.Model):
 	id 				= models.AutoField(primary_key=True)
-	client			= models.ForeignKey('Clients',null=True, on_delete=models.SET_NULL)
+	client			= models.ForeignKey('Client',null=True, on_delete=models.SET_NULL)
 	key 			= models.CharField(max_length=400, default='', verbose_name="key")
 	value			= models.CharField(max_length=400, default='', verbose_name="value")
-	objects		= KeyValueManager()
+	objects			= KeyValueManager()
 	config			= ClientConfigManager()
 	def __unicode__(self):
 		return unicode(self.value)
@@ -197,11 +133,11 @@ class UnitConfig(models.Model):
 		return unicode(self.unit)
 
 
-class Variables(models.Model):
+class Variable(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	variable_name 	= models.SlugField(max_length=80, verbose_name="variable name")
 	description 	= models.TextField(default='', verbose_name="Description")
-	client			= models.ForeignKey('Clients',null=True, on_delete=models.SET_NULL)
+	client			= models.ForeignKey('Client',null=True, on_delete=models.SET_NULL)
 	active			= models.BooleanField()
 	objects			= VariableConfigManager()
 	def __unicode__(self):
@@ -209,8 +145,8 @@ class Variables(models.Model):
 
 
 class InputConfig(models.Model):
-	id 			= models.AutoField(primary_key=True)
-	variable	 	= models.ForeignKey('Variables',null=True, on_delete=models.SET_NULL)
+	id 				= models.AutoField(primary_key=True)
+	variable	 	= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
 	key 			= models.CharField(max_length=400, default='', verbose_name="key")
 	value			= models.CharField(max_length=400, default='', verbose_name="value")
 	objects 		= KeyValueManager()
@@ -223,7 +159,7 @@ class InputConfig(models.Model):
 
 class RecordedTime(models.Model):
 	#timestamp 		= models.DateTimeField(auto_now=False, auto_now_add=True)
-	id 			= models.AutoField(primary_key=True)
+	id 				= models.AutoField(primary_key=True)
 	timestamp 		= UnixTimestampField(auto_created=True)
 	def __unicode__(self):
 		return unicode(self.timestamp)
@@ -232,7 +168,7 @@ class RecordedTime(models.Model):
 class RecordedDataFloat(models.Model):
 	id            = models.AutoField(primary_key=True)
 	value	      = models.FloatField()
-	variable	 	= models.ForeignKey('Variables',null=True, on_delete=models.SET_NULL)
+	variable	 	= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
 	time		= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
 	objects 		= RecordedDataValueManager()
 	def __unicode__(self):
@@ -241,7 +177,7 @@ class RecordedDataFloat(models.Model):
 class RecordedDataInt(models.Model):
 	id          = models.AutoField(primary_key=True)
 	value       = models.IntegerField()
-	variable    = models.ForeignKey('Variables',null=True, on_delete=models.SET_NULL)
+	variable    = models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
 	time        = models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
 	objects     = RecordedDataValueManager()
 	def __unicode__(self):
@@ -250,7 +186,7 @@ class RecordedDataInt(models.Model):
 class RecordedDataBoolean(models.Model):
 	id          = models.AutoField(primary_key=True)
 	value       = models.NullBooleanField()
-	variable    = models.ForeignKey('Variables',null=True, on_delete=models.SET_NULL)
+	variable    = models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
 	time        = models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
 	objects     = RecordedDataValueManager()
 	def __unicode__(self):

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from pyscada.models import Clients
+from pyscada.models import Client
 from pyscada.models import ClientConfig
-from pyscada.models import Variables
+from pyscada.models import Variable
 from pyscada.models import RecordedDataFloat
 from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
@@ -67,7 +67,7 @@ def json_data(request):
 	#log.info('')
 	data = {}
 	data['timestamps'] = timevalues
-	vo = Variables.objects.all()
+	vo = Variable.objects.all()
 	for val in vo:
 		variable_class = InputConfig.objects.get_value_by_key('class',variable_id=val.pk).replace(' ','')
 		if variable_class.upper() in ['FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'] :
