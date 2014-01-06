@@ -11,9 +11,10 @@ from django import forms
 
 class ClientConfigFilter(SimpleListFilter):
     title = _('Client')
-
-    parameter_name = ClientConfig.objects.first().client.description
-
+    if (ClientConfig.objects.count()>0):
+        parameter_name = ClientConfig.objects.first().client.description
+    else:
+        parameter_name = 1
     def lookups(self, request, model_admin):
         choises = list(set(ClientConfig.objects.all().values_list('client__description','client_id')))
         output = []
