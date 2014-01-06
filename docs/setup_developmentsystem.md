@@ -87,104 +87,115 @@ Installation Of A Crunchbang Based Development System
 
 #### 4.1.2 create the Django/PyScada database
 	
-	´´´
-	mysql -u root -p
-	enter the mysql admin pw
-	
-	CREATE DATABASE FAkS_db CHARACTER SET utf8;
-	
-	GRANT ALL PRIVILEGES ON FAkS_db.* TO 'FAkS-user'@'localhost' IDENTIFIED BY 'FAkS-user-password';
-	
-	exit
-	´´´
+```
+mysql -u root -p
+enter the mysql admin pw
+
+CREATE DATABASE FAkS_db CHARACTER SET utf8;
+
+GRANT ALL PRIVILEGES ON FAkS_db.* TO 'FAkS-user'@'localhost' IDENTIFIED BY 'FAkS-user-password';
+
+exit
+```
 
 ### 4.2 install and setup Django
 
-	´´´
-	sudo apt-get install python-pip libhdf5-7 libhdf5-dev python-dev
-	cd
-	mkdir www
-	mkdir PyScadaDev
-	cd PyScadaDev
-	git clone https://github.com/trombastic/PyScada.git
-	cd PyScada
-	python setup.py install
-	cd 
-	cd www
-	django-admin.py startproject PyScadaServer
-	cd PyScadaServer/
-	```
+```
+sudo apt-get install python-pip libhdf5-7 libhdf5-dev python-dev
+cd
+mkdir www
+mkdir PyScadaDev
+cd PyScadaDev
+git clone https://github.com/trombastic/PyScada.git
+cd PyScada
+sudo python setup.py install
+cd 
+cd www
+django-admin.py startproject PyScadaServer
+cd PyScadaServer/
+```
+
 #### 4.2.1 settings
 
 open settings
-	```
-	nano PyScadaServer/settings.py
-	´´´
+
+```
+nano PyScadaServer/settings.py
+```
+
 settings.py
-	´´´
-	INSTALLED_APPS = (
-	...
-		pyscada	
-	...
-	)
-	...
-	DATABASES = {
-		'default': {
-			'ENGINE': 'django.db.backends.mysql', 	
-			'NAME': 'FAkS_db',                  	
-			'USER': 'FAkS-user',                
-			'PASSWORD': 'FAkS-user-password' 		
-		}
+
+```
+INSTALLED_APPS = (
+...
+	pyscada	
+...
+)
+...
+DATABASES = {
+	'default': {
+		'ENGINE': 'django.db.backends.mysql', 	
+		'NAME': 'FAkS_db',                  	
+		'USER': 'FAkS-user',                
+		'PASSWORD': 'FAkS-user-password' 		
 	}
-	...
-	STATIC_ROOT = BASE_DIR + '/static/'
-	´´´
+}
+...
+STATIC_ROOT = BASE_DIR + '/static/'
+```
+
 #### 4.2.2 urls config
 
 open urls	
-	´´´
-	nano PyScadaServer/urls.py
-	´´´
+
+```
+nano PyScadaServer/urls.py
+```
 	
 urls.py
-	```
-	urlpatterns = patterns('',
-	...
-		url(r'^', include('pyscada.urls')),
-	...
-	)
-	```
+
+```
+urlpatterns = patterns('',
+...
+	url(r'^', include('pyscada.urls')),
+...
+)
+```
 	
 
 ## 5 install and setup apache 
+
 ### 5.1 install nginx
 
-	```
-	sudo apt-get install nginx uwsgi
-	python ./manage.py runfcgi host=127.0.0.1 port=8080
-	```
+```
+sudo apt-get install nginx uwsgi
+python ./manage.py runfcgi host=127.0.0.1 port=8080
+```
+
 ### 5.2 setup nginx
 
 #### 5.2.1 sync the database 
 
-	´´´
+
 	python manage.py syncdb
-	
-	´´´
+
+
 #### 5.2.2 copy all static files to the local static folder
 
-	```
 	python manage.py collectstatic
-	```
+
+
 #### 5.2.3 edit the nginx config
 
-	```
-	sudo touch /etc/nginx/sites-available/pyscada-server.conf
-	sudo rm /etc/nginx/sites-enabled/default
-	sudo ln -s /etc/nginx/sites-available/pyscada-server.conf /etc/nginx/sites-enabled/pyscada-server.conf
-	nano /etc/nginx/sites-available/pyscada-server.conf
-	```
+```
+sudo touch /etc/nginx/sites-available/pyscada-server.conf
+sudo rm /etc/nginx/sites-enabled/default
+sudo ln -s /etc/nginx/sites-available/pyscada-server.conf /etc/nginx/sites-enabled/pyscada-server.conf
+nano /etc/nginx/sites-available/pyscada-server.conf
+```
+
 add the following lines
+
 ```
 server {
     listen 80;
@@ -209,10 +220,13 @@ server {
     }
 }
 ```
+
 reload nginx
+
 ```
 sudo /etc/init.d/nginx reload
 ```
+
 ## 6 setup pyscada
 
 ### 6.1 set the configuration of field clients 
