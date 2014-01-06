@@ -49,10 +49,12 @@ class RegisterBlock:
     def request_data(self,slave):
         quantity = sum(self.variable_length) # number of bits to read
         first_address = self.variable_address[0]
-        if not self._sim:
-            result = slave.read_input_registers(first_address,quantity/16)
-            if not hasattr(result, 'registers'):
-                return result
+        if self._sim:
+            return self.decode_data("")
+        
+        result = slave.read_input_registers(first_address,quantity/16)
+        if not hasattr(result, 'registers'):
+            return result
 
         return self.decode_data(result)
         
@@ -100,11 +102,13 @@ class CoilBlock:
     def request_data(self,slave):
         quantity = len(self.variable_address) # number of bits to read
         first_address = self.variable_address.keys()[0]
-        if not self._sim:
-            result = slave.read_input_registers(first_address,quantity)
-            if not hasattr(result, 'registers'):
-                return result
-
+        if self._sim:
+            return self.decode_data("")
+        
+        result = slave.read_input_registers(first_address,quantity)
+        if not hasattr(result, 'registers'):
+            return result
+            
 
         return self.decode_data(result)
         

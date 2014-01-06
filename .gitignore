@@ -5,3 +5,4 @@ local_settings.py
 build
 PyScada.egg-info
 dist
+/.project

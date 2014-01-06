@@ -2,6 +2,7 @@
 
 import sys, os, time, atexit
 from signal import SIGTERM 
+from pyscada import log
 
 class Daemon:
 	"""

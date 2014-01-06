@@ -32,7 +32,6 @@ setup(
         'numpy>=1.6.0',
         'h5py>=2.1.1'
     ],
-    scripts = ['PyScadaDataAcquisitionDaemon.pyw'],
     packages=find_packages(exclude=["project", "project.*"]),
     include_package_data=True,
     zip_safe=False,
