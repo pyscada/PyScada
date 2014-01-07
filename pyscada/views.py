@@ -25,20 +25,123 @@ def index(request):
 		'inputValues' : Inputs,
 		'title': 'DataView'
 	})
-	return render(request, 'content.html', c, content_type="application/xhtml+xml")
+	return HttpResponse(t.render(c))
+	#return render(request, 'content.html', c, content_type="application/xhtml+xml")
+	
+def config(request):
+	
+	config = {}
+	config["DataFile"] 		= "json/data/"
+	config["RefreshRate"] 	= 5000
+	config["config"] = [
+				{
+				"xaxis":
+					{
+						"ticks":6
+					},
+				"axes":
+					[
+						{
+						"yaxis":
+							{
+								"min":0,
+								"max":120
+							}
+						}
+					],
+				"placeholder":"#chart-0",
+				"legendplaceholder":"#chart-0-legend",
+				"variables":
+					{
+						"t_2Di_1":{"yaxis":1,"color":0,"unit":"°C"},
+						"t_2Do_1":{"yaxis":1,"color":1,"unit":"°C"},
+						"t_2Di_1_r":{"yaxis":1,"color":2,"unit":"°C"},
+						"t_2Do_1_r":{"yaxis":1,"color":3,"unit":"°C"},
+						"t_2Di_1_set":{"yaxis":1,"color":4,"unit":"°C"},
+						"t_1Ai_1":{"yaxis":1,"color":5,"unit":"°C"},
+						"t_1Ai_1_set":{"yaxis":1,"color":6,"unit":"°C"},
+						"t_1Ci_1":{"yaxis":1,"color":7,"unit":"°C"},
+						"t_1Co_1":{"yaxis":1,"color":8,"unit":"°C"},
+						"t_1Co_1_set":{"yaxis":1,"color":9,"unit":"°C"},
+						"t_0Ei_1":{"yaxis":1,"color":10,"unit":"°C"},
+						"t_0Ei_1_r":{"yaxis":1,"color":11,"unit":"°C"},
+						"t_0Eo_1":{"yaxis":1,"color":12,"unit":"°C"},
+						"t_0Eo_1_r":{"yaxis":1,"color":13,"unit":"°C"},
+						"t_0Ei_1_set":{"yaxis":1,"color":14,"unit":"°C"},
+						"t_0Eo_1_set":{"yaxis":1,"color":15,"unit":"°C"},
+						"T_ERa_1":{"yaxis":1,"color":16,"unit":"°C"},
+						"T_ERd_1":{"yaxis":1,"color":17,"unit":"°C"},
+						"T_HWi_1":{"yaxis":1,"color":18,"unit":"°C"},
+						"T_ASa_1":{"yaxis":1,"color":19,"unit":"°C"},
+						"T_CRs_1":{"yaxis":1,"color":20,"unit":"°C"},
+						"T_HWo_1":{"yaxis":1,"color":21,"unit":"°C"},
+						"T_DSo_1":{"yaxis":1,"color":22,"unit":"°C"},
+						"T_HSo_1":{"yaxis":1,"color":23,"unit":"°C"},
+						"T_DWa_1":{"yaxis":1,"color":24,"unit":"°C"}
+					}
+				}
+			]
+	
+	
+	jdata = json.dumps(config,indent=2)
+	return HttpResponse(jdata, mimetype='application/json')
+	
 	
 def data(request):
-	tValues = RecordedTime.objects.all()[0:30]
-	values = tValues.values_list('id',flat=True)
-	dValues = recordedData.objects.filter(time__in=list(values))
-	t = loader.get_template('data_table_1.html')	
-	c = Context({
-		'title': 'test Title',
-		'TimeValues': tValues,
-		'DataValues': dValues,
-	})
-	return HttpResponse(t.render(c))
-
+	# read POST data
+	if request.POST.has_key('timestamp'):
+		timestamp = float(request.POST['timestamp'])
+		# query timestamp pk's
+		last_time_id 	= RecordedTime.objects.last().pk
+		first_time_id 	= RecordedTime.objects.filter(timestamp__gte=timestamp).first()
+		if first_time_id:
+			first_time_id = first_time_id.pk
+		else:
+			return HttpResponse('{\n}', mimetype='application/json')
+	else:
+		# fetch only the last element
+		last_time_id 	= RecordedTime.objects.last().pk
+		first_time_id 	= last_time_id
+	data = {}
+	for val in Variable.objects.all():
+		variable_class = InputConfig.objects.get_value_by_key('class',variable_id=val.pk).replace(' ','')
+		if variable_class.upper() in ['FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'] :
+			r_values = RecordedDataFloat.objects.filter(variable_id=val.pk,time_id__lte=last_time_id, time_id__gte=first_time_id).values_list('time__timestamp','value')
+		elif variable_class.upper() in ['INT32','UINT32','INT16','INT','WORD','UINT','UINT16']:
+			r_values = RecordedDataInt.objects.filter(variable_id=val.pk,time_id__lte=last_time_id, time_id__gte=first_time_id).values_list('time__timestamp','value')
+		elif variable_class.upper() in ['BOOL']:
+			r_values = RecordedDataBoolean.objects.filter(variable_id=val.pk,time_id__lte=last_time_id, time_id__gte=first_time_id).values_list('time__timestamp','value')
+		
+		if r_values.count() > 0:
+			data[val.variable_name] = list(r_values)
+	
+	
+	
+	jdata = json.dumps(data,indent=2)
+	return HttpResponse(jdata, mimetype='application/json')
+	
+	
+def data_value(request):
+	# read POST data
+	
+	data = {}
+	data["timestamp"] = RecordedTime.objects.last().timestamp
+	for val in Variable.objects.all():
+		variable_class = InputConfig.objects.get_value_by_key('class',variable_id=val.pk).replace(' ','')
+		if variable_class.upper() in ['FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'] :
+			r_values = RecordedDataFloat.objects.filter(variable=val).last()
+		elif variable_class.upper() in ['INT32','UINT32','INT16','INT','WORD','UINT','UINT16']:
+			r_values = RecordedDataInt.objects.filter(variable=val).last()
+		elif variable_class.upper() in ['BOOL']:
+			r_values = RecordedDataBoolean.objects.filter(variable=val).last()
+		
+		if r_values:
+			data[val.variable_name] = r_values.value
+	
+	
+	
+	jdata = json.dumps(data,indent=2)
+	return HttpResponse(jdata, mimetype='application/json')
 
 
 def json_data(request):
@@ -53,7 +156,7 @@ def json_data(request):
 		else:
 			return HttpResponse('{\n}', mimetype='application/json')
 	else:
-		# fetch only the last etement
+		# fetch only the last element
 		last_time_id 	= RecordedTime.objects.last().pk
 		first_time_id 	= last_time_id
 	

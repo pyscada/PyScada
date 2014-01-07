@@ -8,85 +8,87 @@ Licensed under the GPL.
 
 */
 
-
+var NotificationCount = 0
+var PyScadaConfig;
+var PyScadaPlots = [];
+var JsonErrorCount = 0;
+var auto_update_active = true;
 // the code
-function main(){
 
-
-	if (auto_update_active) {
-		$("#AutoUpdateStatus").show();
-		if (fetchData(PyScadaConfig.DataFile,PyScadaConfig.RefreshRate)){
-			setTimeout('$( "#AutoUpdateStatus" ).hide();', 250);
-			flotPlotUpdateEachData(now);
-			setTimeout('fetchJsonData("' + ChartConfig.DataFile + '")', ChartConfig.RefreshRate);
-			$("#AutoUpdateButton").removeClass("btn-warning");
-			$("#AutoUpdateButton").addClass("btn-success");
-			if (JsonErrorCount > 0) {
-				JsonErrorCount = JsonErrorCount - 1;
-			}
-		}else{
-			JsonErrorCount = JsonErrorCount + 1;
-			if (JsonErrorCount > 60) {
-				auto_update_active = false;
-				addNotification("error limit reached", 3);
-				ChartDataAppendNull();
-			} else {
-				setTimeout('$( "#AutoUpdateStatus" ).hide();', 250);
-				if (auto_update_active) {
-					setTimeout('fetchJsonData("' + ChartConfig.DataFile + '")', 500);
-				}
-				ChartDataAppendNull();
-			}
-			$("#AutoUpdateButton").removeClass("btn-success");
-			$("#AutoUpdateButton").addClass("btn-warning");
-			$("#AutoUpdateStatus").hide();
-		}
-	}else{
-		ChartDataAppendNull();
-	}
-}
 
 function fetchConfig(){
-	$.ajax({
-        url: "config.json",
-        dataType: "json",
-        timeout: 1000,
-        success: function(data) {
-			return data;
-        },
-        error: function(x, t, m) {
-            addNotification(t, 3);
-        }
-    });
-}
-
-function fetchData(url,timeout) {
 	
+	$.ajax({
+		url: "json/config/",
+		dataType: "json",
+		timeout: 1000,
+		success: function(data) {
+			PyScadaConfig = data;
+			$.each(PyScadaConfig.config,function(key,val){
+				PyScadaPlots.push(new PyScadaPlot(val));
+			});
+			$.each(PyScadaPlots,function(plot_id){
+				PyScadaPlots[plot_id].prepare();
+			});
+		},
+		error: function(x, t, m) {
+			addNotification(t, 3);
+		}
+	});
+}
+fetchConfig()
+
+function fetchData() {
+	if (auto_update_active) {
+		$("#AutoUpdateStatus").show();
 		$.ajax({
-			url: url,
+			url: PyScadaConfig.DataFile,
 			dataType: "json",
-			timeout: timeout,
+			timeout: PyScadaConfig.RefreshRate,
 			success: function(data) {
-				var now = new Date().getTime();
-				var time = now
+				if (data["timestamp"] === "object" ){
+					time = data["timestamp"]
+				}else{
+					time = new Date().getTime();
+				}
+					
 				$.each(data, function(key, val) {
-					//append data to data array
-					if (typeof(PyScadaConfig.variables[key])==="object"){
-						PyScadaConfig.variables[key].data.push([time, val]);
-						if (PyScadaConfig.variables[key].data.length > PyScadaConfig.ChartBufferSize){
-							PyScadaConfig.variables[key].data =PyScadaConfig.variables[key].data.splice(1,PyScadaConfig.variables[key].data.length);
-						}
-    				}
+				//append data to data array
+					$.each(PyScadaPlots,function(plot_id){
+						// PyScadaPlots[plot_id].add(key,val)
+						PyScadaPlots[plot_id].addData(key,time,val);
+						updateDataValues(key,val);
+					});
 				});
-				return true
-				
+				$.each(PyScadaPlots,function(plot_id){
+					PyScadaPlots[plot_id].update();
+				});
+				setTimeout('$( "#AutoUpdateStatus" ).hide();', 250);
+				setTimeout('fetchData()', PyScadaConfig.RefreshRate);
+				$("#AutoUpdateButton").removeClass("btn-warning");
+				$("#AutoUpdateButton").addClass("btn-success");
+				if (JsonErrorCount > 0) {
+					JsonErrorCount = JsonErrorCount - 1;
+				}
 			},
 			error: function(x, t, m) {
 				addNotification(t, 3);
-				return false
-				
-			}
+				JsonErrorCount = JsonErrorCount + 1;
+				if (JsonErrorCount > 60) {
+					auto_update_active = false;
+					addNotification("error limit reached", 3);
+				} else {
+					setTimeout('$( "#AutoUpdateStatus" ).hide();', 250);
+					if (auto_update_active) {
+						setTimeout('fetchData()', 500);
+					}
+				}
+				$("#AutoUpdateButton").removeClass("btn-success");
+				$("#AutoUpdateButton").addClass("btn-warning");
+				$("#AutoUpdateStatus").hide();
+				}
 		});
+	}
 }
 
 function addNotification(message, level) {
@@ -119,10 +121,9 @@ function addNotification(message, level) {
     NotificationCount = NotificationCount + 1;
 }
 
-function updateDataValues(data){
-	$.each(data, function(key, val) {
+function updateDataValues(key,val){
 		// set value fields
-		$(".type-numeric.var-" + key).html(val);
+		$(".type-numeric.var-" + key).html(Number(val).toPrecision(4));
 		// set button colors
 		if (val === 0) {
 			$(".type-bool.var-" + key).addClass("label-default");
@@ -135,7 +136,6 @@ function updateDataValues(data){
 			$(".type-bool.status-yello.var-" + key).addClass("label-warning");
 			$(".type-bool.status-red.var-" + key).addClass("label-danger");
 		}
-	});
 }
 
 function PyScadaPlot(config){
@@ -154,49 +154,91 @@ function PyScadaPlot(config){
             mode: "y"
         }
 	},
-	series,				// just the active data series
-	data,				// all the data
+	series = [],		// just the active data series
+	data = {},			// all the data
 	flotPlot,			// handle to plot
 	BufferSize = 5760, 	// buffered points
 	WindowSize = 20, 	// displayed data window in minutes
 	plot = this;
 	
 	// public functions
+	plot.add				= add;
 	plot.addData 			= addData;
 	plot.update 			= update;
-	plot.updateSelection 	= updateSelection;
+	plot.prepare 			= prepare;
 	plot.expandToMaxWidth 	= expandToMaxWidth;
 	plot.getBufferSize		= function () { return BufferSize};
 	plot.setBufferSize		= setBufferSize;
+	plot.getData			= function () { return data };
+	plot.getSeries 			= function () { return series };
+	plot.getFlotObject		= function () { return flotPlot};
+	// init data
+	$.each(config.variables,function(key){
+			data[key] = [];
+		});
+	
 	
 	function prepare(){
+		var LineColors = []
+		colorPool = ["#edc240", "#afd8f8", "#cb4b4b", "#4da74d", "#9440ed"];
+		colorPoolSize = colorPool.length;
+		neededColors = 50
+		variation = 0;
+		for (i = 0; i < neededColors; i++) {
+			c = $.color.parse(colorPool[i % colorPoolSize] || "#666");
+
+			// Each time we exhaust the colors in the pool we adjust
+			// a scaling factor used to produce more variations on
+			// those colors. The factor alternates negative/positive
+			// to produce lighter/darker colors.
+
+			// Reset the variation after every few cycles, or else
+			// it will end up producing only white or black colors.
+
+			if (i % colorPoolSize == 0 && i) {
+				if (variation >= 0) {
+					if (variation < 0.5) {
+						variation = -variation - 0.2;
+					} else variation = 0;
+				} else variation = -variation;
+			}
+
+			//colors.push(c.scale('rgb', 1 + variation));
+			LineColors.push(c.scale('rgb', 1 + variation));
+		}
+		
 		// prepare legend
 		var LegendString = '<div class="legend"><table style="font-size:smaller;color:#545454"><tbody>';
 		$.each(config.variables,function(key,val){
 			if (typeof(config.variables[key])==="object"){
-				LegendString +='<tr class="legendSeries"><td><input type="checkbox" checked="checked" id="'+config.placeholder+'-'+key+'-checkbox"></td><td class="legendColorBox"><div style="border:1px solid #ccc;padding:1px"><div style="width:4px;height:0;border:5px solid '+ LineColors[config.variables[key].color].toString() +';overflow:hidden"></div></div></td><td class="legendLabel">'+key+'</td><td class="legendValue type-numeric var-'+key+'"></td><td class="legendUnit">'+ config.variables[key].unit +'</td></tr>';
+				LegendString +='<tr class="legendSeries"><td><input type="checkbox" checked="checked" id="'+config.placeholder.substring(1)+'-'+key+'-checkbox"></td><td class="legendColorBox"><div style="border:1px solid #ccc;padding:1px"><div style="width:4px;height:0;border:5px solid '+ LineColors[config.variables[key].color].toString() +';overflow:hidden"></div></div></td><td class="legendLabel">'+key+'</td><td class="legendValue type-numeric var-'+key+'"></td><td class="legendUnit">'+ config.variables[key].unit +'</td></tr>';
 			}
 		});
 	
 		LegendString +='</tbody></table></div><div class="btn-toolbar" role="toolbar"><div class="btn-group">';
-		LegendString +='<button type="button" class="btn btn-default" id="'+config.placeholder+'-ResetSelection"><span class="glyphicon glyphicon-fullscreen"></span></button>';
-		LegendString +='<button type="button" class="btn btn-default" id="'+config.placeholder+'-ZoomYToFit"><span class="glyphicon glyphicon-resize-vertical"></span></button>';
+		LegendString +='<button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-ResetSelection"><span class="glyphicon glyphicon-fullscreen"></span></button>';
+		LegendString +='<button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-ZoomYToFit"><span class="glyphicon glyphicon-resize-vertical"></span></button>';
 		LegendString +='</div></div>';
 
-		$(config.legendplaceholder).append('<div id="'+config.placeholder+'-show" style="display:none;"><button type="button" class="btn btn-default" id="'+config.placeholder+'-btn-show" ><span class="glyphicon glyphicon-plus"></span></button></div><div id="'+config.legendplaceholder+'-legend">'+LegendString+'</div>');
+		$(config.legendplaceholder).append('<div id="'+config.placeholder.substring(1)+'-show" style="display:none;"><button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-btn-show" ><span class="glyphicon glyphicon-plus"></span></button></div><div id="'+config.legendplaceholder.substring(1)+'-legend">'+LegendString+'</div>');
+		
 		$.each(config.variables,function(key,val){
 			$(config.placeholder+'-'+key+'-checkbox').change(function() {
 				plot.update()
 			});
 		});
 		
+
 		expandToMaxWidth();
-		
 		contentAreaHeight = $(config.placeholder).closest('.main-chart-area').parent().height();
 		mainChartAreaHeight = $(config.placeholder).closest('.main-chart-area').height();
 		if (contentAreaHeight>mainChartAreaHeight){
 			$(config.placeholder).closest('.main-chart-area').height(contentAreaHeight);
 		}
+
+			
+		
+		
 		
 		$(config.placeholder + "-ResetSelection").click(function() {
 			pOpt = flotPlot.getOptions();
@@ -229,8 +271,10 @@ function PyScadaPlot(config){
 		
 		
 		//
-		
+		$(config.placeholder).addClass('chart-container');
+		$(config.placeholder).append('<div class="chart-placeholder"></div>')
 		flotPlot = $.plot($(config.placeholder + ' .chart-placeholder'), series,options)
+		update()
 		// bind 
 		$(config.placeholder + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
 			pOpt = flotPlot.getOptions();
@@ -268,24 +312,31 @@ function PyScadaPlot(config){
        			data[key] = data[key].splice(data[key].length-BufferSize,data[key].length);
         	}
     	}
-    	plot.update;
 	}
 	
+	function add(key,value){
+		if (typeof(data[key])==="object"){
+			data[key] = data[key].concat(value);
+        	if (data[key].length > BufferSize){
+        		// if buffer is full drop the first element
+       			data[key] = data[key].splice(data[key].length-BufferSize,data[key].length);
+        	}
+    	}
+	}
 	
 	function update(){
 		// add the selected data series to the "series" variable
 		series = [];
-		if($(config.placeholder).is(":visible")){
-			$.each(data,function(key){
-				if($(config.placeholder+'-'+key+'-checkbox').is(':checked')){
-					series.push(data[key]);
-				};
-			});
-		}
+		$.each(data,function(key){
+			if($(config.placeholder+'-'+key+'-checkbox').is(':checked')){
+				series.push(data[key]);		
+			};
+		});
 		// update flot plot
 		flotPlot.setData(series);
 		// update x window
 		pOpt = flotPlot.getOptions();
+		now = new Date().getTime();
 		pOpt.xaxes[0].min = now - (WindowSize * 1000 * 60);
 		flotPlot.setupGrid();
 		flotPlot.draw();
