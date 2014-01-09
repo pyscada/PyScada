@@ -30,13 +30,33 @@ function fetchConfig(){
 			$.each(PyScadaPlots,function(plot_id){
 				PyScadaPlots[plot_id].prepare();
 			});
+			fetchInitData()
 		},
 		error: function(x, t, m) {
 			addNotification(t, 3);
 		}
 	});
 }
-fetchConfig()
+
+function fetchInitData(){
+	
+	$.ajax({
+		url: PyScadaConfig.InitialDataFile,
+		dataType: "json",
+		timeout: 10000,
+		success: function(data) {
+			$.each(PyScadaPlots,function(plot_id){
+				$.each(data,function(key,val){
+					PyScadaPlots[plot_id].add(key,val);
+				});
+			});
+			fetchData()
+		},
+		error: function(x, t, m) {
+			addNotification(t, 3);
+		}
+	});
+}
 
 function fetchData() {
 	if (auto_update_active) {
@@ -274,6 +294,7 @@ function PyScadaPlot(config){
 		$(config.placeholder).addClass('chart-container');
 		$(config.placeholder).append('<div class="chart-placeholder"></div>')
 		flotPlot = $.plot($(config.placeholder + ' .chart-placeholder'), series,options)
+		// update the plot
 		update()
 		// bind 
 		$(config.placeholder + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
@@ -316,6 +337,9 @@ function PyScadaPlot(config){
 	
 	function add(key,value){
 		if (typeof(data[key])==="object"){
+			$.each(value,function(key){
+					value[key][0] = value[key][0] * 1000;
+				});
 			data[key] = data[key].concat(value);
         	if (data[key].length > BufferSize){
         		// if buffer is full drop the first element
@@ -329,7 +353,7 @@ function PyScadaPlot(config){
 		series = [];
 		$.each(data,function(key){
 			if($(config.placeholder+'-'+key+'-checkbox').is(':checked')){
-				series.push(data[key]);		
+				series.push({"data":data[key],"color":config.variables[key].color,"yaxis":config.variables[key].yaxis});		
 			};
 		});
 		// update flot plot
@@ -350,3 +374,6 @@ function PyScadaPlot(config){
 		$(config.placeholder).closest('.main-chart-area').width(mainChartAreaWidth);
 	}
 }
+
+// init
+fetchConfig()

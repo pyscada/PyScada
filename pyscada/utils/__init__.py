@@ -94,33 +94,27 @@ def update_input_config(json_data):
 	#json_data.close()
 	data = json.loads(json_data)
 	for entry in data:
-		obj, created = Variable.objects.get_or_create(variable_name=entry['variable_name'],
-		defaults={'description': entry['description'],'client_id':entry['client_id'],'active':1})
 		# unit config 
-		uc, ucc = UnitConfig.objects.get_or_create(unit = entry['unit'])
+		uc, ucc = UnitConfig.objects.get_or_create(unit = entry['unit'].replace(' ',''))
+		obj, created = Variable.objects.get_or_create(variable_name=entry['variable_name'].replace(' ',''),
+		defaults={'description': entry['description'],'client_id':entry['client_id'],'active':1,'unit':uc,'value_class':entry["class"].replace(' ','')})
+		
 		if created:
 			log.info(("created: %s") %(entry['variable_name']))
-			ic =  InputConfig(variable_id=obj.pk,key = "modbus_ip.address",value=entry["modbus_ip.address"])
-			ic.save()
-			ic =  InputConfig(variable_id=obj.pk,key = "class",value=entry["class"])
-			ic.save()
-			ic = InputConfig(variable_id=obj.pk,key = "unit",value=uc.pk)
+			ic =  InputConfig(variable_id=obj.pk,key = "modbus_ip.address",value=entry["modbus_ip.address"].replace(' ',''))
 			ic.save()
 		else:
 			log.info(("updated: %s") %(entry['variable_name']))
 			obj.description = entry['description']
 			obj.client_id = entry['client_id']
 			obj.active = 1
+			obj.unit = uc
+			obj.value_class = entry["class"].replace(' ','')
 			obj.save()
 			ic, icc = InputConfig.objects.get_or_create(variable_id=obj.pk,key="modbus_ip.address")
-			ic.value = entry["modbus_ip.address"]
+			ic.value = entry["modbus_ip.address"].replace(' ','')
 			ic.save()
-			ic, icc = InputConfig.objects.get_or_create(variable_id=obj.pk,key="class")
-			ic.value = entry["class"]
-			ic.save()
-			ic, icc = InputConfig.objects.get_or_create(variable_id=obj.pk,key="unit")
-			ic.value = uc.pk
-			ic.save()
+			
 
 def update_client_config(json_file):
 	json_data = file(json_file)

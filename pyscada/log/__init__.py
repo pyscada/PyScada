@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from pyscada.models import Log
-
+from time import time
 	
 def add(message,level=0,message_short=None):
 	""" 
@@ -18,7 +18,7 @@ def add(message,level=0,message_short=None):
 		else:
 			message_short = message
 		
-	log_ob = Log(message=message,level=level,message_short=message_short)
+	log_ob = Log(message=message,level=level,message_short=message_short,timestamp=time())
 	log_ob.save()
 
 def info(message,message_short=None):

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.db import models
+from django.contrib.auth.models import User
 from django.utils import timezone
 import time
 
@@ -16,7 +17,8 @@ class UnixTimestampField(models.FloatField):
 			return  time.time()
 		if value==None:
 			return None
-		return time.mktime(value.timetuple())
+		return value
+		#return time.mktime(value.timetuple())
 
 #
 # Manager
@@ -52,6 +54,8 @@ class VariableConfigManager(models.Manager):
 						output[key_key] = {}
 					output[key_key][attr] = entry.decoded_value()
 			output['variable_name']	= variable.variable_name;
+			output['unit']	= variable.unit.unit
+			output['class']	= variable.value_class
 			variable_config[variable.pk] = output
 		return variable_config
 
@@ -128,7 +132,7 @@ class ScalingConfig(models.Model):
 class UnitConfig(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	unit			= models.CharField(max_length=80, verbose_name="Unit")
-	description 	= models.TextField(default='', verbose_name="Description")
+	description 		= models.TextField(default='', verbose_name="Description")
 	def __unicode__(self):
 		return unicode(self.unit)
 
@@ -139,6 +143,23 @@ class Variable(models.Model):
 	description 	= models.TextField(default='', verbose_name="Description")
 	client			= models.ForeignKey('Client',null=True, on_delete=models.SET_NULL)
 	active			= models.BooleanField()
+	unit 			= models.ForeignKey('UnitConfig',null=True, on_delete=models.SET_NULL)
+	value_class_choices = (('FLOAT32','FLOAT32'),
+						('SINGLE','SINGLE'),
+						('FLOAT','FLOAT'),
+						('FLOAT64','FLOAT64'),
+						('REAL','REAL'),
+						('INT32','INT32'),
+						('UINT32','UINT32'),
+						('INT16','INT16'),
+						('INT','INT'),
+						('WORD','WORD'),
+						('UINT','UINT'),
+						('UINT16','UINT16'),
+						('BOOL','BOOL'),
+						)
+	
+	value_class		= models.CharField(max_length=15, default='FLOAT', verbose_name="value_class",choices=value_class_choices)
 	objects			= VariableConfigManager()
 	def __unicode__(self):
 		return unicode(self.variable_name)
@@ -158,11 +179,12 @@ class InputConfig(models.Model):
 		return unicode(self.value)
 
 class RecordedTime(models.Model):
-	#timestamp 		= models.DateTimeField(auto_now=False, auto_now_add=True)
 	id 				= models.AutoField(primary_key=True)
-	timestamp 		= UnixTimestampField(auto_created=True)
+	timestamp 		= models.FloatField()
 	def __unicode__(self):
 		return unicode(self.timestamp)
+	def timestamp_ms(self):
+		return self.timestamp * 1000
 
 
 class RecordedDataFloat(models.Model):
@@ -196,9 +218,35 @@ class RecordedDataBoolean(models.Model):
 class Log(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	level			= models.IntegerField(default=0, verbose_name="error level")
-	timestamp 		= UnixTimestampField(auto_created=True)
+	timestamp 		= models.FloatField()
 	message_short	= models.CharField(max_length=400, default='', verbose_name="short message")
-	message 		= models.TextField(default='', verbose_name="message")
+	message 			= models.TextField(default='', verbose_name="message")
 	def __unicode__(self):
 		return unicode(self.message)
 
+class WebClientPage(models.Model):
+	id 				= models.AutoField(primary_key=True)
+	title 			= models.CharField(max_length=400, default='')
+	link_title		= models.CharField(max_length=155, default='')
+	users			= models.ManyToManyField(User)
+	def __unicode__(self):
+		return unicode(self.link_title)
+
+class WebClientChart(models.Model):
+	id 				= models.AutoField(primary_key=True)
+	label			= models.CharField(max_length=400, default='')
+	position			= models.PositiveSmallIntegerField(default=0)
+	x_axis_label		= models.CharField(max_length=400, default='',blank=True)
+	x_axis_ticks		= models.PositiveSmallIntegerField(default=6)
+	y_axis_label		= models.CharField(max_length=400, default='',blank=True)
+	y_axis_min		= models.FloatField(default=0)
+	y_axis_max		= models.FloatField(default=100)
+	size_choices 	= (('pagewidth','page width'),('sidebyside','side by side'))
+	size			= models.CharField(max_length=20, default='pagewidth',choices=size_choices)
+	variables		= models.ManyToManyField(Variable)
+	users			= models.ManyToManyField(User)
+	row				= models.ManyToManyField("self",blank=True)
+	pages			= models.ManyToManyField(WebClientPage)
+	
+	def __unicode__(self):
+		return unicode(self.label)

@@ -56,19 +56,43 @@
 		<div class="container" id="content">
             <!-- loading animation -->
             <div id="loadingAnimation"> <div class="row"><div class="col-md-1 col-md-offset-6"><img src="{% static "pyscada/img/load.gif" %}" alt="loading"/></div></div></div>
-			<div class="row"> <!-- Anlage 1 Temperaturen -->
-				<div class="panel panel-default">
-					<div class="panel-body minimizeable" id="a1-t">
-						<div class="legend-sidebar">
-							<div id="chart-0-legend"></div>
+			
+			{% for chart in chart_list %}
+				{% if  chart.size == "sidebyside" and chart.row.count %}
+					<div class="row"> <!-- {{ chart.label|upper }} {{ chart.row.first.label|upper }} -->
+						<div class="panel panel-default">
+							<div class="panel-body minimizeable" id="a{{chart.pk}}-t">
+								<div class="legend-sidebar">
+									<div id="chart-{{chart.pk}}-legend"></div>
+									<div class="clear-sep"></div>
+									<div id="chart-{{chart.row.first.pk}}-legend"></div>
+								</div>
+								<div class="main-chart-area" style=" height:350px;">
+									<div class="half-size-chart" >
+										<div id="chart-{{chart.pk}}" style="width: 100%; height:100%;"></div>
+									</div>
+									<div class="half-size-chart" >
+										<div id="chart-{{chart.row.first.pk}}" style="width: 100%; height:100%;"></div>
+									</div>
+								</div>
+							</div>
 						</div>
-						<div class="main-chart-area" style=" height:350px;">
-							<div id="chart-0" style="width: 100%; height:100%;"></div>
+					</div> <!-- end {{ chart.label|upper }} {{ chart.row.first.label|upper }} -->
+				{% else %}
+					<div class="row"> <!-- {{ chart.label|upper }} -->
+						<div class="panel panel-default">
+							<div class="panel-body minimizeable" id="a{{chart.pk}}-t">
+								<div class="legend-sidebar">
+									<div id="chart-{{chart.pk}}-legend"></div>
+								</div>
+								<div class="main-chart-area" style=" height:350px;">
+									<div id="chart-{{chart.pk}}" style="width: 100%; height:100%;"></div>
+								</div>
+							</div>
 						</div>
-					</div>
-				</div>
-			</div> <!-- end Anlage 1 Temperaturen -->
-        
+					</div> <!-- end {{ chart.label|upper }} -->
+				{% endif %}
+			{% endfor %}
         
         
         </div> <!-- /container -->
@@ -76,12 +100,18 @@
 		================================================== -->
         <!-- Placed at the end of the document so the pages load faster -->
         <script type="text/javascript" src="{% static "pyscada/js/jquery.min.js" %}"></script>
-        <script type="text/javascript" src="{% static "pyscada/js/jquery.cookie.js" %}"></script>
+        <!--<script type="text/javascript" src="{% static "pyscada/js/jquery.cookie.js" %}"></script>-->
         <script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.resize.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.time.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.selection.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/bootstrap.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/pyscada/pyscada.js" %}"></script>
+        <script>
+        $( document ).ready(function() {
+			// Handler for .ready() called.
+			$("#loadingAnimation").hide();
+		});
+		</script>
 	</body>
 </html>
