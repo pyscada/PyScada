@@ -167,10 +167,11 @@ class Variable(models.Model):
 
 class InputConfig(models.Model):
 	id 				= models.AutoField(primary_key=True)
-	variable	 	= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
-	key 			= models.CharField(max_length=400, default='', verbose_name="key")
+	variable	 		= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
+	key_choices 		= (('modbus_ip.address','modbus_ip.address'),)
+	key 			= models.CharField(max_length=400, default='', verbose_name="key",choices=key_choices)
 	value			= models.CharField(max_length=400, default='', verbose_name="value")
-	objects 		= KeyValueManager()
+	objects 			= KeyValueManager()
 	def __unicode__(self):
 		return unicode(self.key)
 	def decoded_value(self):
