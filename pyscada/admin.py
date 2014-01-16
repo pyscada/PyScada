@@ -4,6 +4,8 @@ from pyscada.models import ClientConfig
 from pyscada.models import Variable
 from pyscada.models import WebClientChart
 from pyscada.models import WebClientPage
+from pyscada.models import WebClientSlidingPanelMenu
+from pyscada.models import WebClientControlItem
 from pyscada import log
 from pyscada.utils import update_input_config
 from django.contrib import admin
@@ -88,7 +90,7 @@ class WebClientChartAdmin(admin.ModelAdmin):
     ordering = ['position',] # didnt have this one in the example, sorry
     search_fields = ['variable_name',]
     filter_horizontal = ('variables',)
-    list_display = ('position','label','size',)
+    list_display = ('label','page','position','size',)
     form = WebClientChartForm
     def variable_name(self, instance):
         return instance.variables.variable_name
@@ -103,3 +105,5 @@ admin.site.register(Variable)
 admin.site.register(VariableConfigFileImport,VariableImportAdmin)
 admin.site.register(WebClientChart,WebClientChartAdmin)
 admin.site.register(WebClientPage)
+admin.site.register(WebClientSlidingPanelMenu)
+admin.site.register(WebClientControlItem)

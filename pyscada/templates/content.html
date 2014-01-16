@@ -39,9 +39,26 @@
                 </div>
                 <div class="navbar-collapse collapse">
                     <ul class="nav navbar-nav">
-                        <li class="active"><a href="#page-control_center"><span class="glyphicon glyphicon-home"></span> Control Center</a></li>
+						{% for page in page_content %}
+							<li><a href="#{{page.page.link_title}}">{{page.page.title}}</a></li>
+						{% endfor %}
+						<!--<li class="active"><a href="#page-control_center"><span class="glyphicon glyphicon-home"></span> Control Center</a></li>
                         <li><a href="#page-charts"><span class="glyphicon glyphicon-stats"></span> Charts</a></li>
-                        <li><a href="#page-info"><span class="glyphicon glyphicon-info-sign"></span> Info</a></li>
+                        <li><a href="#page-info"><span class="glyphicon glyphicon-info-sign"></span> Info</a></li>-->
+                        
+                        
+                    </ul>
+                    
+                    <ul class="nav navbar-right navbar-nav">
+						
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">User: {{ user.username }} <b class="caret"></b></a>
+                            <ul class="dropdown-menu">
+                            <li><p>{{ user.email }}</p></li>
+                            <li class="divider"></li>
+                            <li><a href="/accounts/logout"> logout</a></li>
+                            </ul>
+                        </li>
                         <li><a href="#page-log"><span class="glyphicon glyphicon-book"></span> Log</a></li>
                         <li><a href="#page-settings"><span class="glyphicon glyphicon-cog"></span> Settings</a></li>
                         <li><a href="#page-help">Help</a></li>
@@ -51,67 +68,140 @@
                     </form>
                 </div><!--/.nav-collapse -->
             </div>
-			<div id="notification_area"></div>
-		</div>
-		<div class="container" id="content">
+            <div id="notification_area"></div>
+        </div>
+        <div class="container" id="content">
             <!-- loading animation -->
             <div id="loadingAnimation"> <div class="row"><div class="col-md-1 col-md-offset-6"><img src="{% static "pyscada/img/load.gif" %}" alt="loading"/></div></div></div>
-			
-			{% for chart in chart_list %}
-				{% if  chart.size == "sidebyside" and chart.row.count %}
-					<div class="row"> <!-- {{ chart.label|upper }} {{ chart.row.first.label|upper }} -->
-						<div class="panel panel-default">
-							<div class="panel-body minimizeable" id="a{{chart.pk}}-t">
-								<div class="legend-sidebar">
-									<div id="chart-{{chart.pk}}-legend"></div>
-									<div class="clear-sep"></div>
-									<div id="chart-{{chart.row.first.pk}}-legend"></div>
-								</div>
-								<div class="main-chart-area" style=" height:350px;">
-									<div class="half-size-chart" >
-										<div id="chart-{{chart.pk}}" style="width: 100%; height:100%;"></div>
+            {% for page in page_content %}
+				<div id="{{page.page.link_title}}" class="sub-page" >
+					{% for chart in page.charts %}
+						{% if  chart.size == "sidebyside" and chart.row.count %}
+							<div class="row"> <!-- {{ chart.label|upper }} {{ chart.row.first.label|upper }} -->
+								<div class="panel panel-default">
+									<div class="panel-body minimizeable" id="a{{chart.pk}}-t">
+										<div class="legend-sidebar">
+											<div id="chart-{{chart.pk}}-legend"></div>
+											<div class="clear-sep"></div>
+											<div id="chart-{{chart.row.first.pk}}-legend"></div>
+										</div>
+										<div class="main-chart-area" style=" height:350px;">
+											<div class="half-size-chart" >
+												<div id="chart-{{chart.pk}}" style="width: 100%; height:100%;"></div>
+											</div>
+											<div class="half-size-chart" >
+												<div id="chart-{{chart.row.first.pk}}" style="width: 100%; height:100%;"></div>
+											</div>
+										</div>
 									</div>
-									<div class="half-size-chart" >
-										<div id="chart-{{chart.row.first.pk}}" style="width: 100%; height:100%;"></div>
+								</div>
+							</div> <!-- end {{ chart.label|upper }} {{ chart.row.first.label|upper }} -->
+						{% else %}
+							<div class="row"> <!-- {{ chart.label|upper }} -->
+								<div class="panel panel-default">
+									<div class="panel-body minimizeable" id="a{{chart.pk}}-t">
+										<div class="legend-sidebar">
+											<div id="chart-{{chart.pk}}-legend"></div>
+										</div>
+										<div class="main-chart-area" style=" height:350px;">
+											<div id="chart-{{chart.pk}}" style="width: 100%; height:100%;"></div>
+										</div>
 									</div>
 								</div>
-							</div>
-						</div>
-					</div> <!-- end {{ chart.label|upper }} {{ chart.row.first.label|upper }} -->
-				{% else %}
-					<div class="row"> <!-- {{ chart.label|upper }} -->
-						<div class="panel panel-default">
-							<div class="panel-body minimizeable" id="a{{chart.pk}}-t">
-								<div class="legend-sidebar">
-									<div id="chart-{{chart.pk}}-legend"></div>
-								</div>
-								<div class="main-chart-area" style=" height:350px;">
-									<div id="chart-{{chart.pk}}" style="width: 100%; height:100%;"></div>
-								</div>
-							</div>
-						</div>
-					</div> <!-- end {{ chart.label|upper }} -->
-				{% endif %}
-			{% endfor %}
-        
-        
+							</div> <!-- end {{ chart.label|upper }} -->
+						{% endif %}
+					{% endfor %}
+				</div>
+            {% endfor %}
+            
+            {% for panel in panel_list %}
+                <div class="side-menu {% if panel.position == 0 %} bottom {% elif panel.position == 1 %}left{% elif panel.position == 2 %}right{% endif %}">
+                    <ul class="SAC-button-panel">
+                        <li>{{ panel.label }}</li>
+                        {% for item in panel.items.all %}
+                            <li><span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endfor %}
         </div> <!-- /container -->
-		<!-- Bootstrap core JavaScript
-		================================================== -->
+        <!-- Bootstrap core JavaScript
+        ================================================== -->
         <!-- Placed at the end of the document so the pages load faster -->
         <script type="text/javascript" src="{% static "pyscada/js/jquery.min.js" %}"></script>
         <!--<script type="text/javascript" src="{% static "pyscada/js/jquery.cookie.js" %}"></script>-->
+        <script type="text/javascript" src="{% static "pyscada/js/jquery.mb.CSSAnimate.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.resize.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.time.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.selection.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/bootstrap.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/pyscada/pyscada.js" %}"></script>
+        
         <script>
         $( document ).ready(function() {
-			// Handler for .ready() called.
-			$("#loadingAnimation").hide();
-		});
-		</script>
-	</body>
+            // Handler for .ready() called.
+            $("#loadingAnimation").hide();
+			// hide all pages
+			$(".sub-page").hide();
+			if (window.location.hash.length > 0) {
+				$(window.location.hash).show();
+			}else{
+				window.location.hash = $('ul.navbar-nav li a').first().attr("href");
+			}
+			
+            $('.side-menu.left').mouseenter(function(){
+                $(this).stop().CSSAnimate({"left":0},500)
+            }).mouseleave(function(){
+                ow = $(this).outerWidth()
+                $(this).stop().CSSAnimate({"left":-(ow - 11)},500)
+            });
+            $('.side-menu.right').mouseenter(function(){
+                $(this).stop().CSSAnimate({"right":0},500)
+            }).mouseleave(function(){
+                ow = $(this).outerWidth()
+                $(this).stop().CSSAnimate({"right":-(ow - 11)},500)
+            });
+            $('.side-menu.bottom').mouseenter(function(){
+                $(this).stop().CSSAnimate({"bottom":0},500)
+            }).mouseleave(function(){
+                ow = $(this).outerWidth()
+                $(this).stop().CSSAnimate({"bottom":-(ow - 31)},500)
+            });
+            // auto update function
+            $('#AutoUpdateButton').click(function(e) {
+                if (auto_update_active) {
+                    // deactivate auto update
+                    auto_update_active = false;
+                    $("#AutoUpdateButton").addClass("btn-default");
+                    $("#AutoUpdateButton").removeClass("btn-success");
+                } else {
+                    // activate auto update
+                    auto_update_active = true;
+                    $("#AutoUpdateButton").addClass("btn-success");
+                    $("#AutoUpdateButton").removeClass("btn-default");
+                    JsonErrorCount = 0;
+                    ChartDataAppendNull();
+                    fetchJsonData(JsonUrl);
+                }
+            });
+			// prevent reloading by existent 
+			window.onbeforeunload = function() {
+				return "you realy wan't to reload/leave the page?";
+			};
+			// nav menu click event
+			$(window).on('hashchange', function() {
+				if (window.location.hash.length > 0) {
+					$('ul.navbar-nav li.active').removeClass('active');
+					$('a[href$="' + window.location.hash + '"]').parent('li').addClass('active');
+					// hide all pages
+					$(".sub-page").hide();
+					// show only new content
+					$(window.location.hash).show();
+					
+				};
+			});
+        });
+        </script>
+    </body>
 </html>

@@ -27,9 +27,6 @@ function fetchConfig(){
 			$.each(PyScadaConfig.config,function(key,val){
 				PyScadaPlots.push(new PyScadaPlot(val));
 			});
-			$.each(PyScadaPlots,function(plot_id){
-				PyScadaPlots[plot_id].prepare();
-			});
 			fetchInitData()
 		},
 		error: function(x, t, m) {
@@ -172,6 +169,14 @@ function PyScadaPlot(config){
         },
         selection: {
             mode: "y"
+        },
+        grid: {
+			labelMargin: 10,
+			margin: {
+				top: 20,
+				bottom: 8,
+				left: 20
+			}
         }
 	},
 	series = [],		// just the active data series
@@ -179,6 +184,7 @@ function PyScadaPlot(config){
 	flotPlot,			// handle to plot
 	BufferSize = 5760, 	// buffered points
 	WindowSize = 20, 	// displayed data window in minutes
+	prepared = false,	// 
 	plot = this;
 	
 	// public functions
@@ -240,7 +246,7 @@ function PyScadaPlot(config){
 		LegendString +='<button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-ZoomYToFit"><span class="glyphicon glyphicon-resize-vertical"></span></button>';
 		LegendString +='</div></div>';
 
-		$(config.legendplaceholder).append('<div id="'+config.placeholder.substring(1)+'-show" style="display:none;"><button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-btn-show" ><span class="glyphicon glyphicon-plus"></span></button></div><div id="'+config.legendplaceholder.substring(1)+'-legend">'+LegendString+'</div>');
+		$(config.legendplaceholder).append('<div id="'+config.placeholder.substring(1)+'-show" style="display:none;"><button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-btn-show" ><span class="glyphicon glyphicon-plus"></span></button></div><div id="'+config.legendplaceholder.substring(1)+'-legend" style="padding: 0px; position: relative;"><div class="legendTitle">'+ config.label +'</div>'+LegendString+'</div>');
 		
 		$.each(config.variables,function(key,val){
 			$(config.placeholder+'-'+key+'-checkbox').change(function() {
@@ -305,11 +311,29 @@ function PyScadaPlot(config){
 			flotPlot.draw();
 			flotPlot.clearSelection();
 		});
+		
+		
+		var chartTitle = $("<div class='chartTitle'></div>")
+		.text(config.label)
+		.appendTo(config.placeholder + ' .chart-placeholder');
+
+		// Since CSS transforms use the top-left corner of the label as the transform origin,
+		// we need to center the y-axis label by shifting it down by half its width.
+		// Subtract 20 to factor the chart's bottom margin into the centering.
+	
+		chartTitle.css("margin-left", -chartTitle.width() / 2);
+		
+		
+		var yaxisLabel = $("<div class='axisLabel yaxisLabel'></div>")
+		.text(config.axes[0].yaxis.label)
+		.appendTo(config.placeholder + ' .chart-placeholder');
+
+		// Since CSS transforms use the top-left corner of the label as the transform origin,
+		// we need to center the y-axis label by shifting it down by half its width.
+		// Subtract 20 to factor the chart's bottom margin into the centering.
+	
+		yaxisLabel.css("margin-top", yaxisLabel.width() / 2 - 20);
 	}
-	
-	
-	
-	
 	
 	function setBufferSize(size){
 		if (size <= BufferSize){
@@ -325,6 +349,7 @@ function PyScadaPlot(config){
 		}
 		
 	}
+	
 	function addData(key,time,val){
 		if (typeof(data[key])==="object"){
 			data[key].push([time, val]);
@@ -349,6 +374,14 @@ function PyScadaPlot(config){
 	}
 	
 	function update(){
+		if(!prepared ){
+			if($(config.placeholder).is(":visible")){
+				prepared = true;
+				prepare();
+			}else{
+				return;
+			}
+		}
 		// add the selected data series to the "series" variable
 		series = [];
 		$.each(data,function(key){
@@ -365,7 +398,6 @@ function PyScadaPlot(config){
 		flotPlot.setupGrid();
 		flotPlot.draw();
 	}
-	
 	
 	function expandToMaxWidth(){
 		contentAreaWidth = $(config.placeholder).closest('.main-chart-area').parent().width()

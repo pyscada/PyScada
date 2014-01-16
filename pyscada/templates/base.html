@@ -1,0 +1,66 @@
+{% load i18n staticfiles %}
+<!DOCTYPE html>
+<html xmlns="html://www.w3.org/1999/xhtml" lang="en" dir="ltr" xml:lang="en">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <meta name="description" content="PyScada html5 client application"/>
+        <meta name="author" content="Martin Schroeder"/>
+        
+        <title>PyScada Control Center</title>
+        <!-- Bootstrap core CSS -->
+        <link href="{% static "pyscada/css/bootstrap.css" %}" rel="stylesheet"/>
+        <!-- Bootstrap theme -->
+        <link href="{% static "pyscada/css/bootstrap-theme.min.css" %}" rel="stylesheet"/>
+        <!-- Custom styles for this template -->    
+        <link href="{% static "pyscada/css/pyscada-theme.css" %}" rel="stylesheet"/>
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+        <script src="js/html5shiv.js"></script>
+        <script src="js/respond.min.js"></script>
+        <script type="text/javascript">
+            var html5 = { 'elements': 'abbr article aside audio bdi data datalist details figcaption figure footer header hgroup mark meter nav output progress section summary time video' };
+            </script>
+        <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+    </head>
+    <body style="">
+    
+        <!-- Fixed navbar -->
+        <div class="navbar navbar-inverse navbar-fixed-top">
+            <div class="container">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a  class="navbar-brand" href="#">PyScada</a>
+                </div>
+                <div class="navbar-collapse collapse">
+                    <ul class="nav navbar-nav">
+                        <li><a href="#page-help">Help</a></li>
+                    </ul>
+                </div><!--/.nav-collapse -->
+            </div>
+            <div id="notification_area"></div>
+        </div>
+        <div class="container" id="content">
+            <!-- loading animation -->
+            <div id="loadingAnimation"> <div class="row"><div class="col-md-1 col-md-offset-6"><img src="{% static "pyscada/img/load.gif" %}" alt="loading"/></div></div></div>
+            {% block content %}{% endblock %}
+        </div> <!-- /container -->
+        <!-- Bootstrap core JavaScript
+        ================================================== -->
+        <!-- Placed at the end of the document so the pages load faster -->
+        <script type="text/javascript" src="{% static "pyscada/js/jquery.min.js" %}"></script>
+        <!--<script type="text/javascript" src="{% static "pyscada/js/jquery.cookie.js" %}"></script>-->
+        <script type="text/javascript" src="{% static "pyscada/js/bootstrap.min.js" %}"></script>
+        <script>
+        $( document ).ready(function() {
+            // Handler for .ready() called.
+            $("#loadingAnimation").hide();
+        });
+        </script>
+    </body>
+</html>

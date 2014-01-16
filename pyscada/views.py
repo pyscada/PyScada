@@ -9,6 +9,7 @@ from pyscada.models import InputConfig
 from pyscada.models import RecordedTime
 from pyscada.models import WebClientChart
 from pyscada.models import WebClientPage
+from pyscada.models import WebClientSlidingPanelMenu
 from pyscada import log
 #from pyscada.export import timestamp_unix_to_matlab
 from django.shortcuts import render
@@ -17,27 +18,36 @@ from django.core import serializers
 from django.utils import timezone
 from django.template import Context, loader
 from django.db import connection
+from django.shortcuts import redirect
+from django.contrib.auth import logout
 
 import time
 import json
 
 def index(request):
-	t = loader.get_template('content.html')
-	page_list = []
+	if not request.user.is_authenticated():
+		return redirect('/accounts/login/?next=%s' % request.path)
 	
-	chart_list = []
-	chart_skip = []
-	for chart in WebClientChart.objects.all().order_by("position"):
-		if chart_skip.count(chart.pk)>0:
-			continue
-		chart_list.append(chart)
-		if chart.row.count() > 0 and chart.size == 'sidebyside':
-			chart_skip.append(chart.row.first().pk)
-		
+	t = loader.get_template('content.html')
+	page_list = WebClientPage.objects.filter(users__username=request.user.username)
+	page_content = []
+	for page in	page_list:
+		chart_list = []
+		chart_skip = []
+		for chart in page.webclientchart_set.filter(users__username=request.user.username).order_by("position"):
+			if chart_skip.count(chart.pk)>0:
+				continue
+			chart_list.append(chart)
+			if chart.row.count() > 0 and chart.size == 'sidebyside':
+				chart_skip.append(chart.row.first().pk)
+		page_content.append({"page":page,"charts":chart_list})
+	
+	panel_list = WebClientSlidingPanelMenu.objects.filter(users__username=request.user.username)
 	
 	c = Context({
-		'chart_list' : chart_list,
-		'page_list'	 : page_list
+		'page_content': page_content,
+		'panel_list'	 : panel_list,
+		'user'		 : request.user
 	})
 	return HttpResponse(t.render(c))
 	
@@ -56,7 +66,7 @@ def config(request):
 			vars[var.variable_name] = {"yaxis":1,"color":c_count,"unit":var.unit.description}
 			c_count +=1
 
-		config["config"].append({"label":chart.label,"xaxis":{"ticks":chart.x_axis_ticks},"axes":[{"yaxis":{"min":chart.y_axis_min,"max":chart.y_axis_max}}],"placeholder":"#chart-%d"% chart.pk,"legendplaceholder":"#chart-%d-legend" % chart.pk,"variables":vars}) 
+		config["config"].append({"label":chart.label,"xaxis":{"ticks":chart.x_axis_ticks},"axes":[{"yaxis":{"min":chart.y_axis_min,"max":chart.y_axis_max,'label':chart.y_axis_label}}],"placeholder":"#chart-%d"% chart.pk,"legendplaceholder":"#chart-%d-legend" % chart.pk,"variables":vars}) 
 		chart_count += 1		
 	
 	
@@ -131,3 +141,8 @@ def data(request):
 
 	jdata = json.dumps(data,indent=2)
 	return HttpResponse(jdata, mimetype='application/json')
+
+def logout_view(request):
+	logout(request)
+	# Redirect to a success page.
+	return redirect('/accounts/login/')
