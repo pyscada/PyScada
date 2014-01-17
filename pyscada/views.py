@@ -76,7 +76,7 @@ def config(request):
 	
 def latest_data(request):
 	data = {}	
-	data["timestamp"] = RecordedTime.objects.last().timestamp
+	data["timestamp"] = RecordedTime.objects.last().timestamp*1000
 	t_pk = RecordedTime.objects.last().pk	
 	
 	active_variables = WebClientChart.objects.all().values_list('variables__pk',flat=True)
@@ -138,7 +138,9 @@ def data(request):
 		rto = RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
 		data[var.variable_name] = [(t_min_ts,rto.value)]
 		data[var.variable_name].extend(list(RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__range=(t_min_pk,t_max_pk)).values_list('time__timestamp','value')))
-
+	for key in data:
+		for idx,item in enumerate(data[key]):
+			data[key][idx] = (item[0]*1000,item[1])
 	jdata = json.dumps(data,indent=2)
 	return HttpResponse(jdata, mimetype='application/json')
 

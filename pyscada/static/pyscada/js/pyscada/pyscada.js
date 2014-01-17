@@ -63,12 +63,11 @@ function fetchData() {
 			dataType: "json",
 			timeout: PyScadaConfig.RefreshRate,
 			success: function(data) {
-				if (data["timestamp"] === "object" ){
-					time = data["timestamp"]
+				if (data["timestamp"] > 0){
+					time = data["timestamp"];
 				}else{
 					time = new Date().getTime();
 				}
-					
 				$.each(data, function(key, val) {
 				//append data to data array
 					$.each(PyScadaPlots,function(plot_id){
@@ -362,9 +361,6 @@ function PyScadaPlot(config){
 	
 	function add(key,value){
 		if (typeof(data[key])==="object"){
-			$.each(value,function(key){
-					value[key][0] = value[key][0] * 1000;
-				});
 			data[key] = data[key].concat(value);
         	if (data[key].length > BufferSize){
         		// if buffer is full drop the first element
