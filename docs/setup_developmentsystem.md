@@ -165,17 +165,16 @@ urlpatterns = patterns('',
 
 ## 5 install and setup apache 
 
-### 5.1 install nginx
+### 5.1 install nginx and gunicorn
 
 ```
-sudo apt-get install nginx uwsgi
-python ./manage.py runfcgi host=127.0.0.1 port=8080
+sudo apt-get install nginx
+pip install gunicorn
 ```
 
-### 5.2 setup nginx
+### 5.2 setup gunicorn and nginx
 
 #### 5.2.1 sync the database 
-
 
 	python manage.py syncdb
 
@@ -183,6 +182,42 @@ python ./manage.py runfcgi host=127.0.0.1 port=8080
 #### 5.2.2 copy all static files to the local static folder
 
 	python manage.py collectstatic
+
+
+#### 5.2.3 
+
+```
+#!/bin/bash
+ 
+NAME="PyScadaServer"                                  # Name of the application
+DJANGODIR=/home/faks/www/PyScadaServer/         # Django project directory
+SOCKFILE=/home/faks/www/PyScadaServer/run/gunicorn.sock  # we will communicte using this unix socket
+USER=faks                                        # the user to run as
+GROUP=webapps                                     # the group to run as
+NUM_WORKERS=3                                     # how many worker processes should Gunicorn spawn
+DJANGO_SETTINGS_MODULE=PyScadaServer.settings     # which settings file should Django use
+DJANGO_WSGI_MODULE=PyScadaServer.wsgi             # WSGI module name
+ 
+echo "Starting $NAME as `whoami`"
+ 
+# Activate the virtual environment
+cd $DJANGODIR
+export PYTHONPATH=$DJANGODIR:$PYTHONPATH
+ 
+# Create the run directory if it doesn't exist
+RUNDIR=$(dirname $SOCKFILE)
+test -d $RUNDIR || mkdir -p $RUNDIR
+ 
+# Start your Django Unicorn
+# Programs meant to be run under supervisor should not daemonize themselves (do not use --daemon)
+exec ../bin/gunicorn ${DJANGO_WSGI_MODULE}:application \
+  --name $NAME \
+  --workers $NUM_WORKERS \
+  --user=$USER --group=$GROUP \
+  --log-level=debug \
+  --bind=unix:$SOCKFILE
+
+```
 
 
 #### 5.2.3 edit the nginx config
@@ -197,28 +232,10 @@ nano /etc/nginx/sites-available/pyscada-server.conf
 add the following lines
 
 ```
-server {
-    listen 80;
-    server_name myhostname.com;
-    access_log /var/log/nginx/pyscada-server.access.log;
-    error_log /var/log/nginx/pyscada-server.error.log;
+# pyscada-server.conf
 
-    # https://docs.djangoproject.com/en/dev/howto/static-files/#serving-static-files-in-production
-    location /static/ { # STATIC_URL
-        alias /home/faks/www/PyScadaServer/static/; # STATIC_ROOT
-        expires 30d;
-    }
 
-    location /media/ { # MEDIA_URL
-        alias /home/faks/www/PyScadaServer/static/; # MEDIA_ROOT
-        expires 30d;
-    }
 
-    location / {
-        include fastcgi_params;
-        fastcgi_pass 127.0.0.1:8080;
-    }
-}
 ```
 
 reload nginx

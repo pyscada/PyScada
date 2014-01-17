@@ -6,6 +6,7 @@ from pyscada.models import WebClientChart
 from pyscada.models import WebClientPage
 from pyscada.models import WebClientSlidingPanelMenu
 from pyscada.models import WebClientControlItem
+from pyscada.models import UnitConfig
 from pyscada import log
 from pyscada.utils import update_input_config
 from django.contrib import admin
@@ -107,3 +108,4 @@ admin.site.register(WebClientChart,WebClientChartAdmin)
 admin.site.register(WebClientPage)
 admin.site.register(WebClientSlidingPanelMenu)
 admin.site.register(WebClientControlItem)
+admin.site.register(UnitConfig)

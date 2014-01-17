@@ -1,6 +1,5 @@
 body {
-  padding-top: 70px;
-  padding-bottom: 30px;
+  padding-top: 45px;
 }
 
 .theme-dropdown .dropdown-menu {
@@ -57,15 +56,12 @@ body {
 	position: relative;
 	min-height: 1px;
 	padding-right: 15px;
-	padding-left: 15px;
 	float: left;
 }
 .main-chart-area{
 	min-width:500px;
 	position: relative;
 	min-height: 1px;
-	padding-right: 15px;
-	padding-left: 15px;
 	float: left;
 }
 .half-size-chart{
@@ -82,7 +78,7 @@ body {
 .chart-container {
 	position: relative;
 	box-sizing: border-box;
-    padding: 20px 15px 15px 15px;
+    padding: 10px;
     border: 1px solid #ddd;
     background: #fff;
     background: linear-gradient(#f6f6f6 0, #fff 50px);
@@ -168,7 +164,7 @@ body {
 	border: 1px solid #ddd;
 	padding:3px;
 	z-index:100;
-	width:210px;
+	min-width:210px;
 	margin-bottom:0px;
 }
 .side-menu.panel {
