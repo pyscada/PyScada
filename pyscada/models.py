@@ -78,7 +78,7 @@ class ClientConfigManager(models.Manager):
 
 	def get_active_client_config(self):
 		config = {}
-		for entry in Client.objects.all():
+		for entry in Client.objects.filter(active=1):
 			if Variable.objects.filter(client_id=entry.pk,active=1).count()>0:
 				config[entry.pk] = self.get_client_config(entry.pk)
 		return config
@@ -95,19 +95,17 @@ class GlobalConfig(models.Model):
 
 class Client(models.Model):
 	id 				= models.AutoField(primary_key=True)
-	description 	= models.TextField(default='', verbose_name="Description")
-
+	short_name		= models.CharField(max_length=400, default='')
+	description 		= models.TextField(default='', verbose_name="Description")
+	active			= models.BooleanField(default=True)
 	def __unicode__(self):
-		return unicode(self.description)
-	def decoded_value(self):
-		if self.value.isdigit():
-			return int(self.value)
-		return unicode(self.value)
+		return unicode(self.short_name)
 
 class ClientConfig(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	client			= models.ForeignKey('Client',null=True, on_delete=models.SET_NULL)
-	key 			= models.CharField(max_length=400, default='', verbose_name="key")
+	key_choices		= (("modbus_ip.ip","modbus-IP IP-address"),("modbus_ip.port","modbus-IP port"),)
+	key 			= models.CharField(max_length=400, default='', verbose_name="key",choices=key_choices)
 	value			= models.CharField(max_length=400, default='', verbose_name="value")
 	objects			= KeyValueManager()
 	config			= ClientConfigManager()
@@ -132,7 +130,7 @@ class ScalingConfig(models.Model):
 class UnitConfig(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	unit			= models.CharField(max_length=80, verbose_name="Unit")
-	description 		= models.TextField(default='', verbose_name="Description")
+	description 		= models.TextField(default='', verbose_name="Description",null=True)
 	def __unicode__(self):
 		return unicode(self.unit)
 
@@ -142,7 +140,7 @@ class Variable(models.Model):
 	variable_name 	= models.SlugField(max_length=80, verbose_name="variable name")
 	description 	= models.TextField(default='', verbose_name="Description")
 	client			= models.ForeignKey('Client',null=True, on_delete=models.SET_NULL)
-	active			= models.BooleanField()
+	active			= models.BooleanField(default=True)
 	unit 			= models.ForeignKey('UnitConfig',null=True, on_delete=models.SET_NULL)
 	value_class_choices = (('FLOAT32','FLOAT32'),
 						('SINGLE','SINGLE'),
@@ -232,6 +230,7 @@ class WebClientPage(models.Model):
 	users			= models.ManyToManyField(User)
 	def __unicode__(self):
 		return unicode(self.link_title)
+
 class WebClientControlItem(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	label			= models.CharField(max_length=400, default='')
@@ -240,7 +239,7 @@ class WebClientControlItem(models.Model):
 	variable    		= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
 	users			= models.ManyToManyField(User)
 	def __unicode__(self):
-		return unicode(self.label)
+		return unicode(self.label+" ("+self.variable.variable_name + ")")
 
 class WebClientChart(models.Model):
 	id 				= models.AutoField(primary_key=True)

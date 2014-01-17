@@ -97,10 +97,12 @@ class WebClientChartAdmin(admin.ModelAdmin):
         return instance.variables.variable_name
 
 
+class ClientAdmin(admin.ModelAdmin):
+    list_display = ('id','short_name','description','active',)
+    list_display_links = ('short_name', 'description')
 
 
-
-admin.site.register(Client)
+admin.site.register(Client,ClientAdmin)
 admin.site.register(ClientConfig,ClientConfigAdmin)
 admin.site.register(Variable)
 admin.site.register(VariableConfigFileImport,VariableImportAdmin)

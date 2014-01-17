@@ -181,8 +181,7 @@
                     $("#AutoUpdateButton").addClass("btn-success");
                     $("#AutoUpdateButton").removeClass("btn-default");
                     JsonErrorCount = 0;
-                    ChartDataAppendNull();
-                    fetchJsonData(JsonUrl);
+                    fetchData();
                 }
             });
 			// prevent reloading by existent 

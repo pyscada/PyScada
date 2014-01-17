@@ -9,6 +9,7 @@ from pyscada.models import InputConfig
 from pyscada.models import RecordedTime
 from pyscada.models import WebClientChart
 from pyscada.models import WebClientPage
+from pyscada.models import WebClientControlItem
 from pyscada.models import WebClientSlidingPanelMenu
 from pyscada import log
 #from pyscada.export import timestamp_unix_to_matlab
@@ -79,7 +80,8 @@ def latest_data(request):
 	data["timestamp"] = RecordedTime.objects.last().timestamp*1000
 	t_pk = RecordedTime.objects.last().pk	
 	
-	active_variables = WebClientChart.objects.all().values_list('variables__pk',flat=True)
+	active_variables = list(WebClientChart.objects.filter(users__username=request.user.username).values_list('variables__pk',flat=True))
+	active_variables += list(WebClientControlItem.objects.filter(users__username=request.user.username).values_list('variable__pk',flat=True))
 	cursor = connection.cursor()
 	
 	for val in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'), pk__in = active_variables):
@@ -117,7 +119,7 @@ def data(request):
 	else:
 		return HttpResponse('{\n}', mimetype='application/json')
 	
-	active_variables = WebClientChart.objects.all().values_list('variables__pk',flat=True)
+	active_variables = WebClientChart.objects.filter(users__username=request.user.username).values_list('variables__pk',flat=True)
 	data = {}
 	
 	for var in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'), pk__in = active_variables):
