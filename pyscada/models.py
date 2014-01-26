@@ -35,7 +35,10 @@ class RecordedDataValueManager(models.Manager):
 
 class KeyValueManager(models.Manager):
 	def get_value_by_key(self,key,**kwargs):
-		return super(KeyValueManager, self).get_query_set().get(key=key,**kwargs).value
+		try:
+			return super(KeyValueManager, self).get_query_set().get(key=key,**kwargs).value
+		except:
+			return None
 
 
 class VariableConfigManager(models.Manager):
