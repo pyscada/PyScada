@@ -179,13 +179,13 @@ body {
 	list-style: none;
 }
 .side-menu.left {
-	top:60px;
+	bottom:15px;
 	left:-200px;
 	text-align:right;
 	float: right;
 }
 .side-menu.right {
-	top:60px;
+	bottom:15px;
 	right:-200px;
 	text-align:left;
 	float: left;
