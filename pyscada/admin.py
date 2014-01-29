@@ -88,7 +88,7 @@ class WebClientChartForm(forms.ModelForm):
 
 class WebClientChartAdmin(admin.ModelAdmin):
     list_per_page = 100
-    ordering = ['position',] # didnt have this one in the example, sorry
+    ordering = ['position',]
     search_fields = ['variable_name',]
     filter_horizontal = ('variables',)
     list_display = ('label','page','position','size',)
@@ -101,6 +101,9 @@ class ClientAdmin(admin.ModelAdmin):
     list_display = ('id','short_name','description','active',)
     list_display_links = ('short_name', 'description')
 
+class WebClientSlidingPanelMenuAdmin():
+    list_display = ('label','position',)
+    list_display_links = ('label', 'position')
 
 admin.site.register(Client,ClientAdmin)
 admin.site.register(ClientConfig,ClientConfigAdmin)

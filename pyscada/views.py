@@ -72,7 +72,7 @@ def config(request):
 	
 	
 	jdata = json.dumps(config,indent=2)
-	return HttpResponse(jdata, mimetype='application/json')
+	return HttpResponse(jdata, content_type='application/json')
 	
 	
 def latest_data(request):
@@ -101,7 +101,7 @@ def latest_data(request):
 			data[val.variable_name] = cursor.fetchone()[0]
 	
 	jdata = json.dumps(data,indent=2)
-	return HttpResponse(jdata, mimetype='application/json')
+	return HttpResponse(jdata, content_type='application/json')
 	
 def data(request):
 	# read POST data
@@ -117,7 +117,7 @@ def data(request):
 		t_min_ts 		= rto.first().timestamp
 		t_min_pk 		= rto.first().pk
 	else:
-		return HttpResponse('{\n}', mimetype='application/json')
+		return HttpResponse('{\n}', content_type='application/json')
 	
 	active_variables = WebClientChart.objects.filter(users__username=request.user.username).values_list('variables__pk',flat=True)
 	data = {}
@@ -144,7 +144,7 @@ def data(request):
 		for idx,item in enumerate(data[key]):
 			data[key][idx] = (item[0]*1000,item[1])
 	jdata = json.dumps(data,indent=2)
-	return HttpResponse(jdata, mimetype='application/json')
+	return HttpResponse(jdata, content_type='application/json')
 
 def logout_view(request):
 	logout(request)

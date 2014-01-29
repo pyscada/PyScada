@@ -197,6 +197,7 @@ function PyScadaPlot(config){
 	plot.getData			= function () { return data };
 	plot.getSeries 			= function () { return series };
 	plot.getFlotObject		= function () { return flotPlot};
+	plot.setWindowSize		= function (size){ WindowSize = size; update(); };
 	// init data
 	$.each(config.variables,function(key){
 			data[key] = [];
@@ -398,10 +399,15 @@ function PyScadaPlot(config){
 	function expandToMaxWidth(){
 		contentAreaWidth = $(config.placeholder).closest('.main-chart-area').parent().width()
 		sidebarAreaWidth = $(config.legendplaceholder).closest('.legend-sidebar').width();
-		mainChartAreaWidth = contentAreaWidth - sidebarAreaWidth - 70;
+		mainChartAreaWidth = contentAreaWidth - sidebarAreaWidth - 15;
 		$(config.placeholder).closest('.main-chart-area').width(mainChartAreaWidth);
 	}
 }
 
+function setWindowSize(size){
+	$.each(PyScadaPlots,function(plot_id){
+		PyScadaPlots[plot_id].setWindowSize(size);
+	});
+}
 // init
 fetchConfig()

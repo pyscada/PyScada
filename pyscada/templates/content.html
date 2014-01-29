@@ -42,25 +42,32 @@
 						{% for page in page_content %}
 							<li><a href="#{{page.page.link_title}}">{{page.page.title}}</a></li>
 						{% endfor %}
-						<!--<li class="active"><a href="#page-control_center"><span class="glyphicon glyphicon-home"></span> Control Center</a></li>
-                        <li><a href="#page-charts"><span class="glyphicon glyphicon-stats"></span> Charts</a></li>
-                        <li><a href="#page-info"><span class="glyphicon glyphicon-info-sign"></span> Info</a></li>-->
-                        
-                        
                     </ul>
-                    
                     <ul class="nav navbar-right navbar-nav">
-						
                         <li class="dropdown">
                             <a href="#" class="dropdown-toggle" data-toggle="dropdown">User: {{ user.username }} <b class="caret"></b></a>
                             <ul class="dropdown-menu">
-                            <li><p>{{ user.email }}</p></li>
+							<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
                             <li class="divider"></li>
                             <li><a href="/accounts/logout"> logout</a></li>
                             </ul>
                         </li>
                         <li><a href="#page-log"><span class="glyphicon glyphicon-book"></span> Log</a></li>
-                        <li><a href="#page-settings"><span class="glyphicon glyphicon-cog"></span> Settings</a></li>
+                        <li class="dropdown">
+							<a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> Settings <strong class="caret"></strong></a>
+							<div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:200px;">
+								<form role="form">
+									<label for="inputPassword">x Axis duration:</label>
+									<div class="input-group">
+										<input type="text" class="form-control" id="ChartTimeWindow-input">
+										<span class="input-group-addon">min</span>
+										<span class="input-group-btn">
+											<button class="btn btn-default" type="button" id="ChartTimeWindow-set">set</button>
+										</span>
+									</div>
+								</form>
+							</div>
+						</li>
                         <li><a href="#page-help">Help</a></li>
                     </ul>
                     <form class="navbar-form navbar-right" >
@@ -200,6 +207,9 @@
 					
 				};
 			});
+			 $('#ChartTimeWindow-set').click(function() {
+				 setWindowSize(parseInt($('#ChartTimeWindow-input').val()));
+			 });
         });
         </script>
     </body>

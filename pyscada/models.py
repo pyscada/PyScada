@@ -35,7 +35,10 @@ class RecordedDataValueManager(models.Manager):
 
 class KeyValueManager(models.Manager):
 	def get_value_by_key(self,key,**kwargs):
-		return super(KeyValueManager, self).get_query_set().get(key=key,**kwargs).value
+		try:
+			return super(KeyValueManager, self).get_query_set().get(key=key,**kwargs).value
+		except:
+			return None
 
 
 class VariableConfigManager(models.Manager):
@@ -234,6 +237,7 @@ class WebClientPage(models.Model):
 class WebClientControlItem(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	label			= models.CharField(max_length=400, default='')
+	position			= models.PositiveSmallIntegerField(default=0)
 	type_choices 	= ((0,'label blue'),(1,'label light blue'),(2,'label ok'),(3,'label warning'),(4,'label alarm'),(5,'button default'))
 	type			= models.PositiveSmallIntegerField(default=0,choices=type_choices)
 	variable    		= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
