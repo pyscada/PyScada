@@ -86,17 +86,17 @@ def latest_data(request):
 	
 	for val in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'), pk__in = active_variables):
 		var_id = val.pk
-		r_values = cursor.execute("SELECT value FROM FAkS_db.pyscada_recordeddatafloat where variable_id=%s AND time_id <= %s ORDER BY id DESC LIMIT 1;",[var_id,t_pk])
+		r_values = cursor.execute("SELECT value FROM pyscada_recordeddatafloat where variable_id=%s AND time_id <= %s ORDER BY id DESC LIMIT 1;",[var_id,t_pk])
 		if r_values >0:
 			data[val.variable_name] = cursor.fetchone()[0]
 	for val in Variable.objects.filter(value_class__in = ('INT32','UINT32','INT16','INT','WORD','UINT','UINT16'),pk__in = active_variables):
 		var_id = val.pk
-		r_values = cursor.execute("SELECT value FROM FAkS_db.pyscada_recordeddataint where variable_id=%s AND time_id <= %s ORDER BY id DESC LIMIT 1;",[var_id,t_pk])
+		r_values = cursor.execute("SELECT value FROM pyscada_recordeddataint where variable_id=%s AND time_id <= %s ORDER BY id DESC LIMIT 1;",[var_id,t_pk])
 		if r_values >0:
 			data[val.variable_name] = cursor.fetchone()[0]
 	for val in Variable.objects.filter(value_class = 'BOOL', pk__in = active_variables):
 		var_id = val.pk
-		r_values = cursor.execute("SELECT value FROM FAkS_db.pyscada_recordeddataboolean where variable_id=%s AND time_id <= %s ORDER BY id DESC LIMIT 1;",[var_id,t_pk])
+		r_values = cursor.execute("SELECT value FROM pyscada_recordeddataboolean where variable_id=%s AND time_id <= %s ORDER BY id DESC LIMIT 1;",[var_id,t_pk])
 		if r_values >0:
 			data[val.variable_name] = cursor.fetchone()[0]
 	
