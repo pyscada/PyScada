@@ -3,7 +3,7 @@
 from datetime import timedelta
 from datetime import datetime
 import os
-from time import time, localtime, strftime
+from time import time, localtime, strftime,mktime
 from numpy import float64,float32,int32,uint16,int16,uint8, nan
 
 from pyscada import log
@@ -35,6 +35,9 @@ def export_database_to_mat(filename=None,time_id_min=None,time_id_max=None):
     
     last_time_id = RecordedTime.objects.last().pk
     first_time_id = RecordedTime.objects.first().pk
+    if type(time_id_min) is str:
+        timestamp = mktime(datetime.strptime(time_id_min, "%d-%b-%Y %H:%M:%S").timetuple())
+        time_id_min = RecordedTime.objects.filter(timestamp__gte=timestamp).first().pk
     if time_id_max is not None:
         last_time_id = min(last_time_id,time_id_max)
     
@@ -47,7 +50,7 @@ def export_database_to_mat(filename=None,time_id_min=None,time_id_max=None):
     
     bf = mat(filename)
     bf.write_data('time',float64(timevalues))
-    
+    bf.reopen()
     data = {}
 
     for var in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL')):
@@ -59,7 +62,10 @@ def export_database_to_mat(filename=None,time_id_min=None,time_id_max=None):
             rto = RecordedDataFloat.objects.filter(variable_id=var_id,time_id__lt=first_time_id).last()
             r_time_ids = [first_time_id]
             r_values = [rto.value]
-        
+        if r_time_ids[0] > first_time_id:
+            rto = RecordedDataFloat.objects.filter(variable_id=var_id,time_id__lt=first_time_id).last()
+            r_time_ids.insert(0,first_time_id)
+            r_values.insert(0,rto.value)
         _write_to_mat(var.variable_name,variable_class,bf,r_time_ids,r_values,time_ids)
         
     for var in Variable.objects.filter(value_class__in = ('INT32','UINT32','INT16','INT','WORD','UINT','UINT16')):
@@ -71,6 +77,10 @@ def export_database_to_mat(filename=None,time_id_min=None,time_id_max=None):
             rto = RecordedDataInt.objects.filter(variable_id=var_id,time_id__lt=first_time_id).last()
             r_time_ids = [first_time_id]
             r_values = [rto.value]
+        if r_time_ids[0] > first_time_id:
+            rto = RecordedDataInt.objects.filter(variable_id=var_id,time_id__lt=first_time_id).last()
+            r_time_ids.insert(0,first_time_id)
+            r_values.insert(0,rto.value)
         _write_to_mat(var.variable_name,variable_class,bf,r_time_ids,r_values,time_ids)
     
     for var in Variable.objects.filter(value_class = 'BOOL'):
@@ -82,7 +92,10 @@ def export_database_to_mat(filename=None,time_id_min=None,time_id_max=None):
             rto = RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__lt=first_time_id).last()
             r_time_ids = [first_time_id]
             r_values = [rto.value]
-        
+        if r_time_ids[0] > first_time_id:
+            rto = RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__lt=first_time_id).last()
+            r_time_ids.insert(0,first_time_id)
+            r_values.insert(0,rto.value)
         _write_to_mat(var.variable_name,variable_class,bf,r_time_ids,r_values,time_ids)
         
     

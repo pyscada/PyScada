@@ -96,8 +96,9 @@ def update_input_config(json_data):
 	for entry in data:
 		# unit config 
 		uc, ucc = UnitConfig.objects.get_or_create(unit = entry['unit'].replace(' ',''))
-		obj, created = Variable.objects.get_or_create(variable_name=entry['variable_name'].replace(' ',''),
-		defaults={'description': entry['description'],'client_id':entry['client_id'],'active':1,'unit':uc,'value_class':entry["class"].replace(' ','')})
+		# variable exist
+		obj, created = Variable.objects.get_or_create(id=entry['id'],
+		defaults={'id':entry['id'],'variable_name':entry['variable_name'].replace(' ',''),'description': entry['description'],'client_id':entry['client_id'],'active':1,'unit':uc,'value_class':entry["class"].replace(' ','')})
 		
 		if created:
 			log.info(("created: %s") %(entry['variable_name']))

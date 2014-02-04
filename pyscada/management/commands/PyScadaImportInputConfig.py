@@ -16,4 +16,4 @@ class Command(BaseCommand):
             update_input_config(json_data.read().decode("utf-8-sig"))
             json_data.close()
         else:
-            self.stdout.write('usage: python manage.py  PyScadaExportData "outputfile.mat" 100 400\n', ending='')
+            self.stdout.write('usage: python manage.py  PyScadaImportInputConfig "jsonfile.json" \n', ending='')

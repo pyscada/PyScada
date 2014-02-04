@@ -138,7 +138,7 @@ class UnitConfig(models.Model):
 class Variable(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	variable_name 	= models.SlugField(max_length=80, verbose_name="variable name")
-	description 	= models.TextField(default='', verbose_name="Description")
+	description 		= models.TextField(default='', verbose_name="Description")
 	client			= models.ForeignKey('Client',null=True, on_delete=models.SET_NULL)
 	active			= models.BooleanField(default=True)
 	unit 			= models.ForeignKey('UnitConfig',null=True, on_delete=models.SET_NULL)
