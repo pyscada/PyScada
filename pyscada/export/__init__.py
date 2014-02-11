@@ -60,12 +60,18 @@ def export_database_to_mat(filename=None,time_id_min=None,time_id_max=None):
         r_values = list(RecordedDataFloat.objects.filter(variable_id=var_id,time_id__range = (first_time_id,last_time_id)).values_list('value',flat=True))
         if len(r_values)==0:
             rto = RecordedDataFloat.objects.filter(variable_id=var_id,time_id__lt=first_time_id).last()
+            if not rto:
+                continue
             r_time_ids = [first_time_id]
             r_values = [rto.value]
         if r_time_ids[0] > first_time_id:
             rto = RecordedDataFloat.objects.filter(variable_id=var_id,time_id__lt=first_time_id).last()
-            r_time_ids.insert(0,first_time_id)
-            r_values.insert(0,rto.value)
+            if rto:
+                r_time_ids.insert(0,first_time_id)
+                r_values.insert(0,rto.value)
+            else:
+                r_time_ids.insert(0,first_time_id)
+                r_values.insert(0,0)
         _write_to_mat(var.variable_name,variable_class,bf,r_time_ids,r_values,time_ids)
         
     for var in Variable.objects.filter(value_class__in = ('INT32','UINT32','INT16','INT','WORD','UINT','UINT16')):
@@ -75,12 +81,19 @@ def export_database_to_mat(filename=None,time_id_min=None,time_id_max=None):
         r_values = list(RecordedDataInt.objects.filter(variable_id=var_id,time_id__range = (first_time_id,last_time_id)).values_list('value',flat=True))
         if len(r_values)==0:
             rto = RecordedDataInt.objects.filter(variable_id=var_id,time_id__lt=first_time_id).last()
+            if not rto:
+                continue
+            
             r_time_ids = [first_time_id]
             r_values = [rto.value]
         if r_time_ids[0] > first_time_id:
             rto = RecordedDataInt.objects.filter(variable_id=var_id,time_id__lt=first_time_id).last()
-            r_time_ids.insert(0,first_time_id)
-            r_values.insert(0,rto.value)
+            if rto:
+                r_time_ids.insert(0,first_time_id)
+                r_values.insert(0,rto.value)
+            else:
+                r_time_ids.insert(0,first_time_id)
+                r_values.insert(0,0)
         _write_to_mat(var.variable_name,variable_class,bf,r_time_ids,r_values,time_ids)
     
     for var in Variable.objects.filter(value_class = 'BOOL'):
@@ -90,12 +103,18 @@ def export_database_to_mat(filename=None,time_id_min=None,time_id_max=None):
         r_values = list(RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__range = (first_time_id, last_time_id, )).values_list('value',flat=True))
         if len(r_values)==0:
             rto = RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__lt=first_time_id).last()
+            if not rto:
+                continue
             r_time_ids = [first_time_id]
             r_values = [rto.value]
         if r_time_ids[0] > first_time_id:
             rto = RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__lt=first_time_id).last()
-            r_time_ids.insert(0,first_time_id)
-            r_values.insert(0,rto.value)
+            if rto:
+                r_time_ids.insert(0,first_time_id)
+                r_values.insert(0,rto.value)
+            else:
+                r_time_ids.insert(0,first_time_id)
+                r_values.insert(0,0)
         _write_to_mat(var.variable_name,variable_class,bf,r_time_ids,r_values,time_ids)
         
     

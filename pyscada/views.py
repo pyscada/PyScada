@@ -11,20 +11,25 @@ from pyscada.models import WebClientChart
 from pyscada.models import WebClientPage
 from pyscada.models import WebClientControlItem
 from pyscada.models import WebClientSlidingPanelMenu
+from pyscada.models import Log
 from pyscada import log
 #from pyscada.export import timestamp_unix_to_matlab
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.core import serializers
 from django.utils import timezone
-from django.template import Context, loader
+from django.template import Context, loader,RequestContext
 from django.db import connection
 from django.shortcuts import redirect
 from django.contrib.auth import logout
+from django.core import serializers
+from django.views.decorators.csrf import requires_csrf_token
 
 import time
 import json
 
+
+@requires_csrf_token
 def index(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
@@ -45,25 +50,29 @@ def index(request):
 	
 	panel_list = WebClientSlidingPanelMenu.objects.filter(users__username=request.user.username)
 	
-	c = Context({
+	c = RequestContext(request,{
 		'page_content': page_content,
 		'panel_list'	 : panel_list,
 		'user'		 : request.user
 	})
+	log.webnotice('user %s: request WebApp'%request.user.username)
+	#context_instance=RequestContext(request)
 	return HttpResponse(t.render(c))
 	
 def config(request):
-	
+	if not request.user.is_authenticated():
+		return redirect('/accounts/login/?next=%s' % request.path)
 	config = {}
 	config["DataFile"] 		= "json/latest_data/"
 	config["InitialDataFile"] = "json/data/"
+	config["LogDataFile"] = "json/log_data/"
 	config["RefreshRate"] 	= 5000
 	config["config"] 		= []
 	chart_count 				= 0
 	for chart in WebClientChart.objects.all():
 		vars = {}
 		c_count = 0
-		for var in chart.variables.all():
+		for var in chart.variables.all().order_by('variable_name'):
 			vars[var.variable_name] = {"yaxis":1,"color":c_count,"unit":var.unit.description}
 			c_count +=1
 
@@ -73,9 +82,38 @@ def config(request):
 	
 	jdata = json.dumps(config,indent=2)
 	return HttpResponse(jdata, content_type='application/json')
+
+def log_data(request):
+	if not request.user.is_authenticated():
+		return redirect('/accounts/login/?next=%s' % request.path)
+	if request.POST.has_key('timestamp'):
+		timestamp = float(request.POST['timestamp'])
+	else:
+		timestamp = time.time()-(60*60*24*14) # get log of last 14 days
+		
+	data = Log.objects.filter(level__gte=6,timestamp__gt=float(timestamp)).order_by('-timestamp')
+	
+	jdata = serializers.serialize("json", data,fields=('timestamp','level','message'))
+	
+	return HttpResponse(jdata, content_type='application/json')
+
+def form_log_entry(request):
+	if not request.user.is_authenticated():
+		return redirect('/accounts/login/?next=%s' % request.path)
+	log.debug('user %s form log request'%request.user.username)
+	if request.POST.has_key('message') and request.POST.has_key('level'):
+		#data = request.POST['client_response']
+		#log.debug('user %s post log'%request.user.username)
+		log.add(request.POST['message'],request.POST['level'])
+		return HttpResponse(status=200)
+	else:
+		return HttpResponse(status=404)
 	
 	
+
 def latest_data(request):
+	if not request.user.is_authenticated():
+		return redirect('/accounts/login/?next=%s' % request.path)
 	data = {}	
 	data["timestamp"] = RecordedTime.objects.last().timestamp*1000
 	t_pk = RecordedTime.objects.last().pk	
@@ -104,11 +142,13 @@ def latest_data(request):
 	return HttpResponse(jdata, content_type='application/json')
 	
 def data(request):
+	if not request.user.is_authenticated():
+		return redirect('/accounts/login/?next=%s' % request.path)
 	# read POST data
 	if request.POST.has_key('timestamp'):
 		timestamp = float(request.POST['timestamp'])
 	else:
-		timestamp = time.time()-(30*60)
+		timestamp = time.time()-(15*60)
 	
 	# query timestamp pk's
 	t_max_pk 		= RecordedTime.objects.last().pk
@@ -148,5 +188,7 @@ def data(request):
 
 def logout_view(request):
 	logout(request)
+	log.webnotice('user %s logged out'%request.user.username)
 	# Redirect to a success page.
 	return redirect('/accounts/login/')
+
