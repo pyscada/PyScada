@@ -7,6 +7,7 @@ from pyscada.models import WebClientPage
 from pyscada.models import WebClientSlidingPanelMenu
 from pyscada.models import WebClientControlItem
 from pyscada.models import UnitConfig
+from pyscada.models import ClientWriteTask
 from pyscada import log
 from pyscada.utils import update_input_config
 from django.contrib import admin
@@ -105,6 +106,7 @@ class WebClientSlidingPanelMenuAdmin():
     list_display = ('label','position',)
     list_display_links = ('label', 'position')
 
+
 admin.site.register(Client,ClientAdmin)
 admin.site.register(ClientConfig,ClientConfigAdmin)
 admin.site.register(Variable)
@@ -114,3 +116,4 @@ admin.site.register(WebClientPage)
 admin.site.register(WebClientSlidingPanelMenu)
 admin.site.register(WebClientControlItem)
 admin.site.register(UnitConfig)
+admin.site.register(ClientWriteTask)

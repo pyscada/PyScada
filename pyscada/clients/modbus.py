@@ -2,7 +2,7 @@
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 #from pymodbus.client.sync import ModbusUdpClient as ModbusClient
 from pyscada import log
-from pyscada.utils import decode_value
+from pyscada.utils import decode_value, encode_value
 from pyscada.utils import get_bits_by_class
 from pyscada.utils.modbus import decode_address
 from pyscada.utils import decode_bits
@@ -142,27 +142,28 @@ class client:
         self._port              = client_config['modbus_ip']['port']
         self._silentMode        = GlobalConfig.objects.get_value_by_key('silentMode')
         self._sim               = bool(int(GlobalConfig.objects.get_value_by_key('simulation')))
+        self.trans_variable_config = []
+        self.trans_variable_bit_config = []
         self._variable_config   = self._prepare_variable_config(client_config['variable_input_config'])
         
 
     def _prepare_variable_config(self,variable_config):
-        trans_variable_config = []
-        trans_variable_bit_config = []
+        
         for idx in variable_config:
             Address      = decode_address(variable_config[idx]['modbus_ip']['address'])
             bits_to_read = get_bits_by_class(variable_config[idx]['class']);
             if isinstance(Address, list):
-                trans_variable_bit_config.append([Address,idx])
+                self.trans_variable_bit_config.append([Address,idx])
             else:
-                trans_variable_config.append([Address,variable_config[idx]['class'],bits_to_read,idx])
+                self.trans_variable_config.append([Address,variable_config[idx]['class'],bits_to_read,idx])
 
-        trans_variable_config.sort()
-        trans_variable_bit_config.sort()
+        self.trans_variable_config.sort()
+        self.trans_variable_bit_config.sort()
         out = []
         old = -2
         regcount = 0
         #
-        for entry in trans_variable_config:
+        for entry in self.trans_variable_config:
             if (entry[0] != old) or regcount >122:
                 regcount = 0
                 out.append(RegisterBlock(self._address,self._port,self._sim)) # start new register block
@@ -172,7 +173,7 @@ class client:
 
         # bit registers
         old = -2
-        for entry in trans_variable_bit_config:
+        for entry in self.trans_variable_bit_config:
             if (entry[0][0] != old and entry[0][0] != old+1):
                 out.append(CoilBlock(self._address,self._port,self._sim)) # start new coil block
             out[-1].insert_item(entry[1],entry[0])
@@ -224,3 +225,40 @@ class client:
             
         self._disconnect()
         return data
+    
+    def write_data(self,variable_id, value):
+        """
+        write value to single modbus register or coil
+        """
+        var_cfg = []
+        # find variable config
+        for entry in self.trans_variable_config:
+            if entry[3] == variable_id:
+                var_cfg = entry
+                break
+        if var_cfg:
+            # write register
+            self._connect()
+            if var_cfg[2]/16 == 1:
+                # just write the value to one register
+                self.slave.write_register(var_cfg[0],int(value))
+            else:
+                # encode it first
+                self.slave.write_registers(var_cfg[0],list(encode_value(value,var_cfg[1])))
+            self._disconnect()
+            return True
+        else:
+            for entry in self.trans_variable_bit_config:
+                if entry[1] == variable_id:
+                    var_cfg = entry
+                    break
+        if var_cfg:
+            # write coil
+            self._connect()
+            self.slave.write_coil(var_cfg[0][2],bool(value))
+            self._disconnect()
+            return True
+        
+        
+        return False
+        

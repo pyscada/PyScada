@@ -51,10 +51,11 @@ function fetchInitData(){
 					PyScadaPlots[plot_id].add(key,val);
 				});
 			});
-			fetchData()
+			fetchData();
 		},
 		error: function(x, t, m) {
 			addNotification(t, 3);
+			fetchData();
 		}
 	});
 	// log
@@ -118,7 +119,7 @@ function fetchData() {
 					var self = this, doBind = function() {
 						PyScadaPlots[plot_id].update();
 					};
-					$.queue.add(doBind, this);
+					$.browserQueue.add(doBind, this);
 				});
 				
 				if(debug>1){
@@ -176,6 +177,9 @@ function updateLog() {
 				log_row += '<td>' + data[key].fields.message + '</td><!-- Message -->';
 				log_row += '</tr>';
 				$('#log-table tbody').append(log_row);
+				if (!$('#log-table').is(":visible")){
+					addNotification(data[key].fields.message,data[key].fields.level.toFloat());
+				}
 			});
 			$('#log-table').trigger("updateAll",["",function(table){}]);
 		},
@@ -201,34 +205,72 @@ function addNotification(message, level) {
         right = 4;
         top = 55;
     }
+    
+    //<0 - Debug
+	//1 - Emergency
+	//2 - Critical
+	//3 - Errors
+	//4 - Alerts
+	//5 - Warnings
+	//6 - Notification (webnotice)
+	//7 - Information (webinfo)
+	//8 - Notification (notice)
+	//9 - Information (info)
     if (level === 1) {
-        level = 'success';
+        level = 'danger';
+        message_pre = '<strong>Emergency!</strong> ';
     } else if (level === 2) {
-        level = 'info';
+        level = 'danger';
+        message_pre = '<strong>Critical!</strong> ';
     } else if (level === 3) {
-        level = 'warning';
+        level = 'danger';
+        message_pre = '<strong>Error!</strong> ';
     } else if (level === 4) {
         level = 'danger';
+        message_pre = '<strong>Alert!</strong> ';
+    } else if (level === 5) {
+        level = 'warning';
+        message_pre = '<strong>Warning!</strong> ';
+    }else if (level === 6) {
+        level = 'success';
+        message_pre = '<strong>Notice</strong> ';
+    }else if (level === 7) {
+        level = 'info';
+        message_pre = '<strong>Info</strong> ';
+    }else if (level === 8) {
+        level = 'success';
+        message_pre = '<strong>Notice</strong> ';
+    }else if (level === 9) {
+        level = 'info';
+        message_pre = '<strong>Info</strong> ';
     }
-    $('#notification_area').append('<div id="notification_Nb' + NotificationCount + '" class="notification alert alert-' + level + ' alert-dismissable" style="position: fixed; top: ' + top + 'px; right: ' + right + 'px; "><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button><strong>Warning!</strong> ' + new Date().toLocaleTimeString() + ': ' + message + '</div>');
-    setTimeout('$("#notification_Nb' + NotificationCount + '").alert("close");', 10000);
+    
+    $('#notification_area').append('<div id="notification_Nb' + NotificationCount + '" class="notification alert alert-' + level + ' alert-dismissable" style="position: fixed; top: ' + top + 'px; right: ' + right + 'px; "><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>'+message_pre+ new Date().toLocaleTimeString() + ': ' + message + '</div>');
+    setTimeout('$("#notification_Nb' + NotificationCount + '").alert("close");', 7000);
     NotificationCount = NotificationCount + 1;
 }
 
 function updateDataValues(key,val){
 		// set value fields
 		$(".type-numeric.var-" + key).html(Number(val).toPrecision(4));
+		$('input.var-'+ key).attr("placeholder",Number(val).toPrecision(4));
 		// set button colors
 		if (val === 0) {
 			$(".type-bool.var-" + key).addClass("label-default");
 			$(".type-bool.var-" + key).removeClass("label-success");
 			$(".type-bool.var-" + key).removeClass("label-warning");
 			$(".type-bool.var-" + key).removeClass("label-danger");
+			$('button.btn-default.write-task-btn.var-' + key).addClass("updateable");
+			$('button.updateable.write-task-btn.var-' + key).addClass("btn-default");
+			$('button.updateable.write-task-btn.var-' + key).removeClass("btn-success");
 		} else {
 			$(".type-bool.var-" + key).removeClass("label-default");
 			$(".type-bool.status-green.var-" + key).addClass("label-success");
 			$(".type-bool.status-yello.var-" + key).addClass("label-warning");
 			$(".type-bool.status-red.var-" + key).addClass("label-danger");
+			$('button.btn-success.write-task-btn.var-' + key).addClass("updateable");
+			$('button.updateable.write-task-btn.var-' + key).removeClass("btn-default");
+			$('button.updateable.write-task-btn.var-' + key).addClass("btn-success");
 		}
 }
 
@@ -524,28 +566,28 @@ function findIndexSub(a,t,d){
 // from http://debuggable.com/posts/run-intense-js-without-freezing-the-browser:480f4dd6-f864-4f72-ae16-41cccbdd56cb
 // on 11.04.2014
 
-$.queue = {
+$.browserQueue = {
     _timer: null,
     _queue: [],
     add: function(fn, context, time) {
         var setTimer = function(time) {
-            $.queue._timer = setTimeout(function() {
-                time = $.queue.add();
-                if ($.queue._queue.length) {
+            $.browserQueue._timer = setTimeout(function() {
+                time = $.browserQueue.add();
+                if ($.browserQueue._queue.length) {
                     setTimer(time);
                 }
             }, time || 2);
         }
 
         if (fn) {
-            $.queue._queue.push([fn, context, time]);
-            if ($.queue._queue.length == 1) {
+            $.browserQueue._queue.push([fn, context, time]);
+            if ($.browserQueue._queue.length == 1) {
                 setTimer(time);
             }
             return;
         }
 
-        var next = $.queue._queue.shift();
+        var next = $.browserQueue._queue.shift();
         if (!next) {
             return 0;
         }
@@ -553,8 +595,8 @@ $.queue = {
         return next[2];
     },
     clear: function() {
-        clearTimeout($.queue._timer);
-        $.queue._queue = [];
+        clearTimeout($.browserQueue._timer);
+        $.browserQueue._queue = [];
     }
 };
 
@@ -582,24 +624,91 @@ $.ajaxSetup({
 });
 // init
 fetchConfig();
-var frm = $('#page-log-form');
-frm.submit(function () {
+
+
+log_frm.submit(function () {
 	if (log_frm_mesg.val()== ""){
-		addNotification("can't add empty log entry",2);
+		addNotification("can't add empty log entry",5);
 	}else{
-	$.ajax({
-		type: log_frm.attr('method'),
-		url: log_frm.attr('action'),
-		data: log_frm.serialize(),
-		success: function (data) {
-			log_frm_mesg.val("");
-			addNotification('new log entry successfuly added',1);
-			updateLog();
-		},
-		error: function(data) {
-			addNotification('new log entry adding failed',3);
-		}
-	});
+		$.ajax({
+			type: log_frm.attr('method'),
+			url: log_frm.attr('action'),
+			data: log_frm.serialize(),
+			success: function (data) {
+				log_frm_mesg.val("");
+				addNotification('new log entry successfuly added',9);
+				updateLog();
+			},
+			error: function(data) {
+				addNotification('new log entry adding failed',3);
+			}
+		});
 	}
 	return false;
+});
+//form/write_task/
+
+function addWriteTask(var_id,value){
+	$.ajax({
+			type: 'post',
+			url: 'form/write_task/',
+			data: {var_id:var_id,value:value},
+			success: function (data) {
+				
+			},
+			error: function(data) {
+				addNotification('add new write task failed',3);
+			}
+		});
+	
+};
+
+$('button.write-task-set').click(function(){
+		var_id = $(this).attr('var_id');
+		id = $(this).attr('id');
+		value = $("#"+id+"-value").val();
+		$.ajax({
+			type: 'post',
+			url: 'form/write_task/',
+			data: {var_id:var_id,value:value},
+			success: function (data) {
+				
+			},
+			error: function(data) {
+				addNotification('add new write task failed',3);
+			}
+		});
+});
+
+$('button.write-task-btn').click(function(){
+		var_id = $(this).attr('var_id');
+		id = $(this).attr('id');
+		$('#'+id).removeClass('updateable');
+		if($(this).hasClass('btn-default')){
+			$.ajax({
+				type: 'post',
+				url: 'form/write_task/',
+				data: {var_id:var_id,value:1},
+				success: function (data) {
+					$('#'+id).removeClass('btn-default')
+					$('#'+id).addClass('btn-success');
+				},
+				error: function(data) {
+					addNotification('add new write task failed',3);
+				}
+			});
+		}else if ($(this).hasClass('btn-success')){
+			$.ajax({
+				type: 'post',
+				url: 'form/write_task/',
+				data: {var_id:var_id,value:0},
+				success: function (data) {
+					$('#'+id).addClass('btn-default')
+					$('#'+id).removeClass('btn-success');
+				},
+				error: function(data) {
+					addNotification('add new write task failed',3);
+				}
+			});
+		}
 });

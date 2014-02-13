@@ -18,16 +18,17 @@ class Command(BaseCommand):
         if len(args)!=1:
             self.stdout.write("usage: python manage.py PyScadaDaemon start | stop | restart\n", ending='')
         else:
-            mdaemon = MainDaemon('/var/run/DataAcquisition-daemon-%s.pid'%settings.SETTINGS_MODULE.split('.')[0])
+            mdaemon = MainDaemon('%s/DataAcquisition-daemon.pid'%settings.PROJECT_PATH)
             if 'start' == args[0]:
-                log.notice("try starting data aquisition daemon")
+                log.info("try starting data aquisition daemon")
                 mdaemon.start()
                 
             elif 'stop' == args[0]:
-                log.notice("try stopping data aquisition daemon")
+                log.info("try stopping data aquisition daemon")
                 mdaemon.stop()
+                log.notice("stopped  dataaquisition daemon")
             elif 'restart' == args[0]:
-                log.notice("try restarting data aquisition daemon")
+                log.info("try restarting data aquisition daemon")
                 mdaemon.restart()
             else:
                 self.stdout.write("Unknown command", ending='')
@@ -42,7 +43,7 @@ class MainDaemon(Daemon):
             raise
         
         tomorrow = (round(time()/24/60/60)+1)*24*60*60
-        log.info("started dataaquisition daemon")
+        log.notice("started dataaquisition daemon")
         while True:
             if time()>tomorrow:
                 tomorrow = (round(time()/24/60/60)+1)*24*60*60
@@ -50,12 +51,12 @@ class MainDaemon(Daemon):
                 dt = daq.run()
             except:
                 var = traceback.format_exc()
-                log.error("exeption in dataaquisition daemnon, %s" % var)
+                log.debug("exeption in dataaquisition daemnon, %s" % var,-1)
                 daq = DAQ()
                 dt = 5
             
             if dt>0:
                 sleep(dt)
-        log.error("stoped daemon execution")
+        log.notice("stoped daemon execution")
 
 

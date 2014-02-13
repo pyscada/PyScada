@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 from numpy import float64,float32,int32,uint16,int16,uint8, nan
 from pyscada.models import ClientConfig
+from pyscada.models import Variable
 from pyscada.clients import modbus as mb
+from pyscada import log
 from time import time
 class client():
     def __init__(self):
@@ -62,6 +64,17 @@ class client():
                 
                 if store_value:
                     self._prepare_db_data(var_idx,variable_class,value)
+
+    def write(self,var_idx,value):
+        """
+        
+        """
+        var_config = Variable.objects.get(id=var_idx)
+        if var_config.writeable:
+            return self.clients[var_config.client_id].write_data(var_idx,value)
+        else:
+            log.error("variable %s is not writable"%var_config.variable_name)
+            return False
 
 
     def _prepare_db_data(self,var_idx,variable_class,value):

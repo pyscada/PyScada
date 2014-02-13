@@ -11,6 +11,7 @@ urlpatterns = [
     url(r'^json/latest_data/$', 'pyscada.views.latest_data'),
     url(r'^json/config/$', 'pyscada.views.config'),
     url(r'^form/log_entry/$', 'pyscada.views.form_log_entry'),
+    url(r'^form/write_task/$', 'pyscada.views.form_write_task'),
 ]
 
 urlpatterns = patterns('', *urlpatterns)

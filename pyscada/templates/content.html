@@ -159,7 +159,30 @@
                     <ul class="SAC-button-panel">
                         <li>{{ panel.label }}</li>
                         {% for item in panel.items.all %}
-                            <li><span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
+							{% if item.type == 0 %}<!-- label blue -->
+								<li><span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
+							{% elif item.type == 1 %}<!-- label light blue -->
+								<li><span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
+							{% elif item.type == 2 %}<!-- label ok -->
+								<li><span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
+							{% elif item.type == 3 %}<!-- label warning -->
+								<li><span class="label label-default type-bool status-yello var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
+							{% elif item.type == 4 %}<!-- label alarm -->
+								<li><span class="label label-default type-bool status-red var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
+							{% elif item.type == 5 %}<!-- input -->
+								{% if item.variable.value_class == 'BOOL' %}
+									<li><button type="button" var_id="{{ item.variable.pk }}" class="btn btn-default updateable write-task-btn type-bool var-{{ item.variable.variable_name }}" id="{{ item.web_id }}">{{ item.label }}</button></li>
+								{% else %}
+									<li><div class="input-group">
+										<span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
+										<input type="text" class="form-control var-{{ item.variable.variable_name }}" id="{{ item.web_id }}-value" placeholder="">
+										<span class="input-group-addon">{{ item.variable.unit.description }}</span>
+										<span class="input-group-btn">
+											<button class="btn btn-default write-task-set" var_id="{{ item.variable.pk }}" id="{{ item.web_id }}" type="button">set</button>
+										</span>
+									</div></li>
+								{% endif %}
+							{% endif %}
                         {% endfor %}
                     </ul>
                 </div>
@@ -192,24 +215,33 @@
 				window.location.hash = $('ul.navbar-nav li a').first().attr("href");
 			}
 			
+			// sidemenues
             $('.side-menu.left').mouseenter(function(){
                 $(this).stop().CSSAnimate({"left":0},500)
             }).mouseleave(function(){
                 ow = $(this).outerWidth()
                 $(this).stop().CSSAnimate({"left":-(ow - 11)},500)
             });
+            
             $('.side-menu.right').mouseenter(function(){
                 $(this).stop().CSSAnimate({"right":0},500)
             }).mouseleave(function(){
                 ow = $(this).outerWidth()
                 $(this).stop().CSSAnimate({"right":-(ow - 11)},500)
             });
+            
+            $('.side-menu.bottom').css('margin-left',- $('.side-menu.bottom').outerWidth(true)/2)
+            
+            $('.side-menu.bottom').stop().CSSAnimate({"bottom":-($('.side-menu.bottom').outerHeight(true) - 31)},500)
+            
             $('.side-menu.bottom').mouseenter(function(){
                 $(this).stop().CSSAnimate({"bottom":0},500)
             }).mouseleave(function(){
-                ow = $(this).outerWidth()
-                $(this).stop().CSSAnimate({"bottom":-(ow - 31)},500)
+                oh = $(this).outerHeight(true)
+                $(this).stop().CSSAnimate({"bottom":-(oh - 31)},500)
             });
+            
+            
             // auto update function
             $('#AutoUpdateButton').click(function(e) {
                 if (auto_update_active) {
@@ -239,9 +271,6 @@
 					$(".sub-page").hide();
 					// show only new content
 					$(window.location.hash).show();
-					if(debug>0){
-						$('#page-log').append('<p>0.00: ' + window.location.hash + '</p>')
-					}
 				};
 			});
 			 $('#ChartTimeWindow-set').click(function() {

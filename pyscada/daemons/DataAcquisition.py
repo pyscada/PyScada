@@ -10,6 +10,9 @@ from pyscada.models import RecordedTime
 from pyscada.models import RecordedDataFloat
 from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
+from pyscada.models import ClientWriteTask
+from pyscada import log
+
 
 class DataAcquisition():
     def __init__(self):
@@ -20,8 +23,11 @@ class DataAcquisition():
         
     def run(self):
         dt = time()
-       ## second start the query
-        self._cl.request();
+        ## if there is something to write do it 
+        self._do_write_task()
+        
+        ## second start the query
+        self._cl.request()
         if self._cl.db_data:
             self._save_db_data(self._cl.db_data)
         return float(self._dt) -(time()-dt)
@@ -52,3 +58,20 @@ class DataAcquisition():
         RecordedDataFloat.objects.bulk_create(dvf)
         RecordedDataInt.objects.bulk_create(dvi)
         RecordedDataBoolean.objects.bulk_create(dvb)
+    
+    def _do_write_task(self):
+        """
+        check for write tasks
+        """
+        for task in ClientWriteTask.objects.filter(done=False,start__lte=time(),failed=False):
+            if self._cl.write(task.variable_id,task.value):
+                task.done=True
+                task.fineshed=time()
+                task.save()
+                log.notice('user %s changed variable %s (new value %1.6g %s)'%(task.user.username,task.variable.variable_name,task.value,task.variable.unit.description))
+            else:
+                task.failed = True
+                task.fineshed=time()
+                task.save()
+                log.error('user %s change of variable %s failed'%(task.user.username,task.variable.variable_name))
+        

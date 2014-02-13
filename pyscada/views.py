@@ -12,6 +12,7 @@ from pyscada.models import WebClientPage
 from pyscada.models import WebClientControlItem
 from pyscada.models import WebClientSlidingPanelMenu
 from pyscada.models import Log
+from pyscada.models import ClientWriteTask
 from pyscada import log
 #from pyscada.export import timestamp_unix_to_matlab
 from django.shortcuts import render
@@ -55,8 +56,7 @@ def index(request):
 		'panel_list'	 : panel_list,
 		'user'		 : request.user
 	})
-	log.webnotice('user %s: request WebApp'%request.user.username)
-	#context_instance=RequestContext(request)
+	log.webnotice('user %s: opend WebApp'%request.user.username)
 	return HttpResponse(t.render(c))
 	
 def config(request):
@@ -100,16 +100,21 @@ def log_data(request):
 def form_log_entry(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
-	log.debug('user %s form log request'%request.user.username)
 	if request.POST.has_key('message') and request.POST.has_key('level'):
-		#data = request.POST['client_response']
-		#log.debug('user %s post log'%request.user.username)
 		log.add(request.POST['message'],request.POST['level'])
 		return HttpResponse(status=200)
 	else:
 		return HttpResponse(status=404)
 	
-	
+def	form_write_task(request):
+	if not request.user.is_authenticated():
+		return redirect('/accounts/login/?next=%s' % request.path)
+	if request.POST.has_key('var_id') and request.POST.has_key('value'):
+		cwt = ClientWriteTask(variable_id = request.POST['var_id'],value=request.POST['value'],start=time.time(),user=request.user)
+		cwt.save()
+		return HttpResponse(status=200)
+	else:
+		return HttpResponse(status=404)
 
 def latest_data(request):
 	if not request.user.is_authenticated():

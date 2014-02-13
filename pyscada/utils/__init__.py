@@ -62,6 +62,21 @@ def decode_value(value,variable_class):
 	else:
 		return value[0]
 
+def encode_float(value):
+	"""
+	this is a function that convert float values to two UINT value according to the IEEE 7?? specification
+	"""
+	return unpack('2H',pack('f',float(value)))
+
+def encode_value(value,variable_class):
+	if 	variable_class.upper() in ['FLOAT32','SINGLE','FLOAT','REAL']:
+		return encode_float(value)
+	if 	variable_class.upper() in ['BCD32','BCD24','BCD16']:
+		return encode_bcd(values)
+	else:
+		return value[0]
+
+
 
 def get_bits_by_class(variable_class):
 	"""

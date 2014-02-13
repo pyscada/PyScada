@@ -170,7 +170,7 @@ table.tablesorter thead tr .tablesorter-header.sorter-false {
 	 padding:1px;
 }
 .legendLabel {
-	padding-right:5px;50
+	padding-right:5px;
 }
 .legendValue {
 	border-left: 2px solid #ddd;
@@ -202,13 +202,13 @@ table.tablesorter thead tr .tablesorter-header.sorter-false {
 	list-style: none;
 }
 .side-menu.left {
-	bottom:15px;
+	bottom:36px;
 	left:-200px;
 	text-align:right;
 	float: right;
 }
 .side-menu.right {
-	bottom:15px;
+	bottom:36px;
 	right:-200px;
 	text-align:left;
 	float: left;
@@ -220,6 +220,20 @@ table.tablesorter thead tr .tablesorter-header.sorter-false {
 	bottom:-200px;
 	left:50%;
 	padding:0px;
+	width:500px;
+}
+
+.side-menu.bottom .input-group-addon.input-group-addon-label {
+	width:300px;
+	text-align:left;
+}
+
+.side-menu.bottom .btn {
+	margin:5px;
+}
+
+.side-menu.bottom .input-group-btn .btn {
+	margin:0px;
 }
 
 

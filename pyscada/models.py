@@ -42,10 +42,10 @@ class KeyValueManager(models.Manager):
 
 
 class VariableConfigManager(models.Manager):
-	def get_variable_input_config(self,client_id):
-		Variable = super(VariableConfigManager, self).get_query_set().filter(client_id=client_id,active=1)
-		variable_config = {}
-		for variable in Variable:
+	def get_variables_input_config(self,client_id):
+		Variables = super(VariableConfigManager, self).get_query_set().filter(client_id=client_id,active=1)
+		variables_config = {}
+		for variable in Variables:
 			output = {};
 			for entry in InputConfig.objects.filter(variable=variable.pk):
 				if entry.key.find('.')==-1:
@@ -59,9 +59,26 @@ class VariableConfigManager(models.Manager):
 			output['variable_name']	= variable.variable_name;
 			output['unit']	= variable.unit.unit
 			output['class']	= variable.value_class
-			variable_config[variable.pk] = output
-		return variable_config
-
+			variables_config[variable.pk] = output
+		return variables_config
+		
+	def get_variable_input_config(self,variable_id):
+		variable = super(VariableConfigManager, self).get_query_set().get(id=variable_id)
+		output = {};
+		for entry in InputConfig.objects.filter(variable=variable.pk):
+			if entry.key.find('.')==-1:
+				output[entry.key] = entry.decoded_value()
+			else:
+				key_key = entry.key.split('.')[0]
+				attr = entry.key.split('.')[1]
+				if not output.has_key(key_key):
+					output[key_key] = {}
+				output[key_key][attr] = entry.decoded_value()
+		output['variable_name']	= variable.variable_name;
+		output['unit']	= variable.unit.unit
+		output['class']	= variable.value_class
+		return output
+		
 
 class ClientConfigManager(models.Manager):
 	def get_client_config(self,client_id):
@@ -75,7 +92,7 @@ class ClientConfigManager(models.Manager):
 				if not config.has_key(key_key):
 					config[key_key] = {}
 				config[key_key][attr] = entry.decoded_value()
-		config['variable_input_config'] = Variable.objects.get_variable_input_config(client_id)
+		config['variable_input_config'] = Variable.objects.get_variables_input_config(client_id)
 		return config
 
 
@@ -159,7 +176,7 @@ class Variable(models.Model):
 						('UINT16','UINT16'),
 						('BOOL','BOOL'),
 						)
-	
+	writeable		= models.BooleanField(default=False)
 	value_class		= models.CharField(max_length=15, default='FLOAT', verbose_name="value_class",choices=value_class_choices)
 	objects			= VariableConfigManager()
 	def __unicode__(self):
@@ -179,6 +196,17 @@ class InputConfig(models.Model):
 		if self.value.isdigit():
 			return int(self.value)
 		return unicode(self.value)
+
+class ClientWriteTask(models.Model):
+	id 				= models.AutoField(primary_key=True)
+	variable	 		= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
+	value			= models.FloatField()
+	user	 		= models.ForeignKey(User,null=True, on_delete=models.SET_NULL)
+	start 			= models.FloatField(default=0)
+	fineshed			= models.FloatField(default=0,blank=True)
+	done			= models.BooleanField(default=False,blank=True)
+	failed			= models.BooleanField(default=False,blank=True)
+	
 
 class RecordedTime(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -244,6 +272,8 @@ class WebClientControlItem(models.Model):
 	users			= models.ManyToManyField(User)
 	def __unicode__(self):
 		return unicode(self.label+" ("+self.variable.variable_name + ")")
+	def web_id(self):
+		return unicode(self.id.__str__() + "-" + self.label.replace(' ','_')+"-"+self.variable.variable_name.replace(' ','_'))
 
 class WebClientChart(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -273,5 +303,4 @@ class WebClientSlidingPanelMenu(models.Model):
 	users			= models.ManyToManyField(User)
 	def __unicode__(self):
 		return unicode(self.label)
-		
 		
