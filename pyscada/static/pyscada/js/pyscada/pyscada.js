@@ -178,7 +178,7 @@ function updateLog() {
 				log_row += '</tr>';
 				$('#log-table tbody').append(log_row);
 				if (!$('#log-table').is(":visible")){
-					addNotification(data[key].fields.message,data[key].fields.level.toFloat());
+					addNotification(data[key].fields.message,+data[key].fields.level);
 				}
 			});
 			$('#log-table').trigger("updateAll",["",function(table){}]);
@@ -645,7 +645,9 @@ log_frm.submit(function () {
 		});
 	}
 	return false;
-});
+})
+
+
 //form/write_task/
 
 function addWriteTask(var_id,value){
@@ -667,17 +669,21 @@ $('button.write-task-set').click(function(){
 		var_id = $(this).attr('var_id');
 		id = $(this).attr('id');
 		value = $("#"+id+"-value").val();
-		$.ajax({
-			type: 'post',
-			url: 'form/write_task/',
-			data: {var_id:var_id,value:value},
-			success: function (data) {
-				
-			},
-			error: function(data) {
-				addNotification('add new write task failed',3);
-			}
-		});
+		if (value == "" ){
+			addNotification('please provide a value',3);
+		}else{
+			$.ajax({
+				type: 'post',
+				url: 'form/write_task/',
+				data: {var_id:var_id,value:value},
+				success: function (data) {
+					
+				},
+				error: function(data) {
+					addNotification('add new write task failed',3);
+				}
+			});
+		};
 });
 
 $('button.write-task-btn').click(function(){
@@ -711,4 +717,16 @@ $('button.write-task-btn').click(function(){
 				}
 			});
 		}
+});
+
+
+// fix drop down problem
+$(function() {
+  // Setup drop down menu
+  $('.dropdown-toggle').dropdown();
+ 
+  // Fix input element click problem
+  $('.dropdown input, .dropdown label, .dropdown button').click(function(e) {
+    e.stopPropagation();
+  });
 });

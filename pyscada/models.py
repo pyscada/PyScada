@@ -266,7 +266,7 @@ class WebClientControlItem(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	label			= models.CharField(max_length=400, default='')
 	position			= models.PositiveSmallIntegerField(default=0)
-	type_choices 	= ((0,'label blue'),(1,'label light blue'),(2,'label ok'),(3,'label warning'),(4,'label alarm'),(5,'button default'))
+	type_choices 	= ((0,'label blue'),(1,'label light blue'),(2,'label ok'),(3,'label warning'),(4,'label alarm'),(5,'Control Element'))
 	type			= models.PositiveSmallIntegerField(default=0,choices=type_choices)
 	variable    		= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
 	users			= models.ManyToManyField(User)
@@ -297,7 +297,7 @@ class WebClientChart(models.Model):
 class WebClientSlidingPanelMenu(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	label			= models.CharField(max_length=400, default='')
-	position_choices = ((0,'bottom'),(1,'left'),(2,'right'))
+	position_choices = ((0,'Control Menu'),(1,'left'),(2,'right'))
 	position			= models.PositiveSmallIntegerField(default=0,choices=position_choices)
 	items	 	 	= models.ManyToManyField(WebClientControlItem)
 	users			= models.ManyToManyField(User)

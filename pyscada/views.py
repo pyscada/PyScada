@@ -49,11 +49,14 @@ def index(request):
 				chart_skip.append(chart.row.first().pk)
 		page_content.append({"page":page,"charts":chart_list})
 	
-	panel_list = WebClientSlidingPanelMenu.objects.filter(users__username=request.user.username)
-	
+	panel_list = WebClientSlidingPanelMenu.objects.filter(users__username=request.user.username,position__in=(1,2))
+	control_list = WebClientSlidingPanelMenu.objects.filter(users__username=request.user.username,position = 0)
+	if control_list:
+		control_list = control_list[0].items.all()
 	c = RequestContext(request,{
 		'page_content': page_content,
 		'panel_list'	 : panel_list,
+		'control_list':control_list,
 		'user'		 : request.user
 	})
 	log.webnotice('user %s: opend WebApp'%request.user.username)
@@ -72,7 +75,7 @@ def config(request):
 	for chart in WebClientChart.objects.all():
 		vars = {}
 		c_count = 0
-		for var in chart.variables.all().order_by('variable_name'):
+		for var in chart.variables.filter(active=1).order_by('variable_name'):
 			vars[var.variable_name] = {"yaxis":1,"color":c_count,"unit":var.unit.description}
 			c_count +=1
 

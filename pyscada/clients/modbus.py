@@ -238,15 +238,19 @@ class client:
                 break
         if var_cfg:
             # write register
-            self._connect()
-            if var_cfg[2]/16 == 1:
-                # just write the value to one register
-                self.slave.write_register(var_cfg[0],int(value))
+            if 0 <= var_cfg[0] <= 65535:
+                self._connect()
+                if var_cfg[2]/16 == 1:
+                    # just write the value to one register
+                    self.slave.write_register(var_cfg[0],int(value))
+                else:
+                    # encode it first
+                    self.slave.write_registers(var_cfg[0],list(encode_value(value,var_cfg[1])))
+                self._disconnect()
+                return True
             else:
-                # encode it first
-                self.slave.write_registers(var_cfg[0],list(encode_value(value,var_cfg[1])))
-            self._disconnect()
-            return True
+                log.error('Modbus Address %d out of range'%var_cfg[0])
+                return False
         else:
             for entry in self.trans_variable_bit_config:
                 if entry[1] == variable_id:
@@ -254,11 +258,13 @@ class client:
                     break
         if var_cfg:
             # write coil
-            self._connect()
-            self.slave.write_coil(var_cfg[0][2],bool(value))
-            self._disconnect()
-            return True
-        
+            if 0 <= var_cfg[0][2] <= 65535:
+                self._connect()
+                self.slave.write_coil(var_cfg[0][2],bool(value))
+                self._disconnect()
+                return True
+            else:
+                log.error('Modbus Address %d out of range'%var_cfg[0][2])
         
         return False
         

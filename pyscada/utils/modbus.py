@@ -45,7 +45,7 @@ def decode_address(address):
 		ModAddress = int(address)
 		if (ModAddress < 0 or ModAddress > 24575): ModAddress = -1
 	if address[1:2] == 'X':
-		if ModAddress > 12288:
+		if ModAddress >= 12288:
 			coil_address = ((ModAddress-12288)*16)+address_bits+12288
 		else:
 			coil_address = (ModAddress*16)+address_bits

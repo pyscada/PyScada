@@ -102,18 +102,59 @@ class ClientAdmin(admin.ModelAdmin):
     list_display = ('id','short_name','description','active',)
     list_display_links = ('short_name', 'description')
 
-class WebClientSlidingPanelMenuAdmin():
+class WebClientSlidingPanelMenuAdmin(admin.ModelAdmin):
     list_display = ('label','position',)
     list_display_links = ('label', 'position')
 
+class VarieblesAdmin(admin.ModelAdmin):
+    list_display = ('id','variable_name','description','client_name','value_class','active','writeable',)
+    list_editable = ('active','writeable',)
+    list_display_links = ('variable_name',)
+    list_filter = ('client__short_name', 'active','writeable')
+    search_fields = ['variable_name',]
+    def client_name(self, instance):
+        return instance.client.short_name
 
+class WebClientControlItemAdmin(admin.ModelAdmin):
+    def render_change_form(self, request, context, *args, **kwargs):
+         context['adminform'].form.fields['variable'].queryset = Variable.objects.filter(writeable=1)
+         return super(WebClientControlItemAdmin, self).render_change_form(request, context, args, kwargs)
+
+class WebClientSlidingPanelMenuForm(forms.ModelForm): 
+    def __init__(self, *args, **kwargs):
+        super(WebClientSlidingPanelMenuForm, self).__init__(*args, **kwargs)
+        wtf = WebClientControlItem.objects.all();
+        w = self.fields['items'].widget
+        choices = []
+        for choice in wtf:
+            choices.append((choice.id, choice.label+" (" + choice.get_type_display() + ")"))
+        w.choices = choices
+
+class WebClientSlidingPanelMenuAdmin(admin.ModelAdmin):
+       # search_fields = ['variable_name',]
+        filter_horizontal = ('items',)
+        form = WebClientSlidingPanelMenuForm
+
+class ClientWriteTaskAdmin(admin.ModelAdmin):
+    list_display = ('id','variable_name','value','user_name','done','failed',)
+    #list_editable = ('active','writeable',)
+    list_display_links = ('variable_name',)
+    list_filter = ('done', 'failed',)
+    def variable_name(self, instance):
+        return instance.variable.variable_name
+    def user_name(self, instance):
+        try:
+            return instance.user.username
+        except:
+            return 'None'
+    
 admin.site.register(Client,ClientAdmin)
 admin.site.register(ClientConfig,ClientConfigAdmin)
-admin.site.register(Variable)
+admin.site.register(Variable,VarieblesAdmin)
 admin.site.register(VariableConfigFileImport,VariableImportAdmin)
 admin.site.register(WebClientChart,WebClientChartAdmin)
 admin.site.register(WebClientPage)
-admin.site.register(WebClientSlidingPanelMenu)
-admin.site.register(WebClientControlItem)
+admin.site.register(WebClientSlidingPanelMenu,WebClientSlidingPanelMenuAdmin)
+admin.site.register(WebClientControlItem,WebClientControlItemAdmin)
 admin.site.register(UnitConfig)
-admin.site.register(ClientWriteTask)
+admin.site.register(ClientWriteTask,ClientWriteTaskAdmin)

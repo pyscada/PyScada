@@ -12,6 +12,7 @@ from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
 from pyscada.models import ClientWriteTask
 from pyscada import log
+import traceback
 
 
 class DataAcquisition():
@@ -64,7 +65,15 @@ class DataAcquisition():
         check for write tasks
         """
         for task in ClientWriteTask.objects.filter(done=False,start__lte=time(),failed=False):
-            if self._cl.write(task.variable_id,task.value):
+            
+            try:
+                result = self._cl.write(task.variable_id,task.value)
+            except:
+                var = traceback.format_exc()
+                log.error("exeption in dataaquisition daemnon, %s" % var)
+                result = False
+                
+            if result:
                 task.done=True
                 task.fineshed=time()
                 task.save()
@@ -74,4 +83,4 @@ class DataAcquisition():
                 task.fineshed=time()
                 task.save()
                 log.error('user %s change of variable %s failed'%(task.user.username,task.variable.variable_name))
-        
+                

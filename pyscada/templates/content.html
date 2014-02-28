@@ -44,16 +44,80 @@
 						{% endfor %}
                     </ul>
                     <ul class="nav navbar-right navbar-nav">
-                        <li class="dropdown">
-                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">User: {{ user.username }} <b class="caret"></b></a>
-                            <ul class="dropdown-menu">
-							<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
-                            <li class="divider"></li>
-                            <li><a href="/accounts/logout"> logout</a></li>
-                            </ul>
-                        </li>
-                        <li><a href="#page-log"><span class="glyphicon glyphicon-book"></span> Log</a></li>
-                        <li class="dropdown">
+                        <li class="dropdown"><!-- Controls -->
+							<a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-wrench"></span> Controls <strong class="caret"></strong></a>
+							<div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:500px;">
+								<div class="control-panel">
+									<!--<ul><li>-->
+									
+								
+									{% for item in control_list %}
+										{% if item.variable.active == 1 %}
+										
+											{% if item.type == 0 %}<!-- label blue -->
+												<span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span>
+											{% elif item.type == 1 %}<!-- label light blue -->
+												<span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span>
+											{% elif item.type == 2 %}<!-- label ok -->
+												<span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span>
+											{% elif item.type == 3 %}<!-- label warning -->
+												<span class="label label-default type-bool status-yello var-{{ item.variable.variable_name }}">{{ item.label }}</span>
+											{% elif item.type == 4 %}<!-- label alarm -->
+												<span class="label label-default type-bool status-red var-{{ item.variable.variable_name }}">{{ item.label }}</span>
+											{% elif item.type == 5 %}<!-- input -->
+												{% if item.variable.value_class == 'BOOL' %}
+													<button type="button" var_id="{{ item.variable.pk }}" class="btn btn-default updateable write-task-btn type-bool var-{{ item.variable.variable_name }}" id="{{ item.web_id }}">{{ item.label }}</button>
+												{% else %}
+													<div class="input-group">
+														<span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
+														<input type="text" class="form-control var-{{ item.variable.variable_name }}" id="{{ item.web_id }}-value" placeholder="">
+														<span class="input-group-addon">{{ item.variable.unit.description }}</span>
+														<span class="input-group-btn">
+															<button class="btn btn-default write-task-set" var_id="{{ item.variable.pk }}" id="{{ item.web_id }}" type="button">set</button>
+														</span>
+													</div>
+												{% endif %}
+											{% endif %}
+											{% if not forloop.last %}
+												{% if not forloop.counter|divisibleby:2 %}
+													<!--</li><li>-->
+												{% elif item.type == 5 and item.variable.value_class != 'BOOL' %}
+													<!--</li><li>-->
+												{% endif %}
+											{% endif %}
+										{% endif %}
+									{% endfor %}
+									<!--</li>
+									</ul>-->
+								</div>
+							</div>
+						</li>
+                        <li class="dropdown"><!-- Log -->
+							<a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-book"></span> Log <strong class="caret"></strong></a>
+							<div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:500px;">
+								<ul>
+									<li><a href="#page-log">Show Log</a></li>
+									<li class="divider"></li>
+									<li><form role="form" id="page-log-form" action="form/log_entry/" method="post">
+										{% csrf_token %}
+										<div class="form-group">
+											<label for="page-log-form-message">Message</label>
+											<input type="text" class="form-control" id="page-log-form-message" placeholder="Enter Message" name="message">
+										</div>
+										<div class="form-group">
+											<label class="radio-inline">
+											  <input type="radio" id="inlineRadio1" value="8" name="level"> Notification (8)
+											</label>
+											<label class="radio-inline">
+											  <input type="radio" id="inlineRadio2" value="9" name="level" checked> Information (9)
+											</label>
+										</div>
+										<button type="submit" class="btn btn-default">Add</button>
+									</form></li>
+								</ul>
+							</div>
+						</li>
+						<li class="dropdown"><!-- Settings -->
 							<a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> Settings <strong class="caret"></strong></a>
 							<div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:200px;">
 								<form role="form">
@@ -66,13 +130,23 @@
 										</span>
 									</div>
 								</form>
+								<form class="navbar-form navbar-right" >
+									<button type="button" class="btn btn-success" id="AutoUpdateButton" >auto update</button>
+								</form>
 							</div>
 						</li>
-                        <li><a href="#page-help">Help</a></li>
+						<li class="dropdown"><!-- User -->
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon  glyphicon-user"></span> {{ user.username }} <b class="caret"></b></a>
+                            <ul class="dropdown-menu">
+							<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
+                            <li class="divider"></li>
+                            <li><a href="/accounts/logout"> logout</a></li>
+                            </ul>
+                        </li>           
+                        <li><a href="#page-help"><span class="glyphicon glyphicon-question-sign"></span> Help</a></li>
+						<li style="width:20px;"><a href="#" ><span id="AutoUpdateStatus" class="glyphicon glyphicon-transfer"></span></a><!--<img src="{% static "pyscada/img/load.gif" %}" alt="loading" id="AutoUpdateStatus" height="12px">--></li>
                     </ul>
-                    <form class="navbar-form navbar-right" >
-                        <button type="button" class="btn btn-success" id="AutoUpdateButton" ><img src="{% static "pyscada/img/load.gif" %}" alt="loading" id="AutoUpdateStatus" height="12px"/> auto update</button>
-                    </form>
+                    
                 </div><!--/.nav-collapse -->
             </div>
             <div id="notification_area"></div>
@@ -121,23 +195,6 @@
 				</div>
             {% endfor %}
             <div id="page-log" class="sub-page" >
-				<form role="form" id="page-log-form" action="form/log_entry/" method="post">
-					{% csrf_token %}
-					<div class="form-group">
-						<label class="radio-inline">
-						  <input type="radio" id="inlineRadio1" value="8" name="level"> Notification (8)
-						</label>
-						<label class="radio-inline">
-						  <input type="radio" id="inlineRadio2" value="9" name="level" checked> Information (9)
-						</label>
-					</div>
-					<div class="form-group">
-						<label for="page-log-form-message">Message</label>
-						<input type="text" class="form-control" id="page-log-form-message" placeholder="Enter Message" name="message">
-						<button type="submit" class="btn btn-default">Add</button>
-					</div>
-				</form>
-				
 				<table id="log-table" class="table table-condensed table-hover tablesorter tablesorter-default" width="100%">
 					<colgroup>
 						<col style="width: 180px;">
@@ -156,31 +213,20 @@
 			</div> <!-- end page-log -->	
             {% for panel in panel_list %}
                 <div class="side-menu {% if panel.position == 0 %} bottom {% elif panel.position == 1 %}left{% elif panel.position == 2 %}right{% endif %}">
-                    <ul class="SAC-button-panel">
+                    <ul class="status-panel">
                         <li>{{ panel.label }}</li>
                         {% for item in panel.items.all %}
-							{% if item.type == 0 %}<!-- label blue -->
-								<li><span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
-							{% elif item.type == 1 %}<!-- label light blue -->
-								<li><span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
-							{% elif item.type == 2 %}<!-- label ok -->
-								<li><span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
-							{% elif item.type == 3 %}<!-- label warning -->
-								<li><span class="label label-default type-bool status-yello var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
-							{% elif item.type == 4 %}<!-- label alarm -->
-								<li><span class="label label-default type-bool status-red var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
-							{% elif item.type == 5 %}<!-- input -->
-								{% if item.variable.value_class == 'BOOL' %}
-									<li><button type="button" var_id="{{ item.variable.pk }}" class="btn btn-default updateable write-task-btn type-bool var-{{ item.variable.variable_name }}" id="{{ item.web_id }}">{{ item.label }}</button></li>
-								{% else %}
-									<li><div class="input-group">
-										<span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
-										<input type="text" class="form-control var-{{ item.variable.variable_name }}" id="{{ item.web_id }}-value" placeholder="">
-										<span class="input-group-addon">{{ item.variable.unit.description }}</span>
-										<span class="input-group-btn">
-											<button class="btn btn-default write-task-set" var_id="{{ item.variable.pk }}" id="{{ item.web_id }}" type="button">set</button>
-										</span>
-									</div></li>
+							{% if item.variable.active == 1 %}
+								{% if item.type == 0 %}<!-- label blue -->
+									<li><span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
+								{% elif item.type == 1 %}<!-- label light blue -->
+									<li><span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
+								{% elif item.type == 2 %}<!-- label ok -->
+									<li><span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
+								{% elif item.type == 3 %}<!-- label warning -->
+									<li><span class="label label-default type-bool status-yello var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
+								{% elif item.type == 4 %}<!-- label alarm -->
+									<li><span class="label label-default type-bool status-red var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
 								{% endif %}
 							{% endif %}
                         {% endfor %}
