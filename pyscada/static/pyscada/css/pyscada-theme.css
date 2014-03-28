@@ -73,6 +73,21 @@ body {
 	width: 50%;
 	height: 100%;
 }
+.third-size-chart{
+	float: left;
+	position: relative;
+	min-height: 1px;
+	width: 33%;
+	height: 100%;
+}
+.two-third-size-chart{
+	float: left;
+	position: relative;
+	min-height: 1px;
+	width: 66%;
+	height: 100%;
+}
+
 .clear-sep{
 	clear:both;
 	padding-top:15px;
@@ -80,7 +95,7 @@ body {
 .chart-container {
 	position: relative;
 	box-sizing: border-box;
-    padding: 10px;
+    padding: 10px 10px 10px 0px;
     border: 1px solid #ddd;
     background: #fff;
     background: linear-gradient(#f6f6f6 0, #fff 50px);
@@ -142,6 +157,16 @@ body {
 .btn-minimize{
 	float:right;
 }
+
+.chart-btn-bar {
+	position: absolute; 
+	top:-8px; 
+	right:-8px;
+}
+.chart-btn-bar .btn{
+	padding:0px 12px;
+}
+
 
 table.tablesorter thead tr .tablesorter-header {
 	background-image: url(/static/pyscada/img/unsorted.gif);

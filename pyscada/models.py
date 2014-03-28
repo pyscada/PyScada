@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.utils import timezone
 import time
 
@@ -154,14 +154,29 @@ class UnitConfig(models.Model):
 	def __unicode__(self):
 		return unicode(self.unit)
 
+class Colors(models.Model):
+	id 		= models.AutoField(primary_key=True)
+	name 	= models.SlugField(max_length=80, verbose_name="variable name")
+	R 		= models.PositiveSmallIntegerField(default=0)
+	G 		= models.PositiveSmallIntegerField(default=0)
+	B 		= models.PositiveSmallIntegerField(default=0)
+	def __unicode__(self):
+		return unicode('rgb('+str(self.R)+', '+str(self.G)+', '+str(self.B)+', '+')')
+	def color_code(self):
+		return unicode('#%02x%02x%02x' % (self.R, self.G, self.B))	
 
 class Variable(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	variable_name 	= models.SlugField(max_length=80, verbose_name="variable name")
+	short_name		= models.CharField(default='',max_length=80, verbose_name="variable short name")
 	description 		= models.TextField(default='', verbose_name="Description")
 	client			= models.ForeignKey('Client',null=True, on_delete=models.SET_NULL)
 	active			= models.BooleanField(default=True)
 	unit 			= models.ForeignKey('UnitConfig',null=True, on_delete=models.SET_NULL)
+	writeable		= models.BooleanField(default=False)
+	chart_line_color = models.ForeignKey('Colors',default=0,null=True, on_delete=models.SET_NULL)
+	chart_line_thickness_choices = ((3,'3Px'),)
+	chart_line_thickness = models.PositiveSmallIntegerField(default=0,choices=chart_line_thickness_choices)
 	value_class_choices = (('FLOAT32','FLOAT32'),
 						('SINGLE','SINGLE'),
 						('FLOAT','FLOAT'),
@@ -176,7 +191,6 @@ class Variable(models.Model):
 						('UINT16','UINT16'),
 						('BOOL','BOOL'),
 						)
-	writeable		= models.BooleanField(default=False)
 	value_class		= models.CharField(max_length=15, default='FLOAT', verbose_name="value_class",choices=value_class_choices)
 	objects			= VariableConfigManager()
 	def __unicode__(self):
@@ -218,8 +232,8 @@ class RecordedTime(models.Model):
 
 
 class RecordedDataFloat(models.Model):
-	id            = models.AutoField(primary_key=True)
-	value	      = models.FloatField()
+	id          = models.AutoField(primary_key=True)
+	value	    = models.FloatField()
 	variable	 	= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
 	time		= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
 	objects 		= RecordedDataValueManager()
@@ -257,19 +271,19 @@ class Log(models.Model):
 class WebClientPage(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	title 			= models.CharField(max_length=400, default='')
-	link_title		= models.CharField(max_length=155, default='')
-	users			= models.ManyToManyField(User)
+	link_title		= models.SlugField(max_length=80, default='')
+	groups			= models.ManyToManyField(Group)
 	def __unicode__(self):
-		return unicode(self.link_title)
+		return unicode(self.link_title.replace(' ','_'))
 
 class WebClientControlItem(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	label			= models.CharField(max_length=400, default='')
 	position			= models.PositiveSmallIntegerField(default=0)
-	type_choices 	= ((0,'label blue'),(1,'label light blue'),(2,'label ok'),(3,'label warning'),(4,'label alarm'),(5,'Control Element'))
+	type_choices 	= ((0,'label blue'),(1,'label light blue'),(2,'label ok'),(3,'label warning'),(4,'label alarm'),(5,'Control Element'),(6,'Display Value'),)
 	type			= models.PositiveSmallIntegerField(default=0,choices=type_choices)
 	variable    		= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
-	users			= models.ManyToManyField(User)
+	groups			= models.ManyToManyField(Group)
 	def __unicode__(self):
 		return unicode(self.label+" ("+self.variable.variable_name + ")")
 	def web_id(self):
@@ -284,10 +298,10 @@ class WebClientChart(models.Model):
 	y_axis_label		= models.CharField(max_length=400, default='',blank=True)
 	y_axis_min		= models.FloatField(default=0)
 	y_axis_max		= models.FloatField(default=100)
-	size_choices 	= (('pagewidth','page width'),('sidebyside','side by side'))
+	size_choices 	= (('pagewidth','page width'),('sidebyside','side by side (1/2)'),('sidebyside1','side by side (2/3|1/3)'),)
 	size			= models.CharField(max_length=20, default='pagewidth',choices=size_choices)
 	variables		= models.ManyToManyField(Variable)
-	users			= models.ManyToManyField(User)
+	groups			= models.ManyToManyField(Group)
 	row				= models.ManyToManyField("self",blank=True)
 	page			= models.ForeignKey('WebClientPage',null=True, on_delete=models.SET_NULL)
 	
@@ -300,7 +314,45 @@ class WebClientSlidingPanelMenu(models.Model):
 	position_choices = ((0,'Control Menu'),(1,'left'),(2,'right'))
 	position			= models.PositiveSmallIntegerField(default=0,choices=position_choices)
 	items	 	 	= models.ManyToManyField(WebClientControlItem)
-	users			= models.ManyToManyField(User)
+	groups			= models.ManyToManyField(Group)
 	def __unicode__(self):
 		return unicode(self.label)
 		
+class TaskProgress(models.Model):
+	id 				= models.AutoField(primary_key=True)
+	start 			= models.FloatField(default=0)
+	timestamp 		= models.FloatField(default=0)
+	progress			= models.FloatField(default=0)
+	load			= models.FloatField(default=0)
+	min 			= models.FloatField(default=0)
+	max				= models.FloatField(default=0)
+	done			= models.BooleanField(default=False,blank=True)
+	failed			= models.BooleanField(default=False,blank=True)
+	pid				= models.IntegerField(default=0)
+	stop_daemon		= models.BooleanField(default=False,blank=True)
+	label			= models.CharField(max_length=400, default='')
+	message			= models.CharField(max_length=400, default='')
+	
+	def __unicode__(self):
+		return unicode(self.timestamp)
+	def timestamp_ms(self):
+		return self.timestamp * 1000
+
+
+class VariableChangeHistory(models.Model):
+	id 				= models.AutoField(primary_key=True)
+	variable	 		= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
+	time        		= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
+	field_choices 	= ((0,'active'),(1,'writable'),(2,'value_class'),(3,'variable_name'))
+	field			= models.PositiveSmallIntegerField(default=0,choices=field_choices)
+	old_value		= models.TextField(default='')
+	def __unicode__(self):
+		return unicode(self.field)
+
+class RecordedDataCache(models.Model):
+	value	    = models.FloatField()
+	variable	 	= models.OneToOneField('Variable',null=True, on_delete=models.SET_NULL)
+	time		= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
+	objects 		= RecordedDataValueManager()
+	def __unicode__(self):
+		return unicode(self.value)

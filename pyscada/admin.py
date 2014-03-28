@@ -84,7 +84,7 @@ class WebClientChartForm(forms.ModelForm):
         w = self.fields['variables'].widget
         choices = []
         for choice in wtf:
-            choices.append((choice.id, choice.variable_name))
+            choices.append((choice.id, choice.variable_name+'( '+ choice.unit.description +' )'))
         w.choices = choices
 
 class WebClientChartAdmin(admin.ModelAdmin):
@@ -116,9 +116,12 @@ class VarieblesAdmin(admin.ModelAdmin):
         return instance.client.short_name
 
 class WebClientControlItemAdmin(admin.ModelAdmin):
-    def render_change_form(self, request, context, *args, **kwargs):
-         context['adminform'].form.fields['variable'].queryset = Variable.objects.filter(writeable=1)
-         return super(WebClientControlItemAdmin, self).render_change_form(request, context, args, kwargs)
+    list_filter = ('groups',)
+    list_display = ('id','position','label','type','variable',)
+
+#     def render_change_form(self, request, context, *args, **kwargs):
+#          context['adminform'].form.fields['variable'].queryset = Variable.objects.filter(writeable=1)
+#          return super(WebClientControlItemAdmin, self).render_change_form(request, context, args, kwargs)
 
 class WebClientSlidingPanelMenuForm(forms.ModelForm): 
     def __init__(self, *args, **kwargs):
@@ -127,7 +130,7 @@ class WebClientSlidingPanelMenuForm(forms.ModelForm):
         w = self.fields['items'].widget
         choices = []
         for choice in wtf:
-            choices.append((choice.id, choice.label+" (" + choice.get_type_display() + ")"))
+            choices.append((choice.id, choice.label+" ("+ choice.variable.variable_name + ', ' + choice.get_type_display() + ")"))
         w.choices = choices
 
 class WebClientSlidingPanelMenuAdmin(admin.ModelAdmin):

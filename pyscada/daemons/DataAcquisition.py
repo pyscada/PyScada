@@ -6,10 +6,12 @@ from time import time, localtime, strftime
 from pyscada.models import GlobalConfig
 from pyscada.clients import client
 from pyscada.export.hdf5 import mat
+from pyscada.models import RecordedDataCache
 from pyscada.models import RecordedTime
 from pyscada.models import RecordedDataFloat
 from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
+from pyscada.models import TaskProgress
 from pyscada.models import ClientWriteTask
 from pyscada import log
 import traceback
@@ -17,10 +19,9 @@ import traceback
 
 class DataAcquisition():
     def __init__(self):
-        self._dt        = GlobalConfig.objects.get_value_by_key('stepsize')
+        self._dt        = float(GlobalConfig.objects.get_value_by_key('stepsize'))
         self._com_dt    = 0
         self._cl        = client()                  # init a client Instance for field data query
-        
         
     def run(self):
         dt = time()
@@ -31,7 +32,8 @@ class DataAcquisition():
         self._cl.request()
         if self._cl.db_data:
             self._save_db_data(self._cl.db_data)
-        return float(self._dt) -(time()-dt)
+        
+        return self._dt -(time()-dt)
 
 
     def _save_db_data(self,data):
@@ -41,6 +43,8 @@ class DataAcquisition():
         dvf = []
         dvi = []
         dvb = []
+        dvc = []
+        del_idx = []
         timestamp = RecordedTime(timestamp=data.pop('time'))
         timestamp.save()
         for variable_class in data:
@@ -49,6 +53,8 @@ class DataAcquisition():
             if not data[variable_class]:
                 continue
             for var_idx in data[variable_class]:
+                dvc.append(RecordedDataCache(variable_id=var_idx,value=data[variable_class][var_idx],time=timestamp))
+                del_idx.append(var_idx)
                 if variable_class.upper() in ['FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'] :
                     dvf.append(RecordedDataFloat(time=timestamp,variable_id=var_idx,value=data[variable_class][var_idx]))
                 elif variable_class.upper() in ['INT32','UINT32','INT16','INT','WORD','UINT','UINT16']:
@@ -56,9 +62,17 @@ class DataAcquisition():
                 elif variable_class.upper() in ['BOOL']:
                     dvb.append(RecordedDataBoolean(time=timestamp,variable_id=var_idx,value=data[variable_class][var_idx]))
         
+        RecordedDataCache.objects.filter(variable_id__in=del_idx).delete()
+        RecordedDataCache.objects.all().update(time=timestamp)
+        RecordedDataCache.objects.bulk_create(dvc)
         RecordedDataFloat.objects.bulk_create(dvf)
         RecordedDataInt.objects.bulk_create(dvi)
         RecordedDataBoolean.objects.bulk_create(dvb)
+       
+    
+    
+                
+                
     
     def _do_write_task(self):
         """

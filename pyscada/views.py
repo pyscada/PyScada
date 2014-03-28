@@ -5,6 +5,7 @@ from pyscada.models import Variable
 from pyscada.models import RecordedDataFloat
 from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
+from pyscada.models import RecordedDataCache
 from pyscada.models import InputConfig
 from pyscada.models import RecordedTime
 from pyscada.models import WebClientChart
@@ -13,17 +14,18 @@ from pyscada.models import WebClientControlItem
 from pyscada.models import WebClientSlidingPanelMenu
 from pyscada.models import Log
 from pyscada.models import ClientWriteTask
+
 from pyscada import log
 #from pyscada.export import timestamp_unix_to_matlab
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.core import serializers
+from django.core.management import call_command
 from django.utils import timezone
 from django.template import Context, loader,RequestContext
 from django.db import connection
 from django.shortcuts import redirect
 from django.contrib.auth import logout
-from django.core import serializers
 from django.views.decorators.csrf import requires_csrf_token
 
 import time
@@ -36,21 +38,21 @@ def index(request):
 		return redirect('/accounts/login/?next=%s' % request.path)
 	
 	t = loader.get_template('content.html')
-	page_list = WebClientPage.objects.filter(users__username=request.user.username)
+	page_list = WebClientPage.objects.filter(groups__in=request.user.groups.iterator)
 	page_content = []
 	for page in	page_list:
 		chart_list = []
 		chart_skip = []
-		for chart in page.webclientchart_set.filter(users__username=request.user.username).order_by("position"):
+		for chart in page.webclientchart_set.filter(groups__in=request.user.groups.iterator).order_by("position"):
 			if chart_skip.count(chart.pk)>0:
 				continue
 			chart_list.append(chart)
-			if chart.row.count() > 0 and chart.size == 'sidebyside':
+			if chart.row.count() > 0 and (chart.size == 'sidebyside' or chart.size == 'sidebyside1'):
 				chart_skip.append(chart.row.first().pk)
 		page_content.append({"page":page,"charts":chart_list})
 	
-	panel_list = WebClientSlidingPanelMenu.objects.filter(users__username=request.user.username,position__in=(1,2))
-	control_list = WebClientSlidingPanelMenu.objects.filter(users__username=request.user.username,position = 0)
+	panel_list = WebClientSlidingPanelMenu.objects.filter(groups__in=request.user.groups.iterator,position__in=(1,2))
+	control_list = WebClientSlidingPanelMenu.objects.filter(groups__in=request.user.groups.iterator,position = 0)
 	if control_list:
 		control_list = control_list[0].items.all()
 	c = RequestContext(request,{
@@ -66,19 +68,31 @@ def config(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
 	config = {}
-	config["DataFile"] 		= "json/latest_data/"
-	config["InitialDataFile"] = "json/data/"
-	config["LogDataFile"] = "json/log_data/"
-	config["RefreshRate"] 	= 5000
-	config["config"] 		= []
-	chart_count 				= 0
-	for chart in WebClientChart.objects.all():
+	config["DataFile"] 			= "json/latest_data/"
+	config["InitialDataFile"] 	= "json/data/"
+	config["LogDataFile"] 		= "json/log_data/"
+	config["RefreshRate"] 		= 5000
+	config["config"] 			= []
+	chart_count 					= 0
+	for chart in WebClientChart.objects.filter(groups__in=request.user.groups.iterator):
 		vars = {}
 		c_count = 0
 		for var in chart.variables.filter(active=1).order_by('variable_name'):
-			vars[var.variable_name] = {"yaxis":1,"color":c_count,"unit":var.unit.description}
-			c_count +=1
-
+			if var.chart_line_color:
+				if  var.chart_line_color.id > 1:
+					color_code = var.chart_line_color.color_code()
+				else:
+					color_code = c_count
+					c_count +=1
+			else:
+				color_code = c_count
+				c_count +=1
+			if (var.short_name and var.short_name != '-'):
+				var_label = var.short_name
+			else:
+				var_label = var.variable_name
+			vars[var.variable_name] = {"yaxis":1,"color":color_code,"unit":var.unit.description,"label":var_label}
+			
 		config["config"].append({"label":chart.label,"xaxis":{"ticks":chart.x_axis_ticks},"axes":[{"yaxis":{"min":chart.y_axis_min,"max":chart.y_axis_max,'label':chart.y_axis_label}}],"placeholder":"#chart-%d"% chart.pk,"legendplaceholder":"#chart-%d-legend" % chart.pk,"variables":vars}) 
 		chart_count += 1		
 	
@@ -126,8 +140,8 @@ def latest_data(request):
 	data["timestamp"] = RecordedTime.objects.last().timestamp*1000
 	t_pk = RecordedTime.objects.last().pk	
 	
-	active_variables = list(WebClientChart.objects.filter(users__username=request.user.username).values_list('variables__pk',flat=True))
-	active_variables += list(WebClientControlItem.objects.filter(users__username=request.user.username).values_list('variable__pk',flat=True))
+	active_variables = list(WebClientChart.objects.filter(groups__in=request.user.groups.iterator).values_list('variables__pk',flat=True))
+	active_variables += list(WebClientControlItem.objects.filter(groups__in=request.user.groups.iterator).values_list('variable__pk',flat=True))
 	cursor = connection.cursor()
 	
 	for val in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'), pk__in = active_variables):
@@ -148,7 +162,24 @@ def latest_data(request):
 	
 	jdata = json.dumps(data,indent=2)
 	return HttpResponse(jdata, content_type='application/json')
+
+def get_cache_data(request):
+	if not request.user.is_authenticated():
+		return redirect('/accounts/login/?next=%s' % request.path)
+	data = {}	
+	data["timestamp"] = RecordedDataCache.objects.first().time.timestamp_ms()
 	
+	active_variables = list(WebClientChart.objects.filter(groups__in=request.user.groups.iterator).values_list('variables__pk',flat=True))
+	active_variables += list(WebClientControlItem.objects.filter(groups__in=request.user.groups.iterator).values_list('variable__pk',flat=True))
+	
+	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__variable_name','value'))
+	
+	for var in raw_data:
+		data[var[0]] = var[1]
+	
+	jdata = json.dumps(data,indent=2)
+	return HttpResponse(jdata, content_type='application/json')
+
 def data(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
@@ -167,7 +198,7 @@ def data(request):
 	else:
 		return HttpResponse('{\n}', content_type='application/json')
 	
-	active_variables = WebClientChart.objects.filter(users__username=request.user.username).values_list('variables__pk',flat=True)
+	active_variables = WebClientChart.objects.filter(groups__in=request.user.groups.iterator).values_list('variables__pk',flat=True)
 	data = {}
 	
 	for var in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'), pk__in = active_variables):
@@ -200,3 +231,16 @@ def logout_view(request):
 	# Redirect to a success page.
 	return redirect('/accounts/login/')
 
+def dataaquisition_daemon_start(request):
+	if not request.user.is_authenticated():
+		return redirect('/accounts/login/?next=%s' % request.path)
+	
+	call_command('PyScadaDaemon start')
+	return HttpResponse(status=200)
+	
+def dataaquisition_daemon_stop(request):
+	if not request.user.is_authenticated():
+		return redirect('/accounts/login/?next=%s' % request.path)
+	
+	call_command('PyScadaDaemon stop')
+	return HttpResponse(status=200)

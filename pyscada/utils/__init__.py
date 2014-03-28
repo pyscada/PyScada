@@ -113,7 +113,7 @@ def update_input_config(json_data):
 		uc, ucc = UnitConfig.objects.get_or_create(unit = entry['unit'].replace(' ',''))
 		# variable exist
 		obj, created = Variable.objects.get_or_create(id=entry['id'],
-		defaults={'id':entry['id'],'variable_name':entry['variable_name'].replace(' ',''),'description': entry['description'],'client_id':entry['client_id'],'active':1,'unit':uc,'value_class':entry["class"].replace(' ','')})
+		defaults={'id':entry['id'],'variable_name':entry['variable_name'].replace(' ',''),'description': entry['description'],'client_id':entry['client_id'],'active':bool(entry['active']),'writeable':bool(entry['writeable']),'unit':uc,'value_class':entry["class"].replace(' ',''),'chart_line_color_id':entry["color_id"],'short_name':entry["short_name"]})
 		
 		if created:
 			log.info(("created: %s") %(entry['variable_name']))
@@ -121,11 +121,15 @@ def update_input_config(json_data):
 			ic.save()
 		else:
 			log.info(("updated: %s") %(entry['variable_name']))
+			obj.variable_name = entry['variable_name']
 			obj.description = entry['description']
 			obj.client_id = entry['client_id']
-			obj.active = 1
+			obj.active = bool(entry['active'])
+			obj.writeable = bool(entry['writeable'])
 			obj.unit = uc
 			obj.value_class = entry["class"].replace(' ','')
+			obj.chart_line_color_id = entry["color_id"]
+			obj.short_name = entry["short_name"]
 			obj.save()
 			ic, icc = InputConfig.objects.get_or_create(variable_id=obj.pk,key="modbus_ip.address")
 			ic.value = entry["modbus_ip.address"].replace(' ','')

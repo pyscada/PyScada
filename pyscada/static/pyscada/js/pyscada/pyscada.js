@@ -257,6 +257,8 @@ function updateDataValues(key,val){
 		// set button colors
 		if (val === 0) {
 			$(".type-bool.var-" + key).addClass("label-default");
+			$(".type-bool.var-" + key).removeClass("label-primary");
+			$(".type-bool.var-" + key).removeClass("label-info");
 			$(".type-bool.var-" + key).removeClass("label-success");
 			$(".type-bool.var-" + key).removeClass("label-warning");
 			$(".type-bool.var-" + key).removeClass("label-danger");
@@ -265,6 +267,8 @@ function updateDataValues(key,val){
 			$('button.updateable.write-task-btn.var-' + key).removeClass("btn-success");
 		} else {
 			$(".type-bool.var-" + key).removeClass("label-default");
+			$(".type-bool.status-blue.var-" + key).addClass("label-primary");
+			$(".type-bool.status-info.var-" + key).addClass("label-info");
 			$(".type-bool.status-green.var-" + key).addClass("label-success");
 			$(".type-bool.status-yello.var-" + key).addClass("label-warning");
 			$(".type-bool.status-red.var-" + key).addClass("label-danger");
@@ -357,14 +361,20 @@ function PyScadaPlot(config){
 		var LegendString = '<div class="legend"><table id="'+config.placeholder.substring(1)+'-table" class="tablesorter" style="font-size:smaller;color:#545454"><thead><tr><th>&nbsp;</th><th class="sorter-false">&nbsp;</th><th class="sorter-text">&nbsp;</th><th class="sorter-float">&nbsp;</th><th class="sorter-text">&nbsp;</th></tr></thead><tbody>';
 		$.each(config.variables,function(key,val){
 			if (typeof(config.variables[key])==="object"){
-				LegendString +='<tr class="legendSeries"><td><span class="hidden" id="'+config.placeholder.substring(1)+'-'+key+'-checkbox-status" >1</span><input type="checkbox" checked="checked" id="'+config.placeholder.substring(1)+'-'+key+'-checkbox"></td><td class="legendColorBox"><div style="border:1px solid #ccc;padding:1px"><div style="width:4px;height:0;border:5px solid '+ LineColors[config.variables[key].color].toString() +';overflow:hidden"></div></div></td><td class="legendLabel">'+key+'</td><td class="legendValue type-numeric var-'+key+'"></td><td class="legendUnit">'+ config.variables[key].unit +'</td></tr>';
+				if (typeof(config.variables[key].color)== "string"){
+					var line_color = config.variables[key].color;
+				}else{
+					var line_color = LineColors[config.variables[key].color].toString();
+					}
+				LegendString +='<tr class="legendSeries"><td><span class="hidden" id="'+config.placeholder.substring(1)+'-'+key+'-checkbox-status" >1</span><input type="checkbox" checked="checked" id="'+config.placeholder.substring(1)+'-'+key+'-checkbox"></td><td class="legendColorBox"><div style="border:1px solid #ccc;padding:1px"><div style="width:4px;height:0;border:5px solid '+ line_color +';overflow:hidden"></div></div></td><td class="legendLabel">'+config.variables[key].label+'</td><td class="legendValue type-numeric var-'+key+'"></td><td class="legendUnit">'+ config.variables[key].unit +'</td></tr>';
 			}
 		});
 	
-		LegendString +='</tbody></table></div><div class="btn-toolbar" role="toolbar"><div class="btn-group">';
-		LegendString +='<button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-ResetSelection"><span class="glyphicon glyphicon-fullscreen"></span></button>';
-		LegendString +='<button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-ZoomYToFit"><span class="glyphicon glyphicon-resize-vertical"></span></button>';
-		LegendString +='</div></div>';
+		LegendString +='</tbody></table></div>';
+		//<div class="btn-toolbar" role="toolbar"><div class="btn-group">';
+		//LegendString +='<button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-ResetSelection"><span class="glyphicon glyphicon-fullscreen"></span></button>';
+		//LegendString +='<button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-ZoomYToFit"><span class="glyphicon glyphicon-resize-vertical"></span></button>';
+		//LegendString +='</div></div>';
 
 		$(config.legendplaceholder).append('<div id="'+config.placeholder.substring(1)+'-show" style="display:none;"><button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-btn-show" ><span class="glyphicon glyphicon-plus"></span></button></div><div id="'+config.legendplaceholder.substring(1)+'-legend" style="padding: 0px; position: relative;"><div class="legendTitle">'+ config.label +'</div>'+LegendString+'</div>');
 		
@@ -390,39 +400,7 @@ function PyScadaPlot(config){
 		}
 
 			
-		
-		
-		
-		$(config.placeholder + "-ResetSelection").click(function() {
-			pOpt = flotPlot.getOptions();
-			pOpt.yaxes[0].min = config.axes[0].yaxis.min;
-			pOpt.yaxes[0].max = config.axes[0].yaxis.max;
-			flotPlot.setupGrid();
-			flotPlot.draw();
-		});
-		
-		$(config.placeholder + "-ZoomYToFit").click(function() {
-			pOpt = flotPlot.getOptions();
-			aOpt = flotPlot.getYAxes();
-			pOpt.yaxes[0].min = aOpt.datamin;
-			pOpt.yaxes[0].max = aOpt.datamax;
-			flotPlot.setupGrid();
-			flotPlot.draw();
-		});
-		
-		$(config.placeholder + "-minimize").click(function() {
-			$(config.legendplaceholder).hide();
-			$(config.placeholder).hide();
-			$(config.placeholder + "-show").show();
-		});
-		
-		$(config.placeholder + "-btn-show").click(function() {
-			$(config.legendplaceholder).show();
-			$(config.placeholder).show();
-			$(config.placeholder + "-show").hide();
-		});
-		
-		
+	
 		//
 		$(config.placeholder).addClass('chart-container');
 		$(config.placeholder).append('<div class="chart-placeholder"></div>')
@@ -454,12 +432,48 @@ function PyScadaPlot(config){
 		var yaxisLabel = $("<div class='axisLabel yaxisLabel'></div>")
 		.text(config.axes[0].yaxis.label)
 		.appendTo(config.placeholder + ' .chart-placeholder');
-
+		
+		
 		// Since CSS transforms use the top-left corner of the label as the transform origin,
 		// we need to center the y-axis label by shifting it down by half its width.
 		// Subtract 20 to factor the chart's bottom margin into the centering.
 	
 		yaxisLabel.css("margin-top", yaxisLabel.width() / 2 - 20);
+	
+	
+		$(config.placeholder + ' .chart-placeholder').append('<div class="chart-btn-bar" ><div class="btn-group"><button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-ResetSelection"><span class="glyphicon glyphicon-fullscreen"></span></button><button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-ZoomYToFit"><span class="glyphicon glyphicon-resize-vertical"></span></button></div></div>');
+
+		$(config.placeholder + "-ResetSelection").click(function() {
+			pOpt = flotPlot.getOptions();
+			pOpt.yaxes[0].min = config.axes[0].yaxis.min;
+			pOpt.yaxes[0].max = config.axes[0].yaxis.max;
+			flotPlot.setupGrid();
+			flotPlot.draw();
+		});
+		
+		$(config.placeholder + "-ZoomYToFit").click(function() {
+			pOpt = flotPlot.getOptions();
+			aOpt = flotPlot.getYAxes();
+			pOpt.yaxes[0].min = aOpt.datamin;
+			pOpt.yaxes[0].max = aOpt.datamax;
+			flotPlot.setupGrid();
+			flotPlot.draw();
+		});
+		
+		$(config.placeholder + "-minimize").click(function() {
+			$(config.legendplaceholder).hide();
+			$(config.placeholder).hide();
+			$(config.placeholder + "-show").show();
+		});
+		
+		$(config.placeholder + "-btn-show").click(function() {
+			$(config.legendplaceholder).show();
+			$(config.placeholder).show();
+			$(config.placeholder + "-show").hide();
+		});
+	
+	
+	
 	}
 	
 	function setBufferSize(size){
