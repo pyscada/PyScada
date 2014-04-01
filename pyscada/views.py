@@ -14,7 +14,7 @@ from pyscada.models import WebClientControlItem
 from pyscada.models import WebClientSlidingPanelMenu
 from pyscada.models import Log
 from pyscada.models import ClientWriteTask
-
+from pyscada.models import Group as PyGroup
 from pyscada import log
 #from pyscada.export import timestamp_unix_to_matlab
 from django.shortcuts import render
@@ -38,12 +38,14 @@ def index(request):
 		return redirect('/accounts/login/?next=%s' % request.path)
 	
 	t = loader.get_template('content.html')
-	page_list = WebClientPage.objects.filter(groups__in=request.user.groups.iterator)
+	page_list = PyGroup.objects.filter(group__in=request.user.groups.iterator).values_list('pages',flat=True)
 	page_content = []
-	for page in	page_list:
+	page_list = list(set(page_list))
+	for page_id in	page_list:
+		page = WebClientPage.objects.get(pk=page_id)
 		chart_list = []
 		chart_skip = []
-		for chart in page.webclientchart_set.filter(groups__in=request.user.groups.iterator).order_by("position"):
+		for chart in page.charts.filter(group__in=request.user.groups.iterator).order_by("position"):
 			if chart_skip.count(chart.pk)>0:
 				continue
 			chart_list.append(chart)
@@ -51,8 +53,9 @@ def index(request):
 				chart_skip.append(chart.row.first().pk)
 		page_content.append({"page":page,"charts":chart_list})
 	
-	panel_list = WebClientSlidingPanelMenu.objects.filter(groups__in=request.user.groups.iterator,position__in=(1,2))
-	control_list = WebClientSlidingPanelMenu.objects.filter(groups__in=request.user.groups.iterator,position = 0)
+	sliding_panel_list = PyGroup.objects.filter(group__in=request.user.groups.iterator).values_list('sliding_panel_menu',flat=True)
+	panel_list   = WebClientSlidingPanelMenu.objects.filter(pk__in=sliding_panel_list,position__in=(1,2,))
+	control_list = WebClientSlidingPanelMenu.objects.filter(pk__in=sliding_panel_list,position=0)
 	if control_list:
 		control_list = control_list[0].items.all()
 	c = RequestContext(request,{
@@ -74,9 +77,12 @@ def config(request):
 	config["RefreshRate"] 		= 5000
 	config["config"] 			= []
 	chart_count 					= 0
-	for chart in WebClientChart.objects.filter(groups__in=request.user.groups.iterator):
+	charts = PyGroup.objects.filter(group__in=request.user.groups.iterator).values_list('charts',flat=True)
+	charts = list(set(charts))
+	for chart_id in charts:
 		vars = {}
 		c_count = 0
+		chart = WebClientChart.objects.get(pk=chart_id)
 		for var in chart.variables.filter(active=1).order_by('variable_name'):
 			if var.chart_line_color:
 				if  var.chart_line_color.id > 1:
@@ -169,9 +175,10 @@ def get_cache_data(request):
 	data = {}	
 	data["timestamp"] = RecordedDataCache.objects.first().time.timestamp_ms()
 	
-	active_variables = list(WebClientChart.objects.filter(groups__in=request.user.groups.iterator).values_list('variables__pk',flat=True))
-	active_variables += list(WebClientControlItem.objects.filter(groups__in=request.user.groups.iterator).values_list('variable__pk',flat=True))
+	active_variables = list(PyGroup.objects.filter(group__in=request.user.groups.iterator).values_list('charts__variables',flat=True))
+	active_variables += list(PyGroup.objects.filter(group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
 	
+	active_variables = list(set(active_variables))
 	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__variable_name','value'))
 	
 	for var in raw_data:
@@ -198,7 +205,9 @@ def data(request):
 	else:
 		return HttpResponse('{\n}', content_type='application/json')
 	
-	active_variables = WebClientChart.objects.filter(groups__in=request.user.groups.iterator).values_list('variables__pk',flat=True)
+	active_variables = PyGroup.objects.filter(group__in=request.user.groups.iterator).values_list('charts__variables',flat=True)
+	active_variables = list(set(active_variables))
+	
 	data = {}
 	
 	for var in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'), pk__in = active_variables):

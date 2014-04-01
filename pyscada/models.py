@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.db import models
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User
+from django.contrib.auth.models import Group as DjGroup
 from django.utils import timezone
 import time
 
@@ -268,13 +269,6 @@ class Log(models.Model):
 	def __unicode__(self):
 		return unicode(self.message)
 
-class WebClientPage(models.Model):
-	id 				= models.AutoField(primary_key=True)
-	title 			= models.CharField(max_length=400, default='')
-	link_title		= models.SlugField(max_length=80, default='')
-	groups			= models.ManyToManyField(Group)
-	def __unicode__(self):
-		return unicode(self.link_title.replace(' ','_'))
 
 class WebClientControlItem(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -283,7 +277,6 @@ class WebClientControlItem(models.Model):
 	type_choices 	= ((0,'label blue'),(1,'label light blue'),(2,'label ok'),(3,'label warning'),(4,'label alarm'),(5,'Control Element'),(6,'Display Value'),)
 	type			= models.PositiveSmallIntegerField(default=0,choices=type_choices)
 	variable    		= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
-	groups			= models.ManyToManyField(Group)
 	def __unicode__(self):
 		return unicode(self.label+" ("+self.variable.variable_name + ")")
 	def web_id(self):
@@ -301,10 +294,7 @@ class WebClientChart(models.Model):
 	size_choices 	= (('pagewidth','page width'),('sidebyside','side by side (1/2)'),('sidebyside1','side by side (2/3|1/3)'),)
 	size			= models.CharField(max_length=20, default='pagewidth',choices=size_choices)
 	variables		= models.ManyToManyField(Variable)
-	groups			= models.ManyToManyField(Group)
 	row				= models.ManyToManyField("self",blank=True)
-	page			= models.ForeignKey('WebClientPage',null=True, on_delete=models.SET_NULL)
-	
 	def __unicode__(self):
 		return unicode(self.label)
 	
@@ -314,7 +304,6 @@ class WebClientSlidingPanelMenu(models.Model):
 	position_choices = ((0,'Control Menu'),(1,'left'),(2,'right'))
 	position			= models.PositiveSmallIntegerField(default=0,choices=position_choices)
 	items	 	 	= models.ManyToManyField(WebClientControlItem)
-	groups			= models.ManyToManyField(Group)
 	def __unicode__(self):
 		return unicode(self.label)
 		
@@ -356,3 +345,18 @@ class RecordedDataCache(models.Model):
 	objects 		= RecordedDataValueManager()
 	def __unicode__(self):
 		return unicode(self.value)
+
+class WebClientPage(models.Model):
+	id 				= models.AutoField(primary_key=True)
+	title 			= models.CharField(max_length=400, default='')
+	link_title		= models.SlugField(max_length=80, default='')
+	charts 			= models.ManyToManyField(WebClientChart,blank=True)
+	def __unicode__(self):
+		return unicode(self.link_title.replace(' ','_'))
+
+class Group(models.Model):
+	group 				= models.OneToOneField(DjGroup)
+	pages 				= models.ManyToManyField(WebClientPage,blank=True)
+	sliding_panel_menu 	= models.ManyToManyField(WebClientSlidingPanelMenu,blank=True)
+	charts 				= models.ManyToManyField(WebClientChart,blank=True)
+	control_items 		= models.ManyToManyField(WebClientControlItem,blank=True)

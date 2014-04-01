@@ -8,6 +8,7 @@ from pyscada.models import WebClientSlidingPanelMenu
 from pyscada.models import WebClientControlItem
 from pyscada.models import UnitConfig
 from pyscada.models import ClientWriteTask
+from pyscada.models import Group
 from pyscada import log
 from pyscada.utils import update_input_config
 from django.contrib import admin
@@ -92,7 +93,7 @@ class WebClientChartAdmin(admin.ModelAdmin):
     ordering = ['position',]
     search_fields = ['variable_name',]
     filter_horizontal = ('variables',)
-    list_display = ('label','page','position','size',)
+    list_display = ('label','position','size',)
     form = WebClientChartForm
     def variable_name(self, instance):
         return instance.variables.variable_name
@@ -116,7 +117,7 @@ class VarieblesAdmin(admin.ModelAdmin):
         return instance.client.short_name
 
 class WebClientControlItemAdmin(admin.ModelAdmin):
-    list_filter = ('groups',)
+    #list_filter = ('groups',)
     list_display = ('id','position','label','type','variable',)
 
 #     def render_change_form(self, request, context, *args, **kwargs):
@@ -150,7 +151,9 @@ class ClientWriteTaskAdmin(admin.ModelAdmin):
             return instance.user.username
         except:
             return 'None'
-    
+
+
+admin.site.register(Group)
 admin.site.register(Client,ClientAdmin)
 admin.site.register(ClientConfig,ClientConfigAdmin)
 admin.site.register(Variable,VarieblesAdmin)
