@@ -64,7 +64,7 @@ def index(request):
 		'control_list':control_list,
 		'user'		 : request.user
 	})
-	log.webnotice('user %s: opend WebApp'%request.user.username)
+	log.webnotice('open WebApp',request.user)
 	return HttpResponse(t.render(c))
 	
 def config(request):
@@ -76,6 +76,7 @@ def config(request):
 	config["LogDataFile"] 		= "json/log_data/"
 	config["RefreshRate"] 		= 5000
 	config["config"] 			= []
+	config["users"]				= User.objects.all().values_list('pk','first_name','last_name')
 	chart_count 					= 0
 	charts = PyGroup.objects.filter(group__in=request.user.groups.iterator).values_list('charts',flat=True)
 	charts = list(set(charts))
@@ -124,7 +125,7 @@ def form_log_entry(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
 	if request.POST.has_key('message') and request.POST.has_key('level'):
-		log.add(request.POST['message'],request.POST['level'])
+		log.add(request.POST['message'],request.POST['level'],request.user)
 		return HttpResponse(status=200)
 	else:
 		return HttpResponse(status=404)
@@ -236,7 +237,7 @@ def data(request):
 
 def logout_view(request):
 	logout(request)
-	log.webnotice('user %s logged out'%request.user.username)
+	log.webnotice('logout',request.user)
 	# Redirect to a success page.
 	return redirect('/accounts/login/')
 

@@ -32,9 +32,6 @@ class client():
         self.time = time()
         for idx in self.clients:
             self.data[idx] = self.clients[idx].request_data()
-            if self.prev_data.has_key(idx):
-                if not self.prev_data[idx]:
-                    self.prev_data = {}
        
         self.db_data                = {}
         if not self.data:
@@ -59,8 +56,6 @@ class client():
                             if self.prev_data[idx].has_key(var_idx):
                                 if value == self.prev_data[idx][var_idx]:
                                     store_value = False
-                                elif not store_value:
-                                    value = self.prev_data[idx][var_idx]
                 
                 if store_value:
                     self._prepare_db_data(var_idx,variable_class,value)

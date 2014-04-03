@@ -53,7 +53,7 @@ class DataAcquisition():
             if not data[variable_class]:
                 continue
             for var_idx in data[variable_class]:
-                dvc.append(RecordedDataCache(variable_id=var_idx,value=data[variable_class][var_idx],time=timestamp))
+                dvc.append(RecordedDataCache(variable_id=var_idx,value=data[variable_class][var_idx],time=timestamp,last_change = timestamp))
                 del_idx.append(var_idx)
                 if variable_class.upper() in ['FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'] :
                     dvf.append(RecordedDataFloat(time=timestamp,variable_id=var_idx,value=data[variable_class][var_idx]))

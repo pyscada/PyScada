@@ -266,6 +266,8 @@ class Log(models.Model):
 	timestamp 		= models.FloatField()
 	message_short	= models.CharField(max_length=400, default='', verbose_name="short message")
 	message 			= models.TextField(default='', verbose_name="message")
+	user	 		= models.ForeignKey(User,null=True, on_delete=models.SET_NULL)
+
 	def __unicode__(self):
 		return unicode(self.message)
 
@@ -342,6 +344,7 @@ class RecordedDataCache(models.Model):
 	value	    = models.FloatField()
 	variable	 	= models.OneToOneField('Variable',null=True, on_delete=models.SET_NULL)
 	time		= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
+	last_change	= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL,related_name="last_change")
 	objects 		= RecordedDataValueManager()
 	def __unicode__(self):
 		return unicode(self.value)

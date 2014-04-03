@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from pyscada.models import Log
 from time import time
+from django.contrib.auth.models import User, Group
 	
-def add(message,level=0,message_short=None):
+def add(message,level=0,user=None,message_short=None):
 	""" 
 	add a new massage/error notice to the log
 	<0 - Debug
@@ -25,43 +26,37 @@ def add(message,level=0,message_short=None):
 			message_short = message
 		
 	log_ob = Log(message=message,level=level,message_short=message_short,timestamp=time())
+	if user:
+		log_ob.user = user
 	log_ob.save()
 
 
-def debug(message,level=1,message_short=None):
-	add(message,-level,message_short)
+def debug(message,level=1,user=None,message_short=None):
+	add(message,-level,user,message_short)
 
-def emerg(message,message_short=None):
-	add(message,1,message_short)
+def emerg(message,user=None,message_short=None):
+	add(message,1,user,message_short)
 
-def crit(message,message_short=None):
-	add(message,2,message_short)
+def crit(message,user=None,message_short=None):
+	add(message,2,user,message_short)
 
-def error(message,message_short=None):
-	add(message,3,message_short)
+def error(message,user=None,message_short=None):
+	add(message,3,user,message_short)
 
-def alert(message,message_short=None):
-	add(message,4,message_short)
+def alert(message,user=None,message_short=None):
+	add(message,4,user,message_short)
 
-def warning(message,message_short=None):
-	add(message,5,message_short)
+def warning(message,user=None,message_short=None):
+	add(message,5,user,message_short)
 
-def webnotice(message,message_short=None):
-	add(message,6,message_short)	
+def webnotice(message,user=None,message_short=None):
+	add(message,6,user,message_short)	
 
-def webinfo(message,message_short=None):
-	add(message,7,message_short)	
+def webinfo(message,user=None,message_short=None):
+	add(message,7,user,message_short)	
 
-def notice(message,message_short=None):
-	add(message,8,message_short)	
+def notice(message,user=None,message_short=None):
+	add(message,8,user,message_short)	
 
-def info(message,message_short=None):
-	add(message,9,message_short)
-	
-
-
-
-
-
-
-
+def info(message,user=None,message_short=None):
+	add(message,9,user,message_short)
