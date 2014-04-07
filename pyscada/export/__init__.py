@@ -47,7 +47,9 @@ def export_database_to_h5(time_id_min=None,filename=None,time_id_max=None):
     if time_id_max is not None:
         last_time_id = min(last_time_id,time_id_max)
     
-    if time_id_min is not None:
+    if time_id_min is None:
+        first_time_id = RecordedTime.objects.filter(timestamp__lte=time()-86460).last().pk
+    else:
         first_time_id = max(first_time_id,time_id_min)
 
     tp.timestamp = time()

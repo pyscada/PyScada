@@ -91,10 +91,10 @@ class DataAcquisition():
                 task.done=True
                 task.fineshed=time()
                 task.save()
-                log.notice('user %s changed variable %s (new value %1.6g %s)'%(task.user.username,task.variable.variable_name,task.value,task.variable.unit.description))
+                log.notice('changed variable %s (new value %1.6g %s)'%(task.variable.variable_name,task.value,task.variable.unit.description),task.user)
             else:
                 task.failed = True
                 task.fineshed=time()
                 task.save()
-                log.error('user %s change of variable %s failed'%(task.user.username,task.variable.variable_name))
+                log.error('change of variable %s failed'%(task.variable.variable_name),task.user)
                 
