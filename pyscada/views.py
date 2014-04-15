@@ -26,8 +26,8 @@ from django.template import Context, loader,RequestContext
 from django.db import connection
 from django.shortcuts import redirect
 from django.contrib.auth import logout
+from django.contrib.auth.models import User
 from django.views.decorators.csrf import requires_csrf_token
-
 import time
 import json
 
@@ -76,7 +76,7 @@ def config(request):
 	config["LogDataFile"] 		= "json/log_data/"
 	config["RefreshRate"] 		= 5000
 	config["config"] 			= []
-	config["users"]				= User.objects.all().values_list('pk','first_name','last_name')
+	#config["users"]				= User.objects.all().values_list('pk','first_name','last_name')
 	chart_count 					= 0
 	charts = PyGroup.objects.filter(group__in=request.user.groups.iterator).values_list('charts',flat=True)
 	charts = list(set(charts))
@@ -116,8 +116,10 @@ def log_data(request):
 		timestamp = time.time()-(60*60*24*14) # get log of last 14 days
 		
 	data = Log.objects.filter(level__gte=6,timestamp__gt=float(timestamp)).order_by('-timestamp')
-	
-	jdata = serializers.serialize("json", data,fields=('timestamp','level','message'))
+	odata = []
+	for item in data:
+		odata.append({"timestamp":item.timestamp,"level":item.level,"message":item.message,"username":item.user.username if item.user else "None"})
+	jdata = json.dumps(odata,indent=2)
 	
 	return HttpResponse(jdata, content_type='application/json')
 

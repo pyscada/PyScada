@@ -172,13 +172,13 @@ function updateLog() {
 					log_last_timestamp = data[key].fields.timestamp;
 				}
 				log_row = '<tr>';
-				log_row += '<td><span class="hidden" >'+data[key].fields.timestamp.toFixed(3)+'</span>' + new Date(data[key].fields.timestamp*1000).toLocaleString(); + '</td><!-- Date -->';
-				log_row += '<td>' + data[key].fields.level + '</td><!-- Level -->';
-				log_row += '<td>' + data[key].fields.message + '</td><!-- Message -->';
+				log_row += '<td><span class="hidden" >'+data[key].timestamp.toFixed(3)+'</span>' + new Date(data[key].timestamp*1000).toLocaleString(); + '</td><!-- Date -->';
+				log_row += '<td>' + data[key].level + '</td><!-- Level -->';
+				log_row += '<td>' + data[key].username + ": " + data[key].message + '</td><!-- Message -->';
 				log_row += '</tr>';
 				$('#log-table tbody').append(log_row);
 				if (!$('#log-table').is(":visible")){
-					addNotification(data[key].fields.message,+data[key].fields.level);
+					addNotification(data[key].message,+data[key].level);
 				}
 			});
 			$('#log-table').trigger("updateAll",["",function(table){}]);
