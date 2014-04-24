@@ -5,6 +5,7 @@ from pyscada.models import Client
 from pyscada.models import Variable
 from pyscada.webapp.models import VariableDisplayPropery as WebVariable
 from pyscada.modbus.models import VariableModbusProperty as ModbusVariable
+from pyscada.modbus.models import ClientModbusProperty
 from pyscada.models import UnitConfig
 from struct import *
 
@@ -12,8 +13,7 @@ import json
 import codecs
 
 def scale_input(Input,scaling):
-		sInput = (float(Input)/float(2**scaling.bit))*(scaling.max_value-scaling.min_value)+scaling.min_value
-		return sInput
+		return (float(Input)/float(2**scaling.bit))*(scaling.max_value-scaling.min_value)+scaling.min_value
 
 def decode_float(value):
 	"""
@@ -103,7 +103,7 @@ def get_bits_by_class(variable_class):
 	else:
 		return 16
 
-def update_input_config(json_data):
+def update_variable_set(json_data):
 	#json_data = file(json_file)
 	#data = json.loads(json_data.read().decode("utf-8-sig"))
 	#json_data.close()
@@ -118,9 +118,9 @@ def update_input_config(json_data):
 		defaults={'id':entry['id'],'variable_name':entry['variable_name'].replace(' ',''),'description': entry['description'],'client':cc,'active':bool(entry['active']),'writeable':bool(entry['writeable']),'unit':uc,'value_class':entry["class"].replace(' ','')})
 		
 		if created:
-			log.info(("created: %s") %(entry['variable_name']))
+			log.info(("created variable: %s") %(entry['variable_name']))
 		else:
-			log.info(("updated: %s") %(entry['variable_name']))
+			log.info(("updated variable: %s") %(entry['variable_name']))
 		
 			obj.variable_name = entry['variable_name']
 			obj.description = entry['description']
@@ -144,11 +144,24 @@ def update_input_config(json_data):
 		else:
 			ModbusVariable(modbus_variable=obj,address=entry["modbus_ip.address"].replace(' ','')).save()
 		
-			
 
-def update_client_config(json_file):
-	json_data = file(json_file)
-	data = json.loads(json_data.read().decode("utf-8-sig"))
-	json_data.close()
+def update_client_set(json_data):
+	data = json.loads(json_data)
+	for entry in data:
+		# client
+		cc, created = Client.objects.get_or_create(id = entry['client_id'],defaults={'short_name':entry['short_name'],'description':entry['description']})
+		if created:
+			log.info(("created client: %s") %(entry['short_name']))
+		else:
+			log.info(("updated client: %s") %(entry['short_name']))
+		# modbus config
+		if hasattr(obj,'clientmodbusproperty'):
+			cc.clientmodbusproperty.ip_address = entry['modbus_ip.ip_address']
+			cc.clientmodbusproperty.port = entry['modbus_ip.port']
+			cc.clientmodbusproperty.protocol = entry['modbus_ip.protocol']
+		else:
+			ClientModbusProperty(modbus_client=cc,ip_address=entry['modbus_ip.ip_address'],port=entry['modbus_ip.port'],protocol=entry['modbus_ip.protocol'])
+
+
 	
 	

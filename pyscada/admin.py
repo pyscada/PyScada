@@ -4,7 +4,7 @@ from pyscada.models import Variable
 from pyscada.models import UnitConfig
 from pyscada.models import ClientWriteTask
 from pyscada import log
-from pyscada.utils import update_input_config
+from pyscada.utils import update_variable_set
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.admin import SimpleListFilter
@@ -23,7 +23,7 @@ class VariableImportAdmin(admin.ModelAdmin):
     list_display = ('variable_name','active')
     
     def save_model(self, request, obj, form, change):
-        update_input_config(form.cleaned_data['json_configuration'])
+        update_variable_set(form.cleaned_data['json_configuration'])
         #log.debug(form.cleaned_data['json_configuration'])
 
     def __init__(self, *args, **kwargs):

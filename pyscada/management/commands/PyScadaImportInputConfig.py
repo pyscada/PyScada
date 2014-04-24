@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*- 
 import os,sys
-from pyscada.utils import update_input_config
+from pyscada.utils import update_variable_set
 from django.core.management.base import BaseCommand, CommandError
 
 class Command(BaseCommand):
@@ -13,7 +13,7 @@ class Command(BaseCommand):
             self.stdout.write('usage: python manage.py  PyScadaImportInputConfig "jsonfile.json" \n', ending='')
         elif len(args) == 1:
             json_data = file(os.path.abspath(args[0]))
-            update_input_config(json_data.read().decode("utf-8-sig"))
+            update_variable_set(json_data.read().decode("utf-8-sig"))
             json_data.close()
         else:
             self.stdout.write('usage: python manage.py  PyScadaImportInputConfig "jsonfile.json" \n', ending='')
