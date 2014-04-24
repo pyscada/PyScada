@@ -2,9 +2,9 @@
 #from pyscada.utils import modbus
 from pyscada import log
 from pyscada.models import Client
-from pyscada.models import ClientConfig
 from pyscada.models import Variable
-from pyscada.models import InputConfig
+from pyscada.webapp.models import VariableDisplayPropery as WebVariable
+from pyscada.modbus.models import VariableModbusProperty as ModbusVariable
 from pyscada.models import UnitConfig
 from struct import *
 
@@ -109,18 +109,19 @@ def update_input_config(json_data):
 	#json_data.close()
 	data = json.loads(json_data)
 	for entry in data:
+		# client
+		cc, ccc = Client.objects.get_or_create(id = entry['client_id'],defaults={'short_name':entry['client_id'],'description':entry['client_id']})
 		# unit config 
 		uc, ucc = UnitConfig.objects.get_or_create(unit = entry['unit'].replace(' ',''))
 		# variable exist
 		obj, created = Variable.objects.get_or_create(id=entry['id'],
-		defaults={'id':entry['id'],'variable_name':entry['variable_name'].replace(' ',''),'description': entry['description'],'client_id':entry['client_id'],'active':bool(entry['active']),'writeable':bool(entry['writeable']),'unit':uc,'value_class':entry["class"].replace(' ',''),'chart_line_color_id':entry["color_id"],'short_name':entry["short_name"]})
+		defaults={'id':entry['id'],'variable_name':entry['variable_name'].replace(' ',''),'description': entry['description'],'client':cc,'active':bool(entry['active']),'writeable':bool(entry['writeable']),'unit':uc,'value_class':entry["class"].replace(' ','')})
 		
 		if created:
 			log.info(("created: %s") %(entry['variable_name']))
-			ic =  InputConfig(variable_id=obj.pk,key = "modbus_ip.address",value=entry["modbus_ip.address"].replace(' ',''))
-			ic.save()
 		else:
 			log.info(("updated: %s") %(entry['variable_name']))
+		
 			obj.variable_name = entry['variable_name']
 			obj.description = entry['description']
 			obj.client_id = entry['client_id']
@@ -128,12 +129,21 @@ def update_input_config(json_data):
 			obj.writeable = bool(entry['writeable'])
 			obj.unit = uc
 			obj.value_class = entry["class"].replace(' ','')
-			obj.chart_line_color_id = entry["color_id"]
-			obj.short_name = entry["short_name"]
 			obj.save()
-			ic, icc = InputConfig.objects.get_or_create(variable_id=obj.pk,key="modbus_ip.address")
-			ic.value = entry["modbus_ip.address"].replace(' ','')
-			ic.save()
+		
+		if hasattr(obj,'webapp_variable'):
+			obj.webapp_variable.chart_line_color_id = entry["color_id"]
+			obj.webapp_variable.short_name = entry["short_name"]
+			obj.webapp_variable.save()
+		else:
+			WebVariable(webapp_variable=obj,short_name=entry["short_name"],chart_line_color_id=entry["color_id"]).save()
+		
+		if hasattr(obj,'modbus_variable'):
+			obj.modbus_variable.address = entry["modbus_ip.address"].replace(' ','')
+			obj.modbus_variable.save()
+		else:
+			ModbusVariable(modbus_variable=obj,address=entry["modbus_ip.address"].replace(' ','')).save()
+		
 			
 
 def update_client_config(json_file):

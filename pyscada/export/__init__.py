@@ -11,7 +11,6 @@ from pyscada.models import Variable
 from pyscada.models import RecordedDataFloat
 from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
-from pyscada.models import InputConfig
 from pyscada.models import RecordedTime
 from pyscada.models import TaskProgress
 from pyscada.export.hdf5 import mat

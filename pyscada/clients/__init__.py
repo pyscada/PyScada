@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 from numpy import float64,float32,int32,uint16,int16,uint8, nan
-from pyscada.models import ClientConfig
+from pyscada.models import Client
 from pyscada.models import Variable
-from pyscada.clients import modbus as mb
+from pyscada.modbus import client as mb
 from pyscada import log
 from time import time
 class client():
     def __init__(self):
         self.clients          = {}
-        self.client_config    = {}
         self.data             = {}
         self.prev_data        = {}
         self._prepare_clients()
@@ -17,9 +16,9 @@ class client():
         """
         prepare clients for query
         """
-        self.client_config    = ClientConfig.config.get_active_client_config()
-        for idx in self.client_config:
-            self.clients[idx] = mb.client(self.client_config[idx])
+        for item in Client.objects.filter(active=1):
+            if hasattr(item,'clientmodbusproperty'):
+                self.clients[item.pk] = mb.client(item)
 
 
     def request(self):
@@ -40,8 +39,7 @@ class client():
         self.db_data['time']        = self.time
         
         for idx in self.clients:
-            for var_idx in self.client_config[idx]['variable_input_config']:
-                variable_class = self.client_config[idx]['variable_input_config'][var_idx]['class'].replace(' ','')
+            for var_idx in self.clients[idx].variables:
                 store_value = False
                 value = 0
                 if self.data[idx]:
@@ -58,7 +56,7 @@ class client():
                                     store_value = False
                 
                 if store_value:
-                    self._prepare_db_data(var_idx,variable_class,value)
+                    self._prepare_db_data(var_idx,self.clients[idx].variables[var_idx]['value_class'],value)
 
     def write(self,var_idx,value):
         """

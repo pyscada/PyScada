@@ -1,25 +1,10 @@
 # -*- coding: utf-8 -*-
 from django.db import models
 from django.contrib.auth.models import User
-from django.contrib.auth.models import Group as DjGroup
+
 from django.utils import timezone
 import time
 
-#
-# Custom field types in here.
-#
-
-class UnixTimestampField(models.FloatField):
-	"""UnixTimestampField: creates a timestamp field that is represented on the
-	database as a double field rather than the usual DATETIME field.
-	"""
-	def get_db_prep_value(self, value, connection, prepared=False):
-		if self.auto_created:
-			return  time.time()
-		if value==None:
-			return None
-		return value
-		#return time.mktime(value.timetuple())
 
 #
 # Manager
@@ -42,100 +27,26 @@ class KeyValueManager(models.Manager):
 			return None
 
 
-class VariableConfigManager(models.Manager):
-	def get_variables_input_config(self,client_id):
-		Variables = super(VariableConfigManager, self).get_query_set().filter(client_id=client_id,active=1)
-		variables_config = {}
-		for variable in Variables:
-			output = {};
-			for entry in InputConfig.objects.filter(variable=variable.pk):
-				if entry.key.find('.')==-1:
-					output[entry.key] = entry.decoded_value()
-				else:
-					key_key = entry.key.split('.')[0]
-					attr = entry.key.split('.')[1]
-					if not output.has_key(key_key):
-						output[key_key] = {}
-					output[key_key][attr] = entry.decoded_value()
-			output['variable_name']	= variable.variable_name;
-			output['unit']	= variable.unit.unit
-			output['class']	= variable.value_class
-			variables_config[variable.pk] = output
-		return variables_config
-		
-	def get_variable_input_config(self,variable_id):
-		variable = super(VariableConfigManager, self).get_query_set().get(id=variable_id)
-		output = {};
-		for entry in InputConfig.objects.filter(variable=variable.pk):
-			if entry.key.find('.')==-1:
-				output[entry.key] = entry.decoded_value()
-			else:
-				key_key = entry.key.split('.')[0]
-				attr = entry.key.split('.')[1]
-				if not output.has_key(key_key):
-					output[key_key] = {}
-				output[key_key][attr] = entry.decoded_value()
-		output['variable_name']	= variable.variable_name;
-		output['unit']	= variable.unit.unit
-		output['class']	= variable.value_class
-		return output
-		
-
-class ClientConfigManager(models.Manager):
-	def get_client_config(self,client_id):
-		config = {}
-		for entry in super(ClientConfigManager, self).get_query_set().filter(client_id=client_id):
-			if entry.key.find('.')==-1:
-				config[entry.key] = entry.decoded_value()
-			else:
-				key_key = entry.key.split('.')[0]
-				attr = entry.key.split('.')[1]
-				if not config.has_key(key_key):
-					config[key_key] = {}
-				config[key_key][attr] = entry.decoded_value()
-		config['variable_input_config'] = Variable.objects.get_variables_input_config(client_id)
-		return config
-
-
-	def get_active_client_config(self):
-		config = {}
-		for entry in Client.objects.filter(active=1):
-			if Variable.objects.filter(client_id=entry.pk,active=1).count()>0:
-				config[entry.pk] = self.get_client_config(entry.pk)
-		return config
 
 #
 # Model
 #
 class GlobalConfig(models.Model):
-	id 				= models.AutoField(primary_key=True)
-	key 			= models.CharField(max_length=400, default='', verbose_name="key")
-	value			= models.CharField(max_length=400, default='', verbose_name="value")
+	id 			= models.AutoField(primary_key=True)
+	key 		= models.CharField(max_length=400, default='', verbose_name="key")
+	value		= models.CharField(max_length=400, default='', verbose_name="value")
 	description 	= models.TextField(default='', verbose_name="Description")
 	objects 		= KeyValueManager()
 
 class Client(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	short_name		= models.CharField(max_length=400, default='')
-	description 		= models.TextField(default='', verbose_name="Description")
+	model_choices 	= (('generic','generic'),('Wago_750-8XX','Wago 750-8XX'),('Wago-750-82XX','Wago 750-82XX'),)
+	model			= models.CharField(default='generic',choices=model_choices,max_length=400)
+	description 		= models.TextField(default='', verbose_name="Description",null=True)
 	active			= models.BooleanField(default=True)
 	def __unicode__(self):
 		return unicode(self.short_name)
-
-class ClientConfig(models.Model):
-	id 				= models.AutoField(primary_key=True)
-	client			= models.ForeignKey('Client',null=True, on_delete=models.SET_NULL)
-	key_choices		= (("modbus_ip.ip","modbus-IP IP-address"),("modbus_ip.port","modbus-IP port"),)
-	key 			= models.CharField(max_length=400, default='', verbose_name="key",choices=key_choices)
-	value			= models.CharField(max_length=400, default='', verbose_name="value")
-	objects			= KeyValueManager()
-	config			= ClientConfigManager()
-	def __unicode__(self):
-		return unicode(self.value)
-	def decoded_value(self):
-		if self.value.isdigit():
-			return int(self.value)
-		return unicode(self.value)
 
 
 class ScalingConfig(models.Model):
@@ -155,29 +66,16 @@ class UnitConfig(models.Model):
 	def __unicode__(self):
 		return unicode(self.unit)
 
-class Colors(models.Model):
-	id 		= models.AutoField(primary_key=True)
-	name 	= models.SlugField(max_length=80, verbose_name="variable name")
-	R 		= models.PositiveSmallIntegerField(default=0)
-	G 		= models.PositiveSmallIntegerField(default=0)
-	B 		= models.PositiveSmallIntegerField(default=0)
-	def __unicode__(self):
-		return unicode('rgb('+str(self.R)+', '+str(self.G)+', '+str(self.B)+', '+')')
-	def color_code(self):
-		return unicode('#%02x%02x%02x' % (self.R, self.G, self.B))	
+
 
 class Variable(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	variable_name 	= models.SlugField(max_length=80, verbose_name="variable name")
-	short_name		= models.CharField(default='',max_length=80, verbose_name="variable short name")
 	description 		= models.TextField(default='', verbose_name="Description")
 	client			= models.ForeignKey('Client',null=True, on_delete=models.SET_NULL)
 	active			= models.BooleanField(default=True)
 	unit 			= models.ForeignKey('UnitConfig',null=True, on_delete=models.SET_NULL)
 	writeable		= models.BooleanField(default=False)
-	chart_line_color = models.ForeignKey('Colors',default=0,null=True, on_delete=models.SET_NULL)
-	chart_line_thickness_choices = ((3,'3Px'),)
-	chart_line_thickness = models.PositiveSmallIntegerField(default=0,choices=chart_line_thickness_choices)
 	value_class_choices = (('FLOAT32','FLOAT32'),
 						('SINGLE','SINGLE'),
 						('FLOAT','FLOAT'),
@@ -193,24 +91,10 @@ class Variable(models.Model):
 						('BOOL','BOOL'),
 						)
 	value_class		= models.CharField(max_length=15, default='FLOAT', verbose_name="value_class",choices=value_class_choices)
-	objects			= VariableConfigManager()
 	def __unicode__(self):
 		return unicode(self.variable_name)
 
 
-class InputConfig(models.Model):
-	id 				= models.AutoField(primary_key=True)
-	variable	 		= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
-	key_choices 		= (('modbus_ip.address','modbus_ip.address'),)
-	key 			= models.CharField(max_length=400, default='', verbose_name="key",choices=key_choices)
-	value			= models.CharField(max_length=400, default='', verbose_name="value")
-	objects 			= KeyValueManager()
-	def __unicode__(self):
-		return unicode(self.key)
-	def decoded_value(self):
-		if self.value.isdigit():
-			return int(self.value)
-		return unicode(self.value)
 
 class ClientWriteTask(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -271,43 +155,6 @@ class Log(models.Model):
 	def __unicode__(self):
 		return unicode(self.message)
 
-
-class WebClientControlItem(models.Model):
-	id 				= models.AutoField(primary_key=True)
-	label			= models.CharField(max_length=400, default='')
-	position			= models.PositiveSmallIntegerField(default=0)
-	type_choices 	= ((0,'label blue'),(1,'label light blue'),(2,'label ok'),(3,'label warning'),(4,'label alarm'),(5,'Control Element'),(6,'Display Value'),)
-	type			= models.PositiveSmallIntegerField(default=0,choices=type_choices)
-	variable    		= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
-	def __unicode__(self):
-		return unicode(self.label+" ("+self.variable.variable_name + ")")
-	def web_id(self):
-		return unicode(self.id.__str__() + "-" + self.label.replace(' ','_')+"-"+self.variable.variable_name.replace(' ','_'))
-
-class WebClientChart(models.Model):
-	id 				= models.AutoField(primary_key=True)
-	label			= models.CharField(max_length=400, default='')
-	position			= models.PositiveSmallIntegerField(default=0)
-	x_axis_label		= models.CharField(max_length=400, default='',blank=True)
-	x_axis_ticks		= models.PositiveSmallIntegerField(default=6)
-	y_axis_label		= models.CharField(max_length=400, default='',blank=True)
-	y_axis_min		= models.FloatField(default=0)
-	y_axis_max		= models.FloatField(default=100)
-	size_choices 	= (('pagewidth','page width'),('sidebyside','side by side (1/2)'),('sidebyside1','side by side (2/3|1/3)'),)
-	size			= models.CharField(max_length=20, default='pagewidth',choices=size_choices)
-	variables		= models.ManyToManyField(Variable)
-	row				= models.ManyToManyField("self",blank=True)
-	def __unicode__(self):
-		return unicode(self.label)
-	
-class WebClientSlidingPanelMenu(models.Model):
-	id 				= models.AutoField(primary_key=True)
-	label			= models.CharField(max_length=400, default='')
-	position_choices = ((0,'Control Menu'),(1,'left'),(2,'right'))
-	position			= models.PositiveSmallIntegerField(default=0,choices=position_choices)
-	items	 	 	= models.ManyToManyField(WebClientControlItem)
-	def __unicode__(self):
-		return unicode(self.label)
 		
 class TaskProgress(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -349,17 +196,4 @@ class RecordedDataCache(models.Model):
 	def __unicode__(self):
 		return unicode(self.value)
 
-class WebClientPage(models.Model):
-	id 				= models.AutoField(primary_key=True)
-	title 			= models.CharField(max_length=400, default='')
-	link_title		= models.SlugField(max_length=80, default='')
-	charts 			= models.ManyToManyField(WebClientChart,blank=True)
-	def __unicode__(self):
-		return unicode(self.link_title.replace(' ','_'))
 
-class Group(models.Model):
-	group 				= models.OneToOneField(DjGroup)
-	pages 				= models.ManyToManyField(WebClientPage,blank=True)
-	sliding_panel_menu 	= models.ManyToManyField(WebClientSlidingPanelMenu,blank=True)
-	charts 				= models.ManyToManyField(WebClientChart,blank=True)
-	control_items 		= models.ManyToManyField(WebClientControlItem,blank=True)

@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
-#from pymodbus.client.sync import ModbusUdpClient as ModbusClient
 from pyscada import log
 from pyscada.utils import decode_value, encode_value
 from pyscada.utils import get_bits_by_class
-from pyscada.utils.modbus import decode_address
+from pyscada.modbus.utils import decode_address
 from pyscada.utils import decode_bits
 from pyscada.models import GlobalConfig
 import random
@@ -137,25 +136,28 @@ class client:
     """
     Modbus client (Master) class
     """
-    def __init__(self,client_config):
-        self._address           = client_config['modbus_ip']['ip']
-        self._port              = client_config['modbus_ip']['port']
+    def __init__(self,client):
+        self._address           = client.clientmodbusproperty.ip_address
+        self._port              = client.clientmodbusproperty.port
         self._silentMode        = GlobalConfig.objects.get_value_by_key('silentMode')
         self._sim               = bool(int(GlobalConfig.objects.get_value_by_key('simulation')))
         self.trans_variable_config = []
         self.trans_variable_bit_config = []
-        self._variable_config   = self._prepare_variable_config(client_config['variable_input_config'])
+        self.variables  = {}
+        self._variable_config   = self._prepare_variable_config(client)
         
 
-    def _prepare_variable_config(self,variable_config):
+    def _prepare_variable_config(self,client):
         
-        for idx in variable_config:
-            Address      = decode_address(variable_config[idx]['modbus_ip']['address'])
-            bits_to_read = get_bits_by_class(variable_config[idx]['class']);
+        for var in client.variable_set.filter(active=1):
+            Address      = decode_address(var.variablemodbusproperty.address)
+            bits_to_read = get_bits_by_class(var.value_class)
+            self.variables[var.pk] = {'value_class':var.value_class}
             if isinstance(Address, list):
-                self.trans_variable_bit_config.append([Address,idx])
+                self.trans_variable_bit_config.append([Address,var.pk])
             else:
-                self.trans_variable_config.append([Address,variable_config[idx]['class'],bits_to_read,idx])
+                self.trans_variable_config.append([Address,var.value_class,bits_to_read,var.pk])
+            
 
         self.trans_variable_config.sort()
         self.trans_variable_bit_config.sort()
@@ -188,7 +190,7 @@ class client:
         if self._sim:
             self.slave = []
             return True
-        self.slave = ModbusClient(self._address,self._port)
+        self.slave = ModbusClient(self._address,int(self._port))
         status = self.slave.connect()
         return status
         
