@@ -13,7 +13,7 @@ body {
 }
 
 .sub-page{
-	padding:15px;
+	padding-top:15px;
 }
 
 .SAC-Main {
@@ -59,9 +59,9 @@ body {
 	min-height: 1px;
 	padding-right: 15px;
 	float: left;
+	font: 12px/1em "proxima-nova", Helvetica, Arial, sans-serif;
 }
 .main-chart-area{
-	min-width:500px;
 	position: relative;
 	min-height: 1px;
 	float: left;
@@ -70,7 +70,7 @@ body {
 	float: left;
 	position: relative;
 	min-height: 1px;
-	width: 50%;
+	width: 49.5%;
 	height: 100%;
 }
 .third-size-chart{
@@ -84,7 +84,7 @@ body {
 	float: left;
 	position: relative;
 	min-height: 1px;
-	width: 66%;
+	width: 65%;
 	height: 100%;
 }
 
@@ -95,7 +95,7 @@ body {
 .chart-container {
 	position: relative;
 	box-sizing: border-box;
-    padding: 10px 10px 10px 0px;
+    padding: 10px 0px 10px 7px;
     border: 1px solid #ddd;
     background: #fff;
     background: linear-gradient(#f6f6f6 0, #fff 50px);
@@ -108,7 +108,7 @@ body {
     -ms-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
     -moz-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
     -webkit-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-	font: 18px/1.5em "proxima-nova", Helvetica, Arial, sans-serif;
+	font: 12px/1em "proxima-nova", Helvetica, Arial, sans-serif;
 }
 .chart-placeholder {
 	width: 100%;
@@ -126,7 +126,7 @@ body {
 	position: absolute;
 	text-align: center;
 	font-size: 12px;
-	top:2px;
+	top:5px;
 	left:50%;
 	
 }
@@ -136,7 +136,7 @@ body {
 }
 .yaxisLabel {
 	top: 50%;
-	left: 2px;
+	left: 5px;
 	transform: rotate(-90deg);
 	-o-transform: rotate(-90deg);
 	-ms-transform: rotate(-90deg);
@@ -160,8 +160,8 @@ body {
 
 .chart-btn-bar {
 	position: absolute; 
-	top:-8px; 
-	right:-8px;
+	top:2px; 
+	right:2px;
 }
 .chart-btn-bar .btn{
 	padding:0px 12px;
@@ -195,6 +195,8 @@ table.tablesorter thead tr .tablesorter-header.sorter-false {
 .legendSeries {
 	 border: 2px solid #ddd;
 	 padding:1px;
+	 font-size: 11px;
+	 line-height: 1.2em;
 }
 .legendLabel {
 	padding-right:5px;
@@ -273,3 +275,26 @@ table.tablesorter thead tr .tablesorter-header.sorter-false {
 	text-align:left;
 }
 
+.chart_hspace {
+	float: left;
+	position: relative;
+	min-height: 1px;
+	width: 1%;
+	height: 100%;
+}
+
+
+.widget {
+
+}
+.widget-body {
+	padding:10px;
+}
+.widget-body::after {
+	clear: both;
+}
+.widget-body::before ,
+.widget-body::after {
+	display: table;
+	content: " ";
+}

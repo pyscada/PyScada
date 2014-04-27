@@ -4,8 +4,8 @@ from pyscada import log
 from pyscada.models import Client
 from pyscada.models import Variable
 from pyscada.webapp.models import VariableDisplayPropery as WebVariable
-from pyscada.modbus.models import VariableModbusProperty as ModbusVariable
-from pyscada.modbus.models import ClientModbusProperty
+from pyscada.modbus.models import ModbusVariable
+from pyscada.modbus.models import ModbusClient
 from pyscada.models import UnitConfig
 from struct import *
 
@@ -155,12 +155,12 @@ def update_client_set(json_data):
 		else:
 			log.info(("updated client: %s") %(entry['short_name']))
 		# modbus config
-		if hasattr(obj,'clientmodbusproperty'):
-			cc.clientmodbusproperty.ip_address = entry['modbus_ip.ip_address']
-			cc.clientmodbusproperty.port = entry['modbus_ip.port']
-			cc.clientmodbusproperty.protocol = entry['modbus_ip.protocol']
+		if hasattr(obj,'modbusclient'):
+			cc.modbusclient.ip_address = entry['modbus_ip.ip_address']
+			cc.modbusclient.port = entry['modbus_ip.port']
+			cc.modbusclient.protocol = entry['modbus_ip.protocol']
 		else:
-			ClientModbusProperty(modbus_client=cc,ip_address=entry['modbus_ip.ip_address'],port=entry['modbus_ip.port'],protocol=entry['modbus_ip.protocol'])
+			ModbusClient(modbus_client=cc,ip_address=entry['modbus_ip.ip_address'],port=entry['modbus_ip.port'],protocol=entry['modbus_ip.protocol'])
 
 
 	

@@ -1,0 +1,9 @@
+<div class="panel-body" >
+	<div class="control-panel">
+		{% for item in control_panel.items.all %}
+			{% if item.pk in visable_control_element_list %}
+				{% include "control_element.html" with item=item %}
+			{% endif %}	
+		{% endfor %}
+	</div>
+</div>

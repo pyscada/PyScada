@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.auth.models import User
 
 from django.utils import timezone
+from django.conf import settings
 import time
 
 
@@ -41,9 +42,8 @@ class GlobalConfig(models.Model):
 class Client(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	short_name		= models.CharField(max_length=400, default='')
-	model_choices 	= (('generic','generic'),('Wago_750-8XX','Wago 750-8XX'),('Wago-750-82XX','Wago 750-82XX'),)
-	model			= models.CharField(default='generic',choices=model_choices,max_length=400)
-	description 		= models.TextField(default='', verbose_name="Description",null=True)
+	client_type		= models.CharField(default='generic',choices=settings.PYSCADA_CLIENTS,max_length=400)
+	description 	= models.TextField(default='', verbose_name="Description",null=True)
 	active			= models.BooleanField(default=True)
 	def __unicode__(self):
 		return unicode(self.short_name)

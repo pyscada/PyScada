@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
 
 
-class ClientModbusProperty(models.Model):
+class ModbusClient(models.Model):
 	modbus_client 		= models.OneToOneField(Client)
 	protocol_choices 	= ((0,'TCP'),(1,'UDP'),(2,'serial ASCII'),(3,'serial RTU'),)
 	protocol				= models.PositiveSmallIntegerField(default=0,choices=protocol_choices)
@@ -16,7 +16,7 @@ class ClientModbusProperty(models.Model):
 	def __unicode__(self):
 		return unicode(self.modbus_client.short_name)
 
-class VariableModbusProperty(models.Model):
+class ModbusVariable(models.Model):
 	modbus_variable = models.OneToOneField(Variable)
 	address  = models.CharField(max_length=400)
 	

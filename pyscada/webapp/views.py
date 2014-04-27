@@ -10,7 +10,7 @@ from pyscada.webapp.models import Chart
 from pyscada.webapp.models import Page
 from pyscada.webapp.models import ControlItem
 from pyscada.webapp.models import SlidingPanelMenu
-from pyscada.webapp.models import GroupDisplayPermisions
+from pyscada.webapp.models import GroupDisplayPermission
 
 from pyscada.models import Log
 from pyscada.models import ClientWriteTask
@@ -38,31 +38,24 @@ def index(request):
 		return redirect('/accounts/login/?next=%s' % request.path)
 	
 	t = loader.get_template('content.html')
-	page_list = GroupDisplayPermisions.objects.filter(webapp_group__in=request.user.groups.iterator).values_list('pages',flat=True)
-	page_content = []
-	page_list = list(set(page_list))
-	for page_id in	page_list:
-		page = Page.objects.get(pk=page_id)
-		chart_list = []
-		chart_skip = []
-		for chart in page.charts.filter(groupdisplaypermisions__in=request.user.groups.iterator).order_by("position"):
-			if chart_skip.count(chart.pk)>0:
-				continue
-			chart_list.append(chart)
-			if chart.row.count() > 0 and (chart.size == 'sidebyside' or chart.size == 'sidebyside1'):
-				chart_skip.append(chart.row.first().pk)
-		page_content.append({"page":page,"charts":chart_list})
+	page_list = Page.objects.filter(groupdisplaypermission__webapp_group__in=request.user.groups.iterator)
+	visable_charts_list = Chart.objects.filter(groupdisplaypermission__webapp_group__in=request.user.groups.iterator).values_list('pk',flat=True)
+
+	sliding_panel_list = SlidingPanelMenu.objects.filter(groupdisplaypermission__webapp_group__in=request.user.groups.iterator)
 	
-	sliding_panel_list = GroupDisplayPermisions.objects.filter(webapp_group__in=request.user.groups.iterator).values_list('sliding_panel_menu',flat=True)
-	panel_list   = SlidingPanelMenu.objects.filter(pk__in=sliding_panel_list,position__in=(1,2,))
-	control_list = SlidingPanelMenu.objects.filter(pk__in=sliding_panel_list,position=0)
-	if control_list:
-		control_list = control_list[0].items.all()
+	visable_control_element_list = GroupDisplayPermission.objects.filter(webapp_group__in=request.user.groups.iterator).values_list('control_items',flat=True)
+	
+	panel_list   = sliding_panel_list.filter(position__in=(1,2,))
+	control_list = sliding_panel_list.filter(position=0)
+	
+
 	c = RequestContext(request,{
-		'page_content': page_content,
-		'panel_list'	 : panel_list,
+		'page_list': page_list,
+		'visable_charts_list':visable_charts_list,
+		'visable_control_element_list':visable_control_element_list,
+		'panel_list': panel_list,
 		'control_list':control_list,
-		'user'		 : request.user
+		'user': request.user
 	})
 	log.webnotice('open WebApp',request.user)
 	return HttpResponse(t.render(c))
@@ -76,31 +69,22 @@ def config(request):
 	config["LogDataFile"] 		= "json/log_data/"
 	config["RefreshRate"] 		= 5000
 	config["config"] 			= []
-	#config["users"]				= User.objects.all().values_list('pk','first_name','last_name')
-	chart_count 					= 0
-	charts = GroupDisplayPermisions.objects.filter(webapp_group__in=request.user.groups.iterator).values_list('charts',flat=True)
+	chart_count 				= 0
+	charts = GroupDisplayPermission.objects.filter(webapp_group__in=request.user.groups.iterator).values_list('charts',flat=True)
 	charts = list(set(charts))
 	for chart_id in charts:
 		vars = {}
 		c_count = 0
 		chart = Chart.objects.get(pk=chart_id)
 		for var in chart.variables.filter(active=1).order_by('variable_name'):
-			if var.variabledisplaypropery.chart_line_color:
-				if  var.variabledisplaypropery.chart_line_color.id > 1:
-					color_code = var.variabledisplaypropery.chart_line_color.color_code()
-				else:
-					color_code = c_count
-					c_count +=1
-			else:
-				color_code = c_count
-				c_count +=1
+			color_code = var.variabledisplaypropery.chart_line_color_code()
 			if (var.variabledisplaypropery.short_name and var.variabledisplaypropery.short_name != '-'):
 				var_label = var.variabledisplaypropery.short_name
 			else:
 				var_label = var.variable_name
 			vars[var.variable_name] = {"yaxis":1,"color":color_code,"unit":var.unit.description,"label":var_label}
 			
-		config["config"].append({"label":chart.label,"xaxis":{"ticks":chart.x_axis_ticks},"axes":[{"yaxis":{"min":chart.y_axis_min,"max":chart.y_axis_max,'label':chart.y_axis_label}}],"placeholder":"#chart-%d"% chart.pk,"legendplaceholder":"#chart-%d-legend" % chart.pk,"variables":vars}) 
+		config["config"].append({"label":chart.title,"xaxis":{"ticks":chart.x_axis_ticks},"axes":[{"yaxis":{"min":chart.y_axis_min,"max":chart.y_axis_max,'label':chart.y_axis_label}}],"placeholder":"#chart-%d"% chart.pk,"legendplaceholder":"#chart-%d-legend" % chart.pk,"variables":vars}) 
 		chart_count += 1		
 	
 	
@@ -150,8 +134,8 @@ def get_cache_data(request):
 	if RecordedDataCache.objects.first():
 		data["timestamp"] = RecordedDataCache.objects.first().time.timestamp_ms()
 	
-	active_variables = list(GroupDisplayPermisions.objects.filter(webapp_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True))
-	active_variables += list(GroupDisplayPermisions.objects.filter(webapp_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
+	active_variables = list(GroupDisplayPermission.objects.filter(webapp_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True))
+	active_variables += list(GroupDisplayPermission.objects.filter(webapp_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
 	
 	active_variables = list(set(active_variables))
 	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__variable_name','value'))
@@ -182,7 +166,7 @@ def data(request):
 	else:
 		return HttpResponse('{\n}', content_type='application/json')
 	
-	active_variables = GroupDisplayPermisions.objects.filter(webapp_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True)
+	active_variables = GroupDisplayPermission.objects.filter(webapp_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True)
 	active_variables = list(set(active_variables))
 	
 	data = {}

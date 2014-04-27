@@ -1,32 +1,32 @@
 {% load i18n staticfiles %}
 <!DOCTYPE html>
 <html xmlns="html://www.w3.org/1999/xhtml" lang="en" dir="ltr" xml:lang="en">
-	<head>
+    <head>
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <meta name="description" content="PyScada html5 client application"/>
         <meta name="author" content="Martin Schroeder"/>
         
-		<title>PyScada Control Center</title>
-		<!-- Bootstrap core CSS -->
+        <title>PyScada Control Center</title>
+        <!-- Bootstrap core CSS -->
         <link href="{% static "pyscada/css/bootstrap.css" %}" rel="stylesheet"/>
         <!-- Bootstrap theme -->
         <link href="{% static "pyscada/css/bootstrap-theme.min.css" %}" rel="stylesheet"/>
-		<!-- Custom styles for this template -->    
+        <!-- Custom styles for this template -->    
         <link href="{% static "pyscada/css/pyscada-theme.css" %}" rel="stylesheet"/>
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
-          <script src="js/html5shiv.js"></script>
-          <script src="js/respond.min.js"></script>
-          <script type="text/javascript">
+        <script src="js/html5shiv.js"></script>
+        <script src="js/respond.min.js"></script>
+        <script type="text/javascript">
             var html5 = { 'elements': 'abbr article aside audio bdi data datalist details figcaption figure footer header hgroup mark meter nav output progress section summary time video' };
-              </script>
-          <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+            </script>
+        <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
         <![endif]-->
     </head>
     <body style="">
-	
-		<!-- Fixed navbar -->
+    
+        <!-- Fixed navbar -->
         <div class="navbar navbar-inverse navbar-fixed-top">
             <div class="container">
                 <div class="navbar-header">
@@ -39,222 +39,132 @@
                 </div>
                 <div class="navbar-collapse collapse">
                     <ul class="nav navbar-nav">
-						{% for page in page_content %}
-							<li><a href="#{{page.page.link_title}}">{{page.page.title}}</a></li>
-						{% endfor %}
+                        {% for page in page_list %}
+                            <li><a href="#{{page.link_title}}">{{page.title}}</a></li>
+                        {% endfor %}
                     </ul>
                     <ul class="nav navbar-right navbar-nav">
-                        <li class="dropdown"><!-- Controls -->
-							<a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-wrench"></span> Controls <strong class="caret"></strong></a>
-							<div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:500px;">
-								<div class="control-panel">
-									<!--<ul><li>-->
-									
-								
-									{% for item in control_list %}
-										{% if item.variable.active == 1 %}
-										
-											{% if item.type == 0 %}<!-- label blue -->
-												<span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span>
-											{% elif item.type == 1 %}<!-- label light blue -->
-												<span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span>
-											{% elif item.type == 2 %}<!-- label ok -->
-												<span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span>
-											{% elif item.type == 3 %}<!-- label warning -->
-												<span class="label label-default type-bool status-yello var-{{ item.variable.variable_name }}">{{ item.label }}</span>
-											{% elif item.type == 4 %}<!-- label alarm -->
-												<span class="label label-default type-bool status-red var-{{ item.variable.variable_name }}">{{ item.label }}</span>
-											{% elif item.type == 5 %}<!-- input -->
-												{% if item.variable.value_class == 'BOOL' %}
-													<button type="button" var_id="{{ item.variable.pk }}" class="btn btn-default updateable write-task-btn type-bool var-{{ item.variable.variable_name }}" id="{{ item.web_id }}">{{ item.label }}</button>
-												{% else %}
-													<div class="input-group">
-														<span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
-														<input type="text" class="form-control var-{{ item.variable.variable_name }}" id="{{ item.web_id }}-value" placeholder="">
-														<span class="input-group-addon">{{ item.variable.unit.description }}</span>
-														<span class="input-group-btn">
-															<button class="btn btn-default write-task-set" var_id="{{ item.variable.pk }}" id="{{ item.web_id }}" type="button">set</button>
-														</span>
-													</div>
-												{% endif %}
-											{% elif item.type == 6 %}<!-- display value -->
-												<span class="type-label">{ item.label }}<span class="type-unit"><span class="type-numeric var-{{ item.variable.variable_name }}">NaN</span> {{ item.variable.unit.description }}</span></span>
-											{% endif %}
-											{% if not forloop.last %}
-												{% if not forloop.counter|divisibleby:2 %}
-													<!--</li><li>-->
-												{% elif item.type == 5 and item.variable.value_class != 'BOOL' %}
-													<!--</li><li>-->
-												{% endif %}
-											{% endif %}
-										{% endif %}
-									{% endfor %}
-									<!--</li>
-									</ul>-->
-								</div>
-							</div>
-						</li>
-                        <li class="dropdown"><!-- Log -->
-							<a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-book"></span> Log <strong class="caret"></strong></a>
-							<div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:500px;">
-								<ul>
-									<li><a href="#page-log">Show Log</a></li>
-									<li class="divider"></li>
-									<li><form role="form" id="page-log-form" action="form/log_entry/" method="post">
-										{% csrf_token %}
-										<div class="form-group">
-											<label for="page-log-form-message">Message</label>
-											<input type="text" class="form-control" id="page-log-form-message" placeholder="Enter Message" name="message">
-										</div>
-										<div class="form-group">
-											<label class="radio-inline">
-											  <input type="radio" id="inlineRadio1" value="8" name="level"> Notification (8)
-											</label>
-											<label class="radio-inline">
-											  <input type="radio" id="inlineRadio2" value="9" name="level" checked> Information (9)
-											</label>
-										</div>
-										<button type="submit" class="btn btn-default">Add</button>
-									</form></li>
-								</ul>
-							</div>
-						</li>
-						<li class="dropdown"><!-- Settings -->
-							<a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> Settings <strong class="caret"></strong></a>
-							<div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:200px;">
-								<form role="form">
-									<label for="inputPassword">x Axis duration:</label>
-									<div class="input-group">
-										<input type="text" class="form-control" id="ChartTimeWindow-input">
-										<span class="input-group-addon">min</span>
-										<span class="input-group-btn">
-											<button class="btn btn-default" type="button" id="ChartTimeWindow-set">set</button>
-										</span>
+                    	{% for panel in control_list %}
+							<li class="dropdown"><!-- {{ panel.label|upper }} -->
+								<a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-wrench"></span> {{ panel.label }}<strong class="caret"></strong></a>
+								<div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:500px;">
+									<div class="control-panel">
+										{% for item in panel.control_panel.items.all %}
+											{% if item.pk in visable_control_element_list %}
+												{% include "control_element.html" with item=item %}
+											{% endif %}	
+										{% endfor %}
 									</div>
-								</form>
-								<form class="navbar-form navbar-right" >
-									<button type="button" class="btn btn-success" id="AutoUpdateButton" >auto update</button>
-								</form>
-							</div>
-						</li>
-						<li class="dropdown"><!-- User -->
+								</div>
+							</li>
+                    	{% endfor %}
+                        <li class="dropdown"><!-- Log -->
+                            <a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-book"></span> Log <strong class="caret"></strong></a>
+                            <div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:500px;">
+                                <ul>
+                                    <li><a href="#page-log">Show Log</a></li>
+                                    <li class="divider"></li>
+                                    <li><form role="form" id="page-log-form" action="form/log_entry/" method="post">
+                                        {% csrf_token %}
+                                        <div class="form-group">
+                                            <label for="page-log-form-message">Message</label>
+                                            <input type="text" class="form-control" id="page-log-form-message" placeholder="Enter Message" name="message">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="radio-inline">
+                                                <input type="radio" id="inlineRadio1" value="8" name="level"> Notification (8)
+                                            </label>
+                                            <label class="radio-inline">
+                                                <input type="radio" id="inlineRadio2" value="9" name="level" checked> Information (9)
+                                            </label>
+                                        </div>
+                                        <button type="submit" class="btn btn-default">Add</button>
+                                    </form></li>
+                                </ul>
+                            </div>
+                        </li>
+                        <li class="dropdown"><!-- Settings -->
+                            <a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> Settings <strong class="caret"></strong></a>
+                            <div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:200px;">
+                                <form role="form">
+                                    <label for="inputPassword">x Axis duration:</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="ChartTimeWindow-input">
+                                        <span class="input-group-addon">min</span>
+                                        <span class="input-group-btn">
+                                            <button class="btn btn-default" type="button" id="ChartTimeWindow-set">set</button>
+                                        </span>
+                                    </div>
+                                </form>
+                                <form class="navbar-form navbar-right" >
+                                    <button type="button" class="btn btn-success" id="AutoUpdateButton" >auto update</button>
+                                </form>
+                            </div>
+                        </li>
+                        <li class="dropdown"><!-- User -->
                             <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon  glyphicon-user"></span> {{ user.username }} <b class="caret"></b></a>
                             <ul class="dropdown-menu">
-							<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
+                            <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
                             <li class="divider"></li>
                             <li><a href="/accounts/logout"> logout</a></li>
                             </ul>
                         </li>           
                         <li><a href="#page-help"><span class="glyphicon glyphicon-question-sign"></span> Help</a></li>
-						<li style="width:20px;"><a href="#" ><span id="AutoUpdateStatus" class="glyphicon glyphicon-transfer"></span></a><!--<img src="{% static "pyscada/img/load.gif" %}" alt="loading" id="AutoUpdateStatus" height="12px">--></li>
+                        <li style="width:20px;"><a href="#" ><span id="AutoUpdateStatus" class="glyphicon glyphicon-transfer"></span></a><!--<img src="{% static "pyscada/img/load.gif" %}" alt="loading" id="AutoUpdateStatus" height="12px">--></li>
                     </ul>
-                    
                 </div><!--/.nav-collapse -->
             </div>
             <div id="notification_area"></div>
         </div>
         <div class="container" id="content">
-            <!-- loading animation -->
-            <div id="loadingAnimation"> <div class="row"><div class="col-md-1 col-md-offset-6"><img src="{% static "pyscada/img/load.gif" %}" alt="loading"/></div></div></div>
-            {% for page in page_content %}
-				<div id="{{page.page.link_title}}" class="sub-page" >
-					{% for chart in page.charts %}
-						{% if  chart.size == "sidebyside" and chart.row.count %}
-							<div class="row"> <!-- {{ chart.label|upper }} {{ chart.row.first.label|upper }} -->
-								<div class="panel panel-default">
-									<div class="panel-body minimizeable" id="a{{chart.pk}}-t">
-										<div class="legend-sidebar">
-											<div id="chart-{{chart.pk}}-legend"></div>
-											<div class="clear-sep"></div>
-											<div id="chart-{{chart.row.first.pk}}-legend"></div>
-										</div>
-										<div class="main-chart-area" style=" height:350px;">
-											<div class="half-size-chart" >
-												<div id="chart-{{chart.pk}}" style="width: 100%; height:100%;"></div>
-											</div>
-											<div class="half-size-chart" >
-												<div id="chart-{{chart.row.first.pk}}" style="width: 100%; height:100%;"></div>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div> <!-- end {{ chart.label|upper }} {{ chart.row.first.label|upper }} -->
-						{% elif  chart.size == "sidebyside1" and chart.row.count %}
-							<div class="row"> <!-- {{ chart.label|upper }} {{ chart.row.first.label|upper }} -->
-								<div class="panel panel-default">
-									<div class="panel-body minimizeable" id="a{{chart.pk}}-t">
-										<div class="legend-sidebar">
-											<div id="chart-{{chart.pk}}-legend"></div>
-											<div class="clear-sep"></div>
-											<div id="chart-{{chart.row.first.pk}}-legend"></div>
-										</div>
-										<div class="main-chart-area" style=" height:350px;">
-											<div class="two-third-size-chart" >
-												<div id="chart-{{chart.pk}}" style="width: 100%; height:100%;"></div>
-											</div>
-											<div class="third-size-chart" >
-												<div id="chart-{{chart.row.first.pk}}" style="width: 100%; height:100%;"></div>
-											</div>
-										</div>
-									</div>
-								</div>
-							</div> <!-- end {{ chart.label|upper }} {{ chart.row.first.label|upper }} -->
-						{% else %}
-							<div class="row"> <!-- {{ chart.label|upper }} -->
-								<div class="panel panel-default">
-									<div class="panel-body minimizeable" id="a{{chart.pk}}-t">
-										<div class="legend-sidebar">
-											<div id="chart-{{chart.pk}}-legend"></div>
-										</div>
-										<div class="main-chart-area" style=" height:350px;">
-											<div id="chart-{{chart.pk}}" style="width: 100%; height:100%;"></div>
-										</div>
-									</div>
-								</div>
-							</div> <!-- end {{ chart.label|upper }} -->
-						{% endif %}
-					{% endfor %}
-				</div>
+            {% for page in page_list %}
+                <div id="{{page.link_title}}" class="sub-page" >
+                    <div class="row">
+                        {% for widget in page.widget_set.all %}
+                            {% if widget.col == 0 and widget.row > 0 %}
+                    </div>
+                    <div class="row">
+                            {% endif %}
+                        <div id="widget_{{widget.pk}}" class="widget {{ widget.css_class}}"> <!-- {{ widget.title }} -->
+                            {% if widget.chart %}
+                                {% include "chart.html" with chart=widget.chart %}
+                            {% elif widget.chart_set %}
+                                {% include "chart_set.html" with chart_set=widget.chart_set %}
+                            {% elif widget.control_panel %}
+                                {% include "control_panel.html" with control_panel=widget.control_panel %}
+                            {% elif widget.custom_html_panel %}
+                                {% include "custom_html_panel.html" with custom_html_panel=widget.custom_html_panel %}
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>	
+                </div>
             {% endfor %}
             <div id="page-log" class="sub-page" >
-				<table id="log-table" class="table table-condensed table-hover tablesorter tablesorter-default" width="100%">
-					<colgroup>
-						<col style="width: 180px;">
-						<col style="width: 60px;">
-						<col>
-					</colgroup>
-					<thead>
-						<tr>
-							<th>Date</th>
-							<th>Level</th>
-							<th>Message</th>
-						</tr>
-					</thead>
-					<tbody></tbody>
-				</table>
-			</div> <!-- end page-log -->	
+                <table id="log-table" class="table table-condensed table-hover tablesorter tablesorter-default" width="100%">
+                    <colgroup>
+                        <col style="width: 180px;">
+                        <col style="width: 60px;">
+                        <col>
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Level</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div> <!-- end page-log -->	
             {% for panel in panel_list %}
-                <div class="side-menu {% if panel.position == 0 %} bottom {% elif panel.position == 1 %}left{% elif panel.position == 2 %}right{% endif %}">
+                <div class="side-menu  {% if panel.position == 1 %}left{% elif panel.position == 2 %}right{% endif %}">
                     <ul class="status-panel">
                         <li>{{ panel.label }}</li>
-                        {% for item in panel.items.all %}
-							{% if item.variable.active == 1 %}
-								{% if item.type == 0 %}<!-- label blue -->
-									<li><span class="label label-default type-bool status-blue var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
-								{% elif item.type == 1 %}<!-- label light blue -->
-									<li><span class="label label-default type-bool status-info var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
-								{% elif item.type == 2 %}<!-- label ok -->
-									<li><span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
-								{% elif item.type == 3 %}<!-- label warning -->
-									<li><span class="label label-default type-bool status-yello var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
-								{% elif item.type == 4 %}<!-- label alarm -->
-									<li><span class="label label-default type-bool status-red var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
-								{% elif item.type == 5 %}<!-- label ok -->
-									<li><span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span></li>
-								{% elif item.type == 6 %}<!-- display value -->
-									<li><span class="label label-default type-label">{{ item.label }}: <span class="type-unit"><span class="type-numeric var-{{ item.variable.variable_name }}">0.0</span> {{ item.variable.unit.description }}</span></span></li>
-								{% endif %}
-							{% endif %}
+                        {% for item in panel.control_panel.items.all %}
+                        	{% if item.pk in visable_control_element_list %}
+                        		{% include "status_element.html" with item=item %}
+                            {% endif %}
                         {% endfor %}
                     </ul>
                 </div>
@@ -266,7 +176,7 @@
         <script type="text/javascript" src="{% static "pyscada/js/jquery.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/jquery.cookie.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/jquery.mb.CSSAnimate.min.js" %}"></script>
-		<script type="text/javascript" src="{% static "pyscada/js/jquery.tablesorter.min.js" %}"></script>
+        <script type="text/javascript" src="{% static "pyscada/js/jquery.tablesorter.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.resize.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.time.min.js" %}"></script>
@@ -276,18 +186,18 @@
         
         <script>
         $( document ).ready(function() {
-			var debug = 0;
+            var debug = 0;
             // Handler for .ready() called.
-            $("#loadingAnimation").hide();
-			// hide all pages
-			$(".sub-page").hide();
-			if (window.location.hash.length > 0) {
-				$(window.location.hash).show();
-			}else{
-				window.location.hash = $('ul.navbar-nav li a').first().attr("href");
-			}
-			
-			// sidemenues
+            
+            // hide all pages
+            $(".sub-page").hide();
+            if (window.location.hash.length > 0) {
+                $(window.location.hash).show();
+            }else{
+                window.location.hash = $('ul.navbar-nav li a').first().attr("href");
+            }
+            
+            // sidemenues
             $('.side-menu.left').mouseenter(function(){
                 $(this).stop().CSSAnimate({"left":0},500)
             }).mouseleave(function(){
@@ -313,7 +223,6 @@
                 $(this).stop().CSSAnimate({"bottom":-(oh - 31)},500)
             });
             
-            
             // auto update function
             $('#AutoUpdateButton').click(function(e) {
                 if (auto_update_active) {
@@ -330,26 +239,24 @@
                     fetchData();
                 }
             });
-			// prevent reloading by existent 
-			window.onbeforeunload = function() {
-				return "you realy wan't to reload/leave the page?";
-			};
-			// nav menu click event
-			$(window).on('hashchange', function() {
-				if (window.location.hash.length > 0) {
-					$('ul.navbar-nav li.active').removeClass('active');
-					$('a[href$="' + window.location.hash + '"]').parent('li').addClass('active');
-					// hide all pages
-					$(".sub-page").hide();
-					// show only new content
-					$(window.location.hash).show();
-				};
-			});
-			 $('#ChartTimeWindow-set').click(function() {
-				 setWindowSize(parseInt($('#ChartTimeWindow-input').val()));
-			 });
-
-			 
+            // prevent reloading by existent 
+            window.onbeforeunload = function() {
+                return "you realy wan't to reload/leave the page?";
+            };
+            // nav menu click event
+            $(window).on('hashchange', function() {
+                if (window.location.hash.length > 0) {
+                    $('ul.navbar-nav li.active').removeClass('active');
+                    $('a[href$="' + window.location.hash + '"]').parent('li').addClass('active');
+                    // hide all pages
+                    $(".sub-page").hide();
+                    // show only new content
+                    $(window.location.hash).show();
+                };
+            });
+            $('#ChartTimeWindow-set').click(function() {
+                setWindowSize(parseInt($('#ChartTimeWindow-input').val()));
+            }); 
         });
         </script>
     </body>

@@ -5,7 +5,9 @@ from pyscada.models import Variable
 from pyscada.modbus import client as mb
 from pyscada import log
 from time import time
-class client():
+
+
+class handler():
     def __init__(self):
         self.clients          = {}
         self.data             = {}
@@ -17,7 +19,7 @@ class client():
         prepare clients for query
         """
         for item in Client.objects.filter(active=1):
-            if hasattr(item,'clientmodbusproperty'):
+            if hasattr(item,'modbusclient'):
                 self.clients[item.pk] = mb.client(item)
 
 

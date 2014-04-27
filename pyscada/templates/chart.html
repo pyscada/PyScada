@@ -1,0 +1,14 @@
+{% if chart.pk in visable_charts_list %}
+    <!--<div class="panel panel-default"> {{ chart.title|upper }} -->
+        <div class="widget-body" id="a{{chart.pk}}-t">
+            <div class="legend-sidebar">
+                <div id="chart-{{chart.pk}}-legend">
+                    {% include "chart_legend.html" %}
+                </div>
+            </div>
+            <div class="main-chart-area" style=" height:350px;">
+                {% include "chart_placeholder.html" %}
+            </div>
+        </div>
+    <!--</div> end {{ chart.title|upper }} -->
+{% endif %}

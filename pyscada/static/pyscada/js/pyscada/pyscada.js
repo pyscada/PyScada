@@ -66,15 +66,19 @@ function fetchInitData(){
 		success: function(data) {
 			
 			$.each(data,function(key,val){
-				if (log_last_timestamp<data[key].fields.timestamp){
-					log_last_timestamp = data[key].fields.timestamp;
+				if ("fields" in data[key]){
+					if("timestamp" in data[key].fields){
+						if (log_last_timestamp<data[key].fields.timestamp){
+							log_last_timestamp = data[key].fields.timestamp;
+						}
+						log_row = '<tr>';
+						log_row += '<td><span class="hidden" >'+data[key].fields.timestamp.toFixed(3)+'</span>' + new Date(data[key].fields.timestamp*1000).toLocaleString(); + '</td><!-- Date -->';
+						log_row += '<td>' + data[key].fields.level + '</td><!-- Level -->';
+						log_row += '<td>' + data[key].fields.message + '</td><!-- Message -->';
+						log_row += '</tr>';
+						$('#log-table tbody').append(log_row);
+					}
 				}
-				log_row = '<tr>';
-				log_row += '<td><span class="hidden" >'+data[key].fields.timestamp.toFixed(3)+'</span>' + new Date(data[key].fields.timestamp*1000).toLocaleString(); + '</td><!-- Date -->';
-				log_row += '<td>' + data[key].fields.level + '</td><!-- Level -->';
-				log_row += '<td>' + data[key].fields.message + '</td><!-- Message -->';
-				log_row += '</tr>';
-				$('#log-table tbody').append(log_row);
 			});
 			$('#log-table').tablesorter({sortList: [[0,-1]]});
 		},
@@ -168,17 +172,21 @@ function updateLog() {
 		methode: 'post',
 		success: function(data) {
 			$.each(data,function(key,val){
-				if (log_last_timestamp<data[key].fields.timestamp){
-					log_last_timestamp = data[key].fields.timestamp;
-				}
-				log_row = '<tr>';
-				log_row += '<td><span class="hidden" >'+data[key].timestamp.toFixed(3)+'</span>' + new Date(data[key].timestamp*1000).toLocaleString(); + '</td><!-- Date -->';
-				log_row += '<td>' + data[key].level + '</td><!-- Level -->';
-				log_row += '<td>' + data[key].username + ": " + data[key].message + '</td><!-- Message -->';
-				log_row += '</tr>';
-				$('#log-table tbody').append(log_row);
-				if (!$('#log-table').is(":visible")){
-					addNotification(data[key].message,+data[key].level);
+				if ("fields" in data[key]){
+					if("timestamp" in data[key].fields){
+						if (log_last_timestamp<data[key].fields.timestamp){
+							log_last_timestamp = data[key].fields.timestamp;
+						}
+						log_row = '<tr>';
+						log_row += '<td><span class="hidden" >'+data[key].timestamp.toFixed(3)+'</span>' + new Date(data[key].timestamp*1000).toLocaleString(); + '</td><!-- Date -->';
+						log_row += '<td>' + data[key].level + '</td><!-- Level -->';
+						log_row += '<td>' + data[key].username + ": " + data[key].message + '</td><!-- Message -->';
+						log_row += '</tr>';
+						$('#log-table tbody').append(log_row);
+						if (!$('#log-table').is(":visible")){
+							addNotification(data[key].message,+data[key].level);
+						}
+					}
 				}
 			});
 			$('#log-table').trigger("updateAll",["",function(table){}]);
@@ -358,26 +366,6 @@ function PyScadaPlot(config){
 		}
 		
 		// prepare legend
-		var LegendString = '<div class="legend"><table id="'+config.placeholder.substring(1)+'-table" class="tablesorter" style="font-size:smaller;color:#545454"><thead><tr><th>&nbsp;</th><th class="sorter-false">&nbsp;</th><th class="sorter-text">&nbsp;</th><th class="sorter-float">&nbsp;</th><th class="sorter-text">&nbsp;</th></tr></thead><tbody>';
-		$.each(config.variables,function(key,val){
-			if (typeof(config.variables[key])==="object"){
-				if (typeof(config.variables[key].color)== "string"){
-					var line_color = config.variables[key].color;
-				}else{
-					var line_color = LineColors[config.variables[key].color].toString();
-					}
-				LegendString +='<tr class="legendSeries"><td><span class="hidden" id="'+config.placeholder.substring(1)+'-'+key+'-checkbox-status" >1</span><input type="checkbox" checked="checked" id="'+config.placeholder.substring(1)+'-'+key+'-checkbox"></td><td class="legendColorBox"><div style="border:1px solid #ccc;padding:1px"><div style="width:4px;height:0;border:5px solid '+ line_color +';overflow:hidden"></div></div></td><td class="legendLabel">'+config.variables[key].label+'</td><td class="legendValue type-numeric var-'+key+'"></td><td class="legendUnit">'+ config.variables[key].unit +'</td></tr>';
-			}
-		});
-	
-		LegendString +='</tbody></table></div>';
-		//<div class="btn-toolbar" role="toolbar"><div class="btn-group">';
-		//LegendString +='<button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-ResetSelection"><span class="glyphicon glyphicon-fullscreen"></span></button>';
-		//LegendString +='<button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-ZoomYToFit"><span class="glyphicon glyphicon-resize-vertical"></span></button>';
-		//LegendString +='</div></div>';
-
-		$(config.legendplaceholder).append('<div id="'+config.placeholder.substring(1)+'-show" style="display:none;"><button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-btn-show" ><span class="glyphicon glyphicon-plus"></span></button></div><div id="'+config.legendplaceholder.substring(1)+'-legend" style="padding: 0px; position: relative;"><div class="legendTitle">'+ config.label +'</div>'+LegendString+'</div>');
-		
 		$(config.placeholder+'-table').tablesorter({sortList: [[2,0]]});
 		
 		$.each(config.variables,function(key,val){
@@ -393,17 +381,15 @@ function PyScadaPlot(config){
 		
 
 		expandToMaxWidth();
+		
 		contentAreaHeight = $(config.placeholder).closest('.main-chart-area').parent().height();
 		mainChartAreaHeight = $(config.placeholder).closest('.main-chart-area').height();
+		
 		if (contentAreaHeight>mainChartAreaHeight){
 			$(config.placeholder).closest('.main-chart-area').height(contentAreaHeight);
 		}
 
-			
-	
 		//
-		$(config.placeholder).addClass('chart-container');
-		$(config.placeholder).append('<div class="chart-placeholder"></div>')
 		flotPlot = $.plot($(config.placeholder + ' .chart-placeholder'), series,options)
 		// update the plot
 		update()
@@ -416,34 +402,17 @@ function PyScadaPlot(config){
 			flotPlot.draw();
 			flotPlot.clearSelection();
 		});
-		
-		
-		var chartTitle = $("<div class='chartTitle'></div>")
-		.text(config.label)
-		.appendTo(config.placeholder + ' .chart-placeholder');
 
 		// Since CSS transforms use the top-left corner of the label as the transform origin,
 		// we need to center the y-axis label by shifting it down by half its width.
 		// Subtract 20 to factor the chart's bottom margin into the centering.
-	
+		var chartTitle = $(config.placeholder + ' .chartTitle');
 		chartTitle.css("margin-left", -chartTitle.width() / 2);
-		
-		
-		var yaxisLabel = $("<div class='axisLabel yaxisLabel'></div>")
-		.text(config.axes[0].yaxis.label)
-		.appendTo(config.placeholder + ' .chart-placeholder');
-		
-		
-		// Since CSS transforms use the top-left corner of the label as the transform origin,
-		// we need to center the y-axis label by shifting it down by half its width.
-		// Subtract 20 to factor the chart's bottom margin into the centering.
-	
+		var yaxisLabel = $(config.placeholder + ' .axisLabel.yaxisLabel');
 		yaxisLabel.css("margin-top", yaxisLabel.width() / 2 - 20);
-	
-	
-		$(config.placeholder + ' .chart-placeholder').append('<div class="chart-btn-bar" ><div class="btn-group"><button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-ResetSelection"><span class="glyphicon glyphicon-fullscreen"></span></button><button type="button" class="btn btn-default" id="'+config.placeholder.substring(1)+'-ZoomYToFit"><span class="glyphicon glyphicon-resize-vertical"></span></button></div></div>');
-
-		$(config.placeholder + "-ResetSelection").click(function() {
+		
+		
+		$(config.placeholder + " .btn.btn-default.chart-ResetSelection").click(function() {
 			pOpt = flotPlot.getOptions();
 			pOpt.yaxes[0].min = config.axes[0].yaxis.min;
 			pOpt.yaxes[0].max = config.axes[0].yaxis.max;
@@ -451,7 +420,7 @@ function PyScadaPlot(config){
 			flotPlot.draw();
 		});
 		
-		$(config.placeholder + "-ZoomYToFit").click(function() {
+		$(config.placeholder + " .btn.btn-default.chart-ZoomYToFit").click(function() {
 			pOpt = flotPlot.getOptions();
 			aOpt = flotPlot.getYAxes();
 			pOpt.yaxes[0].min = aOpt.datamin;
@@ -459,21 +428,6 @@ function PyScadaPlot(config){
 			flotPlot.setupGrid();
 			flotPlot.draw();
 		});
-		
-		$(config.placeholder + "-minimize").click(function() {
-			$(config.legendplaceholder).hide();
-			$(config.placeholder).hide();
-			$(config.placeholder + "-show").show();
-		});
-		
-		$(config.placeholder + "-btn-show").click(function() {
-			$(config.legendplaceholder).show();
-			$(config.placeholder).show();
-			$(config.placeholder + "-show").hide();
-		});
-	
-	
-	
 	}
 	
 	function setBufferSize(size){
@@ -547,7 +501,7 @@ function PyScadaPlot(config){
 	}
 	
 	function expandToMaxWidth(){
-		contentAreaWidth = $(config.placeholder).closest('.main-chart-area').parent().width()
+		contentAreaWidth = $(config.placeholder).closest('.main-chart-area').parent().width();
 		sidebarAreaWidth = $(config.legendplaceholder).closest('.legend-sidebar').width();
 		mainChartAreaWidth = contentAreaWidth - sidebarAreaWidth - 15;
 		$(config.placeholder).closest('.main-chart-area').width(mainChartAreaWidth);
@@ -613,16 +567,6 @@ $.browserQueue = {
         $.browserQueue._queue = [];
     }
 };
-
-
-//$('li').each(function() {
-        //var self = this, doBind = function() {
-            //$(self).bind('click', function() {
-                //alert('Yeah you clicked me');
-            //});
-        //};
-        //$.queue.add(doBind, this);
-    //});
     
 function csrfSafeMethod(method) {
     // these HTTP methods do not require CSRF protection

@@ -137,8 +137,8 @@ class client:
     Modbus client (Master) class
     """
     def __init__(self,client):
-        self._address           = client.clientmodbusproperty.ip_address
-        self._port              = client.clientmodbusproperty.port
+        self._address           = client.modbusclient.ip_address
+        self._port              = client.modbusclient.port
         self._silentMode        = GlobalConfig.objects.get_value_by_key('silentMode')
         self._sim               = bool(int(GlobalConfig.objects.get_value_by_key('simulation')))
         self.trans_variable_config = []
@@ -150,7 +150,7 @@ class client:
     def _prepare_variable_config(self,client):
         
         for var in client.variable_set.filter(active=1):
-            Address      = decode_address(var.variablemodbusproperty.address)
+            Address      = decode_address(var.modbusvariable.address)
             bits_to_read = get_bits_by_class(var.value_class)
             self.variables[var.pk] = {'value_class':var.value_class}
             if isinstance(Address, list):

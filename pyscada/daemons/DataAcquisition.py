@@ -4,7 +4,7 @@ import threading
 import os,sys
 from time import time, localtime, strftime
 from pyscada.models import GlobalConfig
-from pyscada.clients import client
+from pyscada.clients import handler
 from pyscada.export.hdf5 import mat
 from pyscada.models import RecordedDataCache
 from pyscada.models import RecordedTime
@@ -21,7 +21,7 @@ class DataAcquisition():
     def __init__(self):
         self._dt        = float(GlobalConfig.objects.get_value_by_key('stepsize'))
         self._com_dt    = 0
-        self._cl        = client()                  # init a client Instance for field data query
+        self._cl        = handler()                  # init a client Instance for field data query
         
     def run(self):
         dt = time()

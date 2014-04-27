@@ -1,0 +1,28 @@
+{% if item.variable.active == 1 and item.variable.client.active == 1 %}
+	{% if item.type == 0 %}<!-- label blue -->
+		<span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span>
+	{% elif item.type == 1 %}<!-- label light blue -->
+		<span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span>
+	{% elif item.type == 2 %}<!-- label ok -->
+		<span class="label label-default type-bool status-green var-{{ item.variable.variable_name }}">{{ item.label }}</span>
+	{% elif item.type == 3 %}<!-- label warning -->
+		<span class="label label-default type-bool status-yello var-{{ item.variable.variable_name }}">{{ item.label }}</span>
+	{% elif item.type == 4 %}<!-- label alarm -->
+		<span class="label label-default type-bool status-red var-{{ item.variable.variable_name }}">{{ item.label }}</span>
+	{% elif item.type == 5 %}<!-- input -->
+		{% if item.variable.value_class == 'BOOL' %}
+			<button type="button" var_id="{{ item.variable.pk }}" class="btn btn-default updateable write-task-btn type-bool var-{{ item.variable.variable_name }}" id="{{ item.web_id }}">{{ item.label }}</button>
+		{% else %}
+			<div class="input-group">
+				<span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
+				<input type="text" class="form-control var-{{ item.variable.variable_name }}" id="{{ item.web_id }}-value" placeholder="">
+				<span class="input-group-addon">{{ item.variable.unit.unit }}</span>
+				<span class="input-group-btn">
+					<button class="btn btn-default write-task-set" var_id="{{ item.variable.pk }}" id="{{ item.web_id }}" type="button">set</button>
+				</span>
+			</div>
+		{% endif %}
+	{% elif item.type == 6 %}<!-- display value -->
+		<span class="type-label">{ item.label }}<span class="type-unit"><span class="type-numeric var-{{ item.variable.variable_name }}">NaN</span> {{ item.variable.unit.unit }}</span></span>
+	{% endif %}
+{% endif %}
