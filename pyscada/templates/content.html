@@ -44,9 +44,9 @@
                         {% endfor %}
                     </ul>
                     <ul class="nav navbar-right navbar-nav">
-                    	{% for panel in control_list %}
-							<li class="dropdown"><!-- {{ panel.label|upper }} -->
-								<a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-wrench"></span> {{ panel.label }}<strong class="caret"></strong></a>
+                    {% for panel in control_list %}
+							<li class="dropdown"><!-- {{ panel.title|upper }} -->
+								<a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-wrench"></span> {{ panel.title }}<strong class="caret"></strong></a>
 								<div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:500px;">
 									<div class="control-panel">
 										{% for item in panel.control_panel.items.all %}
@@ -57,7 +57,7 @@
 									</div>
 								</div>
 							</li>
-                    	{% endfor %}
+                    {% endfor %}
                         <li class="dropdown"><!-- Log -->
                             <a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-book"></span> Log <strong class="caret"></strong></a>
                             <div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:500px;">
@@ -160,10 +160,10 @@
             {% for panel in panel_list %}
                 <div class="side-menu  {% if panel.position == 1 %}left{% elif panel.position == 2 %}right{% endif %}">
                     <ul class="status-panel">
-                        <li>{{ panel.label }}</li>
+                        <li>{{ panel.title }}</li>
                         {% for item in panel.control_panel.items.all %}
-                        	{% if item.pk in visable_control_element_list %}
-                        		{% include "status_element.html" with item=item %}
+                            {% if item.pk in visable_control_element_list %}
+                                {% include "status_element.html" with item=item %}
                             {% endif %}
                         {% endfor %}
                     </ul>

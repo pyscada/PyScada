@@ -46,7 +46,7 @@ class ControlItem(models.Model):
 	position		= models.PositiveSmallIntegerField(default=0)
 	type_choices 	= ((0,'label blue'),(1,'label light blue'),(2,'label ok'),(3,'label warning'),(4,'label alarm'),(5,'Control Element'),(6,'Display Value'),)
 	type			= models.PositiveSmallIntegerField(default=0,choices=type_choices)
-	variable    	= models.ForeignKey(Variable,null=True, on_delete=models.SET_NULL)
+	variable    		= models.ForeignKey(Variable,null=True, on_delete=models.SET_NULL)
 	def __unicode__(self):
 		return unicode(self.label+" ("+self.variable.variable_name + ")")
 	def web_id(self):
@@ -91,22 +91,22 @@ class CustomHTMLPanel(models.Model):
 
 class SlidingPanelMenu(models.Model):
 	id 				= models.AutoField(primary_key=True)
-	label			= models.CharField(max_length=400, default='')
+	title			= models.CharField(max_length=400, default='')
 	position_choices = ((0,'Control Menu'),(1,'left'),(2,'right'))
 	position		= models.PositiveSmallIntegerField(default=0,choices=position_choices)
 	control_panel   = models.ForeignKey(ControlPanel,blank=True,null=True,default=None)
 	def __unicode__(self):
-		return unicode(self.label)
+		return unicode(self.title)
 
 class ChartSet(models.Model):
 	size_choices	= ((0,'side by side (1/2)'),(1,'side by side (2/3|1/3)'),(2,'side by side (1/3|2/3)'),)
 	id 				= models.AutoField(primary_key=True)
 	distribution	= models.PositiveSmallIntegerField(max_length=20, default=0,choices=size_choices)
-	chart_1			= models.ForeignKey(Chart,blank=True,related_name="chart_1",verbose_name="left Chart")
-	chart_2			= models.ForeignKey(Chart,blank=True,related_name="chart_2",verbose_name="right Chart")
+	chart_1			= models.ForeignKey(Chart,blank=True,null=True,related_name="chart_1",verbose_name="left Chart")
+	chart_2			= models.ForeignKey(Chart,blank=True,null=True,related_name="chart_2",verbose_name="right Chart")
 	def __unicode__(self):
-		return unicode(str(self.id) + ': ' + self.chart_1.title + ' | ' + self.chart_2.title)
-
+		return unicode(str(self.id) + ': ' + (self.chart_1.title if self.chart_1 else 'None')  + ' | ' +  (self.chart_2.title if self.chart_2 else 'None') )
+		
 
 class Widget(models.Model):
 	id 				= models.AutoField(primary_key=True)

@@ -193,16 +193,16 @@ table.tablesorter thead tr .tablesorter-header.sorter-false {
 }
 
 .legendSeries {
-	 border: 2px solid #ddd;
+	 border: 1px solid #ddd;
 	 padding:1px;
 	 font-size: 11px;
-	 line-height: 1.2em;
+	 line-height: 0.5em;
 }
 .legendLabel {
 	padding-right:5px;
 }
 .legendValue {
-	border-left: 2px solid #ddd;
+	border-left: 1px solid #ddd;
 }
 .legendSeries  input[type="checkbox"]{
 	margin: 0px 0 0;

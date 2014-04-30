@@ -115,7 +115,7 @@ def update_variable_set(json_data):
 		uc, ucc = UnitConfig.objects.get_or_create(unit = entry['unit'].replace(' ',''))
 		# variable exist
 		obj, created = Variable.objects.get_or_create(id=entry['id'],
-		defaults={'id':entry['id'],'variable_name':entry['variable_name'].replace(' ',''),'description': entry['description'],'client':cc,'active':bool(entry['active']),'writeable':bool(entry['writeable']),'unit':uc,'value_class':entry["class"].replace(' ','')})
+		defaults={'id':entry['id'],'variable_name':entry['variable_name'].replace(' ',''),'description': entry['description'],'client':cc,'active':bool(entry['active']),'writeable':bool(entry['writeable']),'unit':uc,'value_class':entry["value_class"].replace(' ','')})
 		
 		if created:
 			log.info(("created variable: %s") %(entry['variable_name']))
@@ -128,19 +128,19 @@ def update_variable_set(json_data):
 			obj.active = bool(entry['active'])
 			obj.writeable = bool(entry['writeable'])
 			obj.unit = uc
-			obj.value_class = entry["class"].replace(' ','')
+			obj.value_class = entry["value_class"].replace(' ','')
 			obj.save()
 		
-		if hasattr(obj,'webapp_variable'):
-			obj.webapp_variable.chart_line_color_id = entry["color_id"]
-			obj.webapp_variable.short_name = entry["short_name"]
-			obj.webapp_variable.save()
+		if hasattr(obj,'variabledisplaypropery'):
+			obj.variabledisplaypropery.chart_line_color_id = entry["color_id"]
+			obj.variabledisplaypropery.short_name = entry["short_name"]
+			obj.variabledisplaypropery.save()
 		else:
 			WebVariable(webapp_variable=obj,short_name=entry["short_name"],chart_line_color_id=entry["color_id"]).save()
 		
-		if hasattr(obj,'modbus_variable'):
-			obj.modbus_variable.address = entry["modbus_ip.address"].replace(' ','')
-			obj.modbus_variable.save()
+		if hasattr(obj,'modbusvariable'):
+			obj.modbusvariable.address = entry["modbus_ip.address"].replace(' ','')
+			obj.modbusvariable.save()
 		else:
 			ModbusVariable(modbus_variable=obj,address=entry["modbus_ip.address"].replace(' ','')).save()
 		
