@@ -43,10 +43,12 @@ class VariableDisplayPropery(models.Model):
 class ControlItem(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	label			= models.CharField(max_length=400, default='')
-	position		= models.PositiveSmallIntegerField(default=0)
+	position			= models.PositiveSmallIntegerField(default=0)
 	type_choices 	= ((0,'label blue'),(1,'label light blue'),(2,'label ok'),(3,'label warning'),(4,'label alarm'),(5,'Control Element'),(6,'Display Value'),)
 	type			= models.PositiveSmallIntegerField(default=0,choices=type_choices)
 	variable    		= models.ForeignKey(Variable,null=True, on_delete=models.SET_NULL)
+	class Meta:
+		ordering = ['position']
 	def __unicode__(self):
 		return unicode(self.label+" ("+self.variable.variable_name + ")")
 	def web_id(self):
@@ -70,6 +72,9 @@ class Page(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	title 			= models.CharField(max_length=400, default='')
 	link_title		= models.SlugField(max_length=80, default='')
+	position			= models.PositiveSmallIntegerField(default=0)
+	class Meta:
+		ordering = ['position']
 	def __unicode__(self):
 		return unicode(self.link_title.replace(' ','_'))
 
@@ -93,8 +98,9 @@ class SlidingPanelMenu(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	title			= models.CharField(max_length=400, default='')
 	position_choices = ((0,'Control Menu'),(1,'left'),(2,'right'))
-	position		= models.PositiveSmallIntegerField(default=0,choices=position_choices)
+	position			= models.PositiveSmallIntegerField(default=0,choices=position_choices)
 	control_panel   = models.ForeignKey(ControlPanel,blank=True,null=True,default=None)
+	visable			= models.BooleanField(default=True)
 	def __unicode__(self):
 		return unicode(self.title)
 
@@ -122,6 +128,7 @@ class Widget(models.Model):
 	chart_set		= models.ForeignKey(ChartSet,blank=True,null=True,default=None)
 	control_panel  = models.ForeignKey(ControlPanel,blank=True,null=True,default=None)
 	custom_html_panel = models.ForeignKey(CustomHTMLPanel,blank=True,null=True,default=None)
+	visable			= models.BooleanField(default=True)
 	class Meta:
 		ordering = ['row','col']
 	def __unicode__(self):
@@ -138,10 +145,11 @@ class Widget(models.Model):
 		return unicode('widget_row_' + str(self.row) + ' widget_col_' + str(self.col) + ' ' + widget_size)
 
 class GroupDisplayPermission(models.Model):
-	webapp_group		= models.OneToOneField(Group)
+	webapp_group			= models.OneToOneField(Group)
 	pages 				= models.ManyToManyField(Page,blank=True)
 	sliding_panel_menus = models.ManyToManyField(SlidingPanelMenu,blank=True)
 	charts 				= models.ManyToManyField(Chart,blank=True)
 	control_items 		= models.ManyToManyField(ControlItem,blank=True)
+	widget 				= models.ManyToManyField(Widget,blank=True)
 	def __unicode__(self):
 		return unicode(self.webapp_group.name)
