@@ -259,9 +259,26 @@ function addNotification(message, level) {
 }
 
 function updateDataValues(key,val){
+		
+		var r_val = Number(val);
+		if(r_val == 0 ){
+			 r_val = 0;
+		}else if(r_val < 0.001) {
+			r_val = r_val.toExponential(2);
+		}else if (r_val < 0.01) {
+			r_val = r_val.toPrecision(1);
+		}else if(r_val < 0.1) {
+			r_val = r_val.toPrecision(2);
+		}else if(r_val < 1) {
+			r_val = r_val.toPrecision(3);
+		}else if(r_val > 100) {
+			r_val = r_val.toPrecision(4);
+		}else{
+			r_val = r_val.toPrecision(4);
+		}
 		// set value fields
-		$(".type-numeric.var-" + key).html(Number(val).toPrecision(4));
-		$('input.var-'+ key).attr("placeholder",Number(val).toPrecision(4));
+		$(".type-numeric.var-" + key).html(r_val);
+		$('input.var-'+ key).attr("placeholder",r_val);
 		// set button colors
 		if (val === 0) {
 			$(".type-bool.var-" + key).addClass("label-default");

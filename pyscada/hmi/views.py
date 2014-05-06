@@ -6,11 +6,11 @@ from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
 from pyscada.models import RecordedDataCache
 from pyscada.models import RecordedTime
-from pyscada.webapp.models import Chart
-from pyscada.webapp.models import Page
-from pyscada.webapp.models import ControlItem
-from pyscada.webapp.models import SlidingPanelMenu
-from pyscada.webapp.models import GroupDisplayPermission
+from pyscada.hmi.models import Chart
+from pyscada.hmi.models import Page
+from pyscada.hmi.models import ControlItem
+from pyscada.hmi.models import SlidingPanelMenu
+from pyscada.hmi.models import GroupDisplayPermission
 
 from pyscada.models import Log
 from pyscada.models import ClientWriteTask
@@ -38,12 +38,12 @@ def index(request):
 		return redirect('/accounts/login/?next=%s' % request.path)
 	
 	t = loader.get_template('content.html')
-	page_list = Page.objects.filter(groupdisplaypermission__webapp_group__in=request.user.groups.iterator)
-	visable_charts_list = Chart.objects.filter(groupdisplaypermission__webapp_group__in=request.user.groups.iterator).values_list('pk',flat=True)
+	page_list = Page.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator)
+	visable_charts_list = Chart.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).values_list('pk',flat=True)
 
-	sliding_panel_list = SlidingPanelMenu.objects.filter(groupdisplaypermission__webapp_group__in=request.user.groups.iterator)
+	sliding_panel_list = SlidingPanelMenu.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator)
 	
-	visable_control_element_list = GroupDisplayPermission.objects.filter(webapp_group__in=request.user.groups.iterator).values_list('control_items',flat=True)
+	visable_control_element_list = GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items',flat=True)
 	
 	panel_list   = sliding_panel_list.filter(position__in=(1,2,))
 	control_list = sliding_panel_list.filter(position=0)
@@ -57,7 +57,7 @@ def index(request):
 		'control_list':control_list,
 		'user': request.user
 	})
-	log.webnotice('open WebApp',request.user)
+	log.webnotice('open hmi',request.user)
 	return HttpResponse(t.render(c))
 	
 def config(request):
@@ -70,7 +70,7 @@ def config(request):
 	config["RefreshRate"] 		= 5000
 	config["config"] 			= []
 	chart_count 				= 0
-	charts = GroupDisplayPermission.objects.filter(webapp_group__in=request.user.groups.iterator).values_list('charts',flat=True)
+	charts = GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts',flat=True)
 	charts = list(set(charts))
 	for chart_id in charts:
 		vars = {}
@@ -134,8 +134,8 @@ def get_cache_data(request):
 	if RecordedDataCache.objects.first():
 		data["timestamp"] = RecordedDataCache.objects.first().time.timestamp_ms()
 	
-	active_variables = list(GroupDisplayPermission.objects.filter(webapp_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True))
-	active_variables += list(GroupDisplayPermission.objects.filter(webapp_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
+	active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True))
+	active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
 	
 	active_variables = list(set(active_variables))
 	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__variable_name','value'))
@@ -166,7 +166,7 @@ def data(request):
 	else:
 		return HttpResponse('{\n}', content_type='application/json')
 	
-	active_variables = GroupDisplayPermission.objects.filter(webapp_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True)
+	active_variables = GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True)
 	active_variables = list(set(active_variables))
 	
 	data = {}

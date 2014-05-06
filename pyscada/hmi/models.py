@@ -18,7 +18,7 @@ class Color(models.Model):
 
 
 class VariableDisplayPropery(models.Model):
-	webapp_variable		= models.OneToOneField(Variable)
+	hmi_variable		= models.OneToOneField(Variable)
 	short_name			= models.CharField(default='',max_length=80, verbose_name="variable short name")
 	chart_line_color 	= models.ForeignKey('Color',default=0,null=True, on_delete=models.SET_NULL)
 	chart_line_thickness_choices = ((3,'3Px'),)
@@ -27,7 +27,7 @@ class VariableDisplayPropery(models.Model):
 		if self.short_name and self.short_name != '-':
 			return self.short_name
 		else:
-			return self.webapp_variable.variable_name
+			return self.hmi_variable.variable_name
 	def chart_line_color_code(self):
 		if self.chart_line_color and self.chart_line_color.id != 1:
 			return self.chart_line_color.color_code()
@@ -145,11 +145,11 @@ class Widget(models.Model):
 		return unicode('widget_row_' + str(self.row) + ' widget_col_' + str(self.col) + ' ' + widget_size)
 
 class GroupDisplayPermission(models.Model):
-	webapp_group			= models.OneToOneField(Group)
+	hmi_group			= models.OneToOneField(Group)
 	pages 				= models.ManyToManyField(Page,blank=True)
 	sliding_panel_menus = models.ManyToManyField(SlidingPanelMenu,blank=True)
 	charts 				= models.ManyToManyField(Chart,blank=True)
 	control_items 		= models.ManyToManyField(ControlItem,blank=True)
 	widget 				= models.ManyToManyField(Widget,blank=True)
 	def __unicode__(self):
-		return unicode(self.webapp_group.name)
+		return unicode(self.hmi_group.name)

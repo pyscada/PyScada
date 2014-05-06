@@ -3,7 +3,7 @@
 from pyscada import log
 from pyscada.models import Client
 from pyscada.models import Variable
-from pyscada.webapp.models import VariableDisplayPropery as WebVariable
+from pyscada.hmi.models import VariableDisplayPropery as WebVariable
 from pyscada.modbus.models import ModbusVariable
 from pyscada.modbus.models import ModbusClient
 from pyscada.models import UnitConfig
@@ -136,7 +136,7 @@ def update_variable_set(json_data):
 			obj.variabledisplaypropery.short_name = entry["short_name"]
 			obj.variabledisplaypropery.save()
 		else:
-			WebVariable(webapp_variable=obj,short_name=entry["short_name"],chart_line_color_id=entry["color_id"]).save()
+			WebVariable(hmi_variable=obj,short_name=entry["short_name"],chart_line_color_id=entry["color_id"]).save()
 		
 		if hasattr(obj,'modbusvariable'):
 			obj.modbusvariable.address = entry["modbus_ip.address"].replace(' ','')

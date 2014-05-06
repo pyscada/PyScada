@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 from pyscada import log
-from pyscada.webapp.models import Chart
-from pyscada.webapp.models import Page
-from pyscada.webapp.models import ControlItem
-from pyscada.webapp.models import ControlPanel
-from pyscada.webapp.models import ChartSet
-from pyscada.webapp.models import Widget
-from pyscada.webapp.models import SlidingPanelMenu
-#from pyscada.webapp.models import GroupDisplayPermisions
-from pyscada.webapp.models import VariableDisplayPropery
+from pyscada.hmi.models import Chart
+from pyscada.hmi.models import Page
+from pyscada.hmi.models import ControlItem
+from pyscada.hmi.models import ControlPanel
+from pyscada.hmi.models import ChartSet
+from pyscada.hmi.models import Widget
+from pyscada.hmi.models import SlidingPanelMenu
+#from pyscada.hmi.models import GroupDisplayPermisions
+from pyscada.hmi.models import VariableDisplayPropery
 from pyscada.models import Variable
 
 import json

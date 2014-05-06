@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*- 
 import os,sys
-from pyscada.webapp.utils import update_HMI
+from pyscada.hmi.utils import update_HMI
 from django.core.management.base import BaseCommand, CommandError
 
 class Command(BaseCommand):

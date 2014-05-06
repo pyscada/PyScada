@@ -288,7 +288,8 @@ table.tablesorter thead tr .tablesorter-header.sorter-false {
 
 }
 .widget-body {
-	padding:10px;
+	padding-top:10px;
+	padding-bottom:10px;
 }
 .widget-body::after {
 	clear: both;

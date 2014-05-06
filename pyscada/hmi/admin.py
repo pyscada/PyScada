@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
-from pyscada.webapp.models import VariableDisplayPropery
+from pyscada.hmi.models import VariableDisplayPropery
 from pyscada.models import Variable
-from pyscada.webapp.models import ControlItem
-from pyscada.webapp.models import Chart
-from pyscada.webapp.models import SlidingPanelMenu
-from pyscada.webapp.models import Page
-from pyscada.webapp.models import GroupDisplayPermission
-from pyscada.webapp.models import ControlPanel
-from pyscada.webapp.models import CustomHTMLPanel
-from pyscada.webapp.models import ChartSet
-from pyscada.webapp.models import Widget
+from pyscada.hmi.models import ControlItem
+from pyscada.hmi.models import Chart
+from pyscada.hmi.models import SlidingPanelMenu
+from pyscada.hmi.models import Page
+from pyscada.hmi.models import GroupDisplayPermission
+from pyscada.hmi.models import ControlPanel
+from pyscada.hmi.models import CustomHTMLPanel
+from pyscada.hmi.models import ChartSet
+from pyscada.hmi.models import Widget
 
 
 from django.contrib import admin
@@ -59,10 +59,10 @@ class SlidingPanelMenuAdmin(admin.ModelAdmin):
         
         
 class VariableDisplayProperyAdmin(admin.ModelAdmin):
-    search_fields = ['webapp_variable__variable_name',]
+    search_fields = ['hmi_variable__variable_name',]
     list_display = ('variable_name','short_name','chart_line_color','chart_line_thickness',)
     def variable_name(self, instance):
-        return instance.webapp_variable.variable_name
+        return instance.hmi_variable.variable_name
  
 class WidgetAdmin(admin.ModelAdmin):
     list_display_links = ('id',)

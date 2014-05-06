@@ -45,18 +45,20 @@
                     </ul>
                     <ul class="nav navbar-right navbar-nav">
                     {% for panel in control_list %}
-							<li class="dropdown"><!-- {{ panel.title|upper }} -->
-								<a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-wrench"></span> {{ panel.title }}<strong class="caret"></strong></a>
-								<div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:500px;">
-									<div class="control-panel">
-										{% for item in panel.control_panel.items.all %}
-											{% if item.pk in visable_control_element_list %}
-												{% include "control_element.html" with item=item %}
-											{% endif %}	
-										{% endfor %}
-									</div>
-								</div>
-							</li>
+                        {% if panel.visable %}
+                            <li class="dropdown"><!-- {{ panel.title|upper }} -->
+                                <a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-wrench"></span> {{ panel.title }}<strong class="caret"></strong></a>
+                                <div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:500px;">
+                                    <div class="control-panel">
+                                        {% for item in panel.control_panel.items.all %}
+                                            {% if item.pk in visable_control_element_list %}
+                                                {% include "control_element.html" with item=item %}
+                                            {% endif %}	
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </li>
+                        {% endif %}
                     {% endfor %}
                         <li class="dropdown"><!-- Log -->
                             <a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-book"></span> Log <strong class="caret"></strong></a>
@@ -121,22 +123,26 @@
                 <div id="{{page.link_title}}" class="sub-page" >
                     <div class="row">
                         {% for widget in page.widget_set.all %}
-                            {% if widget.col == 0 and widget.row > 0 %}
+                            {% if widget.visable %}
+                                {% if widget.col == 0 and widget.row > 0 %}
                     </div>
                     <div class="row">
+        
+                                {% endif %}
+                            <div id="widget_{{widget.pk}}" class="widget {{ widget.css_class}}"> <!-- {{ widget.title }} -->
+                                {% if widget.chart %}
+                                    {% include "chart.html" with chart=widget.chart %}
+                                {% elif widget.chart_set %}
+                                    {% include "chart_set.html" with chart_set=widget.chart_set %}
+                                {% elif widget.control_panel %}
+                                    {% include "control_panel.html" with control_panel=widget.control_panel %}
+                                {% elif widget.custom_html_panel %}
+                                    {% include "custom_html_panel.html" with custom_html_panel=widget.custom_html_panel %}
+                                {% endif %}
+                            </div>
                             {% endif %}
-                        <div id="widget_{{widget.pk}}" class="widget {{ widget.css_class}}"> <!-- {{ widget.title }} -->
-                            {% if widget.chart %}
-                                {% include "chart.html" with chart=widget.chart %}
-                            {% elif widget.chart_set %}
-                                {% include "chart_set.html" with chart_set=widget.chart_set %}
-                            {% elif widget.control_panel %}
-                                {% include "control_panel.html" with control_panel=widget.control_panel %}
-                            {% elif widget.custom_html_panel %}
-                                {% include "custom_html_panel.html" with custom_html_panel=widget.custom_html_panel %}
-                            {% endif %}
-                        </div>
                         {% endfor %}
+                        
                     </div>	
                 </div>
             {% endfor %}
