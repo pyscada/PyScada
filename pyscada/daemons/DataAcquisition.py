@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import threading
-import os,sys
-from time import time, localtime, strftime
 from pyscada.models import GlobalConfig
 from pyscada.clients import handler
 from pyscada.export.hdf5 import mat
@@ -15,7 +12,8 @@ from pyscada.models import TaskProgress
 from pyscada.models import ClientWriteTask
 from pyscada import log
 import traceback
-
+import os,sys
+from time import time, localtime, strftime
 
 class DataAcquisition():
     def __init__(self):

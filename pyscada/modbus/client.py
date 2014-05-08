@@ -1,15 +1,30 @@
 # -*- coding: utf-8 -*-
-from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 from pyscada import log
 from pyscada.utils import decode_value, encode_value
 from pyscada.utils import get_bits_by_class
-from pyscada.modbus.utils import decode_address
 from pyscada.utils import decode_bits
-from pyscada.models import GlobalConfig
+from pyscada.models import RecordedDataCache
+from pyscada.models import RecordedTime
+from pyscada.models import RecordedDataFloat
+from pyscada.models import RecordedDataInt
+from pyscada.models import RecordedDataBoolean
+from pyscada.models import TaskProgress
+from pyscada.models import ClientWriteTask
+from pyscada.models import Client
+from pyscada.models import Variable
+from pyscada.modbus.utils import decode_address
+
+from django.conf import settings
+from django.core.cache import cache
+import traceback
+import os,sys
+from time import time, localtime, strftime
 import random
+from pymodbus.client.sync import ModbusTcpClient as ModbusClient
+from math import isnan, isinf
 
 class RegisterBlock:
-    def __init__(self,client_address,client_port,sim=False):
+    def __init__(self,client_address,client_port):
         self.variable_address   = [] #
         self.variable_length    = [] # in bytes
         self.variable_class     = [] #
@@ -17,7 +32,6 @@ class RegisterBlock:
         self.slave              = False # instance of the
         self._address           = client_address
         self._port              = client_port
-        self._sim               = sim
 
 
     def insert_item(self,variable_id,variable_address,variable_class,variable_length):
@@ -48,8 +62,6 @@ class RegisterBlock:
     def request_data(self,slave):
         quantity = sum(self.variable_length) # number of bits to read
         first_address = self.variable_address[0]
-        if self._sim:
-            return self.decode_data("")
         
         result = slave.read_input_registers(first_address,quantity/16)
         if not hasattr(result, 'registers'):
@@ -64,11 +76,10 @@ class RegisterBlock:
         for idx in range(len(self.variable_length)):
             tmp = []
             for i in range(self.variable_length[idx]/16):
-                if self._sim:
-                    tmp.append(int(random.randint(0,32000)))
-                else:
-                    tmp.append(result.registers.pop(0))
+                tmp.append(result.registers.pop(0))
             out[self.variable_id[idx]] = decode_value(tmp,self.variable_class[idx])
+            if isnan(out[self.variable_id[idx]]) or isinf(out[self.variable_id[idx]]):
+                    out[self.variable_id[idx]] = None
         return out
 
 
@@ -80,13 +91,12 @@ class RegisterBlock:
                 return index
 
 class CoilBlock:
-    def __init__(self,client_address,client_port,sim=False):
+    def __init__(self,client_address,client_port):
         self.variable_address       = {} #
         self.variable_id            = {} #
         self.slave                  = False # instance of the
         self._address               = client_address
         self._port                  = client_port
-        self._sim                   = sim
 
 
     def insert_item(self,variable_id,variable_address):
@@ -101,8 +111,6 @@ class CoilBlock:
     def request_data(self,slave):
         quantity = len(self.variable_address) # number of bits to read
         first_address = self.variable_address.keys()[0]
-        if self._sim:
-            return self.decode_data("")
         
         result = slave.read_input_registers(first_address,quantity)
         if not hasattr(result, 'registers'):
@@ -116,10 +124,7 @@ class CoilBlock:
     def decode_data(self,result):
         out = {}
         for register in self.variable_address:
-            if not self._sim:
-                tmp = decode_bits(result.registers.pop(0))
-            else:
-                tmp = decode_bits(int(random.randint(0,65535)))
+            tmp = decode_bits(int(random.randint(0,65535)))
             for idx,bit in enumerate(self.variable_address[register]):
                 out[self.variable_id[register][idx]] = tmp[bit]
 
@@ -139,8 +144,6 @@ class client:
     def __init__(self,client):
         self._address           = client.modbusclient.ip_address
         self._port              = client.modbusclient.port
-        self._silentMode        = GlobalConfig.objects.get_value_by_key('silentMode')
-        self._sim               = bool(int(GlobalConfig.objects.get_value_by_key('simulation')))
         self.trans_variable_config = []
         self.trans_variable_bit_config = []
         self.variables  = {}
@@ -168,7 +171,7 @@ class client:
         for entry in self.trans_variable_config:
             if (entry[0] != old) or regcount >122:
                 regcount = 0
-                out.append(RegisterBlock(self._address,self._port,self._sim)) # start new register block
+                out.append(RegisterBlock(self._address,self._port)) # start new register block
             out[-1].insert_item(entry[3],entry[0],entry[1],entry[2]) # add item to block
             old = entry[0] + entry[2]/16
             regcount += entry[2]/16
@@ -177,7 +180,7 @@ class client:
         old = -2
         for entry in self.trans_variable_bit_config:
             if (entry[0][0] != old and entry[0][0] != old+1):
-                out.append(CoilBlock(self._address,self._port,self._sim)) # start new coil block
+                out.append(CoilBlock(self._address,self._port)) # start new coil block
             out[-1].insert_item(entry[1],entry[0])
             old = entry[0][0]
         return out
@@ -219,7 +222,9 @@ class client:
                 result = register_block.request_data(self.slave)
             
             if result is not None:
+                
                 data = dict(data.items() + result.items())
+                
             else:
                 for variable_id in register_block.variable_id:
                     log.error(("variable with id: %d is not accessible")%(variable_id))
@@ -269,4 +274,160 @@ class client:
                 log.error('Modbus Address %d out of range'%var_cfg[0][2])
         
         return False
+
+
+class DataAcquisition():
+    def __init__(self):
+        self._dt            = float(settings.PYSCADA_MODBUS['stepsize'])
+        self._cache_timeout = float(settings.PYSCADA_MODBUS['cache_timeout'])
+        self._com_dt        = 0
+        self._clients   = {}
+        self.data       = {}
+        self._prepare_clients()
+
+    def _prepare_clients(self):
+        """
+        prepare clients for query
+        """
+        for item in Client.objects.filter(active=1):
+            if hasattr(item,'modbusclient'):
+                self._clients[item.pk] = client(item)
+
+
+    def run(self):
+        """
+            request data
+        """
+        dt = time()
+        ## if there is something to write do it 
+        self._do_write_task()
         
+        self.data = {}
+        # take time
+        self.time = time()
+        if cache.get('recent_version'):
+            cache_version = cache.get('recent_version')
+            cache.incr('recent_version')
+        else
+            cache_version = 1
+            cache.set('recent_version',cache_version,self._cache_timeout)
+        
+        cache.set('timestamp',self.time,self._cache_timeout,cache_version)
+        for idx in self._clients:
+            self.data[idx] = self._clients[idx].request_data()
+       
+        self._db_data                = {}
+        if not self.data:
+            return
+        ## set time
+        self._db_data['time']        = self.time
+        
+        for idx in self._clients:
+            for var_idx in self._clients[idx].variables:
+                store_value = False
+                value = 0
+                if self.data[idx]:
+                    if self.data[idx].has_key(var_idx):
+                        if (self.data[idx][var_idx] != None):
+                            value = self.data[idx][var_idx]
+                            store_value = True
+                            if cache.get(var_idx):
+                                if value == cache.get(var_idx)
+                                    store_value = False
+                            cache.set(var_idx,value,self._cache_timeout,cache_version)
+                
+                if store_value:
+                    self._prepare_db_data(var_idx,self._clients[idx].variables[var_idx]['value_class'],value)
+        if self._db_data:
+            self._save__db_data(self._cl._db_data)
+        
+        return self._dt -(time()-dt)
+    
+    def _save_db_data(self,data):
+        """
+        save changed values in the database
+        """
+        dvf = []
+        dvi = []
+        dvb = []
+        dvc = []
+        del_idx = []
+        timestamp = RecordedTime(timestamp=data.pop('time'))
+        timestamp.save()
+        for variable_class in data:
+            if not data.has_key(variable_class):
+                continue
+            if not data[variable_class]:
+                continue
+            for var_idx in data[variable_class]:
+                
+                
+                dvc.append(RecordedDataCache(variable_id=var_idx,value=data[variable_class][var_idx],time=timestamp,last_change = timestamp))
+                del_idx.append(var_idx)
+                if variable_class.upper() in ['FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'] :
+                    dvf.append(RecordedDataFloat(time=timestamp,variable_id=var_idx,value=data[variable_class][var_idx]))
+                elif variable_class.upper() in ['INT32','UINT32','INT16','INT','WORD','UINT','UINT16']:
+                    dvi.append(RecordedDataInt(time=timestamp,variable_id=var_idx,value=data[variable_class][var_idx]))
+                elif variable_class.upper() in ['BOOL']:
+                    dvb.append(RecordedDataBoolean(time=timestamp,variable_id=var_idx,value=data[variable_class][var_idx]))
+        
+        RecordedDataCache.objects.filter(variable_id__in=del_idx).delete()
+        RecordedDataCache.objects.all().update(time=timestamp)
+        RecordedDataCache.objects.bulk_create(dvc)
+        RecordedDataFloat.objects.bulk_create(dvf)
+        RecordedDataInt.objects.bulk_create(dvi)
+        RecordedDataBoolean.objects.bulk_create(dvb)
+    
+    
+    def _do_write_task(self):
+        """
+        check for write tasks
+        """
+        for task in ClientWriteTask.objects.filter(done=False,start__lte=time(),failed=False):
+            
+            try:
+                result = self.write(task.variable_id,task.value)
+            except:
+                var = traceback.format_exc()
+                log.error("exeption in dataaquisition daemnon, %s" % var)
+                result = False
+                
+            if result:
+                task.done=True
+                task.fineshed=time()
+                task.save()
+                log.notice('changed variable %s (new value %1.6g %s)'%(task.variable.variable_name,task.value,task.variable.unit.description),task.user)
+            else:
+                task.failed = True
+                task.fineshed=time()
+                task.save()
+                log.error('change of variable %s failed'%(task.variable.variable_name),task.user)
+    
+    def _write(self,var_idx,value):
+        """
+        
+        """
+        var_config = Variable.objects.get(id=var_idx)
+        if var_config.writeable:
+            return self._clients[var_config.client_id].write_data(var_idx,value)
+        else:
+            log.error("variable %s is not writable"%var_config.variable_name)
+            return False
+    
+    
+    def _prepare_db_data(self,var_idx,variable_class,value):
+        if not self._db_data.has_key(variable_class):
+            self._db_data[variable_class.upper()] = {}
+        
+        if variable_class.upper() in ['FLOAT','FLOAT64','DOUBLE'] :
+            self._db_data[variable_class.upper()][var_idx] = float64(value)
+        elif variable_class.upper() in ['FLOAT32','SINGLE','REAL'] :
+            self._db_data[variable_class.upper()][var_idx] = float32(value)
+        elif  variable_class.upper() in ['INT32']:
+            self._db_data[variable_class.upper()][var_idx] = int32(value)
+        elif  variable_class.upper() in ['WORD','UINT','UINT16']:
+           self._db_data[variable_class.upper()][var_idx] = uint16(value)    
+        elif  variable_class.upper() in ['INT16','INT']:
+            self._db_data[variable_class.upper()][var_idx] = int16(value)
+        elif variable_class.upper() in ['BOOL']:
+            self._db_data[variable_class.upper()][var_idx] = uint8(value)            

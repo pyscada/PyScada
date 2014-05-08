@@ -126,7 +126,43 @@ def	form_write_task(request):
 	else:
 		return HttpResponse(status=404)
 
+def get_recent_cache_data(request):
+	if not request.user.is_authenticated():
+		return redirect('/accounts/login/?next=%s' % request.path)
+	data = {}
+	active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True))
+	active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
+	active_variables = list(set(active_variables))
+	active_variables = list(Variable.objects.filter(id__in=active_variables).values_list('variable_name','id'))
+	for var in active_variables:
+		if cache.get(var[1]):
+			data[var[0]] = cache.get(var[1])
+	data['timestamp'] = cache.get('timestamp')*1000
+	jdata = json.dumps(data,indent=2)
+	return HttpResponse(jdata, content_type='application/json')
 
+def get_cache_data(request):
+	if not request.user.is_authenticated():
+		return redirect('/accounts/login/?next=%s' % request.path)
+	data = {}
+	active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True))
+	active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
+	active_variables = list(set(active_variables))
+	active_variables = list(Variable.objects.filter(id__in=active_variables).values_list('variable_name','id'))
+	
+	cache_version = cache.get('recent_version')
+	while cache_version > 1 and cache.get('timestamp',None,cache_version):
+		timestamp = cache.get('timestamp',0,cache_version)*1000
+		for var in active_variables:
+			if not data.has_key(var[1]):
+				data[var[0]] = []
+			if cache.get(var[1]):
+				data[var[0]].insert(0,[timestamp,cache.get(var[1],0,cache_version)])
+		cache_version -= 1
+	
+	jdata = json.dumps(data,indent=2)
+	return HttpResponse(jdata, content_type='application/json')
+'''
 def get_cache_data(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
@@ -145,7 +181,7 @@ def get_cache_data(request):
 	
 	jdata = json.dumps(data,indent=2)
 	return HttpResponse(jdata, content_type='application/json')
-
+'''
 def data(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
