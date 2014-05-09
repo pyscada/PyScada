@@ -1,5 +1,5 @@
 # requirements/common.txt
-django>=1.5
+django>=1.7
 pymodbus>=1.2.0
 numpy>=1.6.0
 h5py>=2.1.1

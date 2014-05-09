@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*- 
 from pyscada import log
 from pyscada.daemon import Daemon
-from pyscada.daemons.DataAcquisition import DataAcquisition as DAQ
+from pyscada.modbus import client
 from django.core.management.base import BaseCommand, CommandError
 from pyscada.models import TaskProgress
 from django.conf import settings
@@ -81,7 +81,7 @@ class MainDaemon(Daemon):
         tp_id = tp.id
         
         try:
-            daq = DAQ()
+            daq = client.DataAcquisition()
         except:
             var = traceback.format_exc()
             log.error("exeption in dataaquisition daemon, %s" % var)
@@ -99,7 +99,7 @@ class MainDaemon(Daemon):
             except:
                 var = traceback.format_exc()
                 log.debug("exeption in dataaquisition daemon, %s" % var,-1)
-                daq = DAQ()
+                daq = client.DataAcquisition()
                 dt = 5
             tp = TaskProgress.objects.get(id=tp_id)    
             tp.timestamp = time()

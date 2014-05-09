@@ -4,7 +4,6 @@ from pyscada.models import Variable
 from pyscada.models import RecordedDataFloat
 from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
-from pyscada.models import RecordedDataCache
 from pyscada.models import RecordedTime
 from pyscada.hmi.models import Chart
 from pyscada.hmi.models import Page
@@ -20,6 +19,7 @@ from pyscada import log
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.core import serializers
+from django.core.cache import cache
 from django.core.management import call_command
 from django.utils import timezone
 from django.template import Context, loader,RequestContext
@@ -64,7 +64,7 @@ def config(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
 	config = {}
-	config["DataFile"] 			= "json/latest_data/"
+	config["DataFile"] 			= "json/data/"
 	config["InitialDataFile"] 	= "json/data/"
 	config["LogDataFile"] 		= "json/log_data/"
 	config["RefreshRate"] 		= 5000
@@ -144,6 +144,10 @@ def get_recent_cache_data(request):
 def get_cache_data(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
+	if request.POST.has_key('timestamp'):
+		timestamp_from = float(request.POST['timestamp'])
+	else:
+		timestamp_from = 0
 	data = {}
 	active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True))
 	active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
@@ -151,37 +155,18 @@ def get_cache_data(request):
 	active_variables = list(Variable.objects.filter(id__in=active_variables).values_list('variable_name','id'))
 	
 	cache_version = cache.get('recent_version')
-	while cache_version > 1 and cache.get('timestamp',None,cache_version):
+	while cache_version >= 1 and cache.get('timestamp',None,cache_version) > timestamp_from:
 		timestamp = cache.get('timestamp',0,cache_version)*1000
 		for var in active_variables:
-			if not data.has_key(var[1]):
-				data[var[0]] = []
-			if cache.get(var[1]):
+			if cache.get(var[1],0,cache_version):
+				if not data.has_key(var[0]):
+					data[var[0]] = []
 				data[var[0]].insert(0,[timestamp,cache.get(var[1],0,cache_version)])
 		cache_version -= 1
 	
 	jdata = json.dumps(data,indent=2)
 	return HttpResponse(jdata, content_type='application/json')
-'''
-def get_cache_data(request):
-	if not request.user.is_authenticated():
-		return redirect('/accounts/login/?next=%s' % request.path)
-	data = {}
-	if RecordedDataCache.objects.first():
-		data["timestamp"] = RecordedDataCache.objects.first().time.timestamp_ms()
-	
-	active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True))
-	active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
-	
-	active_variables = list(set(active_variables))
-	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__variable_name','value'))
-	
-	for var in raw_data:
-		data[var[0]] = var[1]
-	
-	jdata = json.dumps(data,indent=2)
-	return HttpResponse(jdata, content_type='application/json')
-'''
+
 def data(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)

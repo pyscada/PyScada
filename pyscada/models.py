@@ -32,12 +32,6 @@ class KeyValueManager(models.Manager):
 #
 # Model
 #
-class GlobalConfig(models.Model):
-	id 			= models.AutoField(primary_key=True)
-	key 		= models.CharField(max_length=400, default='', verbose_name="key")
-	value		= models.CharField(max_length=400, default='', verbose_name="value")
-	description 	= models.TextField(default='', verbose_name="Description")
-	objects 		= KeyValueManager()
 
 class Client(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -72,10 +66,11 @@ class Variable(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	variable_name 	= models.SlugField(max_length=80, verbose_name="variable name")
 	description 		= models.TextField(default='', verbose_name="Description")
-	client			= models.ForeignKey('Client',null=True, on_delete=models.SET_NULL)
+	client			= models.ForeignKey(Client,null=True, on_delete=models.SET_NULL)
 	active			= models.BooleanField(default=True)
-	unit 			= models.ForeignKey('UnitConfig',null=True, on_delete=models.SET_NULL)
+	unit 			= models.ForeignKey(UnitConfig,null=True, on_delete=models.SET_NULL)
 	writeable		= models.BooleanField(default=False)
+	record			= models.BooleanField(default=True)
 	value_class_choices = (('FLOAT32','FLOAT32'),
 						('SINGLE','SINGLE'),
 						('FLOAT','FLOAT'),
@@ -186,14 +181,5 @@ class VariableChangeHistory(models.Model):
 	old_value		= models.TextField(default='')
 	def __unicode__(self):
 		return unicode(self.field)
-
-class RecordedDataCache(models.Model):
-	value	    = models.FloatField()
-	variable	 	= models.OneToOneField('Variable',null=True, on_delete=models.SET_NULL)
-	time		= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
-	last_change	= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL,related_name="last_change")
-	objects 		= RecordedDataValueManager()
-	def __unicode__(self):
-		return unicode(self.value)
 
 

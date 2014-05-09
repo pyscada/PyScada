@@ -14,6 +14,7 @@ var PyScadaPlots = [];
 var JsonErrorCount = 0;
 var auto_update_active = true;
 var log_last_timestamp = 0;
+var data_last_timestamp = 0;
 var log_frm = $('#page-log-form');
 var log_frm_mesg = $('#page-log-form-message')
 var csrftoken = $.cookie('csrftoken');
@@ -31,14 +32,14 @@ function fetchConfig(){
 			$.each(PyScadaConfig.config,function(key,val){
 				PyScadaPlots.push(new PyScadaPlot(val));
 			});
-			fetchInitData()
+			fetchData();
 		},
 		error: function(x, t, m) {
 			addNotification(t, 3);
 		}
 	});
 }
-
+/**
 function fetchInitData(){
 	// plot data
 	$.ajax({
@@ -87,7 +88,7 @@ function fetchInitData(){
 		}
 	});
 }
-
+**/
 function fetchData() {
 	tic = new Date().getTime()/1000;
 	if(debug>0){
@@ -99,22 +100,26 @@ function fetchData() {
 		$.ajax({
 			url: PyScadaConfig.DataFile,
 			dataType: "json",
-			timeout: PyScadaConfig.RefreshRate,
+			timeout: PyScadaConfig.RefreshRate*2,
+			type: "POST",
+			data:{ timestamp: data_last_timestamp },
 			success: function(data) {
 				if(debug>1){
 					$('#page-log').append('<p>' + (new Date().getTime()/1000-tic).toFixed(2) + ': data feched</p>')
 				}
-				if (data["timestamp"] > 0){
-					time = data["timestamp"];
-				}else{
-					time = new Date().getTime();
-				}
+				
+				
 				$.each(data, function(key, val) {
 				//append data to data array
 					$.each(PyScadaPlots,function(plot_id){
-						PyScadaPlots[plot_id].addData(key,time,val);
+						$.each(val,function(idx){
+							if (data_last_timestamp < val[idx][0]){
+								data_last_timestamp = val[idx][0];
+							}
+							PyScadaPlots[plot_id].addData(key,val[idx][0],val[idx][1]);
+						});
 					});
-					updateDataValues(key,val);
+					updateDataValues(key,val[val.length-1][1]);
 				});
 				if(debug>1){
 					$('#page-log').append('<p>' + (new Date().getTime()/1000-tic).toFixed(2) + ': plot data cache updated, and fields updated</p>')
@@ -261,15 +266,15 @@ function addNotification(message, level) {
 function updateDataValues(key,val){
 		
 		var r_val = Number(val);
-		if(r_val == 0 ){
+		if(Math.abs(r_val) == 0 ){
 			 r_val = 0;
-		}else if(r_val < 0.001) {
+		}else if(Math.abs(r_val) < 0.001) {
 			r_val = r_val.toExponential(2);
-		}else if (r_val < 0.01) {
+		}else if (Math.abs(r_val) < 0.01) {
 			r_val = r_val.toPrecision(1);
-		}else if(r_val < 0.1) {
+		}else if(Math.abs(r_val) < 0.1) {
 			r_val = r_val.toPrecision(2);
-		}else if(r_val < 1) {
+		}else if(Math.abs(r_val) < 1) {
 			r_val = r_val.toPrecision(3);
 		}else if(r_val > 100) {
 			r_val = r_val.toPrecision(4);
