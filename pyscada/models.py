@@ -138,6 +138,17 @@ class RecordedDataBoolean(models.Model):
 	def __unicode__(self):
 		return unicode(self.value)
 
+class RecordedDataCache(models.Model):
+	value	    = models.FloatField()
+	variable	 	= models.OneToOneField('Variable',null=True, on_delete=models.SET_NULL)
+	time		= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
+	last_change	= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL,related_name="last_change")
+	version		= models.PositiveIntegerField(default=0,null=True,blank=True)
+	objects 		= RecordedDataValueManager()
+	def __unicode__(self):
+		return unicode(self.value)
+
+
 
 class Log(models.Model):
 	id 				= models.AutoField(primary_key=True)

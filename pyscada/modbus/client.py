@@ -7,6 +7,7 @@ from pyscada.models import RecordedTime
 from pyscada.models import RecordedDataFloat
 from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
+from pyscada.models import RecordedDataCache
 from pyscada.models import TaskProgress
 from pyscada.models import ClientWriteTask
 from pyscada.models import Client
@@ -14,7 +15,6 @@ from pyscada.models import Variable
 from pyscada.modbus.utils import decode_address
 
 from django.conf import settings
-from django.core.cache import cache
 import traceback
 import os,sys
 from time import time, localtime, strftime
@@ -123,7 +123,7 @@ class CoilBlock:
     def decode_data(self,result):
         out = {}
         for register in self.variable_address:
-            tmp = decode_bits(int(random.randint(0,65535)))
+            tmp = decode_bits(result.registers.pop(0))
             for idx,bit in enumerate(self.variable_address[register]):
                 out[self.variable_id[register][idx]] = tmp[bit]
 
@@ -274,14 +274,15 @@ class client:
 
 class DataAcquisition():
     def __init__(self):
-        self._dt            = float(settings.PYSCADA_MODBUS['stepsize'])
-        self._cache_timeout = float(settings.PYSCADA_MODBUS['cache_timeout'])
-        self._com_dt        = 0
-        self._dvf = []
-        self._dvi = []
-        self._dvb = []
+        self._dt        = float(settings.PYSCADA_MODBUS['stepsize'])
+        self._com_dt    = 0
+        self._dvf       = []
+        self._dvi       = []
+        self._dvb       = []
+        self._dvc       = []
         self._clients   = {}
         self.data       = {}
+        self._prev_data = {}
         self._prepare_clients()
 
     def _prepare_clients(self):
@@ -304,15 +305,7 @@ class DataAcquisition():
         self.data = {}
         # take time
         self.time = time()
-        if cache.get('recent_version'):
-            
-            cache_version = cache.get('recent_version')
-            
-        else:
-            cache_version = 1
-            cache.set('recent_version',cache_version,None)
         
-        cache.set('timestamp',self.time,self._cache_timeout,cache_version)
         for idx in self._clients:
             self.data[idx] = self._clients[idx].request_data()
        
@@ -323,6 +316,9 @@ class DataAcquisition():
         self._dvf = []
         self._dvi = []
         self._dvb = []
+        self._dvc = []
+        del_idx   = []
+        upd_idx   = []
         timestamp = RecordedTime(timestamp=self.time)
         timestamp.save()
         for idx in self._clients:
@@ -333,13 +329,19 @@ class DataAcquisition():
                     if self.data[idx].has_key(var_idx):
                         if (self.data[idx][var_idx] != None):
                             value = self.data[idx][var_idx]
-                            store_value = self._clients[idx].variables[var_idx]['record']
-                            if cache.get(var_idx):
-                                if value == cache.get(var_idx):
+                            store_value = True
+                            if self._prev_data.has_key(var_idx):
+                                if value == self._prev_data[var_idx]:
                                     store_value = False
-                            cache.set(self._clients[idx].variables[var_idx]['variable_name'],self._cache_timeout,cache_version)
-                
+                                    
+                            self._prev_data[var_idx] = value
                 if store_value:
+                    self._dvc.append(RecordedDataCache(variable_id=var_idx,value=value,time=timestamp,last_change = timestamp))
+                    del_idx.append(var_idx)
+                else:
+                    upd_idx.append(var_idx)
+                            
+                if store_value and self._clients[idx].variables[var_idx]['record']:
                     variable_class = self._clients[idx].variables[var_idx]['value_class']
                     if variable_class.upper() in ['FLOAT','FLOAT64','DOUBLE']:
                         self._dvf.append(RecordedDataFloat(time=timestamp,variable_id=var_idx,value=float(value)))
@@ -353,7 +355,10 @@ class DataAcquisition():
                         self._dvi.append(RecordedDataInt(time=timestamp,variable_id=var_idx,value=int(value)))
                     elif variable_class.upper() in ['BOOL']:
                         self._dvb.append(RecordedDataBoolean(time=timestamp,variable_id=var_idx,value=bool(value)))
-                    
+        
+        RecordedDataCache.objects.filter(variable_id__in=del_idx).delete()
+        RecordedDataCache.objects.filter(variable_id__in=upd_idx).update(time=timestamp)
+        RecordedDataCache.objects.bulk_create(self._dvc)
         RecordedDataFloat.objects.bulk_create(self._dvf)
         RecordedDataInt.objects.bulk_create(self._dvi)
         RecordedDataBoolean.objects.bulk_create(self._dvb)

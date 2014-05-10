@@ -4,6 +4,7 @@ from pyscada.models import Variable
 from pyscada.models import RecordedDataFloat
 from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
+from pyscada.models import RecordedDataCache
 from pyscada.models import RecordedTime
 from pyscada.hmi.models import Chart
 from pyscada.hmi.models import Page
@@ -19,7 +20,6 @@ from pyscada import log
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.core import serializers
-from django.core.cache import cache
 from django.core.management import call_command
 from django.utils import timezone
 from django.template import Context, loader,RequestContext
@@ -64,8 +64,8 @@ def config(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
 	config = {}
-	config["DataFile"] 			= "json/data/"
-	config["InitialDataFile"] 	= "json/data/"
+	config["DataFile"] 			= "json/cache_data/"
+	config["InitialDataFile"] 	= "json/init_data/"
 	config["LogDataFile"] 		= "json/log_data/"
 	config["RefreshRate"] 		= 5000
 	config["config"] 			= []
@@ -126,49 +126,26 @@ def	form_write_task(request):
 	else:
 		return HttpResponse(status=404)
 
-def get_recent_cache_data(request):
-	if not request.user.is_authenticated():
-		return redirect('/accounts/login/?next=%s' % request.path)
-	data = {}
-	active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True))
-	active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
-	active_variables = list(set(active_variables))
-	active_variables = list(Variable.objects.filter(id__in=active_variables).values_list('variable_name','id'))
-	for var in active_variables:
-		if cache.get(var[1]):
-			data[var[0]] = cache.get(var[1])
-	data['timestamp'] = cache.get('timestamp')*1000
-	jdata = json.dumps(data,indent=2)
-	return HttpResponse(jdata, content_type='application/json')
+
 
 def get_cache_data(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
-	if request.POST.has_key('timestamp'):
-		timestamp_from = float(request.POST['timestamp'])
+	data = {}
+	if RecordedDataCache.objects.first():
+		data["timestamp"] = RecordedDataCache.objects.first().time.timestamp_ms()
 	else:
-		timestamp_from = 0
-	data = []
-	if request.POST.has_key('chart'):
-		active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=(1,)).values_list('charts__variables__variable_name',flat=True))
-	elif request.POST.has_key('control_items'):
-		active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=(1,)).values_list('control_items__variable__variable_name',flat=True))
-	else:
-		return HttpResponse(status=400)
+		return HttpResponse('{\n}', content_type='application/json')
+	
+	active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True))
+	active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
 	active_variables = list(set(active_variables))
-	if request.POST.has_key('chart'):
-		cache_version = cache.get('recent_version')
-		timestamp = cache.get('timestamp',0,cache_version)*1000
-		while timestamp and timestamp > timestamp_from:
-			cdata = cache.get_many(active_variables,cache_version)
-			cdata['timestamp'] = timestamp
-			data.insert(0,cdata)
-			cache_version -= 1
-			timestamp = cache.get('timestamp',0,cache_version)*1000
-	elif request.POST.has_key('control_items'):
-		data = cache.get_many(active_variables)
-		cdata['timestamp'] = timestamp
-		
+
+	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__variable_name','value'))
+
+	for var in raw_data:
+		data[var[0]] = var[1]
+
 	jdata = json.dumps(data,indent=2)
 	return HttpResponse(jdata, content_type='application/json')
 
@@ -179,7 +156,7 @@ def data(request):
 	if request.POST.has_key('timestamp'):
 		timestamp = float(request.POST['timestamp'])
 	else:
-		timestamp = time.time()-(15*60)
+		timestamp = time.time()-(10*60)
 	
 	# query timestamp pk's
 	if not RecordedTime.objects.last():
