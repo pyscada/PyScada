@@ -37,7 +37,7 @@ class Client(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	short_name		= models.CharField(max_length=400, default='')
 	client_type		= models.CharField(default='generic',choices=settings.PYSCADA_CLIENTS,max_length=400)
-	description 	= models.TextField(default='', verbose_name="Description",null=True)
+	description 		= models.TextField(default='', verbose_name="Description",null=True)
 	active			= models.BooleanField(default=True)
 	def __unicode__(self):
 		return unicode(self.short_name)

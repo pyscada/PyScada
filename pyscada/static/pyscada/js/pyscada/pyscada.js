@@ -18,6 +18,7 @@ var data_last_timestamp = 0;
 var log_frm = $('#page-log-form');
 var log_frm_mesg = $('#page-log-form-message')
 var csrftoken = $.cookie('csrftoken');
+var fetch_data_timeout = 30000;
 // the code
 var tic = new Date().getTime()/1000;
 var debug = 0; 
@@ -39,56 +40,7 @@ function fetchConfig(){
 		}
 	});
 }
-/**
-function fetchInitData(){
-	// plot data
-	$.ajax({
-		url: PyScadaConfig.InitialDataFile,
-		dataType: "json",
-		timeout: 30000,
-		success: function(data) {
-			$.each(PyScadaPlots,function(plot_id){
-				$.each(data,function(key,val){
-					PyScadaPlots[plot_id].add(key,val);
-				});
-			});
-			fetchData();
-		},
-		error: function(x, t, m) {
-			addNotification(t, 3);
-			fetchData();
-		}
-	});
-	// log
-	$.ajax({
-		url: PyScadaConfig.LogDataFile,
-		dataType: "json",
-		timeout: 30000,
-		success: function(data) {
-			
-			$.each(data,function(key,val){
-				if ("fields" in data[key]){
-					if("timestamp" in data[key].fields){
-						if (log_last_timestamp<data[key].fields.timestamp){
-							log_last_timestamp = data[key].fields.timestamp;
-						}
-						log_row = '<tr>';
-						log_row += '<td><span class="hidden" >'+data[key].fields.timestamp.toFixed(3)+'</span>' + new Date(data[key].fields.timestamp*1000).toLocaleString(); + '</td><!-- Date -->';
-						log_row += '<td>' + data[key].fields.level + '</td><!-- Level -->';
-						log_row += '<td>' + data[key].fields.message + '</td><!-- Message -->';
-						log_row += '</tr>';
-						$('#log-table tbody').append(log_row);
-					}
-				}
-			});
-			$('#log-table').tablesorter({sortList: [[0,-1]]});
-		},
-		error: function(x, t, m) {
-			addNotification(t, 3);
-		}
-	});
-}
-**/
+
 function fetchData() {
 	tic = new Date().getTime()/1000;
 	if(debug>0){
@@ -100,7 +52,7 @@ function fetchData() {
 		$.ajax({
 			url: PyScadaConfig.DataFile,
 			dataType: "json",
-			timeout: PyScadaConfig.RefreshRate*2,
+			timeout: fetch_data_timeout,
 			type: "POST",
 			data:{ timestamp: data_last_timestamp },
 			success: function(data) {

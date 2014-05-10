@@ -154,7 +154,7 @@ class client:
         for var in client.variable_set.filter(active=1):
             Address      = decode_address(var.modbusvariable.address)
             bits_to_read = get_bits_by_class(var.value_class)
-            self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record}
+            self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'variable_name':var.variable_name}
             if isinstance(Address, list):
                 self.trans_variable_bit_config.append([Address,var.pk])
             else:
@@ -305,11 +305,12 @@ class DataAcquisition():
         # take time
         self.time = time()
         if cache.get('recent_version'):
-            cache.incr('recent_version')
+            
             cache_version = cache.get('recent_version')
+            
         else:
             cache_version = 1
-            cache.set('recent_version',cache_version,self._cache_timeout,cache_version)
+            cache.set('recent_version',cache_version,None)
         
         cache.set('timestamp',self.time,self._cache_timeout,cache_version)
         for idx in self._clients:
@@ -336,7 +337,7 @@ class DataAcquisition():
                             if cache.get(var_idx):
                                 if value == cache.get(var_idx):
                                     store_value = False
-                            cache.set(var_idx,value,self._cache_timeout,cache_version)
+                            cache.set(self._clients[idx].variables[var_idx]['variable_name'],self._cache_timeout,cache_version)
                 
                 if store_value:
                     variable_class = self._clients[idx].variables[var_idx]['value_class']

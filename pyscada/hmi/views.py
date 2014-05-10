@@ -148,22 +148,27 @@ def get_cache_data(request):
 		timestamp_from = float(request.POST['timestamp'])
 	else:
 		timestamp_from = 0
-	data = {}
-	active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True))
-	active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
+	data = []
+	if request.POST.has_key('chart'):
+		active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=(1,)).values_list('charts__variables__variable_name',flat=True))
+	elif request.POST.has_key('control_items'):
+		active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=(1,)).values_list('control_items__variable__variable_name',flat=True))
+	else:
+		return HttpResponse(status=400)
 	active_variables = list(set(active_variables))
-	active_variables = list(Variable.objects.filter(id__in=active_variables).values_list('variable_name','id'))
-	
-	cache_version = cache.get('recent_version')
-	while cache_version >= 1 and cache.get('timestamp',None,cache_version) > timestamp_from:
+	if request.POST.has_key('chart'):
+		cache_version = cache.get('recent_version')
 		timestamp = cache.get('timestamp',0,cache_version)*1000
-		for var in active_variables:
-			if cache.get(var[1],0,cache_version):
-				if not data.has_key(var[0]):
-					data[var[0]] = []
-				data[var[0]].insert(0,[timestamp,cache.get(var[1],0,cache_version)])
-		cache_version -= 1
-	
+		while timestamp and timestamp > timestamp_from:
+			cdata = cache.get_many(active_variables,cache_version)
+			cdata['timestamp'] = timestamp
+			data.insert(0,cdata)
+			cache_version -= 1
+			timestamp = cache.get('timestamp',0,cache_version)*1000
+	elif request.POST.has_key('control_items'):
+		data = cache.get_many(active_variables)
+		cdata['timestamp'] = timestamp
+		
 	jdata = json.dumps(data,indent=2)
 	return HttpResponse(jdata, content_type='application/json')
 
