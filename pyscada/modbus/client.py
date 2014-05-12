@@ -152,6 +152,8 @@ class client:
     def _prepare_variable_config(self,client):
         
         for var in client.variable_set.filter(active=1):
+            if not hasattr(var,'modbusvariable'):
+                continue
             Address      = decode_address(var.modbusvariable.address)
             bits_to_read = get_bits_by_class(var.value_class)
             self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'variable_name':var.variable_name}
@@ -372,9 +374,7 @@ class DataAcquisition():
         """
         for task in ClientWriteTask.objects.filter(done=False,start__lte=time(),failed=False):
             
-            var_config = Variable.objects.get(id=var_idx)
-            result = self._clients[var_config.client_id].write_data(var_idx,value)
-            if result:
+            if self._clients[task.variable.client_id].write_data(task.variable.id,task.value):
                 task.done=True
                 task.fineshed=time()
                 task.save()
