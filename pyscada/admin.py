@@ -82,7 +82,7 @@ class RecordedDataCacheAdmin(admin.ModelAdmin):
     list_display = ('id','last_change','name','value','unit','last_update',)
     list_display_links = ('name',)
     list_filter = ('variable__client','variable__unit')
-    search_fields = ['variable',]
+    search_fields = ['variable__name',]
     def name(self,instance):
         return instance.variable.name
     def  unit(self,instance):
