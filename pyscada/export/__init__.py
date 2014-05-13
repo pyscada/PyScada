@@ -12,7 +12,7 @@ from pyscada.models import RecordedDataFloat
 from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
 from pyscada.models import RecordedTime
-from pyscada.models import TaskProgress
+from pyscada.models import BackgroundTask
 from pyscada.export.hdf5 import mat
 from django.db import connection
 
@@ -27,7 +27,7 @@ def timestamp_unix_to_matlab(timestamp):
 
 
 def export_database_to_h5(time_id_min=None,filename=None,time_id_max=None):
-    tp = TaskProgress(start=time(),label='data export',message='init',timestamp=time())
+    tp = BackgroundTask(start=time(),label='data export',message='init',timestamp=time())
     tp.save()
     
     if filename is None:
@@ -103,9 +103,9 @@ def export_database_to_h5(time_id_min=None,filename=None,time_id_max=None):
     tp.max = Variable.objects.all().count()
     tp.save()
     
-    for var in Variable.objects.filter(active = 1):
+    for var in Variable.objects.filter(active = 1,record = 1,client__active=1):
         tp.timestamp = time()
-        tp.message = 'writing value %s to file' %var.variable_name
+        tp.message = 'writing value %s to file' %var.name
         tp.progress = tp.progress +1
         tp.save()
         var_id = var.pk
@@ -160,7 +160,7 @@ def export_database_to_h5(time_id_min=None,filename=None,time_id_max=None):
         else:
             tmp = float64(tmp)
         
-        bf.write_data(var.variable_name,tmp)
+        bf.write_data(var.name,tmp)
         bf.reopen()
         
     tp.timestamp = time()
@@ -224,7 +224,7 @@ def export_database_to_mat(time_id_min=None,filename=None,time_id_max=None):
             else:
                 r_time_ids.insert(0,first_time_id)
                 r_values.insert(0,0)
-        _write_to_mat(var.variable_name,variable_class,bf,r_time_ids,r_values,time_ids)
+        _write_to_mat(var.name,variable_class,bf,r_time_ids,r_values,time_ids)
         
     for var in Variable.objects.filter(value_class__in = ('INT32','UINT32','INT16','INT','WORD','UINT','UINT16')):
         var_id = var.pk
@@ -246,7 +246,7 @@ def export_database_to_mat(time_id_min=None,filename=None,time_id_max=None):
             else:
                 r_time_ids.insert(0,first_time_id)
                 r_values.insert(0,0)
-        _write_to_mat(var.variable_name,variable_class,bf,r_time_ids,r_values,time_ids)
+        _write_to_mat(var.name,variable_class,bf,r_time_ids,r_values,time_ids)
     
     for var in Variable.objects.filter(value_class = 'BOOL'):
         var_id = var.pk
@@ -267,7 +267,7 @@ def export_database_to_mat(time_id_min=None,filename=None,time_id_max=None):
             else:
                 r_time_ids.insert(0,first_time_id)
                 r_values.insert(0,0)
-        _write_to_mat(var.variable_name,variable_class,bf,r_time_ids,r_values,time_ids)
+        _write_to_mat(var.name,variable_class,bf,r_time_ids,r_values,time_ids)
         
     
     bf.close_file()
