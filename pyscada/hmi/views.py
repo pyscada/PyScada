@@ -76,13 +76,13 @@ def config(request):
 		vars = {}
 		c_count = 0
 		chart = Chart.objects.get(pk=chart_id)
-		for var in chart.variables.filter(active=1).order_by('variable_name'):
-			color_code = var.variabledisplaypropery.chart_line_color_code()
-			if (var.variabledisplaypropery.short_name and var.variabledisplaypropery.short_name != '-'):
-				var_label = var.variabledisplaypropery.short_name
+		for var in chart.variables.filter(active=1).order_by('name'):
+			color_code = var.hmivariable.chart_line_color_code()
+			if (var.hmivariable.short_name and var.hmivariable.short_name != '-'):
+				var_label = var.hmivariable.short_name
 			else:
-				var_label = var.variable_name
-			vars[var.variable_name] = {"yaxis":1,"color":color_code,"unit":var.unit.description,"label":var_label}
+				var_label = var.name
+			vars[var.name] = {"yaxis":1,"color":color_code,"unit":var.unit.description,"label":var_label}
 			
 		config["config"].append({"label":chart.title,"xaxis":{"ticks":chart.x_axis_ticks},"axes":[{"yaxis":{"min":chart.y_axis_min,"max":chart.y_axis_max,'label':chart.y_axis_label}}],"placeholder":"#chart-%d"% chart.pk,"legendplaceholder":"#chart-%d-legend" % chart.pk,"variables":vars}) 
 		chart_count += 1		
@@ -141,7 +141,7 @@ def get_cache_data(request):
 	active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
 	active_variables = list(set(active_variables))
 
-	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__variable_name','value'))
+	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__name','value'))
 
 	for var in raw_data:
 		data[var[0]] = var[1]
@@ -151,21 +151,22 @@ def get_cache_data(request):
 
 def data(request):
 	if not request.user.is_authenticated():
-		return redirect('/accounts/login/?next=%s' % request.path)
+		return HttpResponse('{\n}', content_type='application/json')
 	# read POST data
 	if request.POST.has_key('timestamp'):
-		timestamp = float(request.POST['timestamp'])
+		timestamp = float(request.POST['timestamp'])/1000.0
 	else:
-		timestamp = time.time()-(10*60)
+		timestamp = time.time()
 	
 	# query timestamp pk's
 	if not RecordedTime.objects.last():
 		return HttpResponse('{\n}', content_type='application/json')
-	t_max_pk 		= RecordedTime.objects.last().pk
-	rto 			= RecordedTime.objects.filter(timestamp__gte=float(timestamp))
+		
+	rto 			= RecordedTime.objects.filter(timestamp__lt=float(timestamp),timestamp__gte=float(timestamp)-5*60)
 	if rto.count()>0:
 		t_min_ts 		= rto.first().timestamp
 		t_min_pk 		= rto.first().pk
+		rto_ids			= rto.values_list('pk',flat=True)
 	else:
 		return HttpResponse('{\n}', content_type='application/json')
 	
@@ -178,23 +179,23 @@ def data(request):
 		var_id = var.pk
 		rto = RecordedDataFloat.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
 		if rto:
-			data[var.variable_name] = [(t_min_ts,rto.value)]
-			data[var.variable_name].extend(list(RecordedDataFloat.objects.filter(variable_id=var_id,time_id__range=(t_min_pk,t_max_pk)).values_list('time__timestamp','value')))
+			data[var.name] = [(t_min_ts,rto.value)]
+			data[var.name].extend(list(RecordedDataFloat.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value')))
 		
 	for var in Variable.objects.filter(value_class__in = ('INT32','UINT32','INT16','INT','WORD','UINT','UINT16'),pk__in = active_variables):
 		var_id = var.pk
 		rto = RecordedDataInt.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
 		if rto:
-			data[var.variable_name] = [(t_min_ts,rto.value)]
-			data[var.variable_name].extend(list(RecordedDataInt.objects.filter(variable_id=var_id,time_id__range=(t_min_pk,t_max_pk)).values_list('time__timestamp','value')))
+			data[var.name] = [(t_min_ts,rto.value)]
+			data[var.name].extend(list(RecordedDataInt.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value')))
 	
 
 	for var in Variable.objects.filter(value_class = 'BOOL', pk__in = active_variables):
 		var_id = var.pk
 		rto = RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
 		if rto:
-			data[var.variable_name] = [(t_min_ts,rto.value)]
-			data[var.variable_name].extend(list(RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__range=(t_min_pk,t_max_pk)).values_list('time__timestamp','value')))
+			data[var.name] = [(t_min_ts,rto.value)]
+			data[var.name].extend(list(RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value')))
 	for key in data:
 		for idx,item in enumerate(data[key]):
 			data[key][idx] = (item[0]*1000,item[1])

@@ -16,17 +16,17 @@
                 {% if var.active and var.client.active %}
                 <tr class="legendSeries">
                     <td>
-                        <span class="hidden" id="chart-{{chart.pk}}-{{var.variable_name}}-checkbox-status" >1</span>
-                        <input type="checkbox" checked="checked" id="chart-{{ chart.pk }}-{{ var.variable_name }}-checkbox">
+                        <span class="hidden" id="chart-{{chart.pk}}-{{var.name}}-checkbox-status" >1</span>
+                        <input type="checkbox" checked="checked" id="chart-{{ chart.pk }}-{{ var.name }}-checkbox">
                     </td>
                     <td class="legendColorBox">
                         <div style="border:1px solid #ccc;padding:1px">
-                            <div style="width:4px;height:0;border:5px solid {{ var.variabledisplaypropery.chart_line_color_code }};overflow:hidden">
+                            <div style="width:4px;height:0;border:5px solid {{ var.hmivariable.chart_line_color_code }};overflow:hidden">
                             </div>
                         </div>
                     </td>
-                    <td class="legendLabel">{{ var.variabledisplaypropery.variable_name }}</td>
-                    <td class="legendValue type-numeric var-{{ var.variable_name }}"></td>
+                    <td class="legendLabel">{{ var.hmivariable.name }}</td>
+                    <td class="legendValue type-numeric var-{{ var.name }}"></td>
                     <td class="legendUnit">{{ var.unit.unit }}</td>
                 </tr>
                 {% endif %}

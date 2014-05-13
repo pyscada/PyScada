@@ -8,7 +8,7 @@ from pyscada.hmi.models import ChartSet
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import SlidingPanelMenu
 #from pyscada.hmi.models import GroupDisplayPermisions
-from pyscada.hmi.models import VariableDisplayPropery
+#from pyscada.hmi.models import HMIVariable
 from pyscada.models import Variable
 
 import json

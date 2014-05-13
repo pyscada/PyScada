@@ -4,7 +4,7 @@ from pyscada import log
 from pyscada.daemon import Daemon
 from pyscada.modbus import client
 from django.core.management.base import BaseCommand, CommandError
-from pyscada.models import TaskProgress
+from pyscada.models import BackgroundTask
 from django.conf import settings
 import os,sys
 from time import sleep,time
@@ -12,14 +12,16 @@ import traceback
 
 class Command(BaseCommand):
     args = 'start | stop | restart'
-    help = 'Start the data aquisition daemon for PyScada'
+    help = 'Start the modbus data aquisition daemon for PyScada'
 
     def handle(self, *args, **options):
         
         if len(args)!=1:
-            self.stdout.write("usage: python manage.py PyScadaDaemon start | stop | restart\n", ending='')
+            self.stdout.write("usage: python manage.py PyScadaModbusDaemon start | stop | restart\n", ending='')
         else:
-            mdaemon = MainDaemon('%s/DataAcquisition-daemon.pid'%settings.PROJECT_PATH)
+            if not os.path.exists(settings.PID_ROOT):
+                os.makedirs(settings.PID_ROOT)
+            mdaemon = MainDaemon('%s%s'%(settings.PID_ROOT,settings.PYSCADA_MODBUS['pid_file_name']))
             if 'start' == args[0]:
                 log.info("try starting dataaquisition daemon")
                 mdaemon.start()
@@ -33,12 +35,12 @@ class Command(BaseCommand):
                     pid = None
                 if pid:
                     wait_count = 0
-                    tp = TaskProgress.objects.filter(pid=pid).last()
+                    tp = BackgroundTask.objects.filter(pid=pid).last()
                     if tp:
                         tp.stop_daemon = 1
                         tp.save()
                         while (wait_count < 10 and not tp.done):
-                            tp = TaskProgress.objects.filter(pid=pid).last()
+                            tp = BackgroundTask.objects.filter(pid=pid).last()
                             wait_count += 1
                             sleep(1)
                     
@@ -54,12 +56,12 @@ class Command(BaseCommand):
                     pid = None
                 if pid:
                     wait_count = 0
-                    tp = TaskProgress.objects.filter(pid=pid).last()
+                    tp = BackgroundTask.objects.filter(pid=pid).last()
                     if tp:
                         tp.stop_daemon = 1
                         tp.save()
                         while (wait_count < 10 and not tp.done):
-                            tp = TaskProgress.objects.filter(pid=pid).last()
+                            tp = BackgroundTask.objects.filter(pid=pid).last()
                             wait_count += 1
                             sleep(1)
                 mdaemon.stop()
@@ -76,7 +78,7 @@ class MainDaemon(Daemon):
         except IOError:
             pid = 0
         
-        tp = TaskProgress(start=time(),label='data acquision daemon',message='init',timestamp=time(),pid = pid)
+        tp = BackgroundTask(start=time(),label='data acquision daemon',message='init',timestamp=time(),pid = pid)
         tp.save()
         tp_id = tp.id
         
@@ -101,14 +103,14 @@ class MainDaemon(Daemon):
                 log.debug("exeption in dataaquisition daemon, %s" % var,-1)
                 daq = client.DataAcquisition()
                 dt = 5
-            tp = TaskProgress.objects.get(id=tp_id)    
+            tp = BackgroundTask.objects.get(id=tp_id)    
             tp.timestamp = time()
             tp.load= 1.-max(min(dt/daq._dt,1),0)
             tp.save()
             if dt>0:
                 sleep(dt)
         try:
-            tp = TaskProgress.objects.get(id=tp_id)    
+            tp = BackgroundTask.objects.get(id=tp_id)    
             tp.done = True
             tp.message = 'stopped'
             tp.timestamp = time()

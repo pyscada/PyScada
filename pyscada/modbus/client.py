@@ -8,7 +8,6 @@ from pyscada.models import RecordedDataFloat
 from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
 from pyscada.models import RecordedDataCache
-from pyscada.models import TaskProgress
 from pyscada.models import ClientWriteTask
 from pyscada.models import Client
 from pyscada.models import Variable
@@ -156,7 +155,7 @@ class client:
                 continue
             Address      = decode_address(var.modbusvariable.address)
             bits_to_read = get_bits_by_class(var.value_class)
-            self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'variable_name':var.variable_name}
+            self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'name':var.name}
             if isinstance(Address, list):
                 self.trans_variable_bit_config.append([Address,var.pk])
             else:
@@ -276,7 +275,7 @@ class client:
 
 class DataAcquisition():
     def __init__(self):
-        self._dt        = float(settings.PYSCADA_MODBUS['stepsize'])
+        self._dt        = float(settings.PYSCADA_MODBUS['polling_interval'])
         self._com_dt    = 0
         self._dvf       = []
         self._dvi       = []
@@ -361,6 +360,7 @@ class DataAcquisition():
         RecordedDataCache.objects.filter(variable_id__in=del_idx).delete()
         RecordedDataCache.objects.filter(variable_id__in=upd_idx).update(time=timestamp)
         RecordedDataCache.objects.bulk_create(self._dvc)
+        
         RecordedDataFloat.objects.bulk_create(self._dvf)
         RecordedDataInt.objects.bulk_create(self._dvi)
         RecordedDataBoolean.objects.bulk_create(self._dvb)
@@ -378,9 +378,9 @@ class DataAcquisition():
                 task.done=True
                 task.fineshed=time()
                 task.save()
-                log.notice('changed variable %s (new value %1.6g %s)'%(task.variable.variable_name,task.value,task.variable.unit.description),task.user)
+                log.notice('changed variable %s (new value %1.6g %s)'%(task.variable.name,task.value,task.variable.unit.description),task.user)
             else:
                 task.failed = True
                 task.fineshed=time()
                 task.save()
-                log.error('change of variable %s failed'%(task.variable.variable_name),task.user)
+                log.error('change of variable %s failed'%(task.variable.name),task.user)

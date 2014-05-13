@@ -10,15 +10,18 @@ Licensed under the GPL.
 
 var NotificationCount = 0
 var PyScadaConfig;
+var UpdateStatusCount = 0;
 var PyScadaPlots = [];
 var JsonErrorCount = 0;
 var auto_update_active = true;
 var log_last_timestamp = 0;
 var data_last_timestamp = 0;
+var data_first_timestamp = 0;
 var log_frm = $('#page-log-form');
 var log_frm_mesg = $('#page-log-form-message')
 var csrftoken = $.cookie('csrftoken');
 var fetch_data_timeout = 5000;
+var InitDataCount = 0;
 // the code
 var tic = new Date().getTime()/1000;
 var debug = 0; 
@@ -33,7 +36,10 @@ function fetchConfig(){
 			$.each(PyScadaConfig.config,function(key,val){
 				PyScadaPlots.push(new PyScadaPlot(val));
 			});
-			fetchInitData();
+			fetchData();
+			// log
+			updateLog();
+			setTimeout('fetchInitData()', PyScadaConfig.RefreshRate*2);
 		},
 		error: function(x, t, m) {
 			addNotification(t, 3);
@@ -41,33 +47,51 @@ function fetchConfig(){
 	});
 }
 function fetchInitData(){
-// plot data
+	// plot data
+	$("#AutoUpdateStatus").show();
+	UpdateStatusCount = UpdateStatusCount + 1;
 	$.ajax({
 		url: PyScadaConfig.InitialDataFile,
 		dataType: "json",
 		timeout: 30000,
+		type: 'post',
+		data: {timestamp:data_first_timestamp},
 		success: function(data) {
 			$.each(PyScadaPlots,function(plot_id){
 				$.each(data,function(key,val){
 					PyScadaPlots[plot_id].add(key,val);
+					timestamp = val[0][0];
+					if (data_first_timestamp>timestamp){
+							data_first_timestamp = timestamp;
+						}
 				});
 			});
-			fetchData();
+			UpdateStatusCount = UpdateStatusCount -1;
+			if (UpdateStatusCount <= 0){
+				$("#AutoUpdateStatus").hide();
+			}
+			
+			InitDataCount = InitDataCount + 1;
+			if (InitDataCount < 24){
+				setTimeout('fetchInitData()', 1);
+			}
 		},
 		error: function(x, t, m) {
 			addNotification(t, 3);
-			fetchData();
+			UpdateStatusCount = UpdateStatusCount -1;
+			if (UpdateStatusCount <= 0){
+				$("#AutoUpdateStatus").hide();
+			}
 		}
 	});
-// log
-	updateLog();
+
 }
 
 function fetchData() {
 	tic = new Date().getTime()/1000;
 	if (auto_update_active) {
 		$("#AutoUpdateStatus").show();
-		
+		UpdateStatusCount = UpdateStatusCount + 1;
 		$.ajax({
 			url: PyScadaConfig.DataFile,
 			dataType: "json",
@@ -76,8 +100,12 @@ function fetchData() {
 			data:{ timestamp: data_last_timestamp },
 			success: function(data) {
 				timestamp = data['timestamp']
+				
 				if (data_last_timestamp < timestamp){
 					data_last_timestamp = timestamp;
+				}
+				if (data_first_timestamp == 0){
+					data_first_timestamp = data_last_timestamp;
 				}
 				$.each(data, function(key, val) {
 				//append data to data array
@@ -92,7 +120,10 @@ function fetchData() {
 					};
 					$.browserQueue.add(doBind, this);
 				});
-				setTimeout('$( "#AutoUpdateStatus" ).hide();', 100);
+				UpdateStatusCount = UpdateStatusCount -1;
+				if (UpdateStatusCount <= 0){
+					$("#AutoUpdateStatus").hide();
+				}
 				setTimeout('fetchData()', PyScadaConfig.RefreshRate);
 				$("#AutoUpdateButton").removeClass("btn-warning");
 				$("#AutoUpdateButton").addClass("btn-success");
@@ -107,7 +138,10 @@ function fetchData() {
 					auto_update_active = false;
 					addNotification("error limit reached", 3);
 				} else {
-					setTimeout('$( "#AutoUpdateStatus" ).hide();', 100);
+					UpdateStatusCount = UpdateStatusCount -1;
+					if (UpdateStatusCount <= 0){
+						$("#AutoUpdateStatus").hide();
+					}
 					if (auto_update_active) {
 						setTimeout('fetchData()', 500);
 					}
@@ -122,7 +156,8 @@ function fetchData() {
 }
 
 function updateLog() {
-	
+	$("#AutoUpdateStatus").show();
+	UpdateStatusCount = UpdateStatusCount + 1;
 	$.ajax({
 		url: PyScadaConfig.LogDataFile,
 		type: 'post',
@@ -132,10 +167,9 @@ function updateLog() {
 		methode: 'post',
 		success: function(data) {
 			$.each(data,function(key,val){
-				if ("fields" in data[key]){
-					if("timestamp" in data[key].fields){
-						if (log_last_timestamp<data[key].fields.timestamp){
-							log_last_timestamp = data[key].fields.timestamp;
+					if("timestamp" in data[key]){
+						if (log_last_timestamp<data[key].timestamp){
+							log_last_timestamp = data[key].timestamp;
 						}
 						log_row = '<tr>';
 						log_row += '<td><span class="hidden" >'+data[key].timestamp.toFixed(3)+'</span>' + new Date(data[key].timestamp*1000).toLocaleString(); + '</td><!-- Date -->';
@@ -147,12 +181,19 @@ function updateLog() {
 							addNotification(data[key].message,+data[key].level);
 						}
 					}
-				}
-			});
+				});
 			$('#log-table').trigger("updateAll",["",function(table){}]);
+			UpdateStatusCount = UpdateStatusCount -1;
+			if (UpdateStatusCount <= 0){
+				$("#AutoUpdateStatus").hide();
+			}
 		},
 		error: function(x, t, m) {
 			addNotification(t, 3);
+			UpdateStatusCount = UpdateStatusCount -1;
+			if (UpdateStatusCount <= 0){
+				$("#AutoUpdateStatus").hide();
+			}
 		}
 	});
 }
@@ -358,12 +399,14 @@ function PyScadaPlot(config){
 		
 
 		expandToMaxWidth();
+		main_chart_area  = $(config.placeholder).closest('.main-chart-area');
 		
-		contentAreaHeight = $(config.placeholder).closest('.main-chart-area').parent().height();
-		mainChartAreaHeight = $(config.placeholder).closest('.main-chart-area').height();
+		
+		contentAreaHeight = main_chart_area.parent().height();
+		mainChartAreaHeight = main_chart_area.height();
 		
 		if (contentAreaHeight>mainChartAreaHeight){
-			$(config.placeholder).closest('.main-chart-area').height(contentAreaHeight);
+			main_chart_area.height(contentAreaHeight);
 		}
 
 		//
@@ -434,11 +477,7 @@ function PyScadaPlot(config){
 	
 	function add(key,value){
 		if (typeof(data[key])==="object"){
-			data[key] = data[key].concat(value);
-        	if (data[key].length > BufferSize){
-        		// if buffer is full drop the first element
-       			data[key].splice(data[key].length-BufferSize);
-        	}
+			data[key] = value.concat(data[key]);
     	}
 	}
 	
@@ -657,11 +696,16 @@ $('button.write-task-btn').click(function(){
 
 // fix drop down problem
 $(function() {
-  // Setup drop down menu
-  $('.dropdown-toggle').dropdown();
+	// Setup drop down menu
+	$('.dropdown-toggle').dropdown();
  
-  // Fix input element click problem
-  $('.dropdown input, .dropdown label, .dropdown button').click(function(e) {
-    e.stopPropagation();
-  });
+	// Fix input element click problem
+	$('.dropdown input, .dropdown label, .dropdown button').click(function(e) {
+		e.stopPropagation();
+	});
+	$( window ).resize(function() {
+		$.each(PyScadaPlots,function(plot_id){
+			PyScadaPlots[plot_id].expandToMaxWidth();
+		});
+	});
 });

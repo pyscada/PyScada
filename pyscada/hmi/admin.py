@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from pyscada.hmi.models import VariableDisplayPropery
+from pyscada.hmi.models import HMIVariable
 from pyscada.models import Variable
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Chart
@@ -24,18 +24,18 @@ class ChartForm(forms.ModelForm):
         w = self.fields['variables'].widget
         choices = []
         for choice in wtf:
-            choices.append((choice.id, choice.variable_name+'( '+ choice.unit.description +' )'))
+            choices.append((choice.id, choice.name+'( '+ choice.unit.description +' )'))
         w.choices = choices
 
 class ChartAdmin(admin.ModelAdmin):
     list_per_page = 100
     #ordering = ['position',]
-    search_fields = ['variable_name',]
+    search_fields = ['name',]
     filter_horizontal = ('variables',)
     list_display = ('title',)
     form = ChartForm
-    def variable_name(self, instance):
-        return instance.variables.variable_name
+    def name(self, instance):
+        return instance.variables.name
 
 
 class ControlItemAdmin(admin.ModelAdmin):
@@ -48,21 +48,21 @@ class SlidingPanelMenuForm(forms.ModelForm):
         w = self.fields['items'].widget
         choices = []
         for choice in wtf:
-            choices.append((choice.id, choice.label+" ("+ choice.variable.variable_name + ', ' + choice.get_type_display() + ")"))
+            choices.append((choice.id, choice.label+" ("+ choice.variable.name + ', ' + choice.get_type_display() + ")"))
         w.choices = choices
 
 class SlidingPanelMenuAdmin(admin.ModelAdmin):
-        #search_fields = ['variable_name',]
+        #search_fields = ['name',]
         #filter_horizontal = ('items',)
         #form = SlidingPanelMenuForm
         list_display = ('id',)
         
         
-class VariableDisplayProperyAdmin(admin.ModelAdmin):
-    search_fields = ['hmi_variable__variable_name',]
-    list_display = ('variable_name','short_name','chart_line_color','chart_line_thickness',)
-    def variable_name(self, instance):
-        return instance.hmi_variable.variable_name
+class HMIVariableAdmin(admin.ModelAdmin):
+    search_fields = ['hmi_variable__name',]
+    list_display = ('name','short_name','chart_line_color','chart_line_thickness',)
+    def name(self, instance):
+        return instance.hmi_variable.name
  
 class WidgetAdmin(admin.ModelAdmin):
     list_display_links = ('id',)
@@ -75,7 +75,7 @@ admin.site.register(Chart,ChartAdmin)
 admin.site.register(SlidingPanelMenu,SlidingPanelMenuAdmin)
 admin.site.register(Page)
 admin.site.register(GroupDisplayPermission)
-admin.site.register(VariableDisplayPropery,VariableDisplayProperyAdmin)
+admin.site.register(HMIVariable,HMIVariableAdmin)
 
 admin.site.register(ControlPanel)
 admin.site.register(CustomHTMLPanel)

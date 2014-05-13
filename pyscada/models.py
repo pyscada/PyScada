@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.conf import settings
 import time
-
+import datetime
 
 #
 # Manager
@@ -43,17 +43,7 @@ class Client(models.Model):
 		return unicode(self.short_name)
 
 
-class ScalingConfig(models.Model):
-	id 				= models.AutoField(primary_key=True)
-	description		= models.CharField(max_length=400, default='', verbose_name="Description")
-	min_value		= models.FloatField(default=0, verbose_name="minimal Value")
-	max_value		= models.FloatField(default="1", verbose_name="maximal Value")
-	bit				= models.PositiveIntegerField(default=0, verbose_name="bit")
-	def __unicode__(self):
-		return unicode(self.description)
-
-
-class UnitConfig(models.Model):
+class Unit(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	unit			= models.CharField(max_length=80, verbose_name="Unit")
 	description 		= models.TextField(default='', verbose_name="Description",null=True)
@@ -64,11 +54,11 @@ class UnitConfig(models.Model):
 
 class Variable(models.Model):
 	id 				= models.AutoField(primary_key=True)
-	variable_name 	= models.SlugField(max_length=80, verbose_name="variable name")
+	name 			= models.SlugField(max_length=80, verbose_name="variable name")
 	description 		= models.TextField(default='', verbose_name="Description")
 	client			= models.ForeignKey(Client,null=True, on_delete=models.SET_NULL)
 	active			= models.BooleanField(default=True)
-	unit 			= models.ForeignKey(UnitConfig,null=True, on_delete=models.SET_NULL)
+	unit 			= models.ForeignKey(Unit,null=True, on_delete=models.SET_NULL)
 	writeable		= models.BooleanField(default=False)
 	record			= models.BooleanField(default=True)
 	value_class_choices = (('FLOAT32','FLOAT32'),
@@ -87,7 +77,7 @@ class Variable(models.Model):
 						)
 	value_class		= models.CharField(max_length=15, default='FLOAT', verbose_name="value_class",choices=value_class_choices)
 	def __unicode__(self):
-		return unicode(self.variable_name)
+		return unicode(self.name)
 
 
 
@@ -106,7 +96,7 @@ class RecordedTime(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	timestamp 		= models.FloatField()
 	def __unicode__(self):
-		return unicode(self.timestamp)
+		return unicode(datetime.datetime.fromtimestamp(int(self.timestamp)).strftime('%Y-%m-%d %H:%M:%S'))
 	def timestamp_ms(self):
 		return self.timestamp * 1000
 
@@ -152,7 +142,7 @@ class RecordedDataCache(models.Model):
 
 class Log(models.Model):
 	id 				= models.AutoField(primary_key=True)
-	level			= models.IntegerField(default=0, verbose_name="error level")
+	level			= models.IntegerField(default=0, verbose_name="level")
 	timestamp 		= models.FloatField()
 	message_short	= models.CharField(max_length=400, default='', verbose_name="short message")
 	message 			= models.TextField(default='', verbose_name="message")
@@ -162,7 +152,7 @@ class Log(models.Model):
 		return unicode(self.message)
 
 		
-class TaskProgress(models.Model):
+class BackgroundTask(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	start 			= models.FloatField(default=0)
 	timestamp 		= models.FloatField(default=0)

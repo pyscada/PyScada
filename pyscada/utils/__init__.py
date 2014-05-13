@@ -3,10 +3,10 @@
 from pyscada import log
 from pyscada.models import Client
 from pyscada.models import Variable
-from pyscada.hmi.models import VariableDisplayPropery as WebVariable
+from pyscada.hmi.models import HMIVariable as WebVariable
 from pyscada.modbus.models import ModbusVariable
 from pyscada.modbus.models import ModbusClient
-from pyscada.models import UnitConfig
+from pyscada.models import Unit
 from struct import *
 
 import json
@@ -108,21 +108,23 @@ def update_variable_set(json_data):
 	#data = json.loads(json_data.read().decode("utf-8-sig"))
 	#json_data.close()
 	data = json.loads(json_data)
+	# deactivate all variables
+	
 	for entry in data:
 		# client
 		cc, ccc = Client.objects.get_or_create(id = entry['client_id'],defaults={'short_name':entry['client_id'],'description':entry['client_id']})
 		# unit config 
-		uc, ucc = UnitConfig.objects.get_or_create(unit = entry['unit'].replace(' ',''))
+		uc, ucc = Unit.objects.get_or_create(unit = entry['unit'].replace(' ',''))
 		# variable exist
 		obj, created = Variable.objects.get_or_create(id=entry['id'],
-		defaults={'id':entry['id'],'variable_name':entry['variable_name'].replace(' ',''),'description': entry['description'],'client':cc,'active':bool(entry['active']),'writeable':bool(entry['writeable']),'unit':uc,'value_class':entry["value_class"].replace(' ','')})
+		defaults={'id':entry['id'],'name':entry['variable_name'].replace(' ',''),'description': entry['description'],'client':cc,'active':bool(entry['active']),'writeable':bool(entry['writeable']),'unit':uc,'value_class':entry["value_class"].replace(' ','')})
 		
 		if created:
 			log.info(("created variable: %s") %(entry['variable_name']))
 		else:
 			log.info(("updated variable: %s") %(entry['variable_name']))
 		
-			obj.variable_name = entry['variable_name']
+			obj.name = entry['variable_name']
 			obj.description = entry['description']
 			obj.client_id = entry['client_id']
 			obj.active = bool(entry['active'])
@@ -131,10 +133,10 @@ def update_variable_set(json_data):
 			obj.value_class = entry["value_class"].replace(' ','')
 			obj.save()
 		
-		if hasattr(obj,'variabledisplaypropery'):
-			obj.variabledisplaypropery.chart_line_color_id = entry["color_id"]
-			obj.variabledisplaypropery.short_name = entry["short_name"]
-			obj.variabledisplaypropery.save()
+		if hasattr(obj,'hmivariable'):
+			obj.hmivariable.chart_line_color_id = entry["color_id"]
+			obj.hmivariable.short_name = entry["short_name"]
+			obj.hmivariable.save()
 		else:
 			WebVariable(hmi_variable=obj,short_name=entry["short_name"],chart_line_color_id=entry["color_id"]).save()
 		

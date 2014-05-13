@@ -17,17 +17,17 @@ class Color(models.Model):
 		return unicode('#%02x%02x%02x' % (self.R, self.G, self.B))	
 
 
-class VariableDisplayPropery(models.Model):
-	hmi_variable		= models.OneToOneField(Variable)
+class HMIVariable(models.Model):
+	hmi_variable			= models.OneToOneField(Variable)
 	short_name			= models.CharField(default='',max_length=80, verbose_name="variable short name")
 	chart_line_color 	= models.ForeignKey('Color',default=0,null=True, on_delete=models.SET_NULL)
 	chart_line_thickness_choices = ((3,'3Px'),)
 	chart_line_thickness = models.PositiveSmallIntegerField(default=3,choices=chart_line_thickness_choices)
-	def variable_name(self):
+	def name(self):
 		if self.short_name and self.short_name != '-':
 			return self.short_name
 		else:
-			return self.hmi_variable.variable_name
+			return self.hmi_variable.name
 	def chart_line_color_code(self):
 		if self.chart_line_color and self.chart_line_color.id != 1:
 			return self.chart_line_color.color_code()
@@ -50,9 +50,9 @@ class ControlItem(models.Model):
 	class Meta:
 		ordering = ['position']
 	def __unicode__(self):
-		return unicode(self.label+" ("+self.variable.variable_name + ")")
+		return unicode(self.label+" ("+self.variable.name + ")")
 	def web_id(self):
-		return unicode(self.id.__str__() + "-" + self.label.replace(' ','_')+"-"+self.variable.variable_name.replace(' ','_'))
+		return unicode(self.id.__str__() + "-" + self.label.replace(' ','_')+"-"+self.variable.name.replace(' ','_'))
 
 
 class Chart(models.Model):
