@@ -1,10 +1,9 @@
-/* Javascript library for the PyScada web client based on jquery and flot, version 0.3.0-alpha.
+/* Javascript library for the PyScada web client based on jquery and flot, 
+
+version 0.6.3
 
 Copyright (c) 2013-2014 Martin Schröder
 Licensed under the GPL.
-
-
-
 
 */
 
@@ -496,6 +495,7 @@ function PyScadaPlot(config){
 			series = [];
 			start_id = 0;
 			now = new Date().getTime();
+			now = data_last_timestamp;
 			$.each(data,function(key){
 				if($(config.placeholder+'-'+key+'-checkbox').is(':checked')){
 					//if(start_id===-1){
