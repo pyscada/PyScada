@@ -22,14 +22,11 @@ from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 from math import isnan, isinf
 
 class RegisterBlock:
-    def __init__(self,client_address,client_port):
+    def __init__(self):
         self.variable_address   = [] #
         self.variable_length    = [] # in bytes
         self.variable_class     = [] #
         self.variable_id        = [] #
-        self.slave              = False # instance of the
-        self._address           = client_address
-        self._port              = client_port
 
 
     def insert_item(self,variable_id,variable_address,variable_class,variable_length):
@@ -89,52 +86,53 @@ class RegisterBlock:
                 return index
 
 class CoilBlock:
-    def __init__(self,client_address,client_port):
-        self.variable_address       = {} #
-        self.variable_id            = {} #
-        self.slave                  = False # instance of the
-        self._address               = client_address
-        self._port                  = client_port
-
-
+    def __init__(self):
+        self.variable_id            = [] #
+        self.variable_address       = [] #
+        
+    
     def insert_item(self,variable_id,variable_address):
-            if not variable_address[0] in self.variable_address:
-                self.variable_address[variable_address[0]] = []
-                self.variable_id[variable_address[0]] = []
-            self.variable_address[variable_address[0]].append(variable_address[1])
-            self.variable_id[variable_address[0]].append(variable_id)
-
+        if not self.variable_address:
+            self.variable_address.append(variable_address)
+            self.variable_id.append(variable_id)
+        elif max(self.variable_address) < variable_address:
+            self.variable_address.append(variable_address)
+            self.variable_id.append(variable_id)
+        elif min(self.variable_address) > variable_address:
+            self.variable_address.insert(0,variable_address)
+            self.variable_id.insert(0,variable_id)
+        else:
+            i = self.find_gap(self.variable_address,variable_address)
+            if (i is not None):
+                self.variable_address.insert(i,variable_address)
+                self.variable_id.insert(i,variable_id)
+        
 
 
     def request_data(self,slave):
         quantity = len(self.variable_address) # number of bits to read
-        first_address = min(self.variable_address.keys())
+        first_address = min(self.variable_address)
         
-        result = slave.read_input_registers(first_address,quantity)
-        if not hasattr(result, 'registers'):
+        result = slave.read_coils(first_address,quantity)
+        if not hasattr(result, 'bits'):
             return result
             
-
         return self.decode_data(result)
         
 
-        
     def decode_data(self,result):
         out = {}
-        for register in self.variable_address:
-            tmp = decode_bits(result.registers.pop(0))
-            for idx,bit in enumerate(self.variable_address[register]):
-                out[self.variable_id[register][idx]] = tmp[bit]
-
+        for idx in self.variable_id:
+            out[idx] = result.bits.pop(0)
         return out
-
-
+    
     def find_gap(self,L,value):
         for index in range(len(L)):
             if L[index] == value:
                 return None
             if L[index] > value:
                 return index
+
 class client:
     """
     Modbus client (Master) class
@@ -171,7 +169,7 @@ class client:
         for entry in self.trans_variable_config:
             if (entry[0] != old) or regcount >122:
                 regcount = 0
-                out.append(RegisterBlock(self._address,self._port)) # start new register block
+                out.append(RegisterBlock()) # start new register block
             out[-1].insert_item(entry[3],entry[0],entry[1],entry[2]) # add item to block
             old = entry[0] + entry[2]/16
             regcount += entry[2]/16
@@ -179,10 +177,10 @@ class client:
         # bit registers
         old = -2
         for entry in self.trans_variable_bit_config:
-            if (entry[0][0] != old and entry[0][0] != old+1):
-                out.append(CoilBlock(self._address,self._port)) # start new coil block
-            out[-1].insert_item(entry[1],entry[0])
-            old = entry[0][0]
+            if (entry[0][2] != old+1):
+                out.append(CoilBlock()) # start new coil block
+            out[-1].insert_item(entry[1],entry[0][2])
+            old = entry[0][2]
         return out
 
 
