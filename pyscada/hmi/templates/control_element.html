@@ -18,7 +18,7 @@
 				<input type="text" class="form-control var-{{ item.variable.name }}" id="{{ item.web_id }}-value" placeholder="">
 				<span class="input-group-addon">{{ item.variable.unit.unit }}</span>
 				<span class="input-group-btn">
-					<button class="btn btn-default write-task-set" var_id="{{ item.variable.pk }}" id="{{ item.web_id }}" type="button">set</button>
+					<button class="btn btn-default write-task-set set-{{ item.variable.name }}" var_id="{{ item.variable.pk }}" id="{{ item.web_id }}" type="button">set</button>
 				</span>
 			</div>
 		{% endif %}

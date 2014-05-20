@@ -14,6 +14,7 @@ var PyScadaPlots = [];
 var JsonErrorCount = 0;
 var auto_update_active = true;
 var log_last_timestamp = 0;
+var log_init = true;
 var data_last_timestamp = 0;
 var data_first_timestamp = 0;
 var log_frm = $('#page-log-form');
@@ -176,11 +177,12 @@ function updateLog() {
 						log_row += '<td>' + data[key].username + ": " + data[key].message + '</td><!-- Message -->';
 						log_row += '</tr>';
 						$('#log-table tbody').append(log_row);
-						if (!$('#log-table').is(":visible")){
+						if (!$('#log-table').is(":visible") && !log_init){
 							addNotification(data[key].message,+data[key].level);
 						}
 					}
 				});
+			log_init = false;
 			$('#log-table').trigger("updateAll",["",function(table){}]);
 			UpdateStatusCount = UpdateStatusCount -1;
 			if (UpdateStatusCount <= 0){
@@ -281,22 +283,24 @@ function updateDataValues(key,val){
 		$('input.var-'+ key).attr("placeholder",r_val);
 		// set button colors
 		if (val === 0) {
-			$(".type-bool.var-" + key).addClass("label-default");
-			$(".type-bool.var-" + key).removeClass("label-primary");
-			$(".type-bool.var-" + key).removeClass("label-info");
-			$(".type-bool.var-" + key).removeClass("label-success");
-			$(".type-bool.var-" + key).removeClass("label-warning");
-			$(".type-bool.var-" + key).removeClass("label-danger");
+			$(".label.type-bool.var-" + key).addClass("label-default");
+			$(".label.type-bool.var-" + key).removeClass("label-primary");
+			$(".label.type-bool.var-" + key).removeClass("label-info");
+			$(".label.type-bool.var-" + key).removeClass("label-success");
+			$(".label.type-bool.var-" + key).removeClass("label-warning");
+			$(".label.type-bool.var-" + key).removeClass("label-danger");
+			
 			$('button.btn-default.write-task-btn.var-' + key).addClass("updateable");
 			$('button.updateable.write-task-btn.var-' + key).addClass("btn-default");
 			$('button.updateable.write-task-btn.var-' + key).removeClass("btn-success");
 		} else {
-			$(".type-bool.var-" + key).removeClass("label-default");
-			$(".type-bool.status-blue.var-" + key).addClass("label-primary");
-			$(".type-bool.status-info.var-" + key).addClass("label-info");
-			$(".type-bool.status-green.var-" + key).addClass("label-success");
-			$(".type-bool.status-yello.var-" + key).addClass("label-warning");
-			$(".type-bool.status-red.var-" + key).addClass("label-danger");
+			$(".label.type-bool.var-" + key).removeClass("label-default");
+			$(".label.type-bool.status-blue.var-" + key).addClass("label-primary");
+			$(".label.type-bool.status-info.var-" + key).addClass("label-info");
+			$(".label.type-bool.status-green.var-" + key).addClass("label-success");
+			$(".label.type-bool.status-yello.var-" + key).addClass("label-warning");
+			$(".label.type-bool.status-red.var-" + key).addClass("label-danger");
+			
 			$('button.btn-success.write-task-btn.var-' + key).addClass("updateable");
 			$('button.updateable.write-task-btn.var-' + key).removeClass("btn-default");
 			$('button.updateable.write-task-btn.var-' + key).addClass("btn-success");
