@@ -6,6 +6,7 @@ from pyscada.models import ClientWriteTask
 from pyscada.models import Log
 from pyscada.models import BackgroundTask
 from pyscada.models import RecordedDataCache
+from pyscada.models import Event
 from pyscada.utils import update_variable_set
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
@@ -106,6 +107,7 @@ admin.site.register(Client,ClientAdmin)
 admin.site.register(Variable,VarieblesAdmin)
 admin.site.register(VariableConfigFileImport,VariableImportAdmin)
 admin.site.register(Unit)
+admin.site.register(Event)
 admin.site.register(ClientWriteTask,ClientWriteTaskAdmin)
 admin.site.register(Log,LogAdmin)
 admin.site.register(BackgroundTask,BackgroundTaskAdmin)

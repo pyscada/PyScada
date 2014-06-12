@@ -1,89 +1,23 @@
 # -*- coding: utf-8 -*-
 from pyscada import log
-from pyscada.utils import decode_value, encode_value
-from pyscada.utils import get_bits_by_class
-from pyscada.utils import decode_bits
+from pyscada.models import ClientWriteTask
+from pyscada.models import Client
+from pyscada.models import RecordedEvent
 from pyscada.models import RecordedTime
 from pyscada.models import RecordedDataFloat
 from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
 from pyscada.models import RecordedDataCache
-from pyscada.models import ClientWriteTask
-from pyscada.models import Client
-from pyscada.models import Variable
+from pyscada.models import Event
+from pyscada.utils import encode_value
+from pyscada.utils import get_bits_by_class
+from pyscada.utils import decode_value
 from pyscada.modbus.utils import decode_address
 
 from django.conf import settings
-import traceback
-import os,sys
-from time import time, localtime, strftime
-import random
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 from math import isnan, isinf
-
-class RegisterBlock:
-    def __init__(self):
-        self.variable_address   = [] #
-        self.variable_length    = [] # in bytes
-        self.variable_class     = [] #
-        self.variable_id        = [] #
-
-
-    def insert_item(self,variable_id,variable_address,variable_class,variable_length):
-        if not self.variable_address:
-            self.variable_address.append(variable_address)
-            self.variable_length.append(variable_length)
-            self.variable_class.append(variable_class)
-            self.variable_id.append(variable_id)
-        elif max(self.variable_address) < variable_address:
-            self.variable_address.append(variable_address)
-            self.variable_length.append(variable_length)
-            self.variable_class.append(variable_class)
-            self.variable_id.append(variable_id)
-        elif min(self.variable_address) > variable_address:
-            self.variable_address.insert(0,variable_address)
-            self.variable_length.insert(0,variable_length)
-            self.variable_class.insert(0,variable_class)
-            self.variable_id.insert(0,variable_id)
-        else:
-            i = self.find_gap(self.variable_address,variable_address)
-            if (i is not None):
-                self.variable_address.insert(i,variable_address)
-                self.variable_length.insert(i,variable_length)
-                self.variable_class.insert(i,variable_class)
-                self.variable_id.insert(i,variable_id)
-
-
-    def request_data(self,slave):
-        quantity = sum(self.variable_length) # number of bits to read
-        first_address = min(self.variable_address)
-        
-        result = slave.read_input_registers(first_address,quantity/16)
-        if not hasattr(result, 'registers'):
-            return result
-
-        return self.decode_data(result)
-        
-        
-    def decode_data(self,result):
-        out = {}
-        #var_count = 0
-        for idx in range(len(self.variable_length)):
-            tmp = []
-            for i in range(self.variable_length[idx]/16):
-                tmp.append(result.registers.pop(0))
-            out[self.variable_id[idx]] = decode_value(tmp,self.variable_class[idx])
-            if isnan(out[self.variable_id[idx]]) or isinf(out[self.variable_id[idx]]):
-                    out[self.variable_id[idx]] = None
-        return out
-
-
-    def find_gap(self,L,value):
-        for index in range(len(L)):
-            if L[index] == value:
-                return None
-            if L[index] > value:
-                return index
+from time import time
 
 class CoilBlock:
     def __init__(self):
@@ -107,8 +41,8 @@ class CoilBlock:
                 self.variable_address.insert(i,variable_address)
                 self.variable_id.insert(i,variable_id)
         
-
-
+    
+    
     def request_data(self,slave):
         quantity = len(self.variable_address) # number of bits to read
         first_address = min(self.variable_address)
@@ -119,12 +53,76 @@ class CoilBlock:
             
         return self.decode_data(result)
         
-
+    
     def decode_data(self,result):
         out = {}
         for idx in self.variable_id:
             out[idx] = result.bits.pop(0)
         return out
+    
+    def find_gap(self,L,value):
+        for index in range(len(L)):
+            if L[index] == value:
+                return None
+            if L[index] > value:
+                return index
+
+class RegisterBlock:
+    def __init__(self):
+        self.variable_address   = [] #
+        self.variable_length    = [] # in bytes
+        self.variable_class     = [] #
+        self.variable_id        = [] #
+    
+    
+    def insert_item(self,variable_id,variable_address,variable_class,variable_length):
+        if not self.variable_address:
+            self.variable_address.append(variable_address)
+            self.variable_length.append(variable_length)
+            self.variable_class.append(variable_class)
+            self.variable_id.append(variable_id)
+        elif max(self.variable_address) < variable_address:
+            self.variable_address.append(variable_address)
+            self.variable_length.append(variable_length)
+            self.variable_class.append(variable_class)
+            self.variable_id.append(variable_id)
+        elif min(self.variable_address) > variable_address:
+            self.variable_address.insert(0,variable_address)
+            self.variable_length.insert(0,variable_length)
+            self.variable_class.insert(0,variable_class)
+            self.variable_id.insert(0,variable_id)
+        else:
+            i = self.find_gap(self.variable_address,variable_address)
+            if (i is not None):
+                self.variable_address.insert(i,variable_address)
+                self.variable_length.insert(i,variable_length)
+                self.variable_class.insert(i,variable_class)
+                self.variable_id.insert(i,variable_id)
+    
+    
+    def request_data(self,slave):
+        quantity = sum(self.variable_length) # number of bits to read
+        first_address = min(self.variable_address)
+        
+        result = slave.read_input_registers(first_address,quantity/16)
+        if not hasattr(result, 'registers'):
+            return result
+    
+        return self.decode_data(result)
+        
+        
+    def decode_data(self,result):
+        out = {}
+        #var_count = 0
+        for idx in range(len(self.variable_length)):
+            tmp = []
+            for i in range(self.variable_length[idx]/16):
+                tmp.append(result.registers.pop(0))
+            out[self.variable_id[idx]] = decode_value(tmp,self.variable_class[idx])
+            if isnan(out[self.variable_id[idx]]) or isinf(out[self.variable_id[idx]]):
+                    out[self.variable_id[idx]] = None
+        return out
+    
     
     def find_gap(self,L,value):
         for index in range(len(L)):
@@ -145,7 +143,7 @@ class client:
         self.variables  = {}
         self._variable_config   = self._prepare_variable_config(client)
         
-
+    
     def _prepare_variable_config(self,client):
         
         for var in client.variable_set.filter(active=1):
@@ -159,7 +157,7 @@ class client:
             else:
                 self.trans_variable_config.append([Address,var.value_class,bits_to_read,var.pk])
             
-
+    
         self.trans_variable_config.sort()
         self.trans_variable_bit_config.sort()
         out = []
@@ -173,7 +171,7 @@ class client:
             out[-1].insert_item(entry[3],entry[0],entry[1],entry[2]) # add item to block
             old = entry[0] + entry[2]/16
             regcount += entry[2]/16
-
+    
         # bit registers
         old = -2
         for entry in self.trans_variable_bit_config:
@@ -182,8 +180,8 @@ class client:
             out[-1].insert_item(entry[1],entry[0][2])
             old = entry[0][2]
         return out
-
-
+    
+    
     def _connect(self):
         """
         connect to the modbus slave (server)
@@ -192,17 +190,17 @@ class client:
         status = self.slave.connect()
         return status
         
-   
-
+    
+    
     def _disconnect(self):
         """
         close the connection to the modbus slave (server)
         """
         self.slave.close()
-
+    
     def request_data(self):
         """
-
+    
         """
         data = {};
         if not self._connect():
@@ -268,10 +266,9 @@ class client:
             else:
                 log.error('Modbus Address %d out of range'%var_cfg[0][2])
         
-        return False
+        return False 
 
-
-class DataAcquisition():
+class DataAcquisition:
     def __init__(self):
         self._dt        = float(settings.PYSCADA_MODBUS['polling_interval'])
         self._com_dt    = 0
@@ -283,7 +280,7 @@ class DataAcquisition():
         self.data       = {}
         self._prev_data = {}
         self._prepare_clients()
-
+    
     def _prepare_clients(self):
         """
         prepare clients for query
@@ -291,8 +288,8 @@ class DataAcquisition():
         for item in Client.objects.filter(active=1):
             if hasattr(item,'modbusclient'):
                 self._clients[item.pk] = client(item)
-
-
+    
+    
     def run(self):
         """
             request data
@@ -307,10 +304,10 @@ class DataAcquisition():
         
         for idx in self._clients:
             self.data[idx] = self._clients[idx].request_data()
-       
+        
         if not self.data:
             return 
-       
+        
         
         self._dvf = []
         self._dvi = []
@@ -370,6 +367,7 @@ class DataAcquisition():
         """
         check for write tasks
         """
+        
         for task in ClientWriteTask.objects.filter(done=False,start__lte=time(),failed=False):
             
             if self._clients[task.variable.client_id].write_data(task.variable.id,task.value):
@@ -382,3 +380,7 @@ class DataAcquisition():
                 task.fineshed=time()
                 task.save()
                 log.error('change of variable %s failed'%(task.variable.name),task.user)
+    
+    def _do_event_check(self,timestamp):
+        
+        return False
