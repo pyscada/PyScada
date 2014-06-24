@@ -5,10 +5,10 @@ DJANGODIR=`pwd`				          			  # Django project directory
 SOCKFILE="$DJANGODIR/run/gunicorn.sock"   	      # we will communicte using this unix socket
 USER=`whoami`                                     # the user to run as
 GROUP=$(id -gn)                                   # the group to run as
-NUM_WORKERS=3                                     # how many worker processes should Gunicorn spawn
+NUM_WORKERS=10                                    # how many worker processes should Gunicorn spawn
 DJANGO_SETTINGS_MODULE="$1.settings"              # which settings file should Django use
 DJANGO_WSGI_MODULE="$1.wsgi"                      # WSGI module name
-
+PID_FILE="$DJANGODIR/run/gunicorn.pid"		  # name and path of the PID file
 
 echo "Starting $NAME as $GROUP:`whoami`"
 #echo $DJANGODIR
@@ -35,5 +35,7 @@ exec gunicorn ${DJANGO_WSGI_MODULE}:application \
   --workers $NUM_WORKERS \
   --user=$USER --group=$GROUP \
   --log-level=debug \
-  --bind=unix:$SOCKFILE
+  --bind=unix:$SOCKFILE \
+  --pid $PID_FILE #\
+#  --daemon
 
