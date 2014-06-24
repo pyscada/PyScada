@@ -162,17 +162,20 @@ def data(request):
 	if not RecordedTime.objects.last():
 		return HttpResponse('{\n}', content_type='application/json')
 		
-	rto 			= RecordedTime.objects.filter(timestamp__lt=float(timestamp),timestamp__gte=float(timestamp)-5*60)
+	rto 			= RecordedTime.objects.filter(timestamp__lt=float(timestamp),timestamp__gte=float(timestamp)-2*3600)
 	if rto.count()>0:
 		t_min_ts 		= rto.first().timestamp
 		t_min_pk 		= rto.first().pk
-		rto_ids			= rto.values_list('pk',flat=True)
+		rto_ids			= list(rto.values_list('pk',flat=True))
 	else:
 		return HttpResponse('{\n}', content_type='application/json')
 	
-	active_variables = GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True)
-	active_variables = list(set(active_variables))
-	
+	variables = request.POST.getlist('variables[]')
+	#if variables:
+	active_variables = Variable.objects.filter(name__in=variables).values_list('pk',flat=True)
+	#else:
+	#	return HttpResponse('{\n}', content_type='application/json')
+		
 	data = {}
 	
 	for var in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'), pk__in = active_variables):
