@@ -60,7 +60,7 @@ class RegisterBlock:
         
         result = slave.read_input_registers(first_address,quantity/16)
         if not hasattr(result, 'registers'):
-            return result
+            return None
 
         return self.decode_data(result)
         
@@ -115,7 +115,7 @@ class CoilBlock:
         
         result = slave.read_coils(first_address,quantity)
         if not hasattr(result, 'bits'):
-            return result
+            return None
             
         return self.decode_data(result)
         

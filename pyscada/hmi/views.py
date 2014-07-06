@@ -133,7 +133,7 @@ def get_cache_data(request):
 		return redirect('/accounts/login/?next=%s' % request.path)
 	data = {}
 	if RecordedDataCache.objects.first():
-		data["timestamp"] = RecordedDataCache.objects.first().time.timestamp_ms()
+		data["timestamp"] = RecordedDataCache.objects.last().time.timestamp_ms()
 	else:
 		return HttpResponse('{\n}', content_type='application/json')
 	
@@ -206,8 +206,8 @@ def data(request):
 	return HttpResponse(jdata, content_type='application/json')
 
 def logout_view(request):
-	logout(request)
 	log.webnotice('logout',request.user)
+	logout(request)
 	# Redirect to a success page.
 	return redirect('/accounts/login/')
 
