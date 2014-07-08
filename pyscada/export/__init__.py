@@ -138,6 +138,10 @@ def export_database_to_h5(time_id_min=None,filename=None,time_id_max=None):
                     v_idx += 1
                 elif t_idx > 0:
                     tmp[t_idx] = tmp[t_idx-1]
+                elif records[v_idx][0]<=id:
+                    tmp[t_idx] = records[v_idx][1]
+                    laid = id
+                    v_idx += 1
     
                 if nb_v_idx > v_idx:
                     while records[v_idx][0]<=id and v_idx <= nb_v_idx:

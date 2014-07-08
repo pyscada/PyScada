@@ -12,69 +12,20 @@ from pyscada.models import Event
 from pyscada.utils import encode_value
 from pyscada.utils import get_bits_by_class
 from pyscada.utils import decode_value
-from pyscada.modbus.utils import decode_address
 
 from django.conf import settings
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 from math import isnan, isinf
 from time import time
 
-class CoilBlock:
-    def __init__(self):
-        self.variable_id            = [] #
-        self.variable_address       = [] #
-        
-    
-    def insert_item(self,variable_id,variable_address):
-        if not self.variable_address:
-            self.variable_address.append(variable_address)
-            self.variable_id.append(variable_id)
-        elif max(self.variable_address) < variable_address:
-            self.variable_address.append(variable_address)
-            self.variable_id.append(variable_id)
-        elif min(self.variable_address) > variable_address:
-            self.variable_address.insert(0,variable_address)
-            self.variable_id.insert(0,variable_id)
-        else:
-            i = self.find_gap(self.variable_address,variable_address)
-            if (i is not None):
-                self.variable_address.insert(i,variable_address)
-                self.variable_id.insert(i,variable_id)
-        
-    
-    
-    def request_data(self,slave):
-        quantity = len(self.variable_address) # number of bits to read
-        first_address = min(self.variable_address)
-        
-        result = slave.read_coils(first_address,quantity)
-        if not hasattr(result, 'bits'):
-            return result
-            
-        return self.decode_data(result)
-        
-    
-    def decode_data(self,result):
-        out = {}
-        for idx in self.variable_id:
-            out[idx] = result.bits.pop(0)
-        return out
-    
-    def find_gap(self,L,value):
-        for index in range(len(L)):
-            if L[index] == value:
-                return None
-            if L[index] > value:
-                return index
-
-class RegisterBlock:
+class InputRegisterBlock:
     def __init__(self):
         self.variable_address   = [] #
         self.variable_length    = [] # in bytes
         self.variable_class     = [] #
         self.variable_id        = [] #
-    
-    
+
+
     def insert_item(self,variable_id,variable_address,variable_class,variable_length):
         if not self.variable_address:
             self.variable_address.append(variable_address)
@@ -98,19 +49,19 @@ class RegisterBlock:
                 self.variable_length.insert(i,variable_length)
                 self.variable_class.insert(i,variable_class)
                 self.variable_id.insert(i,variable_id)
-    
-    
+
+
     def request_data(self,slave):
         quantity = sum(self.variable_length) # number of bits to read
         first_address = min(self.variable_address)
         
         result = slave.read_input_registers(first_address,quantity/16)
         if not hasattr(result, 'registers'):
-            return result
-    
+            return None
+
         return self.decode_data(result)
         
-        
+    
     def decode_data(self,result):
         out = {}
         #var_count = 0
@@ -123,6 +74,63 @@ class RegisterBlock:
                     out[self.variable_id[idx]] = None
         return out
     
+    def find_gap(self,L,value):
+        for index in range(len(L)):
+            if L[index] == value:
+                return None
+            if L[index] > value:
+                return index
+
+class HoldingRegisterBlock(InputRegisterBlock):
+    def request_data(self,slave):
+        quantity = sum(self.variable_length) # number of bits to read
+        first_address = min(self.variable_address)
+        
+        result = slave.read_holding_registers(first_address,quantity/16)
+        if not hasattr(result, 'registers'):
+            return None
+
+        return self.decode_data(result)
+
+class CoilBlock:
+    def __init__(self):
+        self.variable_id            = [] #
+        self.variable_address       = [] #
+        
+    
+    def insert_item(self,variable_id,variable_address):
+        if not self.variable_address:
+            self.variable_address.append(variable_address)
+            self.variable_id.append(variable_id)
+        elif max(self.variable_address) < variable_address:
+            self.variable_address.append(variable_address)
+            self.variable_id.append(variable_id)
+        elif min(self.variable_address) > variable_address:
+            self.variable_address.insert(0,variable_address)
+            self.variable_id.insert(0,variable_id)
+        else:
+            i = self.find_gap(self.variable_address,variable_address)
+            if (i is not None):
+                self.variable_address.insert(i,variable_address)
+                self.variable_id.insert(i,variable_id)
+    
+    
+    def request_data(self,slave):
+        quantity = len(self.variable_address) # number of bits to read
+        first_address = min(self.variable_address)
+        
+        result = slave.read_coils(first_address,quantity)
+        if not hasattr(result, 'bits'):
+            return None
+            
+        return self.decode_data(result)
+        
+
+    def decode_data(self,result):
+        out = {}
+        for idx in self.variable_id:
+            out[idx] = result.bits.pop(0)
+        return out
     
     def find_gap(self,L,value):
         for index in range(len(L)):
@@ -131,6 +139,18 @@ class RegisterBlock:
             if L[index] > value:
                 return index
 
+class DiscreteInputBlock(CoilBlock):
+    def request_data(self,slave):
+        quantity = len(self.variable_address) # number of bits to read
+        first_address = min(self.variable_address)
+        
+        result = slave.read_discrete_inputs(first_address,quantity)
+        if not hasattr(result, 'bits'):
+            return None
+            
+        return self.decode_data(result)
+
+
 class client:
     """
     Modbus client (Master) class
@@ -138,50 +158,81 @@ class client:
     def __init__(self,client):
         self._address               = client.modbusclient.ip_address
         self._port                  = client.modbusclient.port
-        self.trans_variable_config  = []
-        self.trans_variable_bit_config = []
+        self.trans_input_registers  = []
+        self.trans_coils            = []
+        self.trans_holding_registers = []
+        self.trans_discrete_inputs  = []
         self.variables  = {}
         self._variable_config   = self._prepare_variable_config(client)
         
-    
+
     def _prepare_variable_config(self,client):
         
         for var in client.variable_set.filter(active=1):
             if not hasattr(var,'modbusvariable'):
                 continue
-            Address      = decode_address(var.modbusvariable.address)
+            FC = var.modbusvariable.function_code_read
+            if FC == 0:
+                continue
+            Address      = var.modbusvariable.address
             bits_to_read = get_bits_by_class(var.value_class)
-            self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'name':var.name}
-            if isinstance(Address, list):
-                self.trans_variable_bit_config.append([Address,var.pk])
+            self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'name':var.name,'adr':Address,'bits':bits_to_read,'fc':FC}
+            if FC == 1: # coils
+                self.trans_coils.append([Address,var.pk,FC])
+            elif FC == 2: # discrete inputs
+                self.trans_discrete_inputs.append([Address,var.pk,FC])
+            elif FC == 3: # holding registers
+                self.trans_holding_registers.append([Address,var.value_class,bits_to_read,var.pk,FC])
+            elif FC == 4: # input registers
+                self.trans_input_registers.append([Address,var.value_class,bits_to_read,var.pk,FC])
             else:
-                self.trans_variable_config.append([Address,var.value_class,bits_to_read,var.pk])
-            
-    
-        self.trans_variable_config.sort()
-        self.trans_variable_bit_config.sort()
+                continue
+
+        self.trans_discrete_inputs.sort()
+        self.trans_holding_registers.sort()
+        self.trans_coils.sort()
+        self.trans_input_registers.sort()
         out = []
+        
+        # input registers
         old = -2
         regcount = 0
-        #
-        for entry in self.trans_variable_config:
+        for entry in self.trans_input_registers:
             if (entry[0] != old) or regcount >122:
                 regcount = 0
-                out.append(RegisterBlock()) # start new register block
+                out.append(InputRegisterBlock()) # start new register block
             out[-1].insert_item(entry[3],entry[0],entry[1],entry[2]) # add item to block
             old = entry[0] + entry[2]/16
             regcount += entry[2]/16
-    
-        # bit registers
+        
+        # holding registers
         old = -2
-        for entry in self.trans_variable_bit_config:
-            if (entry[0][2] != old+1):
+        regcount = 0
+        for entry in self.trans_holding_registers:
+            if (entry[0] != old) or regcount >122:
+                regcount = 0
+                out.append(HoldingRegisterBlock()) # start new register block
+            out[-1].insert_item(entry[3],entry[0],entry[1],entry[2]) # add item to block
+            old = entry[0] + entry[2]/16
+            regcount += entry[2]/16
+        
+        # coils
+        old = -2
+        for entry in self.trans_coils:
+            if (entry[0] != old+1):
                 out.append(CoilBlock()) # start new coil block
-            out[-1].insert_item(entry[1],entry[0][2])
-            old = entry[0][2]
+            out[-1].insert_item(entry[1],entry[0])
+            old = entry[0]
+        #  discrete inputs
+        old = -2
+        for entry in self.trans_discrete_inputs:
+            if (entry[0] != old+1):
+                out.append(DiscreteInputBlock()) # start new coil block
+            out[-1].insert_item(entry[1],entry[0])
+            old = entry[0]
         return out
-    
-    
+
+
     def _connect(self):
         """
         connect to the modbus slave (server)
@@ -230,43 +281,35 @@ class client:
         """
         if not self.variables[variable_id]['writeable']:
             return False
-        var_cfg = []
-        # find variable config
-        for entry in self.trans_variable_config:
-            if entry[3] == variable_id:
-                var_cfg = entry
-                break
-        if var_cfg:
+
+        if self.variables[variable_id]['fc'] == 3:
             # write register
-            if 0 <= var_cfg[0] <= 65535:
+            if 0 <= self.variables[variable_id]['adr'] <= 65535:
+                
                 self._connect()
-                if var_cfg[2]/16 == 1:
+                if self.variables[variable_id]['bits']/16 == 1:
                     # just write the value to one register
-                    self.slave.write_register(var_cfg[0],int(value))
+                    self.slave.write_register(self.variables[variable_id]['adr'],int(value))
                 else:
                     # encode it first
-                    self.slave.write_registers(var_cfg[0],list(encode_value(value,var_cfg[1])))
+                    self.slave.write_registers(self.variables[variable_id]['adr'],list(encode_value(value,self.variables[variable_id]['value_class'])))
                 self._disconnect()
                 return True
             else:
-                log.error('Modbus Address %d out of range'%var_cfg[0])
+                log.error('Modbus Address %d out of range'%self.variables[variable_id]['adr'])
                 return False
-        else:
-            for entry in self.trans_variable_bit_config:
-                if entry[1] == variable_id:
-                    var_cfg = entry
-                    break
-        if var_cfg:
+        elif self.variables[variable_id]['fc'] == 1:
             # write coil
-            if 0 <= var_cfg[0][2] <= 65535:
+            if 0 <= self.variables[variable_id]['adr'] <= 65535:
                 self._connect()
-                self.slave.write_coil(var_cfg[0][2],bool(value))
+                self.slave.write_coil(self.variables[variable_id]['adr'],bool(value))
                 self._disconnect()
                 return True
             else:
-                log.error('Modbus Address %d out of range'%var_cfg[0][2])
-        
-        return False 
+                log.error('Modbus Address %d out of range'%self.variables[variable_id]['adr'])
+        else:
+            log.error('wrong function type %d'%self.variables[variable_id]['fc'])
+            return False
 
 class DataAcquisition:
     def __init__(self):
@@ -280,7 +323,7 @@ class DataAcquisition:
         self.data       = {}
         self._prev_data = {}
         self._prepare_clients()
-    
+
     def _prepare_clients(self):
         """
         prepare clients for query
@@ -288,8 +331,8 @@ class DataAcquisition:
         for item in Client.objects.filter(active=1):
             if hasattr(item,'modbusclient'):
                 self._clients[item.pk] = client(item)
-    
-    
+
+
     def run(self):
         """
             request data

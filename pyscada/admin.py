@@ -65,6 +65,8 @@ class ClientWriteTaskAdmin(admin.ModelAdmin):
             return instance.user.username
         except:
             return 'None'
+    def has_delete_permission(self, request, obj=None):
+        return False 
 
 class LogAdmin(admin.ModelAdmin):
     list_display = ('id','time','level','message_short','user_name',)
@@ -78,6 +80,10 @@ class LogAdmin(admin.ModelAdmin):
             return 'None'
     def time(self,instance):
         return datetime.datetime.fromtimestamp(int(instance.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+    def has_add_permission(self, request):
+        return False
+    def has_delete_permission(self, request, obj=None):
+        return False    
 
 class RecordedDataCacheAdmin(admin.ModelAdmin):
     list_display = ('id','last_change','name','value','unit','last_update',)
@@ -92,6 +98,11 @@ class RecordedDataCacheAdmin(admin.ModelAdmin):
         return datetime.datetime.fromtimestamp(int(instance.last_change.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
     def last_update(self,instance):
         return datetime.datetime.fromtimestamp(int(instance.time.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+    def has_add_permission(self, request):
+        return False
+    def has_delete_permission(self, request, obj=None):
+        return False
+    
  
 class BackgroundTaskAdmin(admin.ModelAdmin):
     list_display = ('id','label','message','load','last_update','running_since','done','failed')
@@ -102,6 +113,10 @@ class BackgroundTaskAdmin(admin.ModelAdmin):
         return datetime.datetime.fromtimestamp(int(instance.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
     def running_since(self,instance):
         return datetime.datetime.fromtimestamp(int(instance.start)).strftime('%Y-%m-%d %H:%M:%S')
+    def has_add_permission(self, request):
+        return False
+    def has_delete_permission(self, request, obj=None):
+        return False
         
 admin.site.register(Client,ClientAdmin)
 admin.site.register(Variable,VarieblesAdmin)

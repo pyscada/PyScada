@@ -68,6 +68,7 @@ def config(request):
 	config["InitialDataFile"] 	= "json/init_data/"
 	config["LogDataFile"] 		= "json/log_data/"
 	config["RefreshRate"] 		= 5000
+	config["CacheTimeout"]		= 15000
 	config["config"] 			= []
 	chart_count 				= 0
 	charts = GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts',flat=True)
@@ -133,7 +134,7 @@ def get_cache_data(request):
 		return redirect('/accounts/login/?next=%s' % request.path)
 	data = {}
 	if RecordedDataCache.objects.first():
-		data["timestamp"] = RecordedDataCache.objects.first().time.timestamp_ms()
+		data["timestamp"] = RecordedDataCache.objects.last().time.timestamp_ms()
 	else:
 		return HttpResponse('{\n}', content_type='application/json')
 	
@@ -141,10 +142,10 @@ def get_cache_data(request):
 	active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
 	active_variables = list(set(active_variables))
 
-	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__name','value'))
+	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__name','value','time__timestamp'))
 
 	for var in raw_data:
-		data[var[0]] = var[1]
+		data[var[0]] = [var[1],var[2]*1000]
 
 	jdata = json.dumps(data,indent=2)
 	return HttpResponse(jdata, content_type='application/json')
@@ -162,17 +163,20 @@ def data(request):
 	if not RecordedTime.objects.last():
 		return HttpResponse('{\n}', content_type='application/json')
 		
-	rto 			= RecordedTime.objects.filter(timestamp__lt=float(timestamp),timestamp__gte=float(timestamp)-5*60)
+	rto 			= RecordedTime.objects.filter(timestamp__lt=float(timestamp),timestamp__gte=float(timestamp)-2*3600)
 	if rto.count()>0:
 		t_min_ts 		= rto.first().timestamp
 		t_min_pk 		= rto.first().pk
-		rto_ids			= rto.values_list('pk',flat=True)
+		rto_ids			= list(rto.values_list('pk',flat=True))
 	else:
 		return HttpResponse('{\n}', content_type='application/json')
 	
-	active_variables = GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True)
-	active_variables = list(set(active_variables))
-	
+	variables = request.POST.getlist('variables[]')
+	#if variables:
+	active_variables = Variable.objects.filter(name__in=variables).values_list('pk',flat=True)
+	#else:
+	#	return HttpResponse('{\n}', content_type='application/json')
+		
 	data = {}
 	
 	for var in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'), pk__in = active_variables):
@@ -203,8 +207,8 @@ def data(request):
 	return HttpResponse(jdata, content_type='application/json')
 
 def logout_view(request):
-	logout(request)
 	log.webnotice('logout',request.user)
+	logout(request)
 	# Redirect to a success page.
 	return redirect('/accounts/login/')
 

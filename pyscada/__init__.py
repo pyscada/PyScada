@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '0.6.5'
+__version__ = '0.6.8'
 __author__  = 'Martin Schroeder'

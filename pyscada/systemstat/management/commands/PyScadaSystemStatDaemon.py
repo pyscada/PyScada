@@ -24,6 +24,23 @@ class Command(BaseCommand):
             mdaemon = MainDaemon('%s%s'%(settings.PID_ROOT,settings.PYSCADA_SYSTEMSTAT['pid_file_name']))
             if 'start' == args[0]:
                 log.info("try starting dataaquisition daemon")
+                try:
+                    pf = file(mdaemon.pidfile,'r')
+                    pid = int(pf.read().strip())
+                    pf.close()
+                except IOError:
+                    pid = None
+                if pid:
+                     # Check For the existence of a unix pid.
+                    try:
+                        os.kill(pid, 0)
+                    except OSError:
+                        # daemon is dead delete file and mark taskprogress as failed
+                        tp = BackgroundTask.objects.filter(pid=pid).last()
+                        if tp:
+                            tp.failed = True
+                            tp.save()
+                        os.remove(mdaemon.pidfile)
                 mdaemon.start()
             elif 'stop' == args[0]:
                 log.info("try stopping dataaquisition daemon")
