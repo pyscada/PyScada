@@ -179,7 +179,7 @@ class client:
                 continue
             Address      = var.modbusvariable.address
             bits_to_read = get_bits_by_class(var.value_class)
-            self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'name':var.name}
+            self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'name':var.name,'adr':Address,'bits':bits_to_read,'fc':FC}
             if FC == 1: # coils
                 self.trans_coils.append([Address,var.pk,FC])
             elif FC == 2: # discrete inputs
@@ -284,44 +284,35 @@ class client:
         """
         if not self.variables[variable_id]['writeable']:
             return False
-        var_cfg = []
-        # find variable config
-        for entry in self.trans_holding_registers:
-            if entry[3] == variable_id:
-                var_cfg = entry
-                break
-        if var_cfg:
+
+        if self.variables[variable_id]['fc'] == 3:
             # write register
-            if 0 <= var_cfg[0] <= 65535:
+            if 0 <= self.variables[variable_id]['adr'] <= 65535:
                 
                 self._connect()
-                if var_cfg[2]/16 == 1:
+                if self.variables[variable_id]['bits']/16 == 1:
                     # just write the value to one register
-                    self.slave.write_register(var_cfg[0],int(value))
+                    self.slave.write_register(self.variables[variable_id]['adr'],int(value))
                 else:
                     # encode it first
-                    self.slave.write_registers(var_cfg[0],list(encode_value(value,var_cfg[1])))
+                    self.slave.write_registers(self.variables[variable_id]['adr'],list(encode_value(value,self.variables[variable_id]['value_class'])))
                 self._disconnect()
                 return True
             else:
-                log.error('Modbus Address %d out of range'%var_cfg[0])
+                log.error('Modbus Address %d out of range'%self.variables[variable_id]['adr'])
                 return False
-        else:
-            for entry in self.trans_coils:
-                if entry[1] == variable_id:
-                    var_cfg = entry
-                    break
-        if var_cfg:
+        elif self.variables[variable_id]['fc'] == 1:
             # write coil
-            if 0 <= var_cfg[0] <= 65535:
+            if 0 <= self.variables[variable_id]['adr'] <= 65535:
                 self._connect()
-                self.slave.write_coil(var_cfg[0],bool(value))
+                self.slave.write_coil(self.variables[variable_id]['adr'],bool(value))
                 self._disconnect()
                 return True
             else:
-                log.error('Modbus Address %d out of range'%var_cfg[0])
-        
-        return False
+                log.error('Modbus Address %d out of range'%self.variables[variable_id]['adr'])
+        else:
+            log.error('wrong function type %d'%self.variables[variable_id]['fc'])
+            return False
 
 
 class DataAcquisition():
