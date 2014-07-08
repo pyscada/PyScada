@@ -2,7 +2,6 @@
 from pyscada import log
 from pyscada.utils import decode_value, encode_value
 from pyscada.utils import get_bits_by_class
-from pyscada.utils import decode_bits
 from pyscada.models import RecordedTime
 from pyscada.models import RecordedDataFloat
 from pyscada.models import RecordedDataInt
@@ -11,7 +10,6 @@ from pyscada.models import RecordedDataCache
 from pyscada.models import ClientWriteTask
 from pyscada.models import Client
 from pyscada.models import Variable
-from pyscada.modbus.utils import decode_address
 
 from django.conf import settings
 import traceback
@@ -21,7 +19,7 @@ import random
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 from math import isnan, isinf
 
-class RegisterBlock:
+class InputRegisterBlock:
     def __init__(self):
         self.variable_address   = [] #
         self.variable_length    = [] # in bytes
@@ -85,6 +83,17 @@ class RegisterBlock:
             if L[index] > value:
                 return index
 
+class HoldingRegisterBlock(InputRegisterBlock):
+    def request_data(self,slave):
+        quantity = sum(self.variable_length) # number of bits to read
+        first_address = min(self.variable_address)
+        
+        result = slave.read_holding_registers(first_address,quantity/16)
+        if not hasattr(result, 'registers'):
+            return None
+
+        return self.decode_data(result)
+
 class CoilBlock:
     def __init__(self):
         self.variable_id            = [] #
@@ -133,6 +142,18 @@ class CoilBlock:
             if L[index] > value:
                 return index
 
+class DiscreteInputBlock(CoilBlock):
+    def request_data(self,slave):
+        quantity = len(self.variable_address) # number of bits to read
+        first_address = min(self.variable_address)
+        
+        result = slave.read_discrete_inputs(first_address,quantity)
+        if not hasattr(result, 'bits'):
+            return None
+            
+        return self.decode_data(result)
+
+
 class client:
     """
     Modbus client (Master) class
@@ -140,8 +161,10 @@ class client:
     def __init__(self,client):
         self._address               = client.modbusclient.ip_address
         self._port                  = client.modbusclient.port
-        self.trans_variable_config  = []
-        self.trans_variable_bit_config = []
+        self.trans_input_registers  = []
+        self.trans_coils            = []
+        self.trans_holding_registers = []
+        self.trans_discrete_inputs  = []
         self.variables  = {}
         self._variable_config   = self._prepare_variable_config(client)
         
@@ -151,36 +174,65 @@ class client:
         for var in client.variable_set.filter(active=1):
             if not hasattr(var,'modbusvariable'):
                 continue
-            Address      = decode_address(var.modbusvariable.address)
+            FC = var.modbusvariable.function_code_read
+            if FC == 0:
+                continue
+            Address      = var.modbusvariable.address
             bits_to_read = get_bits_by_class(var.value_class)
             self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'name':var.name}
-            if isinstance(Address, list):
-                self.trans_variable_bit_config.append([Address,var.pk])
+            if FC == 1: # coils
+                self.trans_coils.append([Address,var.pk,FC])
+            elif FC == 2: # discrete inputs
+                self.trans_discrete_inputs.append([Address,var.pk,FC])
+            elif FC == 3: # holding registers
+                self.trans_holding_registers.append([Address,var.value_class,bits_to_read,var.pk,FC])
+            elif FC == 4: # input registers
+                self.trans_input_registers.append([Address,var.value_class,bits_to_read,var.pk,FC])
             else:
-                self.trans_variable_config.append([Address,var.value_class,bits_to_read,var.pk])
-            
+                continue
 
-        self.trans_variable_config.sort()
-        self.trans_variable_bit_config.sort()
+        self.trans_discrete_inputs.sort()
+        self.trans_holding_registers.sort()
+        self.trans_coils.sort()
+        self.trans_input_registers.sort()
         out = []
+        
+        # input registers
         old = -2
         regcount = 0
-        #
-        for entry in self.trans_variable_config:
+        for entry in self.trans_input_registers:
             if (entry[0] != old) or regcount >122:
                 regcount = 0
-                out.append(RegisterBlock()) # start new register block
+                out.append(InputRegisterBlock()) # start new register block
             out[-1].insert_item(entry[3],entry[0],entry[1],entry[2]) # add item to block
             old = entry[0] + entry[2]/16
             regcount += entry[2]/16
-
-        # bit registers
+        
+        # holding registers
         old = -2
-        for entry in self.trans_variable_bit_config:
-            if (entry[0][2] != old+1):
+        regcount = 0
+        for entry in self.trans_holding_registers:
+            if (entry[0] != old) or regcount >122:
+                regcount = 0
+                out.append(HoldingRegisterBlock()) # start new register block
+            out[-1].insert_item(entry[3],entry[0],entry[1],entry[2]) # add item to block
+            old = entry[0] + entry[2]/16
+            regcount += entry[2]/16
+        
+        # coils
+        old = -2
+        for entry in self.trans_coils:
+            if (entry[0] != old+1):
                 out.append(CoilBlock()) # start new coil block
-            out[-1].insert_item(entry[1],entry[0][2])
-            old = entry[0][2]
+            out[-1].insert_item(entry[1],entry[0])
+            old = entry[0]
+        #  discrete inputs
+        old = -2
+        for entry in self.trans_discrete_inputs:
+            if (entry[0] != old+1):
+                out.append(DiscreteInputBlock()) # start new coil block
+            out[-1].insert_item(entry[1],entry[0])
+            old = entry[0]
         return out
 
 
@@ -234,13 +286,14 @@ class client:
             return False
         var_cfg = []
         # find variable config
-        for entry in self.trans_variable_config:
+        for entry in self.trans_holding_registers:
             if entry[3] == variable_id:
                 var_cfg = entry
                 break
         if var_cfg:
             # write register
             if 0 <= var_cfg[0] <= 65535:
+                
                 self._connect()
                 if var_cfg[2]/16 == 1:
                     # just write the value to one register
@@ -254,19 +307,19 @@ class client:
                 log.error('Modbus Address %d out of range'%var_cfg[0])
                 return False
         else:
-            for entry in self.trans_variable_bit_config:
+            for entry in self.trans_coils:
                 if entry[1] == variable_id:
                     var_cfg = entry
                     break
         if var_cfg:
             # write coil
-            if 0 <= var_cfg[0][2] <= 65535:
+            if 0 <= var_cfg[0] <= 65535:
                 self._connect()
-                self.slave.write_coil(var_cfg[0][2],bool(value))
+                self.slave.write_coil(var_cfg[0],bool(value))
                 self._disconnect()
                 return True
             else:
-                log.error('Modbus Address %d out of range'%var_cfg[0][2])
+                log.error('Modbus Address %d out of range'%var_cfg[0])
         
         return False
 

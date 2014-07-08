@@ -68,16 +68,22 @@ class WidgetAdmin(admin.ModelAdmin):
     list_display_links = ('id',)
     list_display = ('id','title','page','row','col','size','chart','chart_set','control_panel','custom_html_panel',)
     list_editable = ('title','page','row','col','size','chart','chart_set','control_panel','custom_html_panel',)
+
+class GroupDisplayPermissionAdmin(admin.ModelAdmin):
+    filter_horizontal = ('pages','sliding_panel_menus','charts','control_items','widget',)
+
+class ControlPanelAdmin(admin.ModelAdmin):
+    filter_horizontal = ('items',)
     
-        
+
 admin.site.register(ControlItem,ControlItemAdmin)
 admin.site.register(Chart,ChartAdmin)
 admin.site.register(SlidingPanelMenu,SlidingPanelMenuAdmin)
 admin.site.register(Page)
-admin.site.register(GroupDisplayPermission)
+admin.site.register(GroupDisplayPermission,GroupDisplayPermissionAdmin)
 admin.site.register(HMIVariable,HMIVariableAdmin)
 
-admin.site.register(ControlPanel)
+admin.site.register(ControlPanel,ControlPanelAdmin)
 admin.site.register(CustomHTMLPanel)
 admin.site.register(ChartSet)
 admin.site.register(Widget,WidgetAdmin)

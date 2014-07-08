@@ -141,10 +141,11 @@ def update_variable_set(json_data):
 			WebVariable(hmi_variable=obj,short_name=entry["short_name"],chart_line_color_id=entry["color_id"]).save()
 		
 		if hasattr(obj,'modbusvariable'):
-			obj.modbusvariable.address = entry["modbus_ip.address"].replace(' ','')
+			obj.modbusvariable.address 				= entry["modbus_ip.address"]
+			obj.modbusvariable.function_code_read 	= entry["modbus_ip.function_code_read"]
 			obj.modbusvariable.save()
 		else:
-			ModbusVariable(modbus_variable=obj,address=entry["modbus_ip.address"].replace(' ','')).save()
+			ModbusVariable(modbus_variable=obj,address=entry["modbus_ip.address"],function_code_read=entry["modbus_ip.function_code_read"]).save()
 		
 
 def update_client_set(json_data):

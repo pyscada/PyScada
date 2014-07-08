@@ -17,6 +17,7 @@ class ModbusClient(models.Model):
 		return unicode(self.modbus_client.short_name)
 
 class ModbusVariable(models.Model):
-	modbus_variable = models.OneToOneField(Variable)
-	address  = models.CharField(max_length=400)
-	
+	modbus_variable 				= models.OneToOneField(Variable)
+	address  					= models.PositiveIntegerField()
+	function_code_read_choices 	= ((0,'not selected'),(1,'coils (FC1)'),(2,'discrete inputs (FC2)'),(3,'holding registers (FC3)'),(4,'input registers (FC4)'))
+	function_code_read			= models.PositiveSmallIntegerField(default=0,choices=function_code_read_choices,help_text="")

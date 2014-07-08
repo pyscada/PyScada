@@ -68,6 +68,7 @@ def config(request):
 	config["InitialDataFile"] 	= "json/init_data/"
 	config["LogDataFile"] 		= "json/log_data/"
 	config["RefreshRate"] 		= 5000
+	config["CacheTimeout"]		= 15000
 	config["config"] 			= []
 	chart_count 				= 0
 	charts = GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts',flat=True)
@@ -141,10 +142,10 @@ def get_cache_data(request):
 	active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
 	active_variables = list(set(active_variables))
 
-	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__name','value'))
+	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__name','value','time__timestamp'))
 
 	for var in raw_data:
-		data[var[0]] = var[1]
+		data[var[0]] = [var[1],var[2]*1000]
 
 	jdata = json.dumps(data,indent=2)
 	return HttpResponse(jdata, content_type='application/json')

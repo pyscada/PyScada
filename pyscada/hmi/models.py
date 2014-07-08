@@ -91,6 +91,7 @@ class CustomHTMLPanel(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	title			= models.CharField(max_length=400, default='',blank=True)
 	html 			= models.TextField()	
+	#variables		= models.ManyToManyField(Variable)
 	def __unicode__(self):
 		return unicode(str(self.id) + ': ' + self.title)
 
