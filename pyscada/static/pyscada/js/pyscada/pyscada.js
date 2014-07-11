@@ -1,6 +1,6 @@
 /* Javascript library for the PyScada web client based on jquery and flot, 
 
-version 0.6.8
+version 0.6.9
 
 Copyright (c) 2013-2014 Martin Schröder
 Licensed under the GPL.
