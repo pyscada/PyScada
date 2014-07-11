@@ -212,11 +212,52 @@ class Event(models.Model):
 	mail_recipient	= models.ForeignKey(MailRecipient,blank=True,null=True,default=None, on_delete=models.SET_NULL)
 	variable_to_change    = models.ForeignKey(Variable,blank=True,null=True,default=None, on_delete=models.SET_NULL,related_name="variable_to_change")
 	new_value		= models.FloatField(default=0,blank=True,null=True)
+	def _check_limit(self,value):
+		'''
+		(0,'value is less than limit',),
+		(1,'value is less than or equal to the limit',),
+		(2,'value is greater than the limit'),
+		(3,'value is greater than or equal to the limit'),
+		(4,'value equals the limit'),
+		'''
+		if self.limit_type == 0:
+			return value < self.fixed_limit
+		elif self.limit_type == 1:
+			return value <= self.fixed_limit
+		elif self.limit_type == 2:
+			return value == self.fixed_limit    
+		elif self.limit_type == 3:
+			return value >= self.fixed_limit
+		elif self.limit_type == 4:
+			return value > self.fixed_limit
+		else:
+			return False
+			
+	
+	def do_event_check(self,timestamp,value):
+		prev_event = RecordedEvent.objects.filter(event=self,active=True)
 
-
+		if self._check_limit(value):
+			if not prev_event:
+				prev_event = RecordedEvent(event = self,time_begin=timestamp,active=True)
+				prev_event.save()
+				return True
+		else:
+			if prev_event:
+				prev_event = prev_event.last()
+				prev_event.active = False
+				prev_event.time_end = timestamp
+				prev_event.save()
+		return False	
+		
+		
+		
+		
+		
 class RecordedEvent(models.Model):
 	id          = models.AutoField(primary_key=True)
 	event		= models.ForeignKey(Event,null=True, on_delete=models.SET_NULL)
-	time        = models.ForeignKey(RecordedTime,null=True, on_delete=models.SET_NULL)
-	
+	time_begin  = models.ForeignKey(RecordedTime,null=True, on_delete=models.SET_NULL)
+	time_end  	= models.ForeignKey(RecordedTime,null=True, on_delete=models.SET_NULL,related_name="time_end")
+	active		= models.BooleanField(default=False,blank=True)
 	
