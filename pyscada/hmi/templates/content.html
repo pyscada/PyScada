@@ -7,7 +7,7 @@
         <meta name="description" content="PyScada html5 client application"/>
         <meta name="author" content="Martin Schroeder"/>
         
-        <title>PyScada Control Center</title>
+        <title>PyScada Control Center - {{ view_title }}</title>
         <!-- Bootstrap core CSS -->
         <link href="{% static "pyscada/css/bootstrap.css" %}" rel="stylesheet"/>
         <!-- Bootstrap theme -->
@@ -123,7 +123,7 @@
                 <div id="{{page.link_title}}" class="sub-page" >
                     <div class="row">
                         {% for widget in page.widget_set.all %}
-                            {% if widget.visable %}
+                            {% if widget.visable  and widget.pk in visable_widget_list%}
                                 {% if widget.col == 0 and widget.row > 0 %}
                     </div>
                     <div class="row">

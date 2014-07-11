@@ -1,4 +1,4 @@
-{% if chart_set.chart_1.pk in visable_charts_list  and chart_set.chart_2.pk in visable_charts_list %}
+{% if chart_set.chart_1.pk in visable_chart_list  and chart_set.chart_2.pk in visable_chart_list %}
         <div class="widget-body" id="a{{chart_set.chart_1.pk}}-t">
             <div class="legend-sidebar">
                 <div id="chart-{{chart_set.chart_1.pk}}-legend">
@@ -41,8 +41,8 @@
             </div>
         </div>
     <!--</div>  end {{ chart_set.chart_1.title|upper }} {{ chart_set.chart_2.title|upper }} -->
-{% elif chart_set.chart_1.pk in visable_charts_list %}
+{% elif chart_set.chart_1.pk in visable_chart_list %}
     {% include "chart.html" with chart=chart_set.chart_1 %}
-{% elif chart_set.chart_2.pk in visable_charts_list %}
+{% elif chart_set.chart_2.pk in visable_chart_list %}
     {% include "chart.html" with chart=chart_set.chart_2 %}
 {% endif %}

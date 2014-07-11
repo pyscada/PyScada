@@ -144,6 +144,20 @@ class Widget(models.Model):
 		elif self.size == 1:
 			widget_size = "col-xs-4 col-sm-4 col-md-4 col-lg-4"
 		return unicode('widget_row_' + str(self.row) + ' widget_col_' + str(self.col) + ' ' + widget_size)
+	
+	
+class View(models.Model):
+	id 				= models.AutoField(primary_key=True)
+	title			= models.CharField(max_length=400, default='',blank=True)
+	description 	= models.TextField(default='', verbose_name="Description",null=True)
+	link_title		= models.SlugField(max_length=80, default='') 
+	pages 			= models.ManyToManyField(Page,blank=True)
+	sliding_panel_menus = models.ManyToManyField(SlidingPanelMenu,blank=True)
+	logo 			= models.ImageField(upload_to="img/", verbose_name="Overview Picture",blank=True)
+	visable			= models.BooleanField(default=True)
+	position		= models.PositiveSmallIntegerField(default=0)
+	class Meta:
+		ordering = ['position']
 
 class GroupDisplayPermission(models.Model):
 	hmi_group			= models.OneToOneField(Group)
@@ -151,6 +165,8 @@ class GroupDisplayPermission(models.Model):
 	sliding_panel_menus = models.ManyToManyField(SlidingPanelMenu,blank=True)
 	charts 				= models.ManyToManyField(Chart,blank=True)
 	control_items 		= models.ManyToManyField(ControlItem,blank=True)
-	widget 				= models.ManyToManyField(Widget,blank=True)
+	widgets 			= models.ManyToManyField(Widget,blank=True)
+	custom_html_panels  = models.ManyToManyField(CustomHTMLPanel,blank=True)	
+	views				= models.ManyToManyField(View,blank=True)
 	def __unicode__(self):
 		return unicode(self.hmi_group.name)

@@ -10,7 +10,7 @@ from pyscada.hmi.models import ControlPanel
 from pyscada.hmi.models import CustomHTMLPanel
 from pyscada.hmi.models import ChartSet
 from pyscada.hmi.models import Widget
-
+from pyscada.hmi.models import View
 
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
@@ -70,7 +70,7 @@ class WidgetAdmin(admin.ModelAdmin):
     list_editable = ('title','page','row','col','size','chart','chart_set','control_panel','custom_html_panel',)
 
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
-    filter_horizontal = ('pages','sliding_panel_menus','charts','control_items','widget',)
+    filter_horizontal = ('pages','sliding_panel_menus','charts','control_items','widgets','views','custom_html_panels')
 
 class ControlPanelAdmin(admin.ModelAdmin):
     filter_horizontal = ('items',)
@@ -87,3 +87,4 @@ admin.site.register(ControlPanel,ControlPanelAdmin)
 admin.site.register(CustomHTMLPanel)
 admin.site.register(ChartSet)
 admin.site.register(Widget,WidgetAdmin)
+admin.site.register(View)

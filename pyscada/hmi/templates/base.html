@@ -7,7 +7,7 @@
         <meta name="description" content="PyScada html5 client application"/>
         <meta name="author" content="Martin Schroeder"/>
         
-        <title>PyScada Control Center</title>
+        <title>PyScada Control Center - Overview</title>
         <!-- Bootstrap core CSS -->
         <link href="{% static "pyscada/css/bootstrap.css" %}" rel="stylesheet"/>
         <!-- Bootstrap theme -->
@@ -38,7 +38,16 @@
                     <a  class="navbar-brand" href="#">PyScada</a>
                 </div>
                 <div class="navbar-collapse collapse">
-                    <ul class="nav navbar-nav">
+                    
+                    <ul class="nav navbar-right navbar-nav">
+                        <li class="dropdown"><!-- User -->
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon  glyphicon-user"></span> {{ user.username }} <b class="caret"></b></a>
+                            <ul class="dropdown-menu">
+                            <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
+                            <li class="divider"></li>
+                            <li><a href="/accounts/logout"> logout</a></li>
+                            </ul>
+                        </li>
                         <li><a href="#page-help">Help</a></li>
                     </ul>
                 </div><!--/.nav-collapse -->
@@ -48,7 +57,25 @@
         <div class="container" id="content">
             <!-- loading animation -->
             <div id="loadingAnimation"> <div class="row"><div class="col-md-1 col-md-offset-6"><img src="{% static "pyscada/img/load.gif" %}" alt="loading"/></div></div></div>
-            {% block content %}{% endblock %}
+            <div class="row">
+            {% for view in view_list %}
+                {% if view.visable %}
+                <div class="col-sm-3">
+                    <h3>{{ view.title }}</h3>
+                    <p>{{ view.description }}</p>
+                    {% if view.logo %}
+                    <p><img src="{{ view.logo.url }}" height="120"></p>
+                    {% else %}
+                    <p style="line-height: 120px;">None</p>
+                    {% endif %}
+                    <p><a class="btn btn-default" href="{% url 'main-view' view.link_title %}" role="button"target="blank">Open View</a></p>
+                </div>
+                {% endif %}
+                {% if forloop.counter|divisibleby:4 %}
+            </div><div class="row">
+                {% endif %}
+            {% endfor %}
+            </div>
         </div> <!-- /container -->
         <!-- Bootstrap core JavaScript
         ================================================== -->

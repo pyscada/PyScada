@@ -22,6 +22,7 @@ var log_frm_mesg = $('#page-log-form-message')
 var csrftoken = $.cookie('csrftoken');
 var fetch_data_timeout = 5000;
 var InitDataCount = 0;
+var RootUrl = window.location.protocol+"//"+window.location.host + "/";
 // the code
 var debug = 0;
 
@@ -38,7 +39,7 @@ function hideUpdateStatus(){
 function fetchConfig(){
 	
 	$.ajax({
-		url: "json/config/",
+		url: RootUrl+"json/config/",
 		dataType: "json",
 		timeout: 5000,
 		success: function(data) {
@@ -61,7 +62,7 @@ function fetchData() {
 	if (auto_update_active) {
 		showUpdateStatus();
 		$.ajax({
-			url: PyScadaConfig.DataFile,
+			url: RootUrl+PyScadaConfig.DataFile,
 			dataType: "json",
 			timeout: fetch_data_timeout,
 			type: "POST",
@@ -129,7 +130,7 @@ function fetchData() {
 function updateLog() {
 	showUpdateStatus();
 	$.ajax({
-		url: PyScadaConfig.LogDataFile,
+		url: RootUrl+PyScadaConfig.LogDataFile,
 		type: 'post',
 		dataType: "json",
 		timeout: 3000,
@@ -499,7 +500,7 @@ function PyScadaPlot(config){
 		// plot data
 		showUpdateStatus();
 		$.ajax({
-			url: PyScadaConfig.InitialDataFile,
+			url: RootUrl+PyScadaConfig.InitialDataFile,
 			dataType: "json",
 			timeout: 29000,
 			type: 'post',

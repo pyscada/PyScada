@@ -6,11 +6,14 @@ from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
 from pyscada.models import RecordedDataCache
 from pyscada.models import RecordedTime
+from pyscada.models import RecordedEvent
 from pyscada.hmi.models import Chart
 from pyscada.hmi.models import Page
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import SlidingPanelMenu
 from pyscada.hmi.models import GroupDisplayPermission
+from pyscada.hmi.models import Widget
+from pyscada.hmi.models import View
 
 from pyscada.models import Log
 from pyscada.models import ClientWriteTask
@@ -31,31 +34,50 @@ from django.views.decorators.csrf import requires_csrf_token
 import time
 import json
 
-
-@requires_csrf_token
 def index(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
 	
-	t = loader.get_template('content.html')
-	page_list = Page.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator)
-	visable_charts_list = Chart.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).values_list('pk',flat=True)
+	view_list = View.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).distinct()
+	t = loader.get_template('base.html')
+	c = RequestContext(request,{
+		'user': request.user,
+		'view_list':view_list
+	})
+	return HttpResponse(t.render(c))
 
-	sliding_panel_list = SlidingPanelMenu.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator)
+@requires_csrf_token
+def view(request,link_title):
+	if not request.user.is_authenticated():
+		return redirect('/accounts/login/?next=%s' % request.path)
 	
+	t = loader.get_template('content.html')
+	try:
+		view = View.objects.get(link_title=link_title)
+	except:
+		return HttpResponse(status=404)
+	
+	page_list = view.pages.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).distinct()
+
+	sliding_panel_list = view.sliding_panel_menus.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).distinct()
+	
+	visable_widget_list = Widget.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator,page__in=page_list.iterator).values_list('pk',flat=True)		
+	visable_chart_list = Chart.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).values_list('pk',flat=True)
 	visable_control_element_list = GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items',flat=True)
-	
+
 	panel_list   = sliding_panel_list.filter(position__in=(1,2,))
 	control_list = sliding_panel_list.filter(position=0)
 	
 
 	c = RequestContext(request,{
 		'page_list': page_list,
-		'visable_charts_list':visable_charts_list,
+		'visable_chart_list':visable_chart_list,
 		'visable_control_element_list':visable_control_element_list,
+		'visable_widget_list':visable_widget_list,
 		'panel_list': panel_list,
 		'control_list':control_list,
-		'user': request.user
+		'user': request.user,
+		'view_title':view.title
 	})
 	log.webnotice('open hmi',request.user)
 	return HttpResponse(t.render(c))
