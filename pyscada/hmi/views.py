@@ -39,7 +39,7 @@ def index(request):
 		return redirect('/accounts/login/?next=%s' % request.path)
 	
 	view_list = View.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).distinct()
-	t = loader.get_template('base.html')
+	t = loader.get_template('view_overview.html')
 	c = RequestContext(request,{
 		'user': request.user,
 		'view_list':view_list

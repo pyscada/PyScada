@@ -75,6 +75,11 @@ class GroupDisplayPermissionAdmin(admin.ModelAdmin):
 class ControlPanelAdmin(admin.ModelAdmin):
     filter_horizontal = ('items',)
     
+class ViewAdmin(admin.ModelAdmin):
+    filter_horizontal = ('pages','sliding_panel_menus')
+
+class CustomHTMLPanelAdmin(admin.ModelAdmin):
+    filter_horizontal = ('variables',)
 
 admin.site.register(ControlItem,ControlItemAdmin)
 admin.site.register(Chart,ChartAdmin)
@@ -84,7 +89,7 @@ admin.site.register(GroupDisplayPermission,GroupDisplayPermissionAdmin)
 admin.site.register(HMIVariable,HMIVariableAdmin)
 
 admin.site.register(ControlPanel,ControlPanelAdmin)
-admin.site.register(CustomHTMLPanel)
+admin.site.register(CustomHTMLPanel,CustomHTMLPanelAdmin)
 admin.site.register(ChartSet)
 admin.site.register(Widget,WidgetAdmin)
-admin.site.register(View)
+admin.site.register(View,ViewAdmin)

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load i18n staticfiles %}
+
+{% block content %}
+<div class="row">
+    {% for view in view_list %}
+        {% if view.visable %}
+        <div class="col-sm-3">
+        <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title"><a href="{% url 'main-view' view.link_title %}" target="blank" >{{ view.title }}</a></h3>
+                </div>
+                <div class="panel-body">
+                {% if view.logo %}
+                <a href="{% url 'main-view' view.link_title %}" class="thumbnail" target="blank" ><img src="{{ view.logo.url }}" alt="{{ view.description }}"  width="100%" ></a>
+                {% else %}
+                <a href="{% url 'main-view' view.link_title %}" class="thumbnail" target="blank" ><p style="min-height: 120px;">{{ view.description }}</p></a>
+                {% endif %}
+            </div>
+           </div>
+        </div>
+        {% endif %}
+        {% if forloop.counter|divisibleby:4 %}
+    </div><div class="row">
+        {% endif %}
+    {% endfor %}
+    {% if user.is_staff %}
+        <div class="col-sm-3">
+        <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title"><a href="{% url 'admin:index' %}" target="blank">Admin</a></h3>
+                </div>
+                <div class="panel-body">
+                <a href="{% url 'admin:index' %}" class="thumbnail" target="blank"><img src="{% static "pyscada/img/admin_logo.gif" %}" alt="The Admin Panel"  width="100%"></a>
+            </div>
+           </div>
+        </div>
+    {% endif %}
+    </div>
+{% endblock %}

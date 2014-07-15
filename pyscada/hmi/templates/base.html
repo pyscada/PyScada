@@ -24,10 +24,10 @@
         <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
         <![endif]-->
     </head>
-    <body style="">
+    <body>
     
         <!-- Fixed navbar -->
-        <div class="navbar navbar-inverse navbar-fixed-top">
+        <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
             <div class="container">
                 <div class="navbar-header">
                     <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -38,8 +38,12 @@
                     <a  class="navbar-brand" href="#">PyScada</a>
                 </div>
                 <div class="navbar-collapse collapse">
-                    
+                    <ul class="nav navbar-nav">
+                        {% block top_menu_left %}{% endblock %}
+                    </ul>
                     <ul class="nav navbar-right navbar-nav">
+                        {% block top_menu_right %}{% endblock %}
+                        {% if user %}
                         <li class="dropdown"><!-- User -->
                             <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon  glyphicon-user"></span> {{ user.username }} <b class="caret"></b></a>
                             <ul class="dropdown-menu">
@@ -48,6 +52,7 @@
                             <li><a href="/accounts/logout"> logout</a></li>
                             </ul>
                         </li>
+                        {% endif %}
                         <li><a href="#page-help">Help</a></li>
                     </ul>
                 </div><!--/.nav-collapse -->
@@ -57,25 +62,7 @@
         <div class="container" id="content">
             <!-- loading animation -->
             <div id="loadingAnimation"> <div class="row"><div class="col-md-1 col-md-offset-6"><img src="{% static "pyscada/img/load.gif" %}" alt="loading"/></div></div></div>
-            <div class="row">
-            {% for view in view_list %}
-                {% if view.visable %}
-                <div class="col-sm-3">
-                    <h3>{{ view.title }}</h3>
-                    <p>{{ view.description }}</p>
-                    {% if view.logo %}
-                    <p><img src="{{ view.logo.url }}" height="120"></p>
-                    {% else %}
-                    <p style="line-height: 120px;">None</p>
-                    {% endif %}
-                    <p><a class="btn btn-default" href="{% url 'main-view' view.link_title %}" role="button"target="blank">Open View</a></p>
-                </div>
-                {% endif %}
-                {% if forloop.counter|divisibleby:4 %}
-            </div><div class="row">
-                {% endif %}
-            {% endfor %}
-            </div>
+            {% block content %}{% endblock %}
         </div> <!-- /container -->
         <!-- Bootstrap core JavaScript
         ================================================== -->

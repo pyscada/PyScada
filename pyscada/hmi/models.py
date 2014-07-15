@@ -91,7 +91,7 @@ class CustomHTMLPanel(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	title			= models.CharField(max_length=400, default='',blank=True)
 	html 			= models.TextField()	
-	#variables		= models.ManyToManyField(Variable)
+	variables		= models.ManyToManyField(Variable)
 	def __unicode__(self):
 		return unicode(str(self.id) + ': ' + self.title)
 
@@ -156,9 +156,11 @@ class View(models.Model):
 	logo 			= models.ImageField(upload_to="img/", verbose_name="Overview Picture",blank=True)
 	visable			= models.BooleanField(default=True)
 	position		= models.PositiveSmallIntegerField(default=0)
+	def __unicode__(self):
+		return unicode(self.title)
 	class Meta:
 		ordering = ['position']
-
+	
 class GroupDisplayPermission(models.Model):
 	hmi_group			= models.OneToOneField(Group)
 	pages 				= models.ManyToManyField(Page,blank=True)
