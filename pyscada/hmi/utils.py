@@ -75,7 +75,10 @@ def update_HMI(json_data):
             wo.col = widget['col']
             wo.row = widget['row']
             wo.size = widget['size']
-            wo.chart_set_id = widget['chart_set']
+            if widget['chart_set'] > 0:
+                wo.chart_set_id = widget['chart_set']
+            if widget['control_panel'] > 0:
+                wo.control_panel_id = widget['control_panel']
             wo.save()
         wo.save()
     
