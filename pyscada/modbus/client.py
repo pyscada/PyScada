@@ -1,23 +1,22 @@
 # -*- coding: utf-8 -*-
 from pyscada import log
-from pyscada.utils import decode_value, encode_value
-from pyscada.utils import get_bits_by_class
+from pyscada.models import ClientWriteTask
+from pyscada.models import Client
+from pyscada.models import RecordedEvent
 from pyscada.models import RecordedTime
 from pyscada.models import RecordedDataFloat
 from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
 from pyscada.models import RecordedDataCache
-from pyscada.models import ClientWriteTask
-from pyscada.models import Client
-from pyscada.models import Variable
+from pyscada.models import Event
+from pyscada.utils import encode_value
+from pyscada.utils import get_bits_by_class
+from pyscada.utils import decode_value
 
 from django.conf import settings
-import traceback
-import os,sys
-from time import time, localtime, strftime
-import random
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 from math import isnan, isinf
+from time import time
 
 class InputRegisterBlock:
     def __init__(self):
@@ -62,7 +61,7 @@ class InputRegisterBlock:
 
         return self.decode_data(result)
         
-        
+    
     def decode_data(self,result):
         out = {}
         #var_count = 0
@@ -74,8 +73,7 @@ class InputRegisterBlock:
             if isnan(out[self.variable_id[idx]]) or isinf(out[self.variable_id[idx]]):
                     out[self.variable_id[idx]] = None
         return out
-
-
+    
     def find_gap(self,L,value):
         for index in range(len(L)):
             if L[index] == value:
@@ -115,9 +113,8 @@ class CoilBlock:
             if (i is not None):
                 self.variable_address.insert(i,variable_address)
                 self.variable_id.insert(i,variable_id)
-        
-
-
+    
+    
     def request_data(self,slave):
         quantity = len(self.variable_address) # number of bits to read
         first_address = min(self.variable_address)
@@ -177,17 +174,19 @@ class client:
             FC = var.modbusvariable.function_code_read
             if FC == 0:
                 continue
-            Address      = var.modbusvariable.address
+            address      = var.modbusvariable.address
             bits_to_read = get_bits_by_class(var.value_class)
-            self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'name':var.name,'adr':Address,'bits':bits_to_read,'fc':FC}
+            events       = Event.objects.filter(variable=var)
+                
+            self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'name':var.name,'adr':address,'bits':bits_to_read,'fc':FC,'events':events}
             if FC == 1: # coils
-                self.trans_coils.append([Address,var.pk,FC])
+                self.trans_coils.append([address,var.pk,FC])
             elif FC == 2: # discrete inputs
-                self.trans_discrete_inputs.append([Address,var.pk,FC])
+                self.trans_discrete_inputs.append([address,var.pk,FC])
             elif FC == 3: # holding registers
-                self.trans_holding_registers.append([Address,var.value_class,bits_to_read,var.pk,FC])
+                self.trans_holding_registers.append([address,var.value_class,bits_to_read,var.pk,FC])
             elif FC == 4: # input registers
-                self.trans_input_registers.append([Address,var.value_class,bits_to_read,var.pk,FC])
+                self.trans_input_registers.append([address,var.value_class,bits_to_read,var.pk,FC])
             else:
                 continue
 
@@ -244,17 +243,17 @@ class client:
         status = self.slave.connect()
         return status
         
-   
-
+    
+    
     def _disconnect(self):
         """
         close the connection to the modbus slave (server)
         """
         self.slave.close()
-
+    
     def request_data(self):
         """
-
+    
         """
         data = {};
         if not self._connect():
@@ -314,8 +313,7 @@ class client:
             log.error('wrong function type %d'%self.variables[variable_id]['fc'])
             return False
 
-
-class DataAcquisition():
+class DataAcquisition:
     def __init__(self):
         self._dt        = float(settings.PYSCADA_MODBUS['polling_interval'])
         self._com_dt    = 0
@@ -351,10 +349,10 @@ class DataAcquisition():
         
         for idx in self._clients:
             self.data[idx] = self._clients[idx].request_data()
-       
+        
         if not self.data:
             return 
-       
+        
         
         self._dvf = []
         self._dvi = []
@@ -365,10 +363,11 @@ class DataAcquisition():
         timestamp = RecordedTime(timestamp=self.time)
         timestamp.save()
         for idx in self._clients:
-            for var_idx in self._clients[idx].variables:
-                store_value = False
-                value = 0
-                if self.data[idx]:
+            if self.data[idx]:
+                for var_idx in self._clients[idx].variables:
+                    store_value = False
+                    value = 0
+                    
                     if self.data[idx].has_key(var_idx):
                         if (self.data[idx][var_idx] != None):
                             value = self.data[idx][var_idx]
@@ -376,28 +375,30 @@ class DataAcquisition():
                             if self._prev_data.has_key(var_idx):
                                 if value == self._prev_data[var_idx]:
                                     store_value = False
-                                    
-                            self._prev_data[var_idx] = value
-                if store_value:
-                    self._dvc.append(RecordedDataCache(variable_id=var_idx,value=value,time=timestamp,last_change = timestamp))
-                    del_idx.append(var_idx)
-                else:
-                    upd_idx.append(var_idx)
-                            
-                if store_value and self._clients[idx].variables[var_idx]['record']:
-                    variable_class = self._clients[idx].variables[var_idx]['value_class']
-                    if variable_class.upper() in ['FLOAT','FLOAT64','DOUBLE']:
-                        self._dvf.append(RecordedDataFloat(time=timestamp,variable_id=var_idx,value=float(value)))
-                    elif variable_class.upper() in ['FLOAT32','SINGLE','REAL'] :
-                        self._dvf.append(RecordedDataFloat(time=timestamp,variable_id=var_idx,value=float(value)))
-                    elif  variable_class.upper() in ['INT32']:
-                        self._dvi.append(RecordedDataInt(time=timestamp,variable_id=var_idx,value=int(value)))
-                    elif  variable_class.upper() in ['WORD','UINT','UINT16']:
-                        self._dvi.append(RecordedDataInt(time=timestamp,variable_id=var_idx,value=int(value)))
-                    elif  variable_class.upper() in ['INT16','INT']:
-                        self._dvi.append(RecordedDataInt(time=timestamp,variable_id=var_idx,value=int(value)))
-                    elif variable_class.upper() in ['BOOL']:
-                        self._dvb.append(RecordedDataBoolean(time=timestamp,variable_id=var_idx,value=bool(value)))
+                                
+                                self._prev_data[var_idx] = value
+                    if store_value:
+                        self._dvc.append(RecordedDataCache(variable_id=var_idx,value=value,time=timestamp,last_change = timestamp))
+                        del_idx.append(var_idx)
+                        for event in self._clients[idx].variables[var_idx]['events']:
+                            event.do_event_check(timestamp,value)
+                    else:
+                        upd_idx.append(var_idx)
+                                
+                    if store_value and self._clients[idx].variables[var_idx]['record']:
+                        variable_class = self._clients[idx].variables[var_idx]['value_class']
+                        if variable_class.upper() in ['FLOAT','FLOAT64','DOUBLE']:
+                            self._dvf.append(RecordedDataFloat(time=timestamp,variable_id=var_idx,value=float(value)))
+                        elif variable_class.upper() in ['FLOAT32','SINGLE','REAL'] :
+                            self._dvf.append(RecordedDataFloat(time=timestamp,variable_id=var_idx,value=float(value)))
+                        elif  variable_class.upper() in ['INT32']:
+                            self._dvi.append(RecordedDataInt(time=timestamp,variable_id=var_idx,value=int(value)))
+                        elif  variable_class.upper() in ['WORD','UINT','UINT16']:
+                            self._dvi.append(RecordedDataInt(time=timestamp,variable_id=var_idx,value=int(value)))
+                        elif  variable_class.upper() in ['INT16','INT']:
+                            self._dvi.append(RecordedDataInt(time=timestamp,variable_id=var_idx,value=int(value)))
+                        elif variable_class.upper() in ['BOOL']:
+                            self._dvb.append(RecordedDataBoolean(time=timestamp,variable_id=var_idx,value=bool(value)))
         
         RecordedDataCache.objects.filter(variable_id__in=del_idx).delete()
         RecordedDataCache.objects.filter(variable_id__in=upd_idx).update(time=timestamp)
@@ -414,6 +415,7 @@ class DataAcquisition():
         """
         check for write tasks
         """
+        
         for task in ClientWriteTask.objects.filter(done=False,start__lte=time(),failed=False):
             
             if self._clients[task.variable.client_id].write_data(task.variable.id,task.value):
