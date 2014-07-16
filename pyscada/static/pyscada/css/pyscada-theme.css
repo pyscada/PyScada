@@ -250,6 +250,11 @@ table.tablesorter thead tr .tablesorter-header.sorter-false {
 	padding-left:0px;
 }
 
+.control-panel .input-group {
+	float:left;
+	position:relative;
+}
+
 .control-panel .input-group-addon.input-group-addon-label {
 	width:300px;
 	text-align:left;
@@ -287,15 +292,24 @@ table.tablesorter thead tr .tablesorter-header.sorter-false {
 .widget {
 
 }
+
 .widget-body {
 	padding-top:10px;
 	padding-bottom:10px;
 }
+
 .widget-body::after {
 	clear: both;
 }
+
 .widget-body::before ,
 .widget-body::after {
 	display: table;
 	content: " ";
+}
+
+.input-group.set_value {
+	width: 445px;
+	margin-bottom:5px;
+	margin-right:5px;
 }

@@ -66,7 +66,8 @@ class Chart(models.Model):
 	variables		= models.ManyToManyField(Variable)
 	def __unicode__(self):
 		return unicode(str(self.id) + ': ' + self.title)
-	
+	def visable(self):
+		return True
 
 class Page(models.Model):
 	id 				= models.AutoField(primary_key=True)
