@@ -13,6 +13,7 @@ class ModbusClient(models.Model):
 	protocol				= models.PositiveSmallIntegerField(default=0,choices=protocol_choices)
 	ip_address  			= models.GenericIPAddressField(default='127.0.0.1')
 	port				= models.CharField(default='502',max_length=400,help_text="for TCP and UDP enter network port as number (def. 502, for serial ASCII and RTU enter serial port (/dev/pts/13))")
+	unit_id				= models.PositiveSmallIntegerField(default=0)
 	def __unicode__(self):
 		return unicode(self.modbus_client.short_name)
 

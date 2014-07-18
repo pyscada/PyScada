@@ -149,10 +149,10 @@ class Widget(models.Model):
 	
 class View(models.Model):
 	id 				= models.AutoField(primary_key=True)
-	title			= models.CharField(max_length=400, default='',blank=True)
+	title			= models.CharField(max_length=400, default='')
 	description 	= models.TextField(default='', verbose_name="Description",null=True)
 	link_title		= models.SlugField(max_length=80, default='') 
-	pages 			= models.ManyToManyField(Page,blank=True)
+	pages 			= models.ManyToManyField(Page)
 	sliding_panel_menus = models.ManyToManyField(SlidingPanelMenu,blank=True)
 	logo 			= models.ImageField(upload_to="img/", verbose_name="Overview Picture",blank=True)
 	visable			= models.BooleanField(default=True)

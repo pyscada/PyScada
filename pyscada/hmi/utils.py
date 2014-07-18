@@ -62,26 +62,6 @@ def update_HMI(json_data):
             cso.chart_2_id = chart_set['chart_2']
             cso.save()
         cso.save()
-    
-    # Widget
-    for widget in data['Widget']:
-        wo,created  = Widget.objects.get_or_create(id = widget['id'], defaults={'title':widget['title'],'page_id':widget['page'],'col':widget['col'],'row':widget['row'],'size':widget['size'],'chart_set_id':widget['chart_set']})
-        if created:
-            log.info(("created Widget: %s") %(widget['id']))
-        else:
-            log.info(("updated Widget: %s") %(widget['id']))
-            wo.title = widget['title']
-            wo.page_id = widget['page']
-            wo.col = widget['col']
-            wo.row = widget['row']
-            wo.size = widget['size']
-            if widget['chart_set'] > 0:
-                wo.chart_set_id = widget['chart_set']
-            if widget['control_panel'] > 0:
-                wo.control_panel_id = widget['control_panel']
-            wo.save()
-        wo.save()
-    
     # ControlItem
     for item in data['ControlItem']:
         cio,created  = ControlItem.objects.get_or_create(id = item['id'], defaults={'label':item['label'],'position':item['position'],'type':item['type'],'variable_id':item['variable']})
@@ -107,6 +87,30 @@ def update_HMI(json_data):
             cpo.items.clear()
         cpo.items.add(*ControlItem.objects.filter(pk__in=item['items']))
         cpo.save()
+    # Widget
+    for widget in data['Widget']:
+        if widget['chart_set'] > 0:
+            wo,created  = Widget.objects.get_or_create(id = widget['id'], defaults={'title':widget['title'],'page_id':widget['page'],'col':widget['col'],'row':widget['row'],'size':widget['size'],'chart_set_id':widget['chart_set']})
+        if widget['control_panel'] > 0:
+            wo,created  = Widget.objects.get_or_create(id = widget['id'], defaults={'title':widget['title'],'page_id':widget['page'],'col':widget['col'],'row':widget['row'],'size':widget['size'],'control_panel_id':widget['control_panel']})
+
+        if created:
+            log.info(("created Widget: %s") %(widget['id']))
+        else:
+            log.info(("updated Widget: %s") %(widget['id']))
+            wo.title = widget['title']
+            wo.page_id = widget['page']
+            wo.col = widget['col']
+            wo.row = widget['row']
+            wo.size = widget['size']
+            if widget['chart_set'] > 0:
+                wo.chart_set_id = widget['chart_set']
+            if widget['control_panel'] > 0:
+                wo.control_panel_id = widget['control_panel']
+            wo.save()
+        wo.save()
+    
+    
     # SlidingPanelMenu
     for item in data['SlidingPanelMenu']:
         spo,created  = SlidingPanelMenu.objects.get_or_create(id = item['id'], defaults={'title':item['title'],'position':item['position'],'control_panel_id':item['control_panel']})
