@@ -601,7 +601,7 @@ log_frm.submit(function () {
 	}else{
 		$.ajax({
 			type: log_frm.attr('method'),
-			url: log_frm.attr('action'),
+			url: RootUrl+log_frm.attr('action'),
 			data: log_frm.serialize(),
 			success: function (data) {
 				log_frm_mesg.val("");
@@ -622,7 +622,7 @@ log_frm.submit(function () {
 function addWriteTask(var_id,value){
 	$.ajax({
 			type: 'post',
-			url: 'form/write_task/',
+			url: RootUrl+'form/write_task/',
 			data: {var_id:var_id,value:value},
 			success: function (data) {
 				
@@ -643,7 +643,7 @@ $('button.write-task-set').click(function(){
 		}else{
 			$.ajax({
 				type: 'post',
-				url: 'form/write_task/',
+				url: RootUrl+'form/write_task/',
 				data: {var_id:var_id,value:value},
 				success: function (data) {
 					
@@ -662,7 +662,7 @@ $('button.write-task-btn').click(function(){
 		if($(this).hasClass('btn-default')){
 			$.ajax({
 				type: 'post',
-				url: 'form/write_task/',
+				url: RootUrl+'form/write_task/',
 				data: {var_id:var_id,value:1},
 				success: function (data) {
 					$('#'+id).removeClass('btn-default')
@@ -675,7 +675,7 @@ $('button.write-task-btn').click(function(){
 		}else if ($(this).hasClass('btn-success')){
 			$.ajax({
 				type: 'post',
-				url: 'form/write_task/',
+				url: RootUrl+'form/write_task/',
 				data: {var_id:var_id,value:0},
 				success: function (data) {
 					$('#'+id).addClass('btn-default')
