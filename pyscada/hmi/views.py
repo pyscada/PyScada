@@ -100,6 +100,8 @@ def config(request):
 		c_count = 0
 		chart = Chart.objects.get(pk=chart_id)
 		for var in chart.variables.filter(active=1).order_by('name'):
+			if not hasattr(var,'hmivariable'):
+				continue
 			color_code = var.hmivariable.chart_line_color_code()
 			if (var.hmivariable.short_name and var.hmivariable.short_name != '-'):
 				var_label = var.hmivariable.short_name
