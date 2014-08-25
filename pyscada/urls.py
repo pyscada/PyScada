@@ -9,7 +9,6 @@ urlpatterns = [
     url(r'^json/cache_data/$', 'pyscada.hmi.views.get_cache_data'),
     url(r'^json/init_data/$', 'pyscada.hmi.views.data'),
     url(r'^json/log_data/$', 'pyscada.hmi.views.log_data'),
-    url(r'^json/config/$', 'pyscada.hmi.views.config'),
     url(r'^form/log_entry/$', 'pyscada.hmi.views.form_log_entry'),
     url(r'^form/write_task/$', 'pyscada.hmi.views.form_write_task'),
     url(r'^view/(?P<link_title>\w+)/$', 'pyscada.hmi.views.view',name="main-view"),

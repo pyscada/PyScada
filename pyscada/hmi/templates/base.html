@@ -7,13 +7,13 @@
         <meta name="description" content="PyScada html5 client application"/>
         <meta name="author" content="Martin Schroeder"/>
         
-        <title>PyScada Control Center - Overview</title>
+        <title>{% block title %}{% endblock %}</title>
         <!-- Bootstrap core CSS -->
-        <link href="{% static "pyscada/css/bootstrap.css" %}" rel="stylesheet"/>
+        <link href="{% static "pyscada/hmi/css/bootstrap.css" %}" rel="stylesheet"/>
         <!-- Bootstrap theme -->
-        <link href="{% static "pyscada/css/bootstrap-theme.min.css" %}" rel="stylesheet"/>
+        <link href="{% static "pyscada/hmi/css/bootstrap-theme.min.css" %}" rel="stylesheet"/>
         <!-- Custom styles for this template -->    
-        <link href="{% static "pyscada/css/pyscada-theme.css" %}" rel="stylesheet"/>
+        <link href="{% static "pyscada/hmi/css/pyscada-theme.css" %}" rel="stylesheet"/>
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
         <script src="js/html5shiv.js"></script>
@@ -24,7 +24,7 @@
         <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
         <![endif]-->
     </head>
-    <body>
+    <body {% block body_confic_data %} {% endblock %}>
     
         <!-- Fixed navbar -->
         <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -54,6 +54,7 @@
                         </li>
                         {% endif %}
                         <li><a href="#page-help">Help</a></li>
+                        <li style="width:20px;"><a href="#" ><span id="AutoUpdateStatus" class="glyphicon glyphicon-transfer"></span></a></li>
                     </ul>
                 </div><!--/.nav-collapse -->
             </div>
@@ -61,20 +62,16 @@
         </div>
         <div class="container" id="content">
             <!-- loading animation -->
-            <div id="loadingAnimation"> <div class="row"><div class="col-md-1 col-md-offset-6"><img src="{% static "pyscada/img/load.gif" %}" alt="loading"/></div></div></div>
+            <div id="loadingAnimation"> <div class="row"><div class="col-md-1 col-md-offset-6"><img src="{% static "pyscada/hmi/img/load.gif" %}" alt="loading"/></div></div></div>
             {% block content %}{% endblock %}
         </div> <!-- /container -->
         <!-- Bootstrap core JavaScript
         ================================================== -->
         <!-- Placed at the end of the document so the pages load faster -->
-        <script type="text/javascript" src="{% static "pyscada/js/jquery.min.js" %}"></script>
-        <!--<script type="text/javascript" src="{% static "pyscada/js/jquery.cookie.js" %}"></script>-->
-        <script type="text/javascript" src="{% static "pyscada/js/bootstrap.min.js" %}"></script>
+        {% block include_bootom %}{% endblock %}
+        
         <script>
-        $( document ).ready(function() {
-            // Handler for .ready() called.
-            $("#loadingAnimation").hide();
-        });
+        {% block script_bottom %}{% endblock %}
         </script>
     </body>
 </html>

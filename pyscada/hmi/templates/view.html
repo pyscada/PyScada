@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% load i18n staticfiles %}
+
+{% block title %}PyScada Control Center - {{ view_title }}{% endblock %}</title>
+{% block body_confic_data %} data-data-file="json/cache_data/" {% endblock %}
+{% block top_menu_left %}
+	{% for page in page_list %}
+		<li><a href="#{{page.link_title}}">{{page.title}}</a></li>
+	{% endfor %}
+{% endblock %}
+
+{% block top_menu_right %}                  
+	{% for panel in control_list %}
+		{% if panel.visable %}
+			<li class="dropdown"><!-- {{ panel.title|upper }} -->
+				<a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-wrench"></span> {{ panel.title }}<strong class="caret"></strong></a>
+				<div class="dropdown-menu" style="padding: 15px; width:715px;">
+					<div class="control-panel">
+					{% comment %}
+						{% set open = 0 %}
+						{% endcomment %}
+						{% for item in panel.control_panel.items.all %}
+							{% if item.pk in visable_control_element_list %}
+							 {% comment %}
+								{% if item.position == 0 %}
+									<div class="row">
+									{% set open = 1 %}
+								{% elif item.position|divisibleby:2 and open == 1 %}
+									</div>
+									{% set open = 0 %}
+								{% elif item.position|divisibleby:2 and open == 0 %}
+									<div class="row">
+									{% set open = 1 %}
+								{% elif open == 1 %}
+									</div><div class="row">
+									{% set open = 1 %}
+								{% else %}
+									<div class="row">
+									{% set open = 1 %}
+								{% endif %}
+								{% endcomment %}
+								{% include "control_element.html" with item=item %}
+								
+							{% endif %}	
+						{% endfor %}
+					</div>
+				</div>
+			</li>
+		{% endif %}
+	{% endfor %}
+		<li class="dropdown"><!-- Log -->
+			<a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-book"></span> Log <strong class="caret"></strong></a>
+			<div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:500px;">
+				<ul>
+					<li><a href="#page-log">Show Log</a></li>
+					<li class="divider"></li>
+					<li><form role="form" id="page-log-form" action="form/log_entry/" method="post">
+						{% csrf_token %}
+						<div class="form-group">
+							<label for="page-log-form-message">Message</label>
+							<input type="text" class="form-control" id="page-log-form-message" placeholder="Enter Message" name="message">
+						</div>
+						<div class="form-group">
+							<label class="radio-inline">
+								<input type="radio" id="inlineRadio1" value="8" name="level"> Notification (8)
+							</label>
+							<label class="radio-inline">
+								<input type="radio" id="inlineRadio2" value="9" name="level" checked> Information (9)
+							</label>
+						</div>
+						<button type="submit" class="btn btn-default">Add</button>
+					</form></li>
+				</ul>
+			</div>
+		</li>
+		<li class="dropdown"><!-- Settings -->
+			<a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> Settings <strong class="caret"></strong></a>
+			<div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:200px;">
+				<form role="form">
+					<label for="inputPassword">x Axis duration:</label>
+					<div class="input-group">
+						<input type="text" class="form-control" id="ChartTimeWindow-input">
+						<span class="input-group-addon">min</span>
+						<span class="input-group-btn">
+							<button class="btn btn-default" type="button" id="ChartTimeWindow-set">set</button>
+						</span>
+					</div>
+				</form>
+				<form class="navbar-form navbar-right" >
+					<button type="button" class="btn btn-success" id="AutoUpdateButton" >auto update</button>
+				</form>
+			</div>
+		</li>
+{% endblock %}
+
+{% block content %}                       
+	{{pages_html|safe}}
+	<div id="page-log" class="sub-page" >
+		<table id="log-table" class="table table-condensed table-hover tablesorter tablesorter-default" width="100%">
+			<colgroup>
+				<col style="width: 180px;">
+				<col style="width: 60px;">
+				<col>
+			</colgroup>
+			<thead>
+				<tr>
+					<th>Date</th>
+					<th>Level</th>
+					<th>Message</th>
+				</tr>
+			</thead>
+			<tbody></tbody>
+		</table>
+	</div> <!-- end page-log -->	
+	{% for panel in panel_list %}
+		<div class="side-menu  {% if panel.position == 1 %}left{% elif panel.position == 2 %}right{% endif %}">
+			<ul class="status-panel">
+				<li>{{ panel.title }}</li>
+				{% for item in panel.control_panel.items.all %}
+					{% if item.pk in visable_control_element_list %}
+						{% include "status_element.html" with item=item %}
+					{% endif %}
+				{% endfor %}
+			</ul>
+		</div>
+	{% endfor %}
+{% endblock %}
+{% block include_bootom %}
+<script type="text/javascript" src="{% static "pyscada/hmi/js/jquery/jquery.min.js" %}"></script>
+<script type="text/javascript" src="{% static "pyscada/hmi/js/jquery.cookie.js" %}"></script>
+<script type="text/javascript" src="{% static "pyscada/hmi/js/jquery.mb.CSSAnimate.min.js" %}"></script>
+<script type="text/javascript" src="{% static "pyscada/hmi/js/jquery.tablesorter.min.js" %}"></script>
+<script type="text/javascript" src="{% static "pyscada/hmi/js/flot/jquery.flot.min.js" %}"></script>
+<script type="text/javascript" src="{% static "pyscada/hmi/js/flot/jquery.flot.resize.min.js" %}"></script>
+<script type="text/javascript" src="{% static "pyscada/hmi/js/flot/jquery.flot.time.min.js" %}"></script>
+<script type="text/javascript" src="{% static "pyscada/hmi/js/flot/jquery.flot.selection.min.js" %}"></script>
+<script type="text/javascript" src="{% static "pyscada/hmi/js/bootstrap.min.js" %}"></script>
+<script type="text/javascript" src="{% static "pyscada/hmi/js/pyscada/pyscada.js" %}"></script>        
+{% endblock %}        
+{% block script_bottom %}
+        $( document ).ready(function() {
+            // Handler for .ready() called.
+            
+            // hide all pages
+            $(".sub-page").hide();
+            if (window.location.hash.length > 0) {
+                $(window.location.hash).show();
+            }else{
+                window.location.hash = $('ul.navbar-nav li a').first().attr("href");
+            }
+            
+            // sidemenues
+            $('.side-menu.left').mouseenter(function(){
+                $(this).stop().CSSAnimate({"left":0},500)
+            }).mouseleave(function(){
+                ow = $(this).outerWidth()
+                $(this).stop().CSSAnimate({"left":-(ow - 11)},500)
+            });
+            
+            $('.side-menu.right').mouseenter(function(){
+                $(this).stop().CSSAnimate({"right":0},500)
+            }).mouseleave(function(){
+                ow = $(this).outerWidth()
+                $(this).stop().CSSAnimate({"right":-(ow - 11)},500)
+            });
+            
+            $('.side-menu.bottom').css('margin-left',- $('.side-menu.bottom').outerWidth(true)/2)
+            
+            $('.side-menu.bottom').stop().CSSAnimate({"bottom":-($('.side-menu.bottom').outerHeight(true) - 31)},500)
+            
+            $('.side-menu.bottom').mouseenter(function(){
+                $(this).stop().CSSAnimate({"bottom":0},500)
+            }).mouseleave(function(){
+                oh = $(this).outerHeight(true)
+                $(this).stop().CSSAnimate({"bottom":-(oh - 31)},500)
+            });
+            
+            // auto update function
+            $('#AutoUpdateButton').click(function(e) {
+                if (auto_update_active) {
+                    // deactivate auto update
+                    auto_update_active = false;
+                    $("#AutoUpdateButton").addClass("btn-default");
+                    $("#AutoUpdateButton").removeClass("btn-success");
+                } else {
+                    // activate auto update
+                    auto_update_active = true;
+                    $("#AutoUpdateButton").addClass("btn-success");
+                    $("#AutoUpdateButton").removeClass("btn-default");
+                    JsonErrorCount = 0;
+                    fetchData();
+                }
+            });
+            // prevent reloading by existent 
+            window.onbeforeunload = function() {
+                return "you realy wan't to reload/leave the page?";
+            };
+            // nav menu click event
+            $(window).on('hashchange', function() {
+                if (window.location.hash.length > 0) {
+                    $('ul.navbar-nav li.active').removeClass('active');
+                    $('a[href$="' + window.location.hash + '"]').parent('li').addClass('active');
+                    // hide all pages
+                    $(".sub-page").hide();
+                    // show only new content
+                    $(window.location.hash).show();
+                };
+            });
+            $('#ChartTimeWindow-set').click(function() {
+                setWindowSize(parseInt($('#ChartTimeWindow-input').val()));
+            });
+			$("#loadingAnimation").hide();
+        });
+{% endblock %}
+   

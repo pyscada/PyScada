@@ -11,7 +11,7 @@
 		<div class="input-group control_label"><span class="label label-default type-bool status-red var-{{ item.variable.name }}">{{ item.label }}</span></div>
 	{% elif item.type == 5 %}<!-- input -->
 		{% if item.variable.value_class == 'BOOL' %}
-			<div class="input-group control_button"><button type="button" var_id="{{ item.variable.pk }}" class="btn btn-default updateable write-task-btn type-bool var-{{ item.variable.name }}" id="{{ item.web_id }}">{{ item.label }}</button></div>
+		<div class="input-group control_button"><button type="button" var_id="{{ item.variable.pk }}" class="btn btn-default updateable write-task-btn type-bool var-{{ item.variable.name }}" id="{{ item.web_id }}">{{ item.label }}</button></div>
 		{% else %}
 			<div class="input-group set_value">
 				<span class="input-group-addon input-group-addon-label">{{ item.label }}</span>

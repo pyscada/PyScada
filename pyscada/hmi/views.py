@@ -11,6 +11,7 @@ from pyscada.hmi.models import Chart
 from pyscada.hmi.models import Page
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import SlidingPanelMenu
+from pyscada.hmi.models import CustomHTMLPanel
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
@@ -26,6 +27,7 @@ from django.core import serializers
 from django.core.management import call_command
 from django.utils import timezone
 from django.template import Context, loader,RequestContext
+from django.template.response import TemplateResponse
 from django.db import connection
 from django.shortcuts import redirect
 from django.contrib.auth import logout
@@ -51,7 +53,9 @@ def view(request,link_title):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
 	
-	t = loader.get_template('content.html')
+	page_template = loader.get_template('content_page.html')
+	widget_row_template = loader.get_template('widget_row.html')
+	
 	try:
 		view = View.objects.get(link_title=link_title)
 	except:
@@ -62,59 +66,63 @@ def view(request,link_title):
 	sliding_panel_list = view.sliding_panel_menus.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).distinct()
 	
 	visable_widget_list = Widget.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator,page__in=page_list.iterator).values_list('pk',flat=True)		
+	visable_custom_html_panel_list = CustomHTMLPanel.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).values_list('pk',flat=True)
 	visable_chart_list = Chart.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).values_list('pk',flat=True)
+
 	visable_control_element_list = GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items',flat=True)
 
 	panel_list   = sliding_panel_list.filter(position__in=(1,2,))
 	control_list = sliding_panel_list.filter(position=0)
 	
-
-	c = RequestContext(request,{
+	current_row = 0
+	has_chart = False
+	widgets = []
+	widget_rows_html = ""
+	pages_html = ""
+	for page in view.pages.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).distinct():
+		current_row = 0
+		has_chart = False
+		widgets = []
+		widget_rows_html = ""
+		for widget in page.widget_set.all():
+			# check if row has changed
+			if current_row <> widget.row:
+				# render new widget row and reset all loop variables
+				widget_rows_html += widget_row_template.render(RequestContext(request,{'row':current_row,'has_chart':has_chart,'widgets':widgets,'visable_control_element_list':visable_control_element_list}))
+				current_row = widget.row
+				has_chart = False
+				widgets = []
+			if not widget.pk in visable_widget_list:
+				continue
+			if not widget.visable:
+				continue
+			if widget.chart:
+				if not widget.chart.visable():
+					continue
+				if not widget.chart.pk in visable_chart_list:
+					continue
+				has_chart = True
+				widgets.append(widget)
+			elif widget.control_panel:
+				widgets.append(widget)
+			elif widget.custom_html_panel:
+				if not widget.custom_html_panel.pk in visable_custom_html_panel_list:
+					continue
+				widgets.append(widget)
+		widget_rows_html += widget_row_template.render(RequestContext(request,{'row':current_row,'has_chart':has_chart,'widgets':widgets,'visable_control_element_list':visable_control_element_list}))
+		pages_html += page_template.render(RequestContext(request,{'page':page,'widget_rows_html':widget_rows_html}))
+				
+	c = {
 		'page_list': page_list,
-		'visable_chart_list':visable_chart_list,
-		'visable_control_element_list':visable_control_element_list,
-		'visable_widget_list':visable_widget_list,
+		'pages_html':pages_html,
 		'panel_list': panel_list,
 		'control_list':control_list,
 		'user': request.user,
 		'view_title':view.title
-	})
+	}
+	
 	log.webnotice('open hmi',request.user)
-	return HttpResponse(t.render(c))
-	
-def config(request):
-	if not request.user.is_authenticated():
-		return redirect('/accounts/login/?next=%s' % request.path)
-	config = {}
-	config["DataFile"] 			= "json/cache_data/"
-	config["InitialDataFile"] 	= "json/init_data/"
-	config["LogDataFile"] 		= "json/log_data/"
-	config["RefreshRate"] 		= 5000
-	config["CacheTimeout"]		= 15000
-	config["config"] 			= []
-	chart_count 				= 0
-	charts = GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts',flat=True)
-	charts = list(set(charts))
-	for chart_id in charts:
-		vars = {}
-		c_count = 0
-		chart = Chart.objects.get(pk=chart_id)
-		for var in chart.variables.filter(active=1).order_by('name'):
-			if not hasattr(var,'hmivariable'):
-				continue
-			color_code = var.hmivariable.chart_line_color_code()
-			if (var.hmivariable.short_name and var.hmivariable.short_name != '-'):
-				var_label = var.hmivariable.short_name
-			else:
-				var_label = var.name
-			vars[var.name] = {"yaxis":1,"color":color_code,"unit":var.unit.description,"label":var_label}
-			
-		config["config"].append({"label":chart.title,"xaxis":{"ticks":chart.x_axis_ticks},"axes":[{"yaxis":{"min":chart.y_axis_min,"max":chart.y_axis_max,'label':chart.y_axis_label}}],"placeholder":"#chart-%d"% chart.pk,"legendplaceholder":"#chart-%d-legend" % chart.pk,"variables":vars}) 
-		chart_count += 1		
-	
-	
-	jdata = json.dumps(config,indent=2)
-	return HttpResponse(jdata, content_type='application/json')
+	return TemplateResponse(request, 'view.html', c)
 
 def log_data(request):
 	if not request.user.is_authenticated():
@@ -197,7 +205,8 @@ def data(request):
 	
 	variables = request.POST.getlist('variables[]')
 	#if variables:
-	active_variables = Variable.objects.filter(name__in=variables).values_list('pk',flat=True)
+	#active_variables = Variable.objects.filter(pk__in=variables).values_list('pk',flat=True)
+	active_variables = variables;
 	#else:
 	#	return HttpResponse('{\n}', content_type='application/json')
 		

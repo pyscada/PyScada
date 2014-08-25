@@ -30,6 +30,7 @@ class Command(BaseCommand):
                     pf.close()
                 except IOError:
                     pid = None
+                
                 if pid:
                      # Check For the existence of a unix pid.
                     try:
@@ -41,7 +42,16 @@ class Command(BaseCommand):
                             tp.failed = True
                             tp.save()
                         os.remove(mdaemon.pidfile)
-                
+                else:
+                    # check for dead tasks in taskprogress list
+                    for task in BackgroundTask.objects.filter(done=False,failed=False):
+                        if task.pid >0:
+                            try:
+                                os.kill(task.pid, 0)
+                            except OSError:
+                                # daemon is dead delete file and mark taskprogress as failed
+                                task.failed = True
+                                task.save()
                 mdaemon.start()
                         
                     

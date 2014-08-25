@@ -8,7 +8,7 @@ from pyscada.hmi.models import Page
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import ControlPanel
 from pyscada.hmi.models import CustomHTMLPanel
-from pyscada.hmi.models import ChartSet
+#from pyscada.hmi.models import ChartSet
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
 
@@ -66,8 +66,8 @@ class HMIVariableAdmin(admin.ModelAdmin):
  
 class WidgetAdmin(admin.ModelAdmin):
     list_display_links = ('id',)
-    list_display = ('id','title','page','row','col','size','chart','chart_set','control_panel','custom_html_panel',)
-    list_editable = ('title','page','row','col','size','chart','chart_set','control_panel','custom_html_panel',)
+    list_display = ('id','title','page','row','col','size','chart','control_panel','custom_html_panel',)
+    list_editable = ('title','page','row','col','size','chart','control_panel','custom_html_panel',)
 
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
     filter_horizontal = ('pages','sliding_panel_menus','charts','control_items','widgets','views','custom_html_panels')
@@ -90,6 +90,6 @@ admin.site.register(HMIVariable,HMIVariableAdmin)
 
 admin.site.register(ControlPanel,ControlPanelAdmin)
 admin.site.register(CustomHTMLPanel,CustomHTMLPanelAdmin)
-admin.site.register(ChartSet)
+#admin.site.register(ChartSet)
 admin.site.register(Widget,WidgetAdmin)
 admin.site.register(View,ViewAdmin)

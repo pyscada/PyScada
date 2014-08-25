@@ -1,21 +1,30 @@
 {% extends "base.html" %}
+{% load i18n staticfiles %}
+{% block title %}PyScada Control Center - Login{% endblock %}
 
 {% block content %}
-
-
-
-{% if form.errors %}
+	{% if form.errors %}
 <p>Your username and password didn't match. Please try again.</p>
-{% endif %}
+	{% endif %}
 
 <form class="form-signin" method="post" action="{% url 'django.contrib.auth.views.login' %}">
 {% csrf_token %}
-<h2 class="form-signin-heading">Please sign in</h2>
-<input type="text" class="form-control" placeholder="{{ form.username.label }}" name="username" required="" autofocus="" id="{{ form.username.id_for_label }}">
-<input type="password" class="form-control" placeholder="{{ form.password.label }}" name="password" required="" id="{{ form.password.id_for_label }}">
-<button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
-<input type="hidden" name="next" value="{{ next }}" />
+	<h2 class="form-signin-heading">Please sign in</h2>
+	<input type="text" class="form-control" placeholder="{{ form.username.label }}" name="username" required="" autofocus="" id="{{ form.username.id_for_label }}">
+	<input type="password" class="form-control" placeholder="{{ form.password.label }}" name="password" required="" id="{{ form.password.id_for_label }}">
+	<button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+	<input type="hidden" name="next" value="{{ next }}" />
 </form>
-</div>
-</div>
+{% endblock %}
+
+{% block include_bootom %}
+<script type="text/javascript" src="{% static "pyscada/hmi/js/jquery/jquery.min.js" %}"></script>
+<script type="text/javascript" src="{% static "pyscada/hmi/js/bootstrap.min.js" %}"></script>
+{% endblock %}
+        
+{% block script_bottom %}
+$( document ).ready(function() {
+	// Handler for .ready() called.
+	$("#loadingAnimation").hide();
+});
 {% endblock %}

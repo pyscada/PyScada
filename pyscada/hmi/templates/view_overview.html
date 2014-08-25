@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n staticfiles %}
+{% block title %}PyScada Control Center - Overview{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -8,13 +9,13 @@
         <div class="col-sm-3">
         <div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3 class="panel-title"><a href="{% url 'main-view' view.link_title %}" target="blank" >{{ view.title }}</a></h3>
+                    <h3 class="panel-title"><a href="{% url 'main-view' view.link_title %}" target="_blank" >{{ view.title }}</a></h3>
                 </div>
                 <div class="panel-body">
                 {% if view.logo %}
-                <a href="{% url 'main-view' view.link_title %}" class="thumbnail" target="blank" ><img src="{{ view.logo.url }}" alt="{{ view.description }}"  width="100%" ></a>
+                <a href="{% url 'main-view' view.link_title %}" class="thumbnail" target="_blank" ><img src="{{ view.logo.url }}" alt="{{ view.description }}"  width="100%" ></a>
                 {% else %}
-                <a href="{% url 'main-view' view.link_title %}" class="thumbnail" target="blank" ><p style="min-height: 120px;">{{ view.description }}</p></a>
+                <a href="{% url 'main-view' view.link_title %}" class="thumbnail" target="_blank" ><p style="min-height: 120px;">{{ view.description }}</p></a>
                 {% endif %}
             </div>
            </div>
@@ -28,13 +29,25 @@
         <div class="col-sm-3">
         <div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3 class="panel-title"><a href="{% url 'admin:index' %}" target="blank">Admin</a></h3>
+                    <h3 class="panel-title"><a href="{% url 'admin:index' %}" target="_blank">Admin</a></h3>
                 </div>
                 <div class="panel-body">
-                <a href="{% url 'admin:index' %}" class="thumbnail" target="blank"><img src="{% static "pyscada/img/admin_logo.gif" %}" alt="The Admin Panel"  width="100%"></a>
+                <a href="{% url 'admin:index' %}" class="thumbnail" target="_blank"><img src="{% static "pyscada/hmi/img/admin_logo.gif" %}" alt="The Admin Panel"  width="100%"></a>
             </div>
            </div>
         </div>
     {% endif %}
     </div>
+{% endblock %}
+
+{% block include_bootom %}
+<script type="text/javascript" src="{% static "pyscada/hmi/js/jquery/jquery.min.js" %}"></script>
+<script type="text/javascript" src="{% static "pyscada/hmi/js/bootstrap.min.js" %}"></script>
+{% endblock %}
+        
+{% block script_bottom %}
+$( document ).ready(function() {
+	// Handler for .ready() called.
+	$("#loadingAnimation").hide();
+});
 {% endblock %}

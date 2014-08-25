@@ -16,6 +16,13 @@ body {
 	padding-top:15px;
 }
 
+.container {
+	max-width: 2550px !important;
+	margin-right: 0px !important;
+	margin-left: 0px !important;
+	width:100% !important;
+}
+/*
 .SAC-Main {
     position:relative;
     top:0; left:0; 
@@ -28,7 +35,10 @@ body {
 .SAC-IMG {
     position:absolute;
 }
-
+*/
+/*
+	control and side panels
+*/
 .status-panel tbody > tr > td {
     border-top: 0px;
     padding: 2px;
@@ -45,26 +55,44 @@ body {
 	list-style: none;
 	
 }
-.chart-legend {
-    font-size: 10px;
-    
-}
+/*
+	charts
+*/
 
-.container {
-	max-width: 2550px !important;
-	margin-right: 0px !important;
-	margin-left: 0px !important;
-	width:100% !important;
-}
+
 
 .legend-sidebar{
 	min-width:240px;
 	position: relative;
 	min-height: 1px;
 	padding-right: 15px;
+	padding-left:10px;
 	float: left;
 	font: 12px/1em "proxima-nova", Helvetica, Arial, sans-serif;
 }
+.chart-legend {
+    font-size: 10px;
+    
+}
+.legendTitle {
+	font-size: 12px;
+}
+.legendSeries {
+	 border: 1px solid #ddd;
+	 padding:1px;
+	 font-size: 11px;
+	 line-height: 0.5em;
+}
+.legendLabel {
+	padding-right:5px;
+}
+.legendValue {
+	border-left: 1px solid #ddd;
+}
+.legendSeries  input[type="checkbox"]{
+	margin: 0px 0 0;
+}
+
 .main-chart-area{
 	position: relative;
 	min-height: 1px;
@@ -135,9 +163,7 @@ body {
 	
 }
 
-.legendTitle {
-	font-size: 12px;
-}
+
 .yaxisLabel {
 	top: 50%;
 	left: 5px;
@@ -171,6 +197,18 @@ body {
 	padding:0px 12px;
 }
 
+.chart_hspace {
+	float: left;
+	position: relative;
+	min-height: 1px;
+	width: 1%;
+	height: 100%;
+}
+
+/*
+	table sorter
+	log page, chart-legend
+*/
 
 table.tablesorter thead tr .tablesorter-header {
 	background-image: url(/static/pyscada/img/unsorted.gif);
@@ -196,21 +234,7 @@ table.tablesorter thead tr .tablesorter-header.sorter-false {
 	background-image: none;
 }
 
-.legendSeries {
-	 border: 1px solid #ddd;
-	 padding:1px;
-	 font-size: 11px;
-	 line-height: 0.5em;
-}
-.legendLabel {
-	padding-right:5px;
-}
-.legendValue {
-	border-left: 1px solid #ddd;
-}
-.legendSeries  input[type="checkbox"]{
-	margin: 0px 0 0;
-}
+
 
 
 	
@@ -284,17 +308,11 @@ table.tablesorter thead tr .tablesorter-header.sorter-false {
 	text-align:left;
 }
 
-.chart_hspace {
-	float: left;
-	position: relative;
-	min-height: 1px;
-	width: 1%;
-	height: 100%;
-}
-
-
+/*
+	Widget
+*/
 .widget {
-
+	padding :0px !important;
 }
 
 .widget-body {
@@ -311,12 +329,22 @@ table.tablesorter thead tr .tablesorter-header.sorter-false {
 	display: table;
 	content: " ";
 }
+
+
+
+/*
+	
+*/
 .input-group.set_value {
 	width: 445px;
 	margin-bottom:5px;
 	margin-right:5px;
 }
 
+
+/* 
+	Signin Form 
+*/
 .form-signin {
   max-width: 330px;
   padding: 15px;

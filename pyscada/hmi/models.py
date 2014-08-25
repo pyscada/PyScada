@@ -3,8 +3,13 @@ from pyscada.models import Variable
 
 from django.db import models 
 from django.contrib.auth.models import Group
-import random
 
+		
+class ChartManager(models.Manager):
+	def active_variables(self,page,row):
+		return super(ChartManager, self).get_queryset().filter(active=True,client__active=True)
+		
+		
 class Color(models.Model):
 	id 		= models.AutoField(primary_key=True)
 	name 	= models.SlugField(max_length=80, verbose_name="variable name")
@@ -64,10 +69,11 @@ class Chart(models.Model):
 	y_axis_min		= models.FloatField(default=0)
 	y_axis_max		= models.FloatField(default=100)
 	variables		= models.ManyToManyField(Variable)
+	objects 		= ChartManager()
 	def __unicode__(self):
 		return unicode(str(self.id) + ': ' + self.title)
 	def visable(self):
-		return True
+		return self.variables.filter(active=True,client__active=True).count()>0
 
 class Page(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -91,8 +97,9 @@ class ControlPanel(models.Model):
 class CustomHTMLPanel(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	title			= models.CharField(max_length=400, default='',blank=True)
-	html 			= models.TextField()	
-	variables		= models.ManyToManyField(Variable)
+	html 			= models.TextField()
+	variables		= models.ManyToManyField(Variable,blank=True)
+	
 	def __unicode__(self):
 		return unicode(str(self.id) + ': ' + self.title)
 
@@ -105,7 +112,7 @@ class SlidingPanelMenu(models.Model):
 	visable			= models.BooleanField(default=True)
 	def __unicode__(self):
 		return unicode(self.title)
-
+"""
 class ChartSet(models.Model):
 	size_choices	= ((0,'side by side (1/2)'),(1,'side by side (2/3|1/3)'),(2,'side by side (1/3|2/3)'),)
 	id 				= models.AutoField(primary_key=True)
@@ -114,7 +121,7 @@ class ChartSet(models.Model):
 	chart_2			= models.ForeignKey(Chart,blank=True,null=True,related_name="chart_2",verbose_name="right Chart")
 	def __unicode__(self):
 		return unicode(str(self.id) + ': ' + (self.chart_1.title if self.chart_1 else 'None')  + ' | ' +  (self.chart_2.title if self.chart_2 else 'None') )
-		
+"""		
 
 class Widget(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -127,10 +134,11 @@ class Widget(models.Model):
 	size_choices 	= ((4,'page width'),(3,'3/4 page width'),(2,'1/2 page width'),(1,'1/4 page width'))
 	size			= models.PositiveSmallIntegerField(default=4,choices=size_choices)
 	chart			= models.ForeignKey(Chart,blank=True,null=True,default=None)
-	chart_set		= models.ForeignKey(ChartSet,blank=True,null=True,default=None)
+	#chart_set		= models.ForeignKey(ChartSet,blank=True,null=True,default=None)
 	control_panel  = models.ForeignKey(ControlPanel,blank=True,null=True,default=None)
 	custom_html_panel = models.ForeignKey(CustomHTMLPanel,blank=True,null=True,default=None)
 	visable			= models.BooleanField(default=True)
+	#objects 		= WidgetManager()
 	class Meta:
 		ordering = ['row','col']
 	def __unicode__(self):
