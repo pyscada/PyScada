@@ -376,7 +376,7 @@ class DataAcquisition:
                                 if value == self._prev_data[var_idx]:
                                     store_value = False
                                 
-                                self._prev_data[var_idx] = value
+                            self._prev_data[var_idx] = value
                     if store_value:
                         self._dvc.append(RecordedDataCache(variable_id=var_idx,value=value,time=timestamp,last_change = timestamp))
                         del_idx.append(var_idx)
