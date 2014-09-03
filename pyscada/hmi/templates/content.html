@@ -126,14 +126,18 @@
                             </div>
                         </li>
                         <li class="dropdown"><!-- User -->
-                            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon  glyphicon-user"></span> {{ user.username }} <b class="caret"></b></a>
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon  glyphicon-user"></span> {% if user.first_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username }}{% endif %}<b class="caret"></b></a>
                             <ul class="dropdown-menu">
-                            <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
-                            <li class="divider"></li>
-                            <li><a href="/accounts/logout"> logout</a></li>
+								<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.first_name }} {{ user.last_name }}</a></li>	
+								<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
+								<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">change user info</a></li>
+								<li class="divider"></li>
+								<li><a href="/accounts/password_change" target="_blank"> change password</a></li>
+								<li class="divider"></li>
+								<li><a href="/accounts/logout"> logout</a></li>
                             </ul>
-                        </li>           
-                        <li><a href="#page-help"><span class="glyphicon glyphicon-question-sign"></span> Help</a></li>
+                        </li>   
+                        <!--<li><a href="#page-help"><span class="glyphicon glyphicon-question-sign"></span> Help</a></li>-->
                         <li style="width:20px;"><a href="#" ><span id="AutoUpdateStatus" class="glyphicon glyphicon-transfer"></span></a><!--<img src="{% static "pyscada/img/load.gif" %}" alt="loading" id="AutoUpdateStatus" height="12px">--></li>
                     </ul>
                 </div><!--/.nav-collapse -->
