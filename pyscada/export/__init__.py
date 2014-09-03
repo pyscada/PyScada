@@ -206,9 +206,9 @@ def _export_data_to_h5(first_time_id,last_time_id,bf,tp,pre_data):
             bf.write_data(var.name,tmp)
             bf.reopen()
             continue
-        """
-        ###################################################################################
-        """
+        
+        #blow up data ##########################################################
+        
         tmp = [0]*len(time_ids)
         t_idx = 0
         v_idx = 0
@@ -230,8 +230,11 @@ def _export_data_to_h5(first_time_id,last_time_id,bf,tp,pre_data):
                     v_idx += 1
     
                 if nb_v_idx > v_idx:
+                    logged = False
                     while records[v_idx][0]<=id and v_idx <= nb_v_idx:
-                        log.debug(("double id %d in var %d")%(id,var_id))
+                        if not logged:
+                            log.debug(("double id %d in var %d")%(id,var_id))
+                            logged = True
                         v_idx += 1
             t_idx += 1
         pre_data[var_id] = tmp[-1]        
