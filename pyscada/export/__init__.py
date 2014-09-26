@@ -168,12 +168,12 @@ def _export_data_to_h5(first_time_id,last_time_id,bf,tp,pre_data):
         
         var_id = var.pk
         variable_class = var.value_class
+        first_record = False
         if data.has_key(var_id):
             records = data[var_id]
             if records[0][0] == first_time_id:
                 first_record = True
-            else:
-                first_record = False
+            
         else:
             records = []
             
