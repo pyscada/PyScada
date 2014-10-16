@@ -243,7 +243,10 @@ def logout_view(request):
 	log.webnotice('logout',request.user)
 	logout(request)
 	# Redirect to a success page.
-	return redirect('/accounts/login/')
+	return redirect('/accounts/login/?next=/')
+
+def user_profile_change(request):
+	return redirect('/accounts/login/?next=/')
 
 def dataaquisition_daemon_start(request):
 	if not request.user.is_authenticated():

@@ -122,7 +122,9 @@ function fetchData() {
 				}
 			},
 			error: function(x, t, m) {
-				addNotification(t, 3);
+				if(JsonErrorCount % 5 == 0)
+					addNotification(t, 3);
+					
 				JsonErrorCount = JsonErrorCount + 1;
 				if (JsonErrorCount > 60) {
 					auto_update_active = false;
@@ -133,6 +135,12 @@ function fetchData() {
 					if (auto_update_active) {
 						setTimeout('fetchData()', 500);
 					}
+					$.each(PyScadaPlots,function(plot_id){
+						var keys = PyScadaPlots[plot_id].getKeys();
+						$.each(keys, function(key, val) {
+							PyScadaPlots[plot_id].addData(val,data_last_timestamp,Number.NaN);
+						});
+					});
 				}
 				$("#AutoUpdateButton").removeClass("btn-success");
 				$("#AutoUpdateButton").addClass("btn-warning");
@@ -140,6 +148,13 @@ function fetchData() {
 				}
 		});
 		updateLog();
+	}else{
+		$.each(PyScadaPlots,function(plot_id){
+			var keys = PyScadaPlots[plot_id].getKeys();
+			$.each(keys, function(key, val) {
+				PyScadaPlots[plot_id].addData(val,data_last_timestamp,Number.NaN);
+			});
+		});
 	}
 }
 
@@ -353,6 +368,7 @@ function PyScadaPlot(id){
 	plot.getSeries 			= function () { return series };
 	plot.getFlotObject		= function () { return flotPlot};
 	plot.setWindowSize		= function (size){ WindowSize = size; update(); };
+	plot.getKeys			= function (){ return keys};
 	plot.getInitStatus		= function () { if(InitDone){return InitRetry}else{return false}};
 	plot.getId				= function () {return id};
 	// init data

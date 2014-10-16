@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+
+{% if form.errors %}
+{% endif %}
+
+<form class="form-signin" method="post" action="">
+{% csrf_token %}
+<h2 class="form-signin-heading">Change your user profile</h2>
+<div class="form-group">
+	<label for="username">username</label>
+	<input type="text" class="form-control" placeholder="{{ form.username.label }}" name="username" required="" autofocus="" value="{{user.username}}" id="{{ form.username.id_for_label }}">
+</div>
+<div class="form-group">
+	<label for="first_name">first name</label>
+	<input type="text" class="form-control" placeholder="{{ form.first_name.label }}" name="first_name" required="" value="{{user.first_name}} id="{{ form.first_name.id_for_label }}">
+</div>
+<div class="form-group">
+	<label for="last_name">last name</label>
+	<input type="text" class="form-control" placeholder="{{ form.last_name.label }}" name="last_name" required="" value="{{user.last_name}} id="{{ form.last_name.id_for_label }}">
+</div>
+
+<div class="form-group">
+	<label for="email">email</label>
+	<input type="text" class="form-control" placeholder="{{ form.email.label }}" name="email" required="" value="{{user.email}} id="{{ form.email.id_for_label }}">
+</div>
+
+<button class="btn btn-lg btn-primary btn-block" type="submit">Change</button>
+<input type="hidden" name="next" value="{{ next }}" />
+</form>
+{% endblock %}

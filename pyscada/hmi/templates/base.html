@@ -35,7 +35,7 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a  class="navbar-brand" href="#">PyScada</a>
+                    <a  class="navbar-brand" href="/">PyScada</a>
                 </div>
                 <div class="navbar-collapse collapse">
                     <ul class="nav navbar-nav">
@@ -45,11 +45,15 @@
                         {% block top_menu_right %}{% endblock %}
                         {% if user %}
                         <li class="dropdown"><!-- User -->
-                            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon  glyphicon-user"></span> {{ user.username }} <b class="caret"></b></a>
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon  glyphicon-user"></span> {% if user.first_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username }}{% endif %}<b class="caret"></b></a>
                             <ul class="dropdown-menu">
-                            <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
-                            <li class="divider"></li>
-                            <li><a href="/accounts/logout"> logout</a></li>
+								<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.first_name }} {{ user.last_name }}</a></li>	
+								<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
+								<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">change user info</a></li>
+								<li class="divider"></li>
+								<li><a href="/accounts/password_change" target="_blank"> change password</a></li>
+								<li class="divider"></li>
+								<li><a href="/accounts/logout"> logout</a></li>
                             </ul>
                         </li>
                         {% endif %}
