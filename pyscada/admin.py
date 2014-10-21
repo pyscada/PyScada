@@ -14,29 +14,6 @@ from django.contrib.admin import SimpleListFilter
 from django import forms
 import datetime
 
-class VariableAdminForm(forms.ModelForm):
-    json_configuration = forms.CharField(widget=forms.Textarea)
-    class Meta:
-        model = Variable
-
-class VariableImportAdmin(admin.ModelAdmin):
-    actions = None
-    form = VariableAdminForm
-    fields = ('json_configuration',)
-    list_display = ('name','active')
-    
-    def save_model(self, request, obj, form, change):
-        update_variable_set(form.cleaned_data['json_configuration'])
-
-    def __init__(self, *args, **kwargs):
-        super(VariableImportAdmin, self).__init__(*args, **kwargs)
-        self.list_display_links = (None, )
-
-
-class VariableConfigFileImport(Variable):
-    class Meta:
-        proxy = True
-
 
 class ClientAdmin(admin.ModelAdmin):
     list_display = ('id','short_name','description','active',)
@@ -86,18 +63,18 @@ class LogAdmin(admin.ModelAdmin):
         return False    
 
 class RecordedDataCacheAdmin(admin.ModelAdmin):
-    list_display = ('id','last_change','name','value','unit','last_update',)
+    list_display = ('id','name','value','unit','last_update_time','last_change_time',)
     list_display_links = ('name',)
     list_filter = ('variable__client','variable__unit')
     search_fields = ['variable__name',]
     def name(self,instance):
         return instance.variable.name
-    def  unit(self,instance):
+    def unit(self,instance):
         return instance.variable.unit.unit
-    def last_change(self,instance):
-        return datetime.datetime.fromtimestamp(int(instance.last_change.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
-    def last_update(self,instance):
-        return datetime.datetime.fromtimestamp(int(instance.time.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+    def last_update_time(self,instance):
+        return datetime.datetime.fromtimestamp(int(instance.last_update)).strftime('%Y-%m-%d %H:%M:%S')
+    def last_change_time(self,instance):
+        return datetime.datetime.fromtimestamp(int(instance.last_change)).strftime('%Y-%m-%d %H:%M:%S')
     def has_add_permission(self, request):
         return False
     def has_delete_permission(self, request, obj=None):
@@ -120,7 +97,6 @@ class BackgroundTaskAdmin(admin.ModelAdmin):
         
 admin.site.register(Client,ClientAdmin)
 admin.site.register(Variable,VarieblesAdmin)
-admin.site.register(VariableConfigFileImport,VariableImportAdmin)
 admin.site.register(Unit)
 admin.site.register(Event)
 admin.site.register(ClientWriteTask,ClientWriteTaskAdmin)

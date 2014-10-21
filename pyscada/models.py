@@ -11,22 +11,11 @@ import datetime
 # Manager
 #
 
-class RecordedDataValueManager(models.Manager):
-	def by_time_id(self,time_id):
-		data = super(RecordedDataValueManager, self).get_query_set().filter(time_id=time_id)
-		output = {}
-		for val in data:
-			output[val.variable.variable_name] = val.value()
-		return output
-
-
-
 #
 # Model
 #
 
 class Client(models.Model):
-	id 				= models.AutoField(primary_key=True)
 	short_name		= models.CharField(max_length=400, default='')
 	client_type		= models.CharField(default='generic',choices=settings.PYSCADA_CLIENTS,max_length=400)
 	description 	= models.TextField(default='', verbose_name="Description",null=True)
@@ -36,7 +25,6 @@ class Client(models.Model):
 
 
 class Unit(models.Model):
-	id 				= models.AutoField(primary_key=True)
 	unit			= models.CharField(max_length=80, verbose_name="Unit")
 	description 		= models.TextField(default='', verbose_name="Description",null=True)
 	def __unicode__(self):
@@ -45,7 +33,6 @@ class Unit(models.Model):
 
 
 class Variable(models.Model):
-	id 				= models.AutoField(primary_key=True)
 	name 			= models.SlugField(max_length=80, verbose_name="variable name")
 	description 	= models.TextField(default='', verbose_name="Description")
 	client			= models.ForeignKey(Client,null=True, on_delete=models.SET_NULL)
@@ -66,6 +53,9 @@ class Variable(models.Model):
 						('UINT','UINT'),
 						('UINT16','UINT16'),
 						('BOOL','BOOL'),
+						('BCD32','BCD32'),
+						('BCD24','BCD24'),
+						('BCD16','BCD16'),
 						)
 	value_class		= models.CharField(max_length=15, default='FLOAT', verbose_name="value_class",choices=value_class_choices)
 	def __unicode__(self):
@@ -74,7 +64,6 @@ class Variable(models.Model):
 
 
 class ClientWriteTask(models.Model):
-	id 				= models.AutoField(primary_key=True)
 	variable	 	= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
 	value			= models.FloatField()
 	user	 		= models.ForeignKey(User,null=True, on_delete=models.SET_NULL)
@@ -82,58 +71,27 @@ class ClientWriteTask(models.Model):
 	fineshed		= models.FloatField(default=0,blank=True)
 	done			= models.BooleanField(default=False,blank=True)
 	failed			= models.BooleanField(default=False,blank=True)
-	
-
-class RecordedTime(models.Model):
-	id 				= models.AutoField(primary_key=True)
-	timestamp 		= models.FloatField()
-	def __unicode__(self):
-		return unicode(datetime.datetime.fromtimestamp(int(self.timestamp)).strftime('%Y-%m-%d %H:%M:%S'))
-	def timestamp_ms(self):
-		return self.timestamp * 1000
-
-
-class RecordedDataFloat(models.Model):
-	id          = models.AutoField(primary_key=True)
-	value	    = models.FloatField()
-	variable	= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
-	time		= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
-	objects 	= RecordedDataValueManager()
-	def __unicode__(self):
-		return unicode(self.value)
-
-class RecordedDataInt(models.Model):
-	id          = models.AutoField(primary_key=True)
-	value       = models.IntegerField()
-	variable    = models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
-	time        = models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
-	objects     = RecordedDataValueManager()
-	def __unicode__(self):
-		return unicode(self.value)
-
-class RecordedDataBoolean(models.Model):
-	id          = models.AutoField(primary_key=True)
-	value       = models.NullBooleanField()
-	variable    = models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
-	time        = models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
-	objects     = RecordedDataValueManager()
-	def __unicode__(self):
-		return unicode(self.value)
 
 class RecordedDataCache(models.Model):
-	value	    = models.FloatField()
-	variable	= models.OneToOneField('Variable',null=True, on_delete=models.SET_NULL)
-	time		= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL)
-	last_change	= models.ForeignKey('RecordedTime',null=True, on_delete=models.SET_NULL,related_name="last_change")
-	version		= models.PositiveIntegerField(default=0,null=True,blank=True)
-	objects 		= RecordedDataValueManager()
+	id			= models.BigIntegerField(primary_key=True) 
+	float_value	= models.FloatField(default=None,blank=True,null=True,) # for all float types
+	int_value	= models.BigIntegerField(default=None,blank=True,null=True,) # for all intger types e.g. bool, uint8-32, int8-64 
+	variable	= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
+	last_update	= models.FloatField()
+	last_change	= models.FloatField()
 	def __unicode__(self):
-		return unicode(self.value)
-
-
+		return unicode(self.value())
+	def last_update_ms(self):
+		return self.last_update * 1000
+	def last_change_ms(self):
+		return self.last_change * 1000
+	def value(self):
+		if self.int_value != None:
+			return self.int_value
+		else:
+			return self.float_value
 
 class Log(models.Model):
-	id 				= models.AutoField(primary_key=True)
 	level			= models.IntegerField(default=0, verbose_name="level")
 	timestamp 		= models.FloatField()
 	message_short	= models.CharField(max_length=400, default='', verbose_name="short message")
@@ -145,7 +103,6 @@ class Log(models.Model):
 
 		
 class BackgroundTask(models.Model):
-	id 				= models.AutoField(primary_key=True)
 	start 			= models.FloatField(default=0)
 	timestamp 		= models.FloatField(default=0)
 	progress		= models.FloatField(default=0)
@@ -165,25 +122,14 @@ class BackgroundTask(models.Model):
 		return self.timestamp * 1000
 
 
-class VariableChangeHistory(models.Model):
-	id 				= models.AutoField(primary_key=True)
-	variable	 	= models.ForeignKey(Variable,null=True, on_delete=models.SET_NULL)
-	time        	= models.ForeignKey(RecordedTime,null=True, on_delete=models.SET_NULL)
-	field_choices 	= ((0,'active'),(1,'writable'),(2,'value_class'),(3,'variable_name'))
-	field			= models.PositiveSmallIntegerField(default=0,choices=field_choices)
-	old_value		= models.TextField(default='')
-	def __unicode__(self):
-		return unicode(self.field)
 
 class MailRecipient(models.Model):
-	id 				= models.AutoField(primary_key=True)
 	subject_prefix  = models.TextField(default='')
 	message_suffix	= models.TextField(default='')
 	to_email		= models.EmailField(default='')
 	
 	
 class Event(models.Model):
-	id 				= models.AutoField(primary_key=True)
 	label			= models.CharField(max_length=400, default='')
 	variable    	= models.ForeignKey(Variable,null=True, on_delete=models.SET_NULL)
 	level_choises	= 	(
@@ -250,14 +196,10 @@ class Event(models.Model):
 				prev_event.save()
 		return False	
 		
-		
-		
-		
-		
+
 class RecordedEvent(models.Model):
-	id          = models.AutoField(primary_key=True)
 	event		= models.ForeignKey(Event,null=True, on_delete=models.SET_NULL)
-	time_begin  = models.ForeignKey(RecordedTime,null=True, on_delete=models.SET_NULL)
-	time_end  	= models.ForeignKey(RecordedTime,null=True, on_delete=models.SET_NULL,related_name="time_end")
+	time_begin  = models.FloatField()
+	time_end  	= models.FloatField()
 	active		= models.BooleanField(default=False,blank=True)
 	

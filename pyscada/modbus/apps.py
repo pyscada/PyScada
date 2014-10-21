@@ -4,5 +4,5 @@ from django.utils.translation import ugettext_lazy as _
 
 
 class PyScadaModbusConfig(AppConfig):
-    name = 'pyscada_modbus'
+    name = 'pyscada.modbus'
     verbose_name = _("PyScada Modbus Client")

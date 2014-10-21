@@ -4,5 +4,5 @@ from django.utils.translation import ugettext_lazy as _
 
 
 class PyScadaHMIConfig(AppConfig):
-    name = 'pyscada_hmi'
+    name = 'pyscada.hmi'
     verbose_name = _("PyScada HMI")

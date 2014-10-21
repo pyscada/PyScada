@@ -211,7 +211,7 @@ body {
 */
 
 table.tablesorter thead tr .tablesorter-header {
-	background-image: url(/static/pyscada/img/unsorted.gif);
+	background-image: url(/static/pyscada/hmi/img/unsorted.gif);
 	background-repeat: no-repeat;
 	background-position: center right;
 	cursor:pointer;
@@ -222,12 +222,12 @@ table.tablesorter thead tr .tablesorter-header {
 }
 
 table.tablesorter thead tr .tablesorter-headerAsc {
-	background-image: url(/static/pyscada/img/asc.gif);
+	background-image: url(/static/pyscada/hmi/img/asc.gif);
 	
 }
 
 table.tablesorter thead tr .tablesorter-headerDesc {
-	background-image: url(/static/pyscada/img/desc.gif);
+	background-image: url(/static/pyscada/hmi/img/desc.gif);
 }
 
 table.tablesorter thead tr .tablesorter-header.sorter-false {

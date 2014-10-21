@@ -3,10 +3,6 @@ from pyscada import log
 from pyscada.models import ClientWriteTask
 from pyscada.models import Client
 from pyscada.models import RecordedEvent
-from pyscada.models import RecordedTime
-from pyscada.models import RecordedDataFloat
-from pyscada.models import RecordedDataInt
-from pyscada.models import RecordedDataBoolean
 from pyscada.models import RecordedDataCache
 from pyscada.models import Event
 from pyscada.utils import encode_value
@@ -177,8 +173,18 @@ class client:
             address      = var.modbusvariable.address
             bits_to_read = get_bits_by_class(var.value_class)
             events       = Event.objects.filter(variable=var)
-                
-            self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'name':var.name,'adr':address,'bits':bits_to_read,'fc':FC,'events':events}
+            prev_value   = RecordedDataCache.objects.filter(variable=var).last()
+            if prev_value:
+                prev_id = prev_value.id
+                if prev_value.float_value:
+                    value = prev_value.float_value
+                else:
+                    value = prev_value.int_value
+            else:
+                value = None
+                prev_id = None
+            
+            self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'name':var.name,'adr':address,'bits':bits_to_read,'fc':FC,'events':events,'prev_value':value,'prev_id':prev_id}
             if FC == 1: # coils
                 self.trans_coils.append([address,var.pk,FC])
             elif FC == 2: # discrete inputs
@@ -314,16 +320,16 @@ class client:
             return False
 
 class DataAcquisition:
-    def __init__(self):
-        self._dt        = float(settings.PYSCADA_MODBUS['polling_interval'])
+    def __init__(self):        
+        if settings.PYSCADA_MODBUS.has_key('cache_timeout'):
+            self._cache_timeout = float(settings.PYSCADA_MODBUS['cache_timeout'])*60 # in Minutes
+        else:
+            self._cache_timeout = 1440*60; # in Minutes default: 24h
+        
         self._com_dt    = 0
-        self._dvf       = []
-        self._dvi       = []
-        self._dvb       = []
         self._dvc       = []
         self._clients   = {}
         self.data       = {}
-        self._prev_data = {}
         self._prepare_clients()
 
     def _prepare_clients(self):
@@ -338,8 +344,10 @@ class DataAcquisition:
     def run(self):
         """
             request data
+            
+            
+            
         """
-        dt = time()
         ## if there is something to write do it 
         self._do_write_task()
         
@@ -347,67 +355,56 @@ class DataAcquisition:
         # take time
         self.time = time()
         
-        for idx in self._clients:
-            self.data[idx] = self._clients[idx].request_data()
+        for clt_idx in self._clients:
+            self.data[clt_idx] = self._clients[clt_idx].request_data()
         
         if not self.data:
             return 
         
-        
-        self._dvf = []
-        self._dvi = []
-        self._dvb = []
         self._dvc = []
-        del_idx   = []
-        upd_idx   = []
-        timestamp = RecordedTime(timestamp=self.time)
-        timestamp.save()
-        for idx in self._clients:
-            if self.data[idx]:
-                for var_idx in self._clients[idx].variables:
-                    store_value = False
+        upd_idx   = [] 
+        for clt_idx in self._clients:
+            if self.data[clt_idx]:
+                for var_idx in self._clients[clt_idx].variables:
+                    add_value = False # add the new value to database cache
                     value = 0
                     
-                    if self.data[idx].has_key(var_idx):
-                        if (self.data[idx][var_idx] != None):
-                            value = self.data[idx][var_idx]
-                            store_value = True
-                            if self._prev_data.has_key(var_idx):
-                                if value == self._prev_data[var_idx]:
-                                    store_value = False
-                                
-                            self._prev_data[var_idx] = value
-                    if store_value:
-                        self._dvc.append(RecordedDataCache(variable_id=var_idx,value=value,time=timestamp,last_change = timestamp))
-                        del_idx.append(var_idx)
-                        for event in self._clients[idx].variables[var_idx]['events']:
-                            event.do_event_check(timestamp,value)
-                    else:
-                        upd_idx.append(var_idx)
-                                
-                    if store_value and self._clients[idx].variables[var_idx]['record']:
-                        variable_class = self._clients[idx].variables[var_idx]['value_class']
-                        if variable_class.upper() in ['FLOAT','FLOAT64','DOUBLE']:
-                            self._dvf.append(RecordedDataFloat(time=timestamp,variable_id=var_idx,value=float(value)))
-                        elif variable_class.upper() in ['FLOAT32','SINGLE','REAL'] :
-                            self._dvf.append(RecordedDataFloat(time=timestamp,variable_id=var_idx,value=float(value)))
-                        elif  variable_class.upper() in ['INT32']:
-                            self._dvi.append(RecordedDataInt(time=timestamp,variable_id=var_idx,value=int(value)))
-                        elif  variable_class.upper() in ['WORD','UINT','UINT16']:
-                            self._dvi.append(RecordedDataInt(time=timestamp,variable_id=var_idx,value=int(value)))
-                        elif  variable_class.upper() in ['INT16','INT']:
-                            self._dvi.append(RecordedDataInt(time=timestamp,variable_id=var_idx,value=int(value)))
-                        elif variable_class.upper() in ['BOOL']:
-                            self._dvb.append(RecordedDataBoolean(time=timestamp,variable_id=var_idx,value=bool(value)))
-        
-        RecordedDataCache.objects.filter(variable_id__in=del_idx).delete()
-        RecordedDataCache.objects.filter(variable_id__in=upd_idx).update(time=timestamp)
+                    if self.data[clt_idx].has_key(var_idx): # 
+                        if (self.data[clt_idx][var_idx] != None): 
+                            value = self.data[clt_idx][var_idx]
+                            add_value = True
+                            variable_class  = self._clients[clt_idx].variables[var_idx]['value_class']
+                            prev_value      = self._clients[clt_idx].variables[var_idx]['prev_value']
+                            prev_id         = self._clients[clt_idx].variables[var_idx]['prev_id']
+
+                            if prev_value != None and prev_id !=None:
+                                if value == prev_value: 
+                                    add_value = False
+                                    upd_idx.append(prev_id)
+
+                    if add_value:
+                        pk_id = int(int(round(time()*100)))+int(var_idx* pow(10,12)) 
+                        self._clients[clt_idx].variables[var_idx]['prev_id']    =  pk_id
+                        self._clients[clt_idx].variables[var_idx]['prev_value'] =  value
+                        if variable_class.upper() in ['FLOAT','FLOAT64','DOUBLE','FLOAT32','SINGLE','REAL']:
+                            self._dvc.append(RecordedDataCache(id=pk_id, variable_id=var_idx,float_value=value,last_update=self.time,last_change = self.time))
+                        else:# <=int64 
+                            self._dvc.append(RecordedDataCache(id=pk_id, variable_id=var_idx,int_value=value,last_update=self.time,last_change = self.time))
+                        
+                        
+                    for event in self._clients[clt_idx].variables[var_idx]['events']:
+                        event.do_event_check(timestamp,value)
+                        
+                        
+        # add the new values
         RecordedDataCache.objects.bulk_create(self._dvc)
+        # update last_update time
+        RecordedDataCache.objects.filter(id__in = upd_idx).update(last_update=self.time)
+        # delete all objects that are older then the cache timeout
+        RecordedDataCache.objects.filter(last_update__lt=self.time-self._cache_timeout).delete()
         
-        RecordedDataFloat.objects.bulk_create(self._dvf)
-        RecordedDataInt.objects.bulk_create(self._dvi)
-        RecordedDataBoolean.objects.bulk_create(self._dvb)
-        return self._dt -(time()-dt)
+        
+        return True
     
     
     

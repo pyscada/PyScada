@@ -103,6 +103,10 @@ class Command(BaseCommand):
 
 class MainDaemon(Daemon):
     def run(self):
+        if settings.PYSCADA_MODBUS.has_key('polling_interval'):
+            dt_set = float(settings.PYSCADA_MODBUS['polling_interval'])
+        else:
+            dt_set = 5
         try:
             pf = file(self.pidfile,'r')
             pid = int(pf.read().strip())
@@ -128,17 +132,18 @@ class MainDaemon(Daemon):
         tp.save()
         log.notice("started dataaquisition daemon")
         while not tp.stop_daemon:
+            t_start = time()
             try:
-                dt = daq.run()
+                daq.run()
             except:
                 var = traceback.format_exc()
                 log.debug("exeption in dataaquisition daemon, %s" % var,-1)
                 daq = client.DataAcquisition()
-                dt = 5
             tp = BackgroundTask.objects.get(id=tp_id)    
             tp.timestamp = time()
-            tp.load= 1.-max(min(dt/daq._dt,1),0)
+            tp.load= 1.-max(min((time()-t_start)/dt_set,1),0)
             tp.save()
+            dt = time()-t_start
             if dt>0:
                 sleep(dt)
         try:

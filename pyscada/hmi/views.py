@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 from pyscada.models import Client
 from pyscada.models import Variable
-from pyscada.models import RecordedDataFloat
-from pyscada.models import RecordedDataInt
-from pyscada.models import RecordedDataBoolean
 from pyscada.models import RecordedDataCache
-from pyscada.models import RecordedTime
 from pyscada.models import RecordedEvent
 from pyscada.hmi.models import Chart
 from pyscada.hmi.models import Page
@@ -164,78 +160,41 @@ def	form_write_task(request):
 def get_cache_data(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
-	data = {}
-	if RecordedDataCache.objects.first():
-		data["timestamp"] = RecordedDataCache.objects.last().time.timestamp_ms()
-	else:
-		return HttpResponse('{\n}', content_type='application/json')
-	
-	active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True))
-	active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
-	active_variables = list(set(active_variables))
-
-	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__name','value','time__timestamp'))
-
-	for var in raw_data:
-		data[var[0]] = [var[1],var[2]*1000]
-
-	jdata = json.dumps(data,indent=2)
-	return HttpResponse(jdata, content_type='application/json')
-
-def data(request):
-	if not request.user.is_authenticated():
-		return HttpResponse('{\n}', content_type='application/json')
-	# read POST data
-	if request.POST.has_key('timestamp'):
-		timestamp = float(request.POST['timestamp'])/1000.0
-	else:
-		timestamp = time.time()
-	
-	# query timestamp pk's
-	if not RecordedTime.objects.last():
-		return HttpResponse('{\n}', content_type='application/json')
 		
-	rto 			= RecordedTime.objects.filter(timestamp__lt=float(timestamp),timestamp__gte=float(timestamp)-2*3600)
-	if rto.count()>0:
-		t_min_ts 		= rto.first().timestamp
-		t_min_pk 		= rto.first().pk
-		rto_ids			= list(rto.values_list('pk',flat=True))
+	timestamp = time.time()-120*60
+	if request.POST.has_key('timestamp'):
+		timestamp = max(float(request.POST['timestamp'])/1000.0,timestamp) # prevent from loading more then 120 Minutes of Data
+	if request.POST.has_key('init'):
+		init = request.POST.has_key('init')
 	else:
-		return HttpResponse('{\n}', content_type='application/json')
+		init = False
 	
 	variables = request.POST.getlist('variables[]')
-	#if variables:
-	#active_variables = Variable.objects.filter(pk__in=variables).values_list('pk',flat=True)
-	active_variables = variables;
-	#else:
-	#	return HttpResponse('{\n}', content_type='application/json')
-		
+	
 	data = {}
+	if RecordedDataCache.objects.last():
+		data["timestamp"] = RecordedDataCache.objects.last().last_update_ms()
+		data["server_time"] = time.time()*1000
+	else:
+		return HttpResponse('{\n}', content_type='application/json')
 	
-	for var in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'), pk__in = active_variables):
-		var_id = var.pk
-		rto = RecordedDataFloat.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
-		if rto:
-			data[var.name] = [(t_min_ts,rto.value)]
-			data[var.name].extend(list(RecordedDataFloat.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value')))
-		
-	for var in Variable.objects.filter(value_class__in = ('INT32','UINT32','INT16','INT','WORD','UINT','UINT16'),pk__in = active_variables):
-		var_id = var.pk
-		rto = RecordedDataInt.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
-		if rto:
-			data[var.name] = [(t_min_ts,rto.value)]
-			data[var.name].extend(list(RecordedDataInt.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value')))
-	
+	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=variables,last_update__gt=timestamp).values_list('variable__name','float_value','int_value','last_update','last_change'))
 
-	for var in Variable.objects.filter(value_class = 'BOOL', pk__in = active_variables):
-		var_id = var.pk
-		rto = RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
-		if rto:
-			data[var.name] = [(t_min_ts,rto.value)]
-			data[var.name].extend(list(RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value')))
-	for key in data:
-		for idx,item in enumerate(data[key]):
-			data[key][idx] = (item[0]*1000,item[1])
+	for var in raw_data:
+		if not data.has_key(var[0]):
+			data[var[0]] = [];
+		if var[4] != var[3] and init:  # if value is constant add a phantom datapoint
+			if var[1]!=None:
+				data[var[0]].append([var[4]*1000,var[1]])
+			else:
+				data[var[0]].append([var[4]*1000,var[2]])
+		if var[1]!=None:
+			data[var[0]].append([var[3]*1000,var[1]])
+		else:
+			data[var[0]].append([var[3]*1000,var[2]])
+
+			
+			
 	jdata = json.dumps(data,indent=2)
 	return HttpResponse(jdata, content_type='application/json')
 

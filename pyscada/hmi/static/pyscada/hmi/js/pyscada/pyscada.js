@@ -22,13 +22,13 @@ var log_frm = $('#page-log-form');
 var log_frm_mesg = $('#page-log-form-message')
 var csrftoken = $.cookie('csrftoken');
 var fetch_data_timeout = 5000;
-var refresh_rate = 5000;
-var cache_timeout = 15000;
+var refresh_rate = 2000;
+var cache_timeout = 15000; // in milliseconds
 var RootUrl = window.location.protocol+"//"+window.location.host + "/";
 var VariableKeys = []
 // the code
 var debug = 0;
-var InitDataStatusCount = 0;
+var DataFetchingProcessCount = 0;
 
 function showUpdateStatus(){
 	$("#AutoUpdateStatus").show();
@@ -38,19 +38,6 @@ function hideUpdateStatus(){
 	UpdateStatusCount = UpdateStatusCount -1;
 	if (UpdateStatusCount <= 0){
 		$("#AutoUpdateStatus").hide();
-	}
-}
-function registerInitData(){
-	if (InitDataStatusCount < 2){
-		InitDataStatusCount = InitDataStatusCount + 1;
-		return true
-	}else{
-		return false
-	}
-}
-function deregisterInitData(){
-	if (InitDataStatusCount > 0){
-		InitDataStatusCount = InitDataStatusCount - 1;
 	}
 }
 function raiseDataOutOfDateError(){
@@ -69,41 +56,50 @@ function clearDataOutOfDateError(){
 function fetchData() {
 	
 	if (auto_update_active) {
-		showUpdateStatus();
+		showUpdateStatus();		
 		$.ajax({
 			url: RootUrl+'json/cache_data/',
 			dataType: "json",
-			timeout: fetch_data_timeout,
+			timeout: ((data_first_timestamp == 0) ? fetch_data_timeout*10 : fetch_data_timeout),
 			type: "POST",
-			data:{ timestamp: data_last_timestamp,variables: VariableKeys},
+			data:{ timestamp: data_last_timestamp, variables: VariableKeys,init: ((data_first_timestamp == 0) ? true:false)},
 			success: function(data) {
-				timestamp = data['timestamp']
+				timestamp = data['timestamp'];
+				delete data['timestamp'];
+				server_time = data['server_time'];
+				delete data['server_time'];
+				
 				if (data_last_timestamp < timestamp){
 					data_last_timestamp = timestamp;
 				}
 				if (data_first_timestamp == 0){
 					data_first_timestamp = data_last_timestamp;
 				}
-				now = new Date();
-				now.setDate(now.getDate() - 1);
-				now = now.getTime();
-				if (timestamp < now){
+				DataOutOfDate = (server_time - timestamp  > cache_timeout);
+				if (DataOutOfDate){
 					raiseDataOutOfDateError();
+					$.each(PyScadaPlots,function(plot_id){
+						var variable_names = PyScadaPlots[plot_id].getVariableNames();
+						$.each(variable_names, function(key, val) {
+							PyScadaPlots[plot_id].addData(server_time,data_last_timestamp,Number.NaN);
+							updateDataValues(val,Number.NaN);
+						});
+					});
 				}else{
 					clearDataOutOfDateError();
 				}
 				$.each(data, function(key, val) {
 				//append data to data array
-					if (data_last_timestamp - val[1]  < cache_timeout){
+					if (!DataOutOfDate && typeof(val)==="object"){
 						$.each(PyScadaPlots,function(plot_id){
-							PyScadaPlots[plot_id].addData(key,val[1],val[0]);
+							PyScadaPlots[plot_id].AppendData(key,val);
 						});
-						updateDataValues(key,val[0]);
-					}else{
-						$.each(PyScadaPlots,function(plot_id){
-							PyScadaPlots[plot_id].addData(key,data_last_timestamp,Number.NaN);
-						});
-						updateDataValues(key,Number.NaN);
+						val = val.pop()
+						if (typeof(val[1])==="number"){
+							updateDataValues(key,val[1]);
+						}else{
+							updateDataValues(key,Number.NaN);
+						}
 					}
 				});
 				$.each(PyScadaPlots,function(plot_id){
@@ -122,9 +118,6 @@ function fetchData() {
 				}
 			},
 			error: function(x, t, m) {
-				if(JsonErrorCount % 5 == 0)
-					addNotification(t, 3);
-					
 				JsonErrorCount = JsonErrorCount + 1;
 				if (JsonErrorCount > 60) {
 					auto_update_active = false;
@@ -189,7 +182,6 @@ function updateLog() {
 			hideUpdateStatus();
 		},
 		error: function(x, t, m) {
-			addNotification(t, 3);
 			hideUpdateStatus();
 		}
 	});
@@ -256,7 +248,7 @@ function addNotification(message, level,timeout,clearable) {
     if(clearable){
     	$('#notification_area').append('<div id="notification_Nb' + NotificationCount + '" class="notification alert alert-' + level + ' alert-dismissable" style="position: fixed; top: ' + top + 'px; right: ' + right + 'px; "><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>'+message_pre+ new Date().toLocaleTimeString() + ': ' + message + '</div>');
     }else{
-    	$('#notification_area').append('<div id="notification_Nb' + NotificationCount + '" class="notification alert alert-' + level + '" style="position: fixed; top: ' + top + 'px; right: ' + right + 'px; ">'+message_pre+ new Date().toLocaleTimeString() + ': ' + message + '</div>');
+    	$('#notification_area_2').append('<div id="notification_Nb' + NotificationCount + '" class="notification alert alert-' + level + '" >'+message_pre+ new Date().toLocaleTimeString() + ': ' + message + '</div>');
     }
     if (timeout){
     	setTimeout('$("#notification_Nb' + NotificationCount + '").alert("close");', 7000);
@@ -340,7 +332,8 @@ function PyScadaPlot(id){
         }
 	},
 	series = [],		// just the active data series
-	keys   = [],		// list of variable keys
+	keys   = [],		// list of variable keys (ids)
+	variable_names = [], // list of all variable names 
 	data = {},			// all the data
 	flotPlot,			// handle to plot
 	BufferSize = 5760, 	// buffered points
@@ -358,7 +351,8 @@ function PyScadaPlot(id){
 	
 	
 	// public functions
-	plot.add				= add;
+	plot.AppendData			= AppendData;
+	plot.PreppendData		= PreppendData;
 	plot.addData 			= addData;
 	plot.update 			= update;
 	plot.prepare 			= prepare;
@@ -369,6 +363,8 @@ function PyScadaPlot(id){
 	plot.getFlotObject		= function () { return flotPlot};
 	plot.setWindowSize		= function (size){ WindowSize = size; update(); };
 	plot.getKeys			= function (){ return keys};
+	plot.getVariableNames	= function (){ return variable_names};
+
 	plot.getInitStatus		= function () { if(InitDone){return InitRetry}else{return false}};
 	plot.getId				= function () {return id};
 	// init data
@@ -379,6 +375,7 @@ function PyScadaPlot(id){
 		data[variable_name] = [];
 		variables[variable_name] = {'color':val_inst.data('color'),'yaxis':1}
 		keys.push(variable_key);
+		variable_names.push(variable_name);
 	});
 	
 	
@@ -475,9 +472,22 @@ function PyScadaPlot(id){
     	}
 	}
 	
-	function add(key,value){
+	function AppendData(key,value){
 		if (typeof(data[key])==="object"){
-			data[key] = value.concat(data[key]);
+			data[key] = data[key].concat(value);
+			if (data[key].length > BufferSize){
+        		// if buffer is full drop the first element
+       			data[key].splice(data[key].length-BufferSize);
+        	}
+    	}
+	}
+	function PreppendData(key,value){
+		if (typeof(data[key])==="object"){
+			data[key] = data[key].concat(value);
+			if (data[key].length > BufferSize){
+        		// if buffer is full drop the first element
+       			data[key].splice(data[key].length-BufferSize);
+        	}
     	}
 	}
 	
@@ -491,13 +501,6 @@ function PyScadaPlot(id){
 			}
 		}
 		if($(chart_container_id).is(":visible")){
-			if (!InitDone){
-				if(InitRetry <= 2){
-					loadInitData();
-				}else{
-					InitDone = true;	
-				}
-			}
 			// only update if plot is visible
 			// add the selected data series to the "series" variable
 			series = [];
@@ -519,34 +522,6 @@ function PyScadaPlot(id){
 			flotPlot.setupGrid();
 			flotPlot.draw();
 			$('.legend table').trigger("updateAll",["",function(table){}]);
-		}
-	}
-	
-	function loadInitData(){
-		// plot data
-		if (registerInitData()){
-			showUpdateStatus();
-			$.ajax({
-				url: RootUrl+'json/init_data/',
-				dataType: "json",
-				timeout: 29000,
-				type: 'post',
-				data: {timestamp:data_first_timestamp,variables:keys},
-				success: function(data) {
-						$.each(data,function(key,val){
-							add(key,val);
-						});
-					hideUpdateStatus();
-					deregisterInitData();
-					InitDone = true;
-				},
-				error: function(x, t, m) {
-					addNotification(t, 3);
-					hideUpdateStatus();
-					deregisterInitData();
-					InitRetry = InitRetry + 1;
-				}
-			});
 		}
 	}
 }
@@ -736,8 +711,8 @@ $( document ).ready(function() {
 		PyScadaPlots.push(new PyScadaPlot(id));
 	});
 	
-	$.each($('.variable-key'),function(key,val){
-		val = parseInt(val.innerHTML);
+	$.each($('.variable-config'),function(key,val){
+		val = parseInt($(val).data('key'));
 		if (VariableKeys.indexOf(val)==-1){
 			VariableKeys.push(val)
 		}

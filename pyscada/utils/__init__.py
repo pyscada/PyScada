@@ -60,7 +60,10 @@ def decode_value(value,variable_class):
 	if 	variable_class.upper() in ['BCD32','BCD24','BCD16']:
 		return decode_bcd(values)
 	else:
-		return value[0]
+		if value:
+			return value[0]
+		else:
+			return None
 
 def encode_float(value):
 	"""

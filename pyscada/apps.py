@@ -5,4 +5,4 @@ from django.utils.translation import ugettext_lazy as _
 
 class PyScadaConfig(AppConfig):
     name = 'pyscada'
-    verbose_name = _("PyScada")
+    verbose_name = _("PyScada Core")
