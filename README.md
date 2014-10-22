@@ -53,7 +53,7 @@ create a new database (PyScada_db) for PyScada, add a new user and grand the nec
 
 ```
 mysql -u root -p -e "CREATE DATABASE PyScada_db CHARACTER SET utf8; GRANT ALL PRIVILEGES ON PyScada_db.* TO 'PSS-user'@'localhost' IDENTIFIED BY 'PySadaServer-user-password';"
-`` 
+``` 
 
 ## Django settings ##
 
