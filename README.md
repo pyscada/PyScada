@@ -13,6 +13,7 @@ Features
 	- Modbus RTU (in development)
 	- Modbus ASCII (in development)
 	- BACNet IP (in development)
+	- Meter-Bus, MBus (in development)
 * very low Hardware requirements for the Server
 
 
@@ -24,12 +25,35 @@ Dependencies
 * pymodbus>=1.2
 * numpy>=1.6.0
 * h5py>=2.1.1
-
+* pillow
 
 Quick Start
 -----------
 
+## download PyScada ##
 
+```
+
+```
+
+
+## new Django project ##
+
+start a new Django project
+
+```
+cd ~/www
+django-admin.py startproject PyScadaServer
+cd PySadaServer
+```
+
+## setup the MySql ##
+
+create a new database (PyScada_db) for PyScada, add a new user and grand the necessary rights
+
+```
+mysql -u root -p -e "CREATE DATABASE PyScada_db CHARACTER SET utf8; GRANT ALL PRIVILEGES ON PyScada_db.* TO 'PSS-user'@'localhost' IDENTIFIED BY 'PySadaServer-user-password';"
+`` 
 
 ## Django settings ##
 
@@ -52,10 +76,23 @@ INSTALLED_APPS = (
 )
 ```
 
-and add the following PyScada specific parameters to your settings file.
+adjust the database settings
+
+```
+'default': {
+        'ENGINE': 'django.db.backends.mysql',   
+        'NAME': 'PyScada_db',                      
+        'USER': 'PSS-user',                
+        'PASSWORD': 'PySadaServer-user-password'        
+    }
+```
+
+and add the following PyScada specific parameters to your settings (PySadaServer/settings.py) file.
 
 
 ```
+STATIC_ROOT = BASE_DIR + '/static/'
+
 # PyScada settings
 # https://github.com/trombastic/PyScada
 
@@ -79,13 +116,27 @@ PYSCADA_CLIENTS = (
 PYSCADA_MODBUS = {
 	'polling_interval':1,
 	'recording_intervall':5,
-	'pid_file_name': 'daemon-modbus.pid'
+	'cache_timeout':1440,
+	'pid_file_name': 'modbus-daemon.pid'
 }
 
 ```
 
+urls.py
+
+```
+urlpatterns = patterns('',
+...
+    url(r'^', include('pyscada.urls')),
+...
+)
+```
 
 
+## setup PyScadaServer ##
 
-
+```
+python manage.py migrate
+python manage.py collectstatic
+```
 
