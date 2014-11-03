@@ -70,7 +70,7 @@ def export_database_to_h5(time_id_min=None,filename=None,time_id_max=None):
     tp.max = math.ceil((last_time_id-first_time_id)/chunk_size)
     tp.save()
     pre_data = {}
-    while last_time_id>=last_time_id_chunk:
+    while last_time_id>=first_time_id_chunk:
         pre_data = _export_data_to_h5(first_time_id_chunk,min(last_time_id_chunk,last_time_id),bf,tp,pre_data)
         first_time_id_chunk = last_time_id_chunk +1
         last_time_id_chunk += chunk_size
