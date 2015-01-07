@@ -321,11 +321,6 @@ class client:
 
 class DataAcquisition:
     def __init__(self):        
-        if settings.PYSCADA_MODBUS.has_key('cache_timeout'):
-            self._cache_timeout = float(settings.PYSCADA_MODBUS['cache_timeout'])*60 # in Minutes
-        else:
-            self._cache_timeout = 1440*60; # in Minutes default: 24h
-        
         self._com_dt    = 0
         self._dvc       = []
         self._clients   = {}
@@ -400,8 +395,7 @@ class DataAcquisition:
         RecordedDataCache.objects.bulk_create(self._dvc)
         # update last_update time
         RecordedDataCache.objects.filter(id__in = upd_idx).update(last_update=self.time)
-        # delete all objects that are older then the cache timeout
-        RecordedDataCache.objects.filter(last_update__lt=self.time-self._cache_timeout).delete()
+        
         
         
         return True
