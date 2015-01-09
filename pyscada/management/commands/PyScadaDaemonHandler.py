@@ -96,21 +96,16 @@ class Command(BaseCommand):
                 while 1:
                     os.kill(pid, 15)
                     sleep(0.1)
-                bt = BackgroundTask.objects.filter(pid = pid).last()
-                bt.pid = 0
-                bt.done = True
-                bt.timestamp = time()
-                bt.message = 'force stopped'
-                bt.save()
             except OSError, err:
                 err = str(err)
                 if err.find("No such process") > 0:
                     bt = BackgroundTask.objects.filter(pid = pid).last()
-                    bt.pid = 0
-                    bt.timestamp = time()
-                    bt.message = 'kill failed'
-                    bt.failed = True
-                    bt.save()
+                    if bt:
+                        bt.pid = 0
+                        bt.done = True
+                        bt.timestamp = time()
+                        bt.message = 'force stopped'
+                        bt.save()
         else:
             self.stdout.write("daemon is not running")
         

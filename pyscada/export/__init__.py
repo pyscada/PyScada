@@ -1,22 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from datetime import timedelta
-from datetime import datetime
-import os
-from time import time, localtime, strftime,mktime
-from numpy import float64,float32,int32,uint16,int16,uint8, nan
-import math
-
 from pyscada import log
 from pyscada.models import Variable
-from pyscada.models import RecordedDataFloat
-from pyscada.models import RecordedDataInt
-from pyscada.models import RecordedDataBoolean
-from pyscada.models import RecordedTime
+from pyscada.models import RecordedDataCache
 from pyscada.models import BackgroundTask
+from pyscada.models import BackupFile
 from pyscada.export.hdf5 import mat
-from django.db import connection
 
+from django.conf import settings
+import os
+from time import time, localtime, strftime,mktime,sleep
+from numpy import float64,float32,int32,uint16,int16,uint8,nan,inf
+import math
 
 """
 export measurements from the database to a file
@@ -26,181 +21,187 @@ export measurements from the database to a file
 def timestamp_unix_to_matlab(timestamp):
     return (timestamp/86400)+719529
 
+def drange(start, stop, step):
+    r = start
+    while r < stop:
+        yield r
+        r += step
 
-def export_database_to_h5(time_id_min=None,filename=None,time_id_max=None):
-    tp = BackgroundTask(start=time(),label='data export',message='init',timestamp=time())
-    tp.save()
-    
-    if filename is None:
-        backup_file_path = os.path.expanduser('~/measurement_data_dumps')
-        backup_file_name = 'measurement_data'
-        if not os.path.exists(backup_file_path ):
-            os.mkdir(backup_file_path)
-        cdstr = strftime("%Y_%m_%d_%H%M",localtime())
-        filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '.h5')
-    
-    bf = mat(filename)
-    
-    last_time_id = RecordedTime.objects.last().pk
-    first_time_id = RecordedTime.objects.first().pk
-    if type(time_id_min) is str:
-        timestamp = mktime(datetime.strptime(time_id_min, "%d-%b-%Y %H:%M:%S").timetuple())
-        time_id_min = RecordedTime.objects.filter(timestamp__gte=timestamp).first().pk
-    if time_id_max is not None:
-        last_time_id = min(last_time_id,time_id_max)
-    
-    if time_id_min is None:
-        first_time_id = RecordedTime.objects.filter(timestamp__lte=time()-86460).last()
-        if first_time_id:
-            first_time_id = first_time_id.pk
-        else:
-            first_time_id = RecordedTime.objects.first().pk
-    else:
-        first_time_id = max(first_time_id,time_id_min)
-    
-    
-    chunk_size = 17280
-    first_time_id_chunk = first_time_id
-    last_time_id_chunk = first_time_id + chunk_size
-    if last_time_id_chunk > last_time_id:
-        last_time_id_chunk = last_time_id
-    
-    tp.timestamp = time()
-    tp.message = 'first chunk'
-    tp.max = math.ceil((last_time_id-first_time_id)/chunk_size)
-    tp.save()
-    pre_data = {}
-    while last_time_id>=last_time_id_chunk:
-        pre_data = _export_data_to_h5(first_time_id_chunk,min(last_time_id_chunk,last_time_id),bf,tp,pre_data)
-        first_time_id_chunk = last_time_id_chunk +1
-        last_time_id_chunk += chunk_size
-        tp.timestamp = time()
-        tp.message = 'next chunk'
-        tp.progress = tp.progress +1
+def backup_cache_data():
+    # check for active backuptasks
+    if BackgroundTask.objects.filter(pid__gt = 0, label= 'pyscada.export.backup_cache_data'):
+        wait_count = 0
+        tp = BackgroundTask(start=time(),label='pyscada.export.backup_cache_data',message='waiting...',timestamp=time(),pid=os.getpid())
         tp.save()
-    
-    tp.timestamp = time()
-    tp.message = 'done'
-    tp.progress = tp.max
-    tp.done = 1
-    tp.save()
-    
-def _export_data_to_h5(first_time_id,last_time_id,bf,tp,pre_data):
-    tp.timestamp = time()
-    tp.message = 'reading time values from SQL'
-    tp.save()
-    
-    
-    first_time = RecordedTime.objects.get(id=first_time_id)
-    time_id_min = BackgroundTask.objects.filter(label='data acquision daemon',start__lte=first_time.timestamp).last()
-    if time_id_min:
-        time_id_min = RecordedTime.objects.filter(timestamp__lte = time_id_min.start).last()
-        if time_id_min:
-            time_id_min = time_id_min.id
-            log.debug(("time_id_min %d to first_time_id %d")%(time_id_min,first_time_id))
-        else:
-            time_id_min = 1
-    else:
-        time_id_min = 1
+        tp_id = tp.pk
+        while BackgroundTask.objects.filter(pid__gt = 0, label= 'pyscada.export.backup_cache_data',pk__lt=tp_id):
+            for bt in BackgroundTask.objects.filter(pid__gt = 0, label= 'pyscada.export.backup_cache_data',pk__lt=tp_id):
+                # check if process is alive
+                try:
+                    os.kill(bt.pid, 0)
+                except OSError:
+                    # process is dead
+                    bt.pid = 0
+                    bt.message = 'dead'
+                    bt.timestamp = time()
+                    bt.save()
+                    
+            if wait_count > 3600:
+                log.notice("data export daemon: instance already running")
+                tp = BackgroundTask.objects.get(pk=tp_id)
+                tp.done = True
+                tp.progress = 1
+                tp.max = 1
+                tp.pid = 0
+                tp.message   = 'finished'
+                tp.timestamp = time()
+                tp.save()
+                return
+            wait_count += 1
+            if wait_count%15 == 0:
+                tp = BackgroundTask.objects.get(pk=tp_id)
+                tp.timestamp = time()
+                tp.message('waiting...')
+                tp.save()
+            sleep(1)
         
-    timevalues = [timestamp_unix_to_matlab(element) for element in RecordedTime.objects.filter(id__range = (first_time_id,last_time_id)).values_list('timestamp',flat=True)]
-    time_ids = list(RecordedTime.objects.filter(id__range = (first_time_id,last_time_id)).values_list('id',flat=True))
+        tp = BackgroundTask.objects.get(pk=tp_id)
+        tp.timestamp = time()
+        tp.message = 'init'
+        tp.save()
+    else:    
+        tp = BackgroundTask(start=time(),label='pyscada.export.backup_cache_data',message='init',timestamp=time(),pid=os.getpid())
+        tp.save()
+        tp_id = tp.pk
+    # set file path
+    if settings.PYSCADA_EXPORT.has_key('backup_path'):
+        backup_file_path = os.path.expanduser(settings.PYSCADA_EXPORT['backup_path'])
+    else:
+        backup_file_path = os.path.expanduser('~/measurement_data_dumps')
+    # set filename
+    if settings.PYSCADA_EXPORT.has_key('backup_filename_prefix'):    
+        backup_file_name = settings.PYSCADA_EXPORT['backup_filename_prefix']
+    else:
+        backup_file_name = 'measurement_data'
+    # create dir if nessecery
+    if not os.path.exists(backup_file_path ):
+        os.mkdir(backup_file_path)
+        
     
+    
+    if  BackupFile.objects.filter(active=False).last():
+        first_time = BackupFile.objects.last().time_end
+    else:
+        first_time = 0
+    
+    
+    tp = BackgroundTask.objects.get(pk=tp_id)
+    tp.timestamp = time()
+    tp.message = 'reading cache data'
+    tp.save()
+    
+    active_vars = Variable.objects.filter(active = 1,record = 1,client__active=1).order_by('pk')
+    raw_data = list(RecordedDataCache.objects.filter(last_update__gt=first_time,variable_id__in=active_vars).values_list('variable_id','float_value','int_value','last_update','last_change'))
+    data = {}
+    
+    
+    tp = BackgroundTask.objects.get(pk=tp_id)
+    tp.timestamp = time()
+    tp.message = 'prepare raw data'
+    tp.save()
+    
+    last_time = first_time
+    if first_time == 0:
+        first_time = inf
+        
+    for var in raw_data:
+        last_time   = max(last_time,var[3])
+        first_time  = min(first_time,var[3])
+        if not data.has_key(var[0],):
+            data[var[0]] = [];
+        if var[4] != var[3]:  # if value is constant add a pantom datapoint
+            if var[1]!=None:
+                data[var[0]].append([timestamp_unix_to_matlab(var[4]),var[1]])
+            else:
+                data[var[0]].append([timestamp_unix_to_matlab(var[4]),var[2]])
+        if var[1]!=None:
+            data[var[0]].append([timestamp_unix_to_matlab(var[3]),var[1]])
+        else:
+            data[var[0]].append([timestamp_unix_to_matlab(var[3]),var[2]])
+    
+    ## time vector
+    if settings.PYSCADA_EXPORT.has_key('recording_interval'):
+        rec_interv = settings.PYSCADA_EXPORT['recording_interval']
+    else:
+        rec_interv = 5 # seconds
+    
+    timevalues = list(drange(timestamp_unix_to_matlab(first_time+rec_interv),timestamp_unix_to_matlab(last_time),rec_interv/24.0/60.0/60.0))
+    
+    tp = BackgroundTask.objects.get(pk=tp_id)
     tp.timestamp = time()
     tp.message = 'writing time values to file'
     tp.save()
-    
-    
-    bf.write_data('time',float64(timevalues))
-    bf.reopen()
-    
-    data = {}
-    active_vars = list(Variable.objects.filter(active = 1,record = 1,client__active=1).values_list('pk',flat=True));
-    tp.timestamp = time()
-    tp.message = 'reading float data values from SQL'
-    tp.save()
-    
-    raw_data = list(RecordedDataFloat.objects.filter(time_id__range = (first_time_id,last_time_id),variable_id__in=active_vars).values_list('variable_id','time_id','value'))
-    
-    tp.timestamp = time()
-    tp.message = 'prepare raw float data'
-    tp.save()
-    
-    
-    for item in raw_data:
-        if not data.has_key(item[0]):
-            data[item[0]] = []
-        data[item[0]].append([item[1],item[2]])
-    
-    
-    tp.timestamp = time()
-    tp.message = 'reading int data values from SQL'
-    tp.save()
-    
-    raw_data = []
-    raw_data = list(RecordedDataInt.objects.filter(time_id__range = (first_time_id,last_time_id),variable_id__in=active_vars).values_list('variable_id','time_id','value'))
-    
-    tp.timestamp = time()
-    tp.message = 'prepare raw int data'
-    tp.save()
-    
-    
-    for item in raw_data:
-        if not data.has_key(item[0]):
-            data[item[0]] = []
-        data[item[0]].append([item[1],item[2]])
-    
-    tp.timestamp = time()
-    tp.message = 'reading bool data values from SQL'
-    tp.save()
-    
-    raw_data = []
-    raw_data = list(RecordedDataBoolean.objects.filter(time_id__range = (first_time_id,last_time_id),variable_id__in=active_vars).values_list('variable_id','time_id','value'))
-    
-    tp.timestamp = time()
-    tp.message = 'prepare raw bool data'
-    tp.save()
-    
-    
-    for item in raw_data:
-        if not data.has_key(item[0]):
-            data[item[0]] = []
-        data[item[0]].append([item[1],item[2]])
-    
-    raw_data = []
-    
-    tp.timestamp = time()
-    tp.message = 'writing data to file'
-    tp.save()
-    
-    pre_data = {}
-    for var in Variable.objects.filter(active = 1,record = 1,client__active=1).order_by('pk'):
+    if not raw_data:
+        log.notice("data export daemon: no data to export")
+        tp = BackgroundTask.objects.get(pk=tp_id)
+        tp.done = True
+        tp.progress = 1
+        tp.max = 1
+        tp.pid = 0
+        tp.message   = 'finished'
         tp.timestamp = time()
-        tp.message = 'processing variable_id %d'%var.pk
         tp.save()
+        return
         
-        var_id = var.pk
-        variable_class = var.value_class
-        first_record = False
-        if data.has_key(var_id):
-            records = data[var_id]
-            if records[0][0] == first_time_id:
-                first_record = True
-            
-        else:
-            records = []
-            
-        if not first_record:
-            if pre_data.has_key(var_id):
-                records.insert(0,pre_data[var_id])
-                first_record = True
-            else:
-                first_record = _last_matching_record(variable_class,first_time_id,var_id,time_id_min)
-                if first_record:
-                    records.insert(0,first_record)
-        
-        if not first_record and not records:
-            tmp = [0]*len(time_ids)
+    filename = os.path.join(backup_file_path,backup_file_name + '_%s.h5'%strftime("%Y_%m_%d_%H%M",localtime()))
+    bf = BackupFile(file=filename)
+    bf.active = True
+    bf.time_begin = first_time
+    bf.time_end   = last_time
+    bf.save()
+    bf_id = bf.pk  
+    
+    # write time values to hdf5 file
+    h5 = mat(filename)
+    h5.write_data('time',float64(timevalues))
+    h5.reopen()
+    
+    
+    ## write variables to file
+    for var in Variable.objects.filter(active = 1,record = 1,client__active=1).order_by('pk'):
+            # init empty temporary value
+            tmp = [0.0]*len(timevalues)
+            if data.has_key(var.id):
+                tp = BackgroundTask.objects.get(pk=tp_id)
+                tp.timestamp = time()
+                tp.message = 'write variable %d'% var.id
+                tp.progress = tp.progress + 1
+                tp.save()
+                # prepare values
+                c = 0 # data idx counter
+                t = 0 # time idx counter
+                for timevalue in drange(timestamp_unix_to_matlab(first_time+rec_interv),timestamp_unix_to_matlab(last_time),rec_interv/24.0/60.0/60.0):
+                    m = 0.0 # mean counter
+                    mean_tmp = 0.0 # mean sum value
+                    if c >= len(data[var.id]):
+                        continue
+                    while data[var.id][c][0] <= timevalue:
+                        mean_tmp += data[var.id][c][1]     
+                        c += 1
+                        m += 1.0
+                        if c >= len(data[var.id]):
+                            break
+                        
+                    if m>0:    
+                        tmp[t] = mean_tmp/m
+                    else:
+                        if t >0:
+                            tmp[t] = tmp[t-1]
+                        else:
+                            tmp[t] = 0
+                    t += 1
+                            
+            variable_class = var.value_class
             if variable_class.upper() in ['FLOAT','FLOAT64','DOUBLE'] :
                 tmp = float64(tmp)
             elif variable_class.upper() in ['FLOAT32','SINGLE','REAL'] :
@@ -216,101 +217,19 @@ def _export_data_to_h5(first_time_id,last_time_id,bf,tp,pre_data):
             else:
                 tmp = float64(tmp)
             
-            bf.write_data(var.name,tmp)
-            bf.reopen()
-            continue
-        
-        #blow up data ##########################################################
-        
-        tmp = [0]*len(time_ids)
-        t_idx = 0
-        v_idx = 0
-        nb_v_idx = len(records)-1
-        for id in time_ids:
-            if nb_v_idx < v_idx: 
-                if t_idx > 0:
-                    tmp[t_idx] = tmp[t_idx-1]
-            else:
-                if records[v_idx][0]==id:
-                    tmp[t_idx] = records[v_idx][1]
-                    laid = id
-                    v_idx += 1
-                elif t_idx > 0:
-                    tmp[t_idx] = tmp[t_idx-1]
-                elif records[v_idx][0]<=id:
-                    tmp[t_idx] = records[v_idx][1]
-                    laid = id
-                    v_idx += 1
+            h5.write_data(var.name,tmp)
+            h5.reopen()
     
-                if nb_v_idx > v_idx:
-                    logged = False
-                    while records[v_idx][0]<=id and v_idx <= nb_v_idx:
-                        if not logged:
-                            log.debug(("double id %d in var %d")%(id,var_id))
-                            logged = True
-                        v_idx += 1
-            t_idx += 1
-        pre_data[var_id] = tmp[-1]        
-        if variable_class.upper() in ['FLOAT','FLOAT64','DOUBLE'] :
-            tmp = float64(tmp)
-        elif variable_class.upper() in ['FLOAT32','SINGLE','REAL'] :
-            tmp = float32(tmp)
-        elif  variable_class.upper() in ['INT32']:
-            tmp = int32(tmp)
-        elif  variable_class.upper() in ['WORD','UINT','UINT16']:
-            tmp = uint16(tmp)    
-        elif  variable_class.upper() in ['INT16','INT']:
-            tmp = int16(tmp)
-        elif variable_class.upper() in ['BOOL']:
-            tmp = uint8(tmp)
-        else:
-            tmp = float64(tmp)
-        
-        bf.write_data(var.name,tmp)
-        bf.reopen()
-    return pre_data
-        
-    
-    """
-    end for ###################################################################################
-    """
-    
-
-def _last_matching_record(variable_class,time_id,variable_id,time_id_min):
-    cursor = connection.cursor()
-    if variable_class.upper() in ['FLOAT32','SINGLE','FLOAT','FLOAT64','REAL']:
-        item = cursor.execute("SELECT time_id,value FROM pyscada_recordeddatafloat WHERE time_id <= %s AND time_id >= %s AND  variable_id = %s ORDER BY time_id DESC LIMIT 1;",[time_id,time_id_min,variable_id])
-        #item = cursor.execute("SELECT time_id,value FROM pyscada_recordeddatafloat WHERE id = (SELECT max(id) FROM pyscada_recordeddataboolean WHERE time_id <= %s AND time_id >= %s AND  variable_id = %s);",[time_id,time_id_min,variable_id])
-    elif variable_class.upper() in ['INT32','UINT32','INT16','INT','WORD','UINT','UINT16']:
-        item = cursor.execute("SELECT time_id,value FROM pyscada_recordeddataint WHERE time_id <= %s AND time_id >= %s AND variable_id = %s ORDER BY time_id DESC LIMIT 1;",[time_id,time_id_min,variable_id])
-        #item = cursor.execute("SELECT time_id,value FROM pyscada_recordeddataint WHERE id = (SELECT max(id) FROM pyscada_recordeddataboolean WHERE time_id <= %s AND time_id >= %s AND  variable_id = %s);",[time_id,time_id_min,variable_id])
-
-    elif variable_class.upper() in ['BOOL']:
-        item = cursor.execute("SELECT time_id,value FROM pyscada_recordeddataboolean WHERE time_id <= %s AND time_id >= %s AND variable_id = %s ORDER BY time_id DESC LIMIT 1;",[time_id,time_id_min,variable_id])    
-        #item = cursor.execute("SELECT time_id,value FROM pyscada_recordeddataboolean WHERE id = (SELECT max(id) FROM pyscada_recordeddataboolean WHERE time_id <= %s AND time_id >= %s AND  variable_id = %s);",[time_id,time_id_min,variable_id])
-
-    else:
-        return None
-    
-    if 1 == item:
-        return cursor.fetchone()
-    else:
-        return None
-'''
-def _last_matching_records(variable_class,time_id_min,time_id_max,variable_id):
-    cursor = connection.cursor()
-    if variable_class.upper() in ['FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'] :
-        item = cursor.execute("SELECT time_id,value FROM pyscada_recordeddatafloat WHERE time_id > %s AND time_id < %s AND variable_id = %s;",[time_id_min,time_id_max,variable_id])
-    elif variable_class.upper() in ['INT32','UINT32','INT16','INT','WORD','UINT','UINT16'] :
-        item = cursor.execute("SELECT time_id,value FROM pyscada_recordeddataint WHERE time_id > %s AND time_id < %s AND variable_id = %s;",[time_id_min,time_id_max,variable_id])
-    elif variable_class.upper() in ['BOOL'] :
-        item = cursor.execute("SELECT time_id,value FROM pyscada_recordeddataboolean WHERE time_id > %s AND time_id < %s AND variable_id = %s;",[time_id_min,time_id_max,variable_id])
-
-    else:
-        return None
-    
-    if item > 0:
-        return cursor.fetchall()
-    else:
-        return None
-'''
+    # update Backupfile info
+    bf = BackupFile.objects.get(pk = bf_id)
+    bf.active = False
+    bf.save()
+    # update task info
+    tp = BackgroundTask.objects.get(pk=tp_id)
+    tp.done = True
+    tp.progress = 1
+    tp.max = 1
+    tp.message   = 'finished'
+    tp.timestamp = time()
+    tp.pid = 0
+    tp.save()

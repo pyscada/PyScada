@@ -202,4 +202,10 @@ class RecordedEvent(models.Model):
 	time_begin  = models.FloatField()
 	time_end  	= models.FloatField()
 	active		= models.BooleanField(default=False,blank=True)
+
+class BackupFile(models.Model):
+	file 		= models.FileField()
+	time_begin  = models.FloatField()
+	time_end  	= models.FloatField()
+	active		= models.BooleanField(default=False,blank=True)
 	

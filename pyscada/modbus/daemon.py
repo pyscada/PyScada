@@ -2,10 +2,9 @@
 # -*- coding: utf-8 -*- 
 from pyscada import log
 from pyscada.modbus import client
-from django.core.management.base import BaseCommand, CommandError
 from pyscada.models import BackgroundTask
 from django.conf import settings
-import os,sys
+import os
 from time import sleep,time
 import traceback
 
@@ -21,7 +20,7 @@ def run():
     # register the task in Backgroudtask list
     bt = BackgroundTask(start=time(),label=label,message='daemonized',timestamp=time(),pid = pid)
     bt.save()
-    
+    bt_id = bt.pk
     # start the dataaquasition
     try:
         daq = client.DataAcquisition()
@@ -29,7 +28,7 @@ def run():
         var = traceback.format_exc()
         log.error("exeption in dataaquisition daemon, %s" % var)
         # on error mark the task as failed
-        bt = BackgroundTask.objects.filter(pid=pid).last()
+        bt = BackgroundTask.objects.get(pk=bt_id)
         bt.message = 'failed'
         bt.failed = True
         bt.timestamp = time()
@@ -37,7 +36,7 @@ def run():
         raise
     
     # mark the task as running
-    bt = BackgroundTask.objects.filter(pid=pid).last()
+    bt = BackgroundTask.objects.get(pk=bt_id)
     bt.timestamp = time()
     bt.message = 'running...'
     bt.save()
@@ -57,7 +56,7 @@ def run():
                 log.debug("occ: %d, exeption in dataaquisition daemon\n\n %s" % (err_count,var),-1)
             err_count +=1
             daq = client.DataAcquisition()
-        bt = BackgroundTask.objects.filter(pid=pid).last()   
+        bt = BackgroundTask.objects.get(pk=bt_id)   
         bt.timestamp = time()
         if dt_set>0:
             bt.load= 1.-max(min((time()-t_start)/dt_set,1),0)
@@ -70,7 +69,7 @@ def run():
     
     ## will be called after stop signal
     log.notice("stopped dataaquisition daemon execution")
-    bt = BackgroundTask.objects.filter(pid=pid).last()    
+    bt = BackgroundTask.objects.get(pk=bt_id)    
     bt.timestamp = time()
     bt.done = True
     bt.message = 'stopped'
