@@ -93,6 +93,10 @@ and add the following PyScada specific parameters to your settings (PySadaServer
 ```
 STATIC_ROOT = BASE_DIR + '/static/'
 
+MEDIA_URL = '/media/'
+
+MEDIA_ROOT = BASE_DIR + '/media/'
+
 # PyScada settings
 # https://github.com/trombastic/PyScada
 
@@ -103,23 +107,28 @@ PID_ROOT = BASE_DIR + '/run/'
 # 
 PYSCADA_CLIENTS = (
 	('modbus','Modbus Client',),
+	('systemstat','Monitor Local System',),
 )
 
 # parameters for the Modbus Client
 # 	polling_interval 	how often the modbus client requests data
 #						from devices and write to the cache
 #
-#	recording_intervall	how often the data is written to the database
+#	recording_intervall how often the data is written to the database
 #
 # 	pid_file			file were the daemon pid is stored
 
 PYSCADA_MODBUS = {
-	'polling_interval':1,
-	'recording_intervall':5,
-	'cache_timeout':1440,
-	'pid_file_name': 'modbus-daemon.pid'
+    'polling_interval':5,
+    'recording_interval':5,
+    'pid_file_name': 'daemon-modbus.pid'
 }
 
+PYSCADA_SYSTEMSTAT = {
+    'polling_interval':5,
+    'recording_interval':5,
+    'pid_file_name': 'daemon-sysstat.pid'
+}
 ```
 
 urls.py

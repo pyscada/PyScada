@@ -16,8 +16,10 @@ import datetime
 
 class VariableAdminForm(forms.ModelForm):
     json_configuration = forms.CharField(widget=forms.Textarea)
+    
     class Meta:
-        model = Variable
+		fields = []
+		model = Variable
 
 class VariableImportAdmin(admin.ModelAdmin):
     actions = None

@@ -32,7 +32,9 @@ class ChartAdmin(admin.ModelAdmin):
     #ordering = ['position',]
     search_fields = ['name',]
     filter_horizontal = ('variables',)
-    list_display = ('title',)
+    List_display_link = ('title',)
+    list_display = ('id','title',)
+    list_filter = ('widget',)
     form = ChartForm
     def name(self, instance):
         return instance.variables.name
