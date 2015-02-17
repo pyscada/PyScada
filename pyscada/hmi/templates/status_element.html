@@ -9,6 +9,8 @@
 		<li><span class="label label-default type-bool status-yello var-{{ item.variable.name }}">{{ item.label }}</span></li>
 	{% elif item.type == 4 %}<!-- label alarm -->
 		<li><span class="label label-default type-bool status-red var-{{ item.variable.name }}">{{ item.label }}</span></li>
+        {% elif item.type == 7 %}<!-- label alarm inverted -->
+                <li><span class="label label-default type-bool status-red-inv var-{{ item.variable.name }}">{{ item.label }}</span></li>
 	{% elif item.type == 6 %}<!-- display value -->
 		<li><span class="label label-default type-label">{{ item.label }}: <span class="type-unit"><span class="type-numeric var-{{ item.variable.name }}">0.0</span> {{ item.variable.unit.unit }}</span></span></li>
 	{% endif %}

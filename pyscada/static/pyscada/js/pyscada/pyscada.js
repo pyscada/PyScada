@@ -1,6 +1,6 @@
 /* Javascript library for the PyScada web client based on jquery and flot, 
 
-version 0.6.9
+version 0.6.10
 
 Copyright (c) 2013-2014 Martin Schröder
 Licensed under the GPL.
@@ -48,8 +48,6 @@ function fetchConfig(){
 				PyScadaPlots.push(new PyScadaPlot(val));
 			});
 			fetchData();
-			// log
-			updateLog();
 		},
 		error: function(x, t, m) {
 			addNotification(t, 3);
@@ -164,7 +162,7 @@ function updateLog() {
 						log_row += '</tr>';
 						$('#log-table tbody').append(log_row);
 						if (!$('#log-table').is(":visible") && log_init){
-							addNotification(data[key].message,+data[key].level);
+							addNotification(data[key].message,data[key].level);
 						}
 					}
 				});
@@ -173,7 +171,7 @@ function updateLog() {
 			hideUpdateStatus();
 		},
 		error: function(x, t, m) {
-			addNotification(t, 3);
+			//addNotification(t, 3);
 			hideUpdateStatus();
 		}
 	});
@@ -269,18 +267,21 @@ function updateDataValues(key,val){
 			$(".label.type-bool.var-" + key).removeClass("label-success");
 			$(".label.type-bool.var-" + key).removeClass("label-warning");
 			$(".label.type-bool.var-" + key).removeClass("label-danger");
+			// inverted
+			$(".label.type-bool.status-red-inv.var-" + key).addClass("label-danger");
 			
 			$('button.btn-default.write-task-btn.var-' + key).addClass("updateable");
 			$('button.updateable.write-task-btn.var-' + key).addClass("btn-default");
 			$('button.updateable.write-task-btn.var-' + key).removeClass("btn-success");
 		} else {
 			$(".label.type-bool.var-" + key).removeClass("label-default");
+			$(".label.type-bool.var-" + key).removeClass("label-danger");
 			$(".label.type-bool.status-blue.var-" + key).addClass("label-primary");
 			$(".label.type-bool.status-info.var-" + key).addClass("label-info");
 			$(".label.type-bool.status-green.var-" + key).addClass("label-success");
 			$(".label.type-bool.status-yello.var-" + key).addClass("label-warning");
 			$(".label.type-bool.status-red.var-" + key).addClass("label-danger");
-			
+			$(".label.type-bool.status-red-inv.var-" + key).addClass("label-default");
 			$('button.btn-success.write-task-btn.var-' + key).addClass("updateable");
 			$('button.updateable.write-task-btn.var-' + key).removeClass("btn-default");
 			$('button.updateable.write-task-btn.var-' + key).addClass("btn-success");

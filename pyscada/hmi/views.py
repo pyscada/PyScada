@@ -124,7 +124,7 @@ def log_data(request):
 	else:
 		timestamp = time.time()-(60*60*24*14) # get log of last 14 days
 		
-	data = Log.objects.filter(level__gte=6,timestamp__gt=float(timestamp)).order_by('-timestamp')
+	data = Log.objects.filter(level__gte=6,timestamp__gt=float(timestamp)).order_by('-timestamp')[:20]
 	odata = []
 	for item in data:
 		odata.append({"timestamp":item.timestamp,"level":item.level,"message":item.message,"username":item.user.username if item.user else "None"})
@@ -164,8 +164,8 @@ def get_cache_data(request):
 	
 	active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True))
 	active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
+	active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('custom_html_panels__variables',flat=True))
 	active_variables = list(set(active_variables))
-
 	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__name','value','time__timestamp'))
 
 	for var in raw_data:
