@@ -21,25 +21,30 @@ Dependencies
 ------------
 
 * Python 2.7
-* django 1.6
+* django>=1.6
 * pymodbus>=1.2
 * numpy>=1.6.0
 * h5py>=2.1.1
 * pillow
+* psutil
 
 Quick Start
 -----------
 
-## download PyScada ##
+## download and build PyScada ##
+
+first download and build PyScada.
 
 ```
-
+git clone https://github.com/trombastic/PyScada.git
+git checkout dev/0.7.x
+python setup.py install
 ```
 
 
-## new Django project ##
+## setup a new Pyscada Server instance ##
 
-start a new Django project
+to setup a new Pyscada Server instance start a Django project
 
 ```
 cd ~/www
@@ -47,7 +52,7 @@ django-admin.py startproject PyScadaServer
 cd PySadaServer
 ```
 
-## setup the MySql ##
+### setup the MySql ###
 
 create a new database (PyScada_db) for PyScada, add a new user and grand the necessary rights
 
@@ -55,10 +60,10 @@ create a new database (PyScada_db) for PyScada, add a new user and grand the nec
 mysql -u root -p -e "CREATE DATABASE PyScada_db CHARACTER SET utf8; GRANT ALL PRIVILEGES ON PyScada_db.* TO 'PSS-user'@'localhost' IDENTIFIED BY 'PySadaServer-user-password';"
 ``` 
 
-## Django settings ##
+### Django settings ###
 
 
-Add the PyScada apps to the INSTALLED_APPS list in the Django settings file.
+Add the PyScada apps to the INSTALLED_APPS list in the Django settings file (`PyScadaServer/settings.py`). 
 
 ```
 # Application definition
@@ -76,7 +81,7 @@ INSTALLED_APPS = (
 )
 ```
 
-adjust the database settings
+adjust the database settings section.
 
 ```
 'default': {
@@ -87,7 +92,7 @@ adjust the database settings
     }
 ```
 
-and add the following PyScada specific parameters to your settings (PySadaServer/settings.py) file.
+and add the following PyScada specific parameters to Djago settings file.
 
 
 ```
@@ -99,30 +104,55 @@ STATIC_ROOT = BASE_DIR + '/static/'
 # folder were the daemon pid files are stored
 PID_ROOT = BASE_DIR + '/run/'
 
+
+# global pyscada settings
+#
+#	cache_timeout 			timeperiode that is stored in the round robin 
+#							cache table in minutes  
+#   
+
+PYSCADA = {
+    'cache_timeout':1440,
+        }
+
 # list of available client Protocols
 # 
 PYSCADA_CLIENTS = (
-	('modbus','Modbus Client',),
+    ('modbus','Modbus Client',),
 )
 
 # parameters for the Modbus Client
-# 	polling_interval 	how often the modbus client requests data
-#						from devices and write to the cache
 #
-#	recording_intervall	how often the data is written to the database
+# 	polling_interval 		how often the modbus client requests data
+#							from devices and write to the cache in seconds
 #
-# 	pid_file			file were the daemon pid is stored
 
 PYSCADA_MODBUS = {
-	'polling_interval':1,
-	'recording_intervall':5,
-	'cache_timeout':1440,
-	'pid_file_name': 'modbus-daemon.pid'
+    'polling_interval':5,
 }
 
+# parameters for the Modbus Client
+#
+#   recording_interval          time distance in seconds between two 
+#								values in the backup file
+#   write_to_file_interval      time in minutes to write the cache data 
+#								to the export file  
+#           
+#   backup_path                 path were the backup files are stored
+#   
+#   backup_filename_prefix      filename prefix for the backup files
+#
+#
+         
+PYSCADA_EXPORT = {
+    'recording_interval':5, 
+    'write_to_file_interval':30,
+    'backup_path':'~/measurement_data_dumps',
+    'backup_filename_prefix':'TUKT_measurement_data'
+}
 ```
 
-urls.py
+add the folowing line to `PyScadaServer/urls.py`
 
 ```
 urlpatterns = patterns('',
@@ -133,10 +163,17 @@ urlpatterns = patterns('',
 ```
 
 
-## setup PyScadaServer ##
+### setup PyScadaServer ###
 
 ```
 python manage.py migrate
 python manage.py collectstatic
+python manage.py createsuperuser
+```
+
+## start the daemon processes ##
+
+```
+
 ```
 
