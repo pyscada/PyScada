@@ -32,7 +32,8 @@ setup(
         'numpy>=1.6.0',
         'h5py>=2.1.1',
         'psutil>=2.1.1',
-        'pil'
+        'pillow',
+        'python-daemon'
     ],
     packages=find_packages(exclude=["project", "project.*"]),
     include_package_data=True,
