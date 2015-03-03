@@ -15,8 +15,8 @@ def run():
     if settings.PYSCADA_EXPORT.has_key('write_to_file_interval'):
         dt_set = float(settings.PYSCADA_EXPORT['write_to_file_interval'])
     else:
-        dt_set = 30*60 # default value is 5 seconds
-    
+        dt_set = 6*60 # default value is 6 hours
+    dt_set = dt_set*60; # minutes to seconds conversion
     # register the task in Backgroudtask list
     bt = BackgroundTask(start=time(),label=label,message='daemonized',timestamp=time(),pid = pid)
     bt.save()
