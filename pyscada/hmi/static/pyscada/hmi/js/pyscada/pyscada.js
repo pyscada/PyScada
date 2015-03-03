@@ -289,18 +289,21 @@ function updateDataValues(key,val){
 			$(".label.type-bool.var-" + key).removeClass("label-success");
 			$(".label.type-bool.var-" + key).removeClass("label-warning");
 			$(".label.type-bool.var-" + key).removeClass("label-danger");
+			// inverted
+			$(".label.type-bool.status-red-inv.var-" + key).addClass("label-danger");
 			
 			$('button.btn-default.write-task-btn.var-' + key).addClass("updateable");
 			$('button.updateable.write-task-btn.var-' + key).addClass("btn-default");
 			$('button.updateable.write-task-btn.var-' + key).removeClass("btn-success");
 		} else {
 			$(".label.type-bool.var-" + key).removeClass("label-default");
+			$(".label.type-bool.var-" + key).removeClass("label-danger");
 			$(".label.type-bool.status-blue.var-" + key).addClass("label-primary");
 			$(".label.type-bool.status-info.var-" + key).addClass("label-info");
 			$(".label.type-bool.status-green.var-" + key).addClass("label-success");
 			$(".label.type-bool.status-yello.var-" + key).addClass("label-warning");
 			$(".label.type-bool.status-red.var-" + key).addClass("label-danger");
-			
+			$(".label.type-bool.status-red-inv.var-" + key).addClass("label-default");
 			$('button.btn-success.write-task-btn.var-' + key).addClass("updateable");
 			$('button.updateable.write-task-btn.var-' + key).removeClass("btn-default");
 			$('button.updateable.write-task-btn.var-' + key).addClass("btn-success");
