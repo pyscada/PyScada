@@ -17,7 +17,12 @@ echo "Starting $NAME as $GROUP:`whoami`"
 #echo $DJANGO_SETTINGS_MODULE
 #echo $DJANGO_WSGI_MODULE
 #echo $GROUP
- 
+
+if [ -f "$PID_FILE" ]; then
+	kill -TERM $(cat $PID_FILE)
+	echo "killed old instance"
+fi
+
 # Activate the virtual environment
 #cd $DJANGODIR
 #source ../bin/activate
@@ -27,7 +32,7 @@ export PYTHONPATH=$DJANGODIR:$PYTHONPATH
 # Create the run directory if it doesn't exist
 RUNDIR=$(dirname $SOCKFILE)
 test -d $RUNDIR || mkdir -p $RUNDIR
- 
+
 # Start your Django Unicorn
 # Programs meant to be run under supervisor should not daemonize themselves (do not use --daemon)
 exec gunicorn ${DJANGO_WSGI_MODULE}:application \
@@ -36,6 +41,6 @@ exec gunicorn ${DJANGO_WSGI_MODULE}:application \
   --user=$USER --group=$GROUP \
   --log-level=debug \
   --bind=unix:$SOCKFILE \
-  --pid $PID_FILE #\
-#  --daemon
+  --pid $PID_FILE \
+  --daemon
 
