@@ -1,15 +1,8 @@
 # -*- coding: utf-8 -*-
 from django.db import models
 from django.contrib.auth.models import User
-
-from django.utils import timezone
 from django.conf import settings
-import time
-import datetime
 
-#
-# Manager
-#
 
 #
 # Model
@@ -17,7 +10,11 @@ import datetime
 
 class Client(models.Model):
 	short_name		= models.CharField(max_length=400, default='')
-	client_type		= models.CharField(default='generic',choices=settings.PYSCADA_CLIENTS,max_length=400)
+	if hasattr(settings,'PYSCADA_CLIENTS'):
+		pyscada_clients = settings.PYSCADA_CLIENTS
+	else:
+		pyscada_clients = (('modbus','Modbus Client',),)
+	client_type		= models.CharField(default='generic',choices=pyscada_clients,max_length=400)
 	description 	= models.TextField(default='', verbose_name="Description",null=True)
 	active			= models.BooleanField(default=True)
 	def __unicode__(self):
@@ -26,7 +23,7 @@ class Client(models.Model):
 
 class Unit(models.Model):
 	unit			= models.CharField(max_length=80, verbose_name="Unit")
-	description 		= models.TextField(default='', verbose_name="Description",null=True)
+	description 	= models.TextField(default='', verbose_name="Description",null=True)
 	def __unicode__(self):
 		return unicode(self.unit)
 
@@ -57,10 +54,128 @@ class Variable(models.Model):
 						('BCD24','BCD24'),
 						('BCD16','BCD16'),
 						)
-	value_class		= models.CharField(max_length=15, default='FLOAT', verbose_name="value_class",choices=value_class_choices)
+	value_class				= models.CharField(max_length=15, default='FLOAT', verbose_name="value_class",choices=value_class_choices)
+	byte_sequence_choises	= 	(
+							(0,'1 – 0 – 3 – 2'),
+							(1,'0 – 1 – 2 – 3'),
+							(2,'2 – 3 – 0 – 1'),
+							(3,'3 – 2 – 1 – 0'),
+							)
+	byte_sequence				= models.PositiveSmallIntegerField(default=0,choices=byte_sequence_choises)
+	scaling_active 				= models.BooleanField(default=False)
+	scaling_input_value_class 	= models.CharField(max_length=15, default='FLOAT', choices=value_class_choices)
+	scaling_input_min 			= models.FloatField(default=0)
+	scaling_input_max 			= models.FloatField(default=0)
+	scaling_output_min 			= models.FloatField(default=0)
+	scaling_output_max 			= models.FloatField(default=0)
+	
 	def __unicode__(self):
 		return unicode(self.name)
+	
+	def get_value_class_bit_len(self):
+		"""
+		return the number of bits the data type uses
+		
+		`BOOL`								1	1/16 WORD
+		`UINT8` `BYTE`						8	1/2 WORD
+		`INT8`								8	1/2 WORD
+		`UNT16` `WORD`						16	1 WORD
+		`INT16`	`INT`						16	1 WORD
+		`UINT32` `DWORD`					32	2 WORD
+		`INT32`								32	2 WORD
+		`FLOAT32` `REAL` `SINGLE` 			32	2 WORD
+		`FLOAT64` `LREAL` `FLOAT` `DOUBLE`	64	4 WORD
+		"""
+		
+		if self.scaling_active:
+			value_class = self.scaling_input_value_class
+		else:
+			value_class = self.value_class
+		
+		if 	value_class.upper() in ['FLOAT64','DOUBLE','FLOAT','LREAL'] :
+			return 64
+		if 	value_class.upper() in ['FLOAT32','SINGLE','INT32','UINT32','DWORD','BCD32','BCD24','REAL'] :
+			return 32
+		if value_class.upper() in ['INT16','INT','WORD','UINT','UINT16','BCD16']:
+			return 16
+		if value_class.upper() in ['INT8','UINT8','BYTE','BCD8']:
+			return 8
+		if value_class.upper() in ['BOOL']:
+			return 1
+		else:
+			return 16
+	
+	def scale_value(self,value):
+		'''
+		scale a given value
+		'''
+		if not self.scaling_active:
+			# if scaling is disabled just return the inputvalue
+			return value
+		if self.value_class.upper() in ['BOOL'] :
+			# don't scale boolean values
+			return value
+		if (self.scaling_input_max - self.scaling_input_min) == 0:
+			# prevent from division by zero
+			return value
+		
+		return  (	(\
+						(value - self.scaling_input_min)\
+						/ (self.scaling_input_max-self.scaling_input_min)\
+											)\
+					* (self.scaling_output_max - self.scaling_output_min)\
+				) 	+ self.scaling_output_min
+	
+	def decode_value(self,value):
+		if self.scaling_active:
+			value_class = self.scaling_input_value_class
+		else:
+			value_class = self.value_class
+		
+		if 	value_class.upper() in ['FLOAT32','SINGLE','FLOAT','REAL']:
+			# decode Float values
+			return unpack('f',pack('2H',value[0],value[1]))[0]
+		if 	value_class.upper() in ['BCD32','BCD24','BCD16']:
+			# decode bcd as int to dec
+			binStrOut = ''
+			if isinstance(value, (int, long)):
+				binStrOut = bin(value)[2:].zfill(16)
+				binStrOut = binStrOut[::-1]
+			else:
+				for value in values:
+					binStr = bin(value)[2:].zfill(16)
+					binStr = binStr[::-1]
+					binStrOut = binStr + binStrOut
 
+			decNum = 0
+			print binStrOut
+			for i in range(len(binStrOut)/4):
+				bcdNum = int(binStrOut[(i*4):(i+1)*4][::-1],2)
+				print binStrOut[(i*4):(i+1)*4][::-1]
+				if bcdNum>9:
+					decNum = -decNum
+				else:
+					decNum = decNum+(bcdNum*pow(10,i))
+				print decNum
+			return decNum
+		else:
+			# for all other value types return the value
+			if value:
+				return value[0]
+			else:
+				return None
+				
+	def encode_value(self,value):
+		if self.scaling_active:
+			value_class = self.scaling_input_value_class
+		else:
+			value_class = self.value_class
+		if 	value_class.upper() in ['FLOAT32','SINGLE','FLOAT','REAL']:
+			return unpack('2H',pack('f',float(value)))
+		if 	value_class.upper() in ['BCD32','BCD24','BCD16']:
+			return encode_bcd(values)
+		else:
+			return value[0]
 
 
 class ClientWriteTask(models.Model):
@@ -90,6 +205,7 @@ class RecordedDataCache(models.Model):
 			return self.int_value
 		else:
 			return self.float_value
+		
 
 class Log(models.Model):
 	level			= models.IntegerField(default=0, verbose_name="level")

@@ -23,16 +23,18 @@ class Color(models.Model):
 
 
 class HMIVariable(models.Model):
-	hmi_variable			= models.OneToOneField(Variable)
-	short_name			= models.CharField(default='',max_length=80, verbose_name="variable short name")
-	chart_line_color 	= models.ForeignKey('Color',default=0,null=True, on_delete=models.SET_NULL)
+	hmi_variable				= models.OneToOneField(Variable)
+	short_name					= models.CharField(default='',max_length=80, verbose_name="variable short name")
+	chart_line_color 			= models.ForeignKey('Color',default=0,null=True, on_delete=models.SET_NULL)
 	chart_line_thickness_choices = ((3,'3Px'),)
 	chart_line_thickness = models.PositiveSmallIntegerField(default=3,choices=chart_line_thickness_choices)
+	
 	def name(self):
 		if self.short_name and self.short_name != '-':
 			return self.short_name
 		else:
 			return self.hmi_variable.name
+	
 	def chart_line_color_code(self):
 		if self.chart_line_color and self.chart_line_color.id != 1:
 			return self.chart_line_color.color_code()
@@ -48,10 +50,10 @@ class HMIVariable(models.Model):
 class ControlItem(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	label			= models.CharField(max_length=400, default='')
-	position			= models.PositiveSmallIntegerField(default=0)
+	position		= models.PositiveSmallIntegerField(default=0)
 	type_choices 	= ((0,'label blue'),(1,'label light blue'),(2,'label ok'),(3,'label warning'),(4,'label alarm'),(5,'Control Element'),(6,'Display Value'),)
 	type			= models.PositiveSmallIntegerField(default=0,choices=type_choices)
-	variable    		= models.ForeignKey(Variable,null=True, on_delete=models.SET_NULL)
+	variable    	= models.ForeignKey(Variable,null=True, on_delete=models.SET_NULL)
 	class Meta:
 		ordering = ['position']
 	def __unicode__(self):
@@ -79,7 +81,7 @@ class Page(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	title 			= models.CharField(max_length=400, default='')
 	link_title		= models.SlugField(max_length=80, default='')
-	position			= models.PositiveSmallIntegerField(default=0)
+	position		= models.PositiveSmallIntegerField(default=0)
 	class Meta:
 		ordering = ['position']
 	def __unicode__(self):
@@ -112,16 +114,6 @@ class SlidingPanelMenu(models.Model):
 	visable			= models.BooleanField(default=True)
 	def __unicode__(self):
 		return unicode(self.title)
-"""
-class ChartSet(models.Model):
-	size_choices	= ((0,'side by side (1/2)'),(1,'side by side (2/3|1/3)'),(2,'side by side (1/3|2/3)'),)
-	id 				= models.AutoField(primary_key=True)
-	distribution	= models.PositiveSmallIntegerField(max_length=20, default=0,choices=size_choices)
-	chart_1			= models.ForeignKey(Chart,blank=True,null=True,related_name="chart_1",verbose_name="left Chart")
-	chart_2			= models.ForeignKey(Chart,blank=True,null=True,related_name="chart_2",verbose_name="right Chart")
-	def __unicode__(self):
-		return unicode(str(self.id) + ': ' + (self.chart_1.title if self.chart_1 else 'None')  + ' | ' +  (self.chart_2.title if self.chart_2 else 'None') )
-"""		
 
 class Widget(models.Model):
 	id 				= models.AutoField(primary_key=True)

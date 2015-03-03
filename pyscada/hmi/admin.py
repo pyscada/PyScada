@@ -32,7 +32,7 @@ class ChartAdmin(admin.ModelAdmin):
     #ordering = ['position',]
     search_fields = ['name',]
     filter_horizontal = ('variables',)
-    list_display = ('title',)
+    list_display = ('id','title',)
     form = ChartForm
     def name(self, instance):
         return instance.variables.name
@@ -52,11 +52,10 @@ class SlidingPanelMenuForm(forms.ModelForm):
         w.choices = choices
 
 class SlidingPanelMenuAdmin(admin.ModelAdmin):
-        #search_fields = ['name',]
-        #filter_horizontal = ('items',)
-        #form = SlidingPanelMenuForm
         list_display = ('id',)
-        
+
+class PageAdmin(admin.ModelAdmin):
+        list_display = ('id','title','link_title','position')
         
 class HMIVariableAdmin(admin.ModelAdmin):
     search_fields = ['hmi_variable__name',]
@@ -84,12 +83,11 @@ class CustomHTMLPanelAdmin(admin.ModelAdmin):
 admin.site.register(ControlItem,ControlItemAdmin)
 admin.site.register(Chart,ChartAdmin)
 admin.site.register(SlidingPanelMenu,SlidingPanelMenuAdmin)
-admin.site.register(Page)
+admin.site.register(Page,PageAdmin)
 admin.site.register(GroupDisplayPermission,GroupDisplayPermissionAdmin)
 admin.site.register(HMIVariable,HMIVariableAdmin)
 
 admin.site.register(ControlPanel,ControlPanelAdmin)
 admin.site.register(CustomHTMLPanel,CustomHTMLPanelAdmin)
-#admin.site.register(ChartSet)
 admin.site.register(Widget,WidgetAdmin)
 admin.site.register(View,ViewAdmin)
