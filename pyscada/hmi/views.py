@@ -61,11 +61,11 @@ def view(request,link_title):
 
 	sliding_panel_list = view.sliding_panel_menus.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).distinct()
 	
-	visable_widget_list = Widget.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator,page__in=page_list.iterator).values_list('pk',flat=True)		
-	visable_custom_html_panel_list = CustomHTMLPanel.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).values_list('pk',flat=True)
-	visable_chart_list = Chart.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).values_list('pk',flat=True)
+	visible_widget_list = Widget.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator,page__in=page_list.iterator).values_list('pk',flat=True)		
+	visible_custom_html_panel_list = CustomHTMLPanel.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).values_list('pk',flat=True)
+	visible_chart_list = Chart.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).values_list('pk',flat=True)
 
-	visable_control_element_list = GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items',flat=True)
+	visible_control_element_list = GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items',flat=True)
 
 	panel_list   = sliding_panel_list.filter(position__in=(1,2,))
 	control_list = sliding_panel_list.filter(position=0)
@@ -84,28 +84,30 @@ def view(request,link_title):
 			# check if row has changed
 			if current_row <> widget.row:
 				# render new widget row and reset all loop variables
-				widget_rows_html += widget_row_template.render(RequestContext(request,{'row':current_row,'has_chart':has_chart,'widgets':widgets,'visable_control_element_list':visable_control_element_list}))
+				widget_rows_html += widget_row_template.render(RequestContext(request,{'row':current_row,'has_chart':has_chart,'widgets':widgets,'visible_control_element_list':visible_control_element_list}))
 				current_row = widget.row
 				has_chart = False
 				widgets = []
-			if not widget.pk in visable_widget_list:
+			if not widget.pk in visible_widget_list:
 				continue
-			if not widget.visable:
+			if not widget.visible:
 				continue
 			if widget.chart:
-				if not widget.chart.visable():
+				if not widget.chart.visible():
 					continue
-				if not widget.chart.pk in visable_chart_list:
+				if not widget.chart.pk in visible_chart_list:
 					continue
 				has_chart = True
 				widgets.append(widget)
 			elif widget.control_panel:
 				widgets.append(widget)
+			elif widget.process_flow_diagram:
+				widgets.append(widget)
 			elif widget.custom_html_panel:
-				if not widget.custom_html_panel.pk in visable_custom_html_panel_list:
+				if not widget.custom_html_panel.pk in visible_custom_html_panel_list:
 					continue
 				widgets.append(widget)
-		widget_rows_html += widget_row_template.render(RequestContext(request,{'row':current_row,'has_chart':has_chart,'widgets':widgets,'visable_control_element_list':visable_control_element_list}))
+		widget_rows_html += widget_row_template.render(RequestContext(request,{'row':current_row,'has_chart':has_chart,'widgets':widgets,'visible_control_element_list':visible_control_element_list}))
 		pages_html += page_template.render(RequestContext(request,{'page':page,'widget_rows_html':widget_rows_html}))
 				
 	c = {

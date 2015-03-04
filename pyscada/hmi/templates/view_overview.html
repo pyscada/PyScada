@@ -5,7 +5,7 @@
 {% block content %}
 <div class="row">
     {% for view in view_list %}
-        {% if view.visable %}
+        {% if view.visible %}
         <div class="col-sm-3">
         <div class="panel panel-default">
                 <div class="panel-heading">
@@ -26,8 +26,29 @@
         {% endif %}
     {% endfor %}
     {% if user.is_staff %}
+	</div><div class="row">
         <div class="col-sm-3">
-        <div class="panel panel-default">
+			<div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title"><!--<a href="{% url 'admin:index' %}" target="_blank">Admin</a>--></h3>
+                </div>
+                <div class="panel-body">
+                <a href="{% url 'admin:index' %}" class="thumbnail" target="_blank"><img src="{% static "pyscada/hmi/img/dataexport_logo.gif" %}" alt="The Data Export Panel"  width="100%"></a>
+            </div>
+           </div>
+        </div>
+        <div class="col-sm-3">
+			<div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title"><!--<a href="{% url 'admin:index' %}" target="_blank">Admin</a>--></h3>
+                </div>
+                <div class="panel-body">
+                <a href="{% url 'admin:index' %}" class="thumbnail" target="_blank"><img src="{% static "pyscada/hmi/img/log_logo.gif" %}" alt="The Log Panel"  width="100%"></a>
+            </div>
+           </div>
+        </div>
+        <div class="col-sm-3">
+			<div class="panel panel-default">
                 <div class="panel-heading">
                     <h3 class="panel-title"><a href="{% url 'admin:index' %}" target="_blank">Admin</a></h3>
                 </div>

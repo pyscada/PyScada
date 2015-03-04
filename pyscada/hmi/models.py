@@ -74,7 +74,7 @@ class Chart(models.Model):
 	objects 		= ChartManager()
 	def __unicode__(self):
 		return unicode(str(self.id) + ': ' + self.title)
-	def visable(self):
+	def visible(self):
 		return self.variables.filter(active=True,client__active=True).count()>0
 
 class Page(models.Model):
@@ -105,13 +105,42 @@ class CustomHTMLPanel(models.Model):
 	def __unicode__(self):
 		return unicode(str(self.id) + ': ' + self.title)
 
+class ProcessFlowDiagramItem(models.Model):
+	id				= models.AutoField(primary_key=True)
+	label			= models.CharField(max_length=400, default='',blank=True)
+	type_choices 	= ((0,'label blue'),(1,'label light blue'),(2,'label ok'),(3,'label warning'),(4,'label alarm'),(7,'label alarm inverted'),(5,'Control Element'),(6,'Display Value'),)
+	type			= models.PositiveSmallIntegerField(default=0,choices=type_choices)
+	variable 		= models.ForeignKey(Variable,default=None)
+	top				= models.PositiveIntegerField(default=0)
+	left			= models.PositiveIntegerField(default=0)
+	width			= models.PositiveIntegerField(default=0)
+	height			= models.PositiveIntegerField(default=0)
+	visible			= models.BooleanField(default=True)
+	def __unicode__(self):
+		if self.label:
+			return unicode(str(self.id) + ": " + self.label)
+		else:
+			return unicode(str(self.id) + ": " + self.variable.name)
+			
+			
+class ProcessFlowDiagram(models.Model):
+	id 				= models.AutoField(primary_key=True)
+	title			= models.CharField(max_length=400, default='',blank=True)
+	background_image = models.ImageField(upload_to="img/", verbose_name="background image",blank=True)
+	process_flow_diagram_items = models.ManyToManyField(ProcessFlowDiagramItem,blank=True)
+	def __unicode__(self):
+		if self.title:
+			return unicode(str(self.id) + ": " + self.title)
+		else:
+			return unicode(str(self.id) + ": " + self.background_image.name)
+	
 class SlidingPanelMenu(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	title			= models.CharField(max_length=400, default='')
 	position_choices = ((0,'Control Menu'),(1,'left'),(2,'right'))
 	position			= models.PositiveSmallIntegerField(default=0,choices=position_choices)
 	control_panel   = models.ForeignKey(ControlPanel,blank=True,null=True,default=None)
-	visable			= models.BooleanField(default=True)
+	visible			= models.BooleanField(default=True)
 	def __unicode__(self):
 		return unicode(self.title)
 
@@ -125,12 +154,11 @@ class Widget(models.Model):
 	col 			= models.PositiveSmallIntegerField(default=0,choices=col_choises)
 	size_choices 	= ((4,'page width'),(3,'3/4 page width'),(2,'1/2 page width'),(1,'1/4 page width'))
 	size			= models.PositiveSmallIntegerField(default=4,choices=size_choices)
-	chart			= models.ForeignKey(Chart,blank=True,null=True,default=None)
-	#chart_set		= models.ForeignKey(ChartSet,blank=True,null=True,default=None)
-	control_panel  = models.ForeignKey(ControlPanel,blank=True,null=True,default=None)
-	custom_html_panel = models.ForeignKey(CustomHTMLPanel,blank=True,null=True,default=None)
-	visable			= models.BooleanField(default=True)
-	#objects 		= WidgetManager()
+	chart				= models.ForeignKey(Chart				,blank=True,null=True,default=None)
+	control_panel  		= models.ForeignKey(ControlPanel		,blank=True,null=True,default=None)
+	custom_html_panel 	= models.ForeignKey(CustomHTMLPanel		,blank=True,null=True,default=None)
+	process_flow_diagram = models.ForeignKey(ProcessFlowDiagram	,blank=True,null=True,default=None)
+	visible			= models.BooleanField(default=True)
 	class Meta:
 		ordering = ['row','col']
 	def __unicode__(self):
@@ -155,7 +183,7 @@ class View(models.Model):
 	pages 			= models.ManyToManyField(Page)
 	sliding_panel_menus = models.ManyToManyField(SlidingPanelMenu,blank=True)
 	logo 			= models.ImageField(upload_to="img/", verbose_name="Overview Picture",blank=True)
-	visable			= models.BooleanField(default=True)
+	visible			= models.BooleanField(default=True)
 	position		= models.PositiveSmallIntegerField(default=0)
 	def __unicode__(self):
 		return unicode(self.title)
@@ -171,5 +199,6 @@ class GroupDisplayPermission(models.Model):
 	widgets 			= models.ManyToManyField(Widget,blank=True)
 	custom_html_panels  = models.ManyToManyField(CustomHTMLPanel,blank=True)	
 	views				= models.ManyToManyField(View,blank=True)
+	process_flow_diagram = models.ManyToManyField(ProcessFlowDiagram,blank=True)
 	def __unicode__(self):
 		return unicode(self.hmi_group.name)

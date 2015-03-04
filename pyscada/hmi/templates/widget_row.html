@@ -18,9 +18,11 @@
 		{% if widget.chart %}
 			{% include "chart.html" with chart=widget.chart widget_pk=widget.pk%}
 		{% elif widget.control_panel %}
-			{% include "control_panel.html" with control_panel=widget.control_panel visable_control_element_list=visable_control_element_list%}
+			{% include "control_panel.html" with control_panel=widget.control_panel visible_control_element_list=visible_control_element_list%}
 		{% elif widget.custom_html_panel %}
 			{% include "custom_html_panel.html" with custom_html_panel=widget.custom_html_panel %}
+		{% elif widget.process_flow_diagram %}
+			{% include "process_flow_diagram.html" with process_flow_diagram=widget.process_flow_diagram %}
 		{% endif %}
 	</div>
 {% endfor %}

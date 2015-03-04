@@ -23,6 +23,7 @@ class Client(models.Model):
 
 class Unit(models.Model):
 	unit			= models.CharField(max_length=80, verbose_name="Unit")
+	udUnit			= models.CharField(max_length=80, verbose_name="udUnit representation")
 	description 	= models.TextField(default='', verbose_name="Description",null=True)
 	def __unicode__(self):
 		return unicode(self.unit)

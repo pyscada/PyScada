@@ -2,7 +2,7 @@
 
 version 0.7.0
 
-Copyright (c) 2013-2014 Martin Schröder
+Copyright (c) 2013-2015 Martin Schröder
 Licensed under the GPL.
 
 */
@@ -15,9 +15,9 @@ var DataOutOfDateAlertId = '';
 var JsonErrorCount = 0;
 var auto_update_active = true;
 var log_last_timestamp = 0;
-var log_init = false;
 var data_last_timestamp = 0;
 var data_first_timestamp = 0;
+var server_time = 0;
 var log_frm = $('#page-log-form');
 var log_frm_mesg = $('#page-log-form-message')
 var csrftoken = $.cookie('csrftoken');
@@ -25,7 +25,8 @@ var fetch_data_timeout = 5000;
 var refresh_rate = 2000;
 var cache_timeout = 15000; // in milliseconds
 var RootUrl = window.location.protocol+"//"+window.location.host + "/";
-var VariableKeys = []
+var VariableKeys = [];
+
 // the code
 var debug = 0;
 var DataFetchingProcessCount = 0;
@@ -153,6 +154,13 @@ function fetchData() {
 
 function updateLog() {
 	showUpdateStatus();
+	if(log_last_timestamp === 0){
+		if(server_time > 0){
+				log_last_timestamp = server_time; 
+		}else{
+			return false;	
+		}
+	}
 	$.ajax({
 		url: RootUrl+'json/log_data/',
 		type: 'post',
@@ -166,19 +174,9 @@ function updateLog() {
 						if (log_last_timestamp<data[key].timestamp){
 							log_last_timestamp = data[key].timestamp;
 						}
-						log_row = '<tr>';
-						log_row += '<td><span class="hidden" >'+data[key].timestamp.toFixed(3)+'</span>' + new Date(data[key].timestamp*1000).toLocaleString(); + '</td><!-- Date -->';
-						log_row += '<td>' + data[key].level + '</td><!-- Level -->';
-						log_row += '<td>' + data[key].username + ": " + data[key].message + '</td><!-- Message -->';
-						log_row += '</tr>';
-						$('#log-table tbody').append(log_row);
-						if (!$('#log-table').is(":visible") && log_init){
-							addNotification(data[key].message,+data[key].level);
-						}
+						addNotification(data[key].message,+data[key].level);
 					}
 				});
-			log_init = true;
-			$('#log-table').trigger("updateAll",["",function(table){}]);
 			hideUpdateStatus();
 		},
 		error: function(x, t, m) {

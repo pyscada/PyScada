@@ -8,6 +8,8 @@ from pyscada.hmi.models import Page
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import ControlPanel
 from pyscada.hmi.models import CustomHTMLPanel
+from pyscada.hmi.models import ProcessFlowDiagram
+from pyscada.hmi.models import ProcessFlowDiagramItem
 #from pyscada.hmi.models import ChartSet
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
@@ -69,7 +71,7 @@ class WidgetAdmin(admin.ModelAdmin):
     list_editable = ('title','page','row','col','size','chart','control_panel','custom_html_panel',)
 
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
-    filter_horizontal = ('pages','sliding_panel_menus','charts','control_items','widgets','views','custom_html_panels')
+    filter_horizontal = ('pages','sliding_panel_menus','charts','control_items','widgets','views','custom_html_panels','process_flow_diagram')
 
 class ControlPanelAdmin(admin.ModelAdmin):
     filter_horizontal = ('items',)
@@ -89,5 +91,7 @@ admin.site.register(HMIVariable,HMIVariableAdmin)
 
 admin.site.register(ControlPanel,ControlPanelAdmin)
 admin.site.register(CustomHTMLPanel,CustomHTMLPanelAdmin)
+admin.site.register(ProcessFlowDiagram)
+admin.site.register(ProcessFlowDiagramItem)
 admin.site.register(Widget,WidgetAdmin)
 admin.site.register(View,ViewAdmin)

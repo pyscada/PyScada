@@ -1,4 +1,5 @@
 {% if item.variable.active == 1 and item.variable.client.active == 1 %}
+	<div class="hidden variable-config" data-name="{{ item.variable.name }}" data-key="{{ item.variable.id }}"></div>
 	<span class="hidden variable-key" >{{item.variable.pk}}</span>
 	{% if item.type == 0 %}<!-- label blue -->
 		<li><span class="label label-default type-bool status-blue var-{{ item.variable.name }}">{{ item.label }}</span></li>
