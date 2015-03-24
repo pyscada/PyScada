@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from pyscada.models import Log
+from pyscada.core.models import Log
 from time import time
 from django.contrib.auth.models import User, Group
 	

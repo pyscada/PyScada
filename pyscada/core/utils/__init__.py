@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 #from pyscada.utils import modbus
-from pyscada import log
-from pyscada.models import Client
-from pyscada.models import Variable
+from pyscada.core import log
+from pyscada.core.models import Client
+from pyscada.core.models import Variable
 from pyscada.hmi.models import HMIVariable as WebVariable
-from pyscada.modbus.models import ModbusVariable
-from pyscada.modbus.models import ModbusClient
-from pyscada.models import Unit
+from django.apps import apps
+if apps.is_installed('pyscada.modbus'):
+	from pyscada.modbus.models import ModbusVariable
+	from pyscada.modbus.models import ModbusClient
+from pyscada.core.models import Unit
 from struct import *
 
 import json
@@ -148,7 +150,8 @@ def update_variable_set(json_data):
 			obj.modbusvariable.function_code_read 	= entry["modbus_ip.function_code_read"]
 			obj.modbusvariable.save()
 		else:
-			ModbusVariable(modbus_variable=obj,address=entry["modbus_ip.address"],function_code_read=entry["modbus_ip.function_code_read"]).save()
+			if apps.is_installed('pyscada.modbus'):
+				ModbusVariable(modbus_variable=obj,address=entry["modbus_ip.address"],function_code_read=entry["modbus_ip.function_code_read"]).save()
 		
 
 def update_client_set(json_data):
@@ -166,7 +169,8 @@ def update_client_set(json_data):
 			cc.modbusclient.port = entry['modbus_ip.port']
 			cc.modbusclient.protocol = entry['modbus_ip.protocol']
 		else:
-			ModbusClient(modbus_client=cc,ip_address=entry['modbus_ip.ip_address'],port=entry['modbus_ip.port'],protocol=entry['modbus_ip.protocol'])
+			if apps.is_installed('pyscada.modbus'):
+				ModbusClient(modbus_client=cc,ip_address=entry['modbus_ip.ip_address'],port=entry['modbus_ip.port'],protocol=entry['modbus_ip.protocol'])
 
 
 	

@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-from pyscada.models import Client
-from pyscada.models import Variable
-from pyscada.models import Unit
-from pyscada.models import ClientWriteTask
-from pyscada.models import Log
-from pyscada.models import BackgroundTask
-from pyscada.models import RecordedDataCache
-from pyscada.models import Event
-from pyscada.utils import update_variable_set
+from pyscada.core.models import Client
+from pyscada.core.models import Variable
+from pyscada.core.models import Unit
+from pyscada.core.models import ClientWriteTask
+from pyscada.core.models import Log
+from pyscada.core.models import BackgroundTask
+from pyscada.core.models import RecordedDataCache
+from pyscada.core.models import Event
+from pyscada.core.utils import update_variable_set
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.admin import SimpleListFilter

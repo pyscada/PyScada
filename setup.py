@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 import os
-import pyscada
+import pyscada.core
 
 
 CLASSIFIERS = [
@@ -16,10 +16,10 @@ CLASSIFIERS = [
     'Topic :: Scientific/Engineering :: Visualization'
 ]
 setup(
-    author=pyscada.__author__,
+    author=pyscada.core.__author__,
     author_email="info@martin-schroeder.net",
     name='PyScada',
-    version=pyscada.__version__,
+    version=pyscada.core.__version__,
     description='An Python, Django based Open Source Scada System',
     long_description=open(os.path.join(os.path.dirname(__file__), 'README.md')).read(),
     url='http://www.martin-schroeder.net/',
@@ -28,14 +28,12 @@ setup(
     classifiers=CLASSIFIERS,
     install_requires=[
         'django>=1.6',
-        'pymodbus>=1.2',
         'numpy>=1.6.0',
-        'h5py>=2.1.1',
-        'psutil>=2.1.1',
         'pillow',
         'python-daemon'
     ],
     packages=find_packages(exclude=["project", "project.*"]),
+    namespace_packages = ['pyscada'],
     include_package_data=True,
     zip_safe=False,
     test_suite='runtests.main',

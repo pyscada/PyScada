@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from pyscada.models import Variable
+from pyscada.core.models import Variable
 
 from django.db import models 
 from django.contrib.auth.models import Group

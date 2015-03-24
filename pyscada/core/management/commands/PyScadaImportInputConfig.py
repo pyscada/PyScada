@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*- 
 import os,sys
-from pyscada.utils import update_variable_set
+from pyscada.core.utils import update_variable_set
 from django.core.management.base import BaseCommand, CommandError
 
 class Command(BaseCommand):

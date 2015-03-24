@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*- 
-from pyscada.models import BackgroundTask
+from pyscada.core.models import BackgroundTask
 
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from pyscada import log
+from pyscada.core import log
 from pyscada.hmi.models import Chart
 from pyscada.hmi.models import Page
 from pyscada.hmi.models import ControlItem
@@ -9,7 +9,7 @@ from pyscada.hmi.models import SlidingPanelMenu
 from pyscada.hmi.models import View
 #from pyscada.hmi.models import GroupDisplayPermisions
 #from pyscada.hmi.models import HMIVariable
-from pyscada.models import Variable
+from pyscada.core.models import Variable
 
 import json
 import codecs

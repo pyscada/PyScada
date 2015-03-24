@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
+from pyscada.core.models import Variable
 from pyscada.hmi.models import HMIVariable
-from pyscada.models import Variable
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Chart
 from pyscada.hmi.models import SlidingPanelMenu

@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-from pyscada.models import Client
-from pyscada.models import Variable
-from pyscada.models import RecordedDataCache
-from pyscada.models import RecordedEvent
+from pyscada.core.models import Log
+from pyscada.core.models import ClientWriteTask
+from pyscada.core import log
+from pyscada.core.models import Client
+from pyscada.core.models import Variable
+from pyscada.core.models import RecordedDataCache
+from pyscada.core.models import RecordedEvent
 from pyscada.hmi.models import Chart
 from pyscada.hmi.models import Page
 from pyscada.hmi.models import ControlItem
@@ -12,10 +15,7 @@ from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
 
-from pyscada.models import Log
-from pyscada.models import ClientWriteTask
 
-from pyscada import log
 #from pyscada.export import timestamp_unix_to_matlab
 from django.shortcuts import render
 from django.http import HttpResponse
