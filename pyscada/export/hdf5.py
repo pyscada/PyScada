@@ -56,7 +56,7 @@ class mat:
             self._d[name].attrs['MATLAB_class'] = 'int32'
         elif dtype.str in ['<i2']:
             self._d[name].attrs['MATLAB_class'] = 'int16'
-        elif dtype.str in ['|u2']:
+        elif dtype.str in ['<u2']:
             self._d[name].attrs['MATLAB_class'] = 'uint16'
         elif dtype.str in ['|u1']:
             self._d[name].attrs['MATLAB_class'] = 'uint8'
