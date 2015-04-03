@@ -17,7 +17,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.admin import SimpleListFilter
 from django import forms
 
-class ChartForm(forms.ModelForm): 
+class ChartForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ChartForm, self).__init__(*args, **kwargs)
         wtf = Variable.objects.all();
@@ -43,7 +43,7 @@ class ChartAdmin(admin.ModelAdmin):
 class ControlItemAdmin(admin.ModelAdmin):
     list_display = ('id','position','label','type','variable',)
 
-class SlidingPanelMenuForm(forms.ModelForm): 
+class SlidingPanelMenuForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(SlidingPanelMenuForm, self).__init__(*args, **kwargs)
         wtf = ControlItem.objects.all();
@@ -58,14 +58,14 @@ class SlidingPanelMenuAdmin(admin.ModelAdmin):
         #filter_horizontal = ('items',)
         #form = SlidingPanelMenuForm
         list_display = ('id',)
-        
-        
+
+
 class HMIVariableAdmin(admin.ModelAdmin):
     search_fields = ['hmi_variable__name',]
     list_display = ('name','short_name','chart_line_color','chart_line_thickness',)
     def name(self, instance):
         return instance.hmi_variable.name
- 
+
 class WidgetAdmin(admin.ModelAdmin):
     list_display_links = ('id',)
     list_display = ('id','title','page','row','col','size','chart','chart_set','control_panel','custom_html_panel',)
@@ -76,17 +76,23 @@ class GroupDisplayPermissionAdmin(admin.ModelAdmin):
 
 class ControlPanelAdmin(admin.ModelAdmin):
     filter_horizontal = ('items',)
-    
+
 class ViewAdmin(admin.ModelAdmin):
     filter_horizontal = ('pages','sliding_panel_menus')
 
 class CustomHTMLPanelAdmin(admin.ModelAdmin):
     filter_horizontal = ('variables',)
 
+class PageAdmin(admin.ModelAdmin):
+    list_display_links = ('id',)
+    list_display = ('id','title','link_title','position',)
+    list_editable = ('title','link_title','position',)
+    list_filter = ('view__title',)
+
 admin.site.register(ControlItem,ControlItemAdmin)
 admin.site.register(Chart,ChartAdmin)
 admin.site.register(SlidingPanelMenu,SlidingPanelMenuAdmin)
-admin.site.register(Page)
+admin.site.register(Page,PageAdmin)
 admin.site.register(GroupDisplayPermission,GroupDisplayPermissionAdmin)
 admin.site.register(HMIVariable,HMIVariableAdmin)
 
