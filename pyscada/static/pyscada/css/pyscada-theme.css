@@ -18,7 +18,7 @@ body {
 
 .SAC-Main {
     position:relative;
-    top:0; left:0; 
+    top:0; left:0;
 }
 
 .SAC-Value {
@@ -38,16 +38,16 @@ body {
 .control-pabel span.label {
     float: left;
     width: 100px;
-    
+
 }
 .status-panel li,
 .control-pabel li {
 	list-style: none;
-	
+
 }
 .chart-legend {
     font-size: 10px;
-    
+
 }
 
 .container {
@@ -132,7 +132,7 @@ body {
 	font-size: 12px;
 	top:5px;
 	left:50%;
-	
+
 }
 
 .legendTitle {
@@ -163,8 +163,8 @@ body {
 }
 
 .chart-btn-bar {
-	position: absolute; 
-	top:2px; 
+	position: absolute;
+	top:2px;
 	right:2px;
 }
 .chart-btn-bar .btn{
@@ -185,7 +185,7 @@ table.tablesorter thead tr .tablesorter-header {
 
 table.tablesorter thead tr .tablesorter-headerAsc {
 	background-image: url(/static/pyscada/img/asc.gif);
-	
+
 }
 
 table.tablesorter thead tr .tablesorter-headerDesc {
@@ -213,7 +213,7 @@ table.tablesorter thead tr .tablesorter-header.sorter-false {
 }
 
 
-	
+
 .side-menu {
 	background: #fff;
 	position:fixed;
@@ -260,7 +260,7 @@ table.tablesorter thead tr .tablesorter-header.sorter-false {
 }
 
 .control-panel .input-group-addon.input-group-addon-label {
-	width:300px;
+	width:270px;
 	text-align:left;
 }
 
