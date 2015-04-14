@@ -1,0 +1,106 @@
+#!/bin/bash
+ 
+### BEGIN INIT INFO
+# Provides:			 gunicorn_django
+# Required-Start:	 $all
+# Required-Stop:	 $all
+# Default-Start:	 2 3 4 5
+# Default-Stop:		 0 1 6
+# Short-Description: starts the pyscada gunicorn server
+# Description:		 starts pyscada gunicorn using start-stop-daemon
+### END INIT INFO
+
+# sample configfile for /etc/default/gunicorn_django
+# SERVERS=(
+#	'APP_NAME	DJANGODIR	number_of_workers'
+# )
+# RUN_AS='www-data'
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+if [ -f /etc/default/gunicorn_django ] ; then
+	. /etc/default/gunicorn_django
+fi
+
+
+
+start () {
+
+	for i in "${SERVERS[@]}"
+	do
+		:
+		set -- "$i"
+		IFS="	"; declare -a data=($*)
+
+		if [ "$SERVER" ]; then
+			if [ "$SERVER" != ${data[0]} ]; then
+				continue
+			fi
+		fi
+		if [ -e ${data[1]}/run/gunicorn.pid ]
+		then
+			PID=$(cat ${data[1]}/run/gunicorn.pid)
+			if ps -p $PID > /dev/null
+			then
+   				echo "gunicorn service is already running ($PID)"
+				exit 0
+			fi
+                fi
+
+		echo "Spawning ${data[0]}"
+		# Create the run directory if it doesn't exist
+		RUNDIR=$(dirname ${data[1]}/run/gunicorn.sock)
+		test -d $RUNDIR || mkdir -p $RUNDIR
+		export DJANGO_SETTINGS_MODULE=${data[0]}.settings
+		export PYTHONPATH=${data[1]}:$PYTHONPATH
+		# Start your Django Unicorn
+		# Programs meant to be run under supervisor should not daemonize themselves (do not use --daemon)
+		start-stop-daemon --start --quiet -c $RUN_AS -d ${data[1]} --pidfile ${data[1]}/run/gunicorn.pid --exec /usr/local/bin/gunicorn -- ${data[0]}.wsgi:application -n ${data[0]} -w ${data[2]} -u $RUN_AS -b unix:${data[1]}/run/gunicorn.sock -p ${data[1]}/run/gunicorn.pid -D
+
+	done
+	return
+}
+ 
+stop () {
+	for i in "${SERVERS[@]}"
+	do
+		:
+		set -- "$i"
+		IFS="	"; declare -a data=($*)
+		if [ "$SERVER" ]; then
+			if [ "$SERVER" != ${data[0]} ]; then
+				continue
+			fi
+		fi
+		if [ -e ${data[1]}/run/gunicorn.pid ]
+		then
+			kill -TERM $(cat ${data[1]}/run/gunicorn.pid)
+			echo "stopped service"
+		else
+			echo "service not running"
+		fi
+	done
+}
+ 
+case "$1" in
+  start)
+		echo "Starting"
+		start
+		;;
+  stop)
+		echo "Stopping"
+		stop
+		;;
+  restart)
+		echo "Restarting"
+		stop
+		sleep 1
+		start
+		;;
+  *)
+		N=/etc/init.d/$NAME
+		echo "Usage: $N {start|stop|restart} " >&2
+		exit 1
+		;;
+esac
+
+exit 0

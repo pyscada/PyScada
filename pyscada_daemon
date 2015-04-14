@@ -1,0 +1,75 @@
+#!/bin/bash
+ 
+### BEGIN INIT INFO
+# Provides:			 pyscada_daemon
+# Required-Start:	 $all
+# Required-Stop:	 $all
+# Default-Start:	 2 3 4 5
+# Default-Stop:		 0 1 6
+# Short-Description: starts the pyscada daemon
+# Description:		 starts pyscada daemon
+### END INIT INFO
+
+# sample configfile for /etc/default/pyscada_daemon
+#####################################################
+# DAEMONS=(
+#	'NAME	DJANGODIR'
+#)
+# RUN_AS='www-data'
+
+if [ -f /etc/default/pyscada_daemon ] ; then
+	. /etc/default/pyscada_daemon
+fi
+
+
+
+start () {
+	for i in "${DAEMONS[@]}"
+	do
+		:
+		set -- "$i"
+		IFS="	"; declare -a data=($*)
+
+
+		echo "Spawning ${data[1]} ${data[0]} daemon"
+		start-stop-daemon --start -c $RUN_AS -d ${data[1]} --exec manage.py -- PyScadaDaemonHandler ${data[0]} start
+
+	done
+	return
+}
+
+
+stop () {
+	for i in "${DAEMONS[@]}"
+	do
+		:
+		set -- "$i"
+		IFS="	"; declare -a data=($*)
+	start-stop-daemon --start -c $RUN_AS -d ${data[1]} --exec manage.py -- PyScadaDaemonHandler ${data[0]} stop
+	done
+	return
+}
+ 
+case "$1" in
+  start)
+		echo "Starting"
+		start
+		;;
+  stop)
+		echo "Stopping"
+		stop
+		;;
+  restart)
+		echo "Restarting"
+		stop
+		sleep 1
+		start
+		;;
+  *)
+		N=/etc/init.d/$NAME
+		echo "Usage: $N {start|stop|restart} " >&2
+		exit 1
+		;;
+esac
+ 
+exit 0
