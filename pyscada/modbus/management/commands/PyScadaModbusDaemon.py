@@ -6,6 +6,7 @@ from pyscada.modbus import client
 from django.core.management.base import BaseCommand, CommandError
 from pyscada.models import BackgroundTask
 from django.conf import settings
+from django import VERSION as dv
 import os,sys
 from time import sleep,time
 import traceback
@@ -15,7 +16,11 @@ class Command(BaseCommand):
     help = 'Start the modbus data aquisition daemon for PyScada'
 
     def handle(self, *args, **options):
-        
+        if dv[1] >= 8:
+            self.stderr.write("this command is not supported in Django>=1.8\n please use python manage.py PyScadaDaemonHandler modbus {start | stop} instead\n", ending='')
+            return
+        else:
+            self.stdout.write("this command is depricated\n please use python manage.py PyScadaDaemonHandler modbus {start | stop} instead\n", ending='')
         if len(args)!=1:
             self.stdout.write("usage: python manage.py PyScadaModbusDaemon start | stop | restart\n", ending='')
         else:

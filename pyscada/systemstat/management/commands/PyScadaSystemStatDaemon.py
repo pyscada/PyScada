@@ -15,7 +15,11 @@ class Command(BaseCommand):
     help = 'Start the system statistic data aquisition daemon for PyScada'
 
     def handle(self, *args, **options):
-        
+        if dv[1] >= 8:
+            self.stderr.write("this command is not supported in Django>=1.8\n please use python manage.py PyScadaDaemonHandler systemstat {start | stop} instead\n", ending='')
+            return
+        else:
+            self.stdout.write("this command is depricated\n please use python manage.py PyScadaDaemonHandler systemstat {start | stop} instead\n", ending='')
         if len(args)!=1:
             self.stdout.write("usage: python manage.py PyScadaSystemStatDaemon start | stop | restart\n", ending='')
         else:
