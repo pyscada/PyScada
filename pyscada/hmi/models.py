@@ -109,7 +109,7 @@ class SlidingPanelMenu(models.Model):
 class ChartSet(models.Model):
 	size_choices	= ((0,'side by side (1/2)'),(1,'side by side (2/3|1/3)'),(2,'side by side (1/3|2/3)'),)
 	id 				= models.AutoField(primary_key=True)
-	distribution	= models.PositiveSmallIntegerField(max_length=20, default=0,choices=size_choices)
+	distribution	= models.PositiveSmallIntegerField(default=0,choices=size_choices)
 	chart_1			= models.ForeignKey(Chart,blank=True,null=True,related_name="chart_1",verbose_name="left Chart")
 	chart_2			= models.ForeignKey(Chart,blank=True,null=True,related_name="chart_2",verbose_name="right Chart")
 	def __unicode__(self):
