@@ -54,6 +54,8 @@ class mat:
             self._d[name].attrs['MATLAB_class'] = 'single'
         elif dtype.str in ['<i4']:
             self._d[name].attrs['MATLAB_class'] = 'int32'
+        elif dtype.str in ['<u4']:
+            self._d[name].attrs['MATLAB_class'] = 'uint32'
         elif dtype.str in ['<i2']:
             self._d[name].attrs['MATLAB_class'] = 'int16'
         elif dtype.str in ['<u2']:
@@ -85,6 +87,8 @@ class mat:
             self._cd[gname+"/values"].attrs['MATLAB_class'] = 'single'
         elif dtype.str in ['<i4']:
             self._cd[gname+"/values"].attrs['MATLAB_class'] = 'int32'
+        elif dtype.str in ['<u4']:
+            self._cd[gname+"/values"].attrs['MATLAB_class'] = 'uint32'
         elif dtype.str in ['<i2']:
             self._cd[gname+"/values"].attrs['MATLAB_class'] = 'int16'
         elif dtype.str in ['<u2']:

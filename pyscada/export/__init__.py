@@ -4,7 +4,7 @@ from datetime import timedelta
 from datetime import datetime
 import os
 from time import time, localtime, strftime,mktime
-from numpy import float64,float32,int32,uint16,int16,uint8, nan
+from numpy import float64,float32,int32,uint32,uint16,int16,uint8, nan
 import math
 
 from pyscada import log
@@ -314,3 +314,179 @@ def _last_matching_records(variable_class,time_id_min,time_id_max,variable_id):
     else:
         return None
 '''
+
+
+def export_table_to_h5(TableName,filename):
+    '''
+    export a full table to a h5 file
+    '''
+    tp = BackgroundTask(start=time(),label='data export',message='init',timestamp=time())
+    tp.save()
+    
+    if filename is None:
+        backup_file_path = os.path.expanduser('~/measurement_data_dumps')
+        backup_file_name = 'table_dump_data' + TableName
+        if not os.path.exists(backup_file_path ):
+            os.mkdir(backup_file_path)
+        cdstr = strftime("%Y_%m_%d_%H%M",localtime())
+        filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '.h5')
+    
+    bf = mat(filename)
+    if TableName == 'RecordedDataFloat':
+        tp.timestamp = time()
+        tp.message = 'reading flat data row id'
+        tp.save()
+        ids = list(RecordedDataFloat.objects.all().values_list('id',flat=True))
+        tp.timestamp = time()
+        tp.message = 'writing flat data row id'
+        tp.save()
+        bf.write_data('id',uint32(ids))
+        bf.reopen()
+        ids = []
+        tp.timestamp = time()
+        tp.message = 'reading flat data row value'
+        tp.save()
+        values = list(RecordedDataFloat.objects.all().values_list('value',flat=True))
+        tp.timestamp = time()
+        tp.message = 'writing flat data row value'
+        tp.save()
+        bf.write_data('value',float64(values))
+        bf.reopen()
+        values = []
+        
+        tp.timestamp = time()
+        tp.message = 'reading flat data row variable_id'
+        tp.save()
+        ids = list(RecordedDataFloat.objects.all().values_list('variable_id',flat=True))
+        tp.timestamp = time()
+        tp.message = 'writing flat data row variable_id'
+        tp.save()
+        bf.write_data('variable_id',uint32(ids))
+        bf.reopen()
+        ids = []
+        
+        tp.timestamp = time()
+        tp.message = 'reading flat data row time_id'
+        tp.save()
+        ids = list(RecordedDataFloat.objects.all().values_list('time_id',flat=True))
+        tp.timestamp = time()
+        tp.message = 'writing flat data row time_id'
+        tp.save()
+        bf.write_data('time_id',uint32(ids))
+        bf.reopen()
+        ids = []
+    elif 	TableName == 'RecordedDataInt':
+        tp.timestamp = time()
+        tp.message = 'reading int data row id'
+        tp.save()
+        ids = list(RecordedDataInt.objects.all().values_list('id',flat=True))
+        tp.timestamp = time()
+        tp.message = 'writing int data row id'
+        tp.save()
+        bf.write_data('id',uint32(ids))
+        bf.reopen()
+        ids = []
+        tp.timestamp = time()
+        tp.message = 'reading int data row value'
+        tp.save()
+        values = list(RecordedDataInt.objects.all().values_list('value',flat=True))
+        tp.timestamp = time()
+        tp.message = 'writing int data row value'
+        tp.save()
+        bf.write_data('value',int32(values))
+        bf.reopen()
+        values = []
+        
+        tp.timestamp = time()
+        tp.message = 'reading int data row variable_id'
+        tp.save()
+        ids = list(RecordedDataInt.objects.all().values_list('variable_id',flat=True))
+        tp.timestamp = time()
+        tp.message = 'writing int data row variable_id'
+        tp.save()
+        bf.write_data('variable_id',uint32(ids))
+        bf.reopen()
+        ids = []
+        
+        tp.timestamp = time()
+        tp.message = 'reading int data row time_id'
+        tp.save()
+        ids = list(RecordedDataInt.objects.all().values_list('time_id',flat=True))
+        tp.timestamp = time()
+        tp.message = 'writing int data row time_id'
+        tp.save()
+        bf.write_data('time_id',uint32(ids))
+        bf.reopen()
+        ids = []
+    elif 	TableName == 'RecordedDataBoolean':
+        tp.timestamp = time()
+        tp.message = 'reading bool data row id'
+        tp.save()
+        ids = list(RecordedDataBoolean.objects.all().values_list('id',flat=True))
+        tp.timestamp = time()
+        tp.message = 'writing bool data row id'
+        tp.save()
+        bf.write_data('id',uint32(ids))
+        bf.reopen()
+        ids = []
+        tp.timestamp = time()
+        tp.message = 'reading bool data row value'
+        tp.save()
+        values = list(RecordedDataBoolean.objects.all().values_list('value',flat=True))
+        tp.timestamp = time()
+        tp.message = 'writing bool data row value'
+        tp.save()
+        bf.write_data('value',uint8(values))
+        bf.reopen()
+        values = []
+        
+        tp.timestamp = time()
+        tp.message = 'reading bool data row variable_id'
+        tp.save()
+        ids = list(RecordedDataBoolean.objects.all().values_list('variable_id',flat=True))
+        tp.timestamp = time()
+        tp.message = 'writing bool data row variable_id'
+        tp.save()
+        bf.write_data('variable_id',uint32(ids))
+        bf.reopen()
+        ids = []
+        
+        tp.timestamp = time()
+        tp.message = 'reading bool data row time_id'
+        tp.save()
+        ids = list(RecordedDataBoolean.objects.all().values_list('time_id',flat=True))
+        tp.timestamp = time()
+        tp.message = 'writing bool data row time_id'
+        tp.save()
+        bf.write_data('time_id',uint32(ids))
+        bf.reopen()
+        ids = []
+    elif 	TableName == 'RecordedTime':
+        tp.timestamp = time()
+        tp.message = 'reading time row id'
+        tp.save()
+        time_ids = list(RecordedTime.objects.all().values_list('id',flat=True))
+        tp.timestamp = time()
+        tp.message = 'writing time row id'
+        tp.save()
+        bf.write_data('id',uint32(time_ids))
+        bf.reopen()
+        time_ids = []
+        tp.timestamp = time()
+        tp.message = 'reading time row timestamp'
+        tp.save()
+        time_values = list(RecordedTime.objects.all().values_list('timestamp',flat=True))
+        tp.timestamp = time()
+        tp.message = 'writing time row timestamp'
+        tp.save()
+        bf.write_data('timestamp',float64(time_values))
+        bf.reopen()
+        time_values = []
+        tp.timestamp = time()
+        tp.message = 'done'
+        tp.save()
+    bf.close_file()
+    tp.timestamp = time()
+    tp.message = 'done'
+    tp.done = 1
+    tp.save()
