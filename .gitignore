@@ -6,3 +6,4 @@ build
 PyScada.egg-info
 dist
 /.project
+docs/_build

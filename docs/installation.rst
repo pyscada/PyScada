@@ -1,18 +1,22 @@
+Installation
+============
+
+
 Debian like Systems
-===================
+-------------------
 
 
-The installation of PyScada 0.6.x on `Debian <https://www.debian.org/>`_ based Linux systems using `MySQL <https://www.mysql.de/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx<http://nginx.org/>`_ as HTTP Server.
+The installation of PyScada 0.6.x on `Debian <https://www.debian.org/>`_ based Linux systems using `MySQL <https://www.mysql.de/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
 
 Install Dependencies
---------------------
+^^^^^^^^^^^^^^^^^^^^
 
 
 ::
 
 	sudo apt-get update
 	sudo apt-get upgrade
-	sudo apt-get install mysql-server mysql-workbench python-mysqldb
+	sudo apt-get install mysql-server python-mysqldb
 	sudo apt-get install python-pip libhdf5-7 libhdf5-dev python-dev
 	sudo apt-get install nginx
 	sudo pip install gunicorn
@@ -24,7 +28,7 @@ Install Dependencies
 
 
 Install PyScada
----------------
+^^^^^^^^^^^^^^^
 
 
 ::
@@ -34,7 +38,7 @@ Install PyScada
 
 
 Create a Database
------------------
+^^^^^^^^^^^^^^^^^
 
 Create the Database and grand the nessesery permission. Replace `PyScada_db`, `PyScada-user` and `PyScada-user-password`.
 
@@ -44,8 +48,8 @@ Create the Database and grand the nessesery permission. Replace `PyScada_db`, `P
 	mysql -uroot -p -e "GRANT ALL PRIVILEGES ON PyScada_db.* TO 'PyScada-user'@'localhost' IDENTIFIED BY 'PyScada-user-password';"
 
 
-Create A Django Project
------------------------
+Create a new Django Project
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
@@ -56,7 +60,7 @@ Create A Django Project
 
 
 Edit urls.py And settings.py
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Open the urls configuration file and add the nesseary rewrite rule to the django URL dispatcher.
 
@@ -80,7 +84,7 @@ Open the django settings file and make the following modifications. See also the
 	nano ~/www/PyScadaServer/PyScadaServer/settings.py
 
 
-First deaktivate the debuging, if debuging is active django will keep all SQL queries in the ram, the dataaquasition runs many queries so your system will run fast out of memory. Keep in mind to restart guinicorn and all dataaquasion daemons after you change the debuging state.  
+First deaktivate the debuging, if debuging is active django will keep all SQL queries in the ram, the dataaquasition runs many queries so your system will run fast out of memory. Keep in mind to restart guinicorn and all dataaquasion daemons after you change the debuging state.
 
 ::
 
@@ -177,7 +181,7 @@ Add all PyScada specific settings
 
 
 Initialize Database And Copy Static Files
------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
@@ -189,7 +193,7 @@ Initialize Database And Copy Static Files
 if the migration fails just run the migration command twice.
 
 Add a Admin User To Your Django Project
----------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
@@ -198,7 +202,7 @@ Add a Admin User To Your Django Project
 
 
 Configuration of Nginx
-----------------------
+^^^^^^^^^^^^^^^^^^^^^^
 
 ::
 
@@ -282,10 +286,10 @@ after editing, enable the configuration and restart nginx, optionaly remove the 
 
 
 Add Init.d Scripts
-------------------
+^^^^^^^^^^^^^^^^^^
 
 
-To start the Dataaquasition daemon(s) and guinicorn, there are two example scripts in the git repository. Copy them to the init.d path of your machine and make them executible.  
+To start the Dataaquasition daemon(s) and guinicorn, there are two example scripts in the git repository. Copy them to the init.d path of your machine and make them executible.
 
 ::
 
@@ -318,9 +322,9 @@ Fill in the full path to the django project dir (were the manage.py is located).
 Edit the gunicorn init.d script.
 
 ::
-	
+
 	sudo nano /etc/default/gunicorn_django
-	
+
 
 Also fill in the path to your django project dir and replace the four spaces between the django projectname (PyScadaserver) the project path and the number of workers (10) with tabs.
 
@@ -342,9 +346,8 @@ Also fill in the path to your django project dir and replace the four spaces bet
 	sudo update-rc.d gunicorn_django defaults
 
 
-Start Gunicorn
---------------
 
-::
-	service gunicorn_django start
+Raspberry Pi (RASPBIAN)
+-----------------------
 
+The installation of Version 0.6.x is not recommend for the Raspberry Pi, please use the 0.7.x release instead.
