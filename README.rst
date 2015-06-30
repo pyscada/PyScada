@@ -3,31 +3,6 @@ PyScada a open source SCADA system
 
 A Open Source SCADA System with HTML5 HMI, build using the Django framework. If you like to setup your own _SCADA_ system head over to the :doc:`installation` section.
 
-
-* :ref:`frontend-docs`
-* :ref:`backend-docs`
-
-.. toctree::
-   :maxdepth: 2
-
-   installation
-   command-line
-
-.. _frontend-docs:
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Using the Frontend
-
-
-.. _backend-docs:
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Using the Backend
-
-
-
 Features
 --------
 
@@ -58,6 +33,11 @@ Dependencies
 	* psutil
 - BACNet/IP
 	* bacpypes
+
+Installation
+------------
+
+Detailed installation instruction can be found at: https://pyscada.rtfd.org .
 
 
 Contribute
