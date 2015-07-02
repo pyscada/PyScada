@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 from pyscada import log
 from pyscada.modbus import client
 from pyscada.models import BackgroundTask
@@ -16,7 +16,7 @@ def run():
         dt_set = float(settings.PYSCADA_MODBUS['polling_interval'])
     else:
         dt_set = 5 # default value is 5 seconds
-    
+
     # register the task in Backgroudtask list
     bt = BackgroundTask(start=time(),label=label,message='daemonized',timestamp=time(),pid = pid)
     bt.save()
@@ -34,29 +34,36 @@ def run():
         bt.timestamp = time()
         bt.save()
         raise
-    
+
     # mark the task as running
     bt = BackgroundTask.objects.get(pk=bt_id)
     bt.timestamp = time()
     bt.message = 'running...'
     bt.save()
-    
+
     log.notice("started modbus dataaquisition daemon")
     err_count = 1
     # main loop
     while not bt.stop_daemon:
         t_start = time()
+        if bt.message == 'reinit':
+            daq = client.DataAcquisition()
+            bt = BackgroundTask.objects.get(pk=bt_id)
+            bt.timestamp = time()
+            bt.message = 'running...'
+            bt.save()
+            log.notice("reinit of the modbus dataaquisition daemon done")
         try:
             daq.run()
             err_count = 1
         except:
             var = traceback.format_exc()
-            # write log only 
+            # write log only
             if err_count <= 3 or err_count == 10 or err_count%100 == 0:
                 log.debug("occ: %d, exeption in dataaquisition daemon\n\n %s" % (err_count,var),-1)
             err_count +=1
             daq = client.DataAcquisition()
-        bt = BackgroundTask.objects.get(pk=bt_id)   
+        bt = BackgroundTask.objects.get(pk=bt_id)
         bt.timestamp = time()
         if dt_set>0:
             bt.load= 1.-max(min((time()-t_start)/dt_set,1),0)
@@ -66,14 +73,12 @@ def run():
         dt = dt_set -(time()-t_start)
         if dt>0:
             sleep(dt)
-    
+
     ## will be called after stop signal
     log.notice("stopped dataaquisition daemon execution")
-    bt = BackgroundTask.objects.get(pk=bt_id)    
+    bt = BackgroundTask.objects.get(pk=bt_id)
     bt.timestamp = time()
     bt.done = True
     bt.message = 'stopped'
     bt.pid = 0
     bt.save()
-
-    

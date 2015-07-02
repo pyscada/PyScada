@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 from pyscada.models import Client as Client
 from pyscada.models import Variable as Variable
+from pyscada.models import BackgroundTask
 
-from django.db import models 
+from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.contrib.auth.models import User
 from django.contrib.auth.models import Group
 
+from time import time
 
 class ModbusClient(models.Model):
 	modbus_client 		= models.OneToOneField(Client)
@@ -22,3 +26,12 @@ class ModbusVariable(models.Model):
 	address  					= models.PositiveIntegerField()
 	function_code_read_choices 	= ((0,'not selected'),(1,'coils (FC1)'),(2,'discrete inputs (FC2)'),(3,'holding registers (FC3)'),(4,'input registers (FC4)'))
 	function_code_read			= models.PositiveSmallIntegerField(default=0,choices=function_code_read_choices,help_text="")
+
+
+@receiver(post_save, sender=ModbusClient)
+@receiver(post_save, sender=ModbusVariable)
+def _reinit_modbus_daemons(sender, **kwargs):
+	"""
+	update the modbus daemons configuration wenn changes be applied in the model
+	"""
+	BackgroundTask.objects.filter(label='pyscada.modbus.daemon',done=0,failed=0).update(message='reinit',timestamp = time())
