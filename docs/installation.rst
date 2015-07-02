@@ -727,7 +727,7 @@ Open the django settings file and make the following modifications. See also the
 
 ::
 
-	DEBUG = True
+	DEBUG = False
 	TEMPLATE_DEBUG = DEBUG
 
 
@@ -833,7 +833,7 @@ Open a Windows Command-line (cmd.exe) and start the Django Development Server.
 ::
 
 	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer
-	python manage.py runserver
+	python manage.py runserver --insecure
 
 Start the PyScada Daemons
 ^^^^^^^^^^^^^^^^^^^^^^^^^
