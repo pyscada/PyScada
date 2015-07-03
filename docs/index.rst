@@ -11,6 +11,7 @@ A Open Source SCADA System with HTML5 HMI, build using the Django framework. If 
    :maxdepth: 2
 
    installation
+   update
    command-line
 
 .. _frontend-docs:

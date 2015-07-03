@@ -2,8 +2,8 @@ Installation
 ============
 
 
-Debian like Systems
--------------------
+Debian/Ubuntu
+-------------
 
 
 The installation of PyScada 0.6.x on `Debian <https://www.debian.org/>`_ based Linux systems using `MySQL <https://www.mysql.de/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
