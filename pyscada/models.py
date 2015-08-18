@@ -38,9 +38,12 @@ class Client(models.Model):
 class Unit(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	unit			= models.CharField(max_length=80, verbose_name="Unit")
-	description 		= models.TextField(default='', verbose_name="Description",null=True)
+	description 	= models.TextField(default='', verbose_name="Description",null=True)
+	udunit			= models.CharField(max_length=500, verbose_name="udUnit")
 	def __unicode__(self):
 		return unicode(self.unit)
+	class  Meta:
+		managed=True
 
 
 
@@ -53,19 +56,19 @@ class Variable(models.Model):
 	unit 			= models.ForeignKey(Unit,null=True, on_delete=models.SET_NULL)
 	writeable		= models.BooleanField(default=False)
 	record			= models.BooleanField(default=True)
-	value_class_choices = (('FLOAT32','FLOAT32'),
-						('SINGLE','SINGLE'),
-						('FLOAT','FLOAT'),
+	value_class_choices = (('FLOAT32','REAL'),
+						('FLOAT32','SINGLE'),
+						('FLOAT32','FLOAT32'),
+						('FLOAT64','FLOAT'),
 						('FLOAT64','FLOAT64'),
-						('REAL','REAL'),
 						('INT32','INT32'),
 						('UINT32','UINT32'),
+						('INT16','INT'),
 						('INT16','INT16'),
-						('INT','INT'),
-						('WORD','WORD'),
-						('UINT','UINT'),
+						('UINT16','WORD'),
+						('UINT16','UINT'),
 						('UINT16','UINT16'),
-						('BOOL','BOOL'),
+						('BOOLEAN','BOOL'),
 						)
 	value_class		= models.CharField(max_length=15, default='FLOAT', verbose_name="value_class",choices=value_class_choices)
 	def __unicode__(self):
@@ -82,7 +85,7 @@ class ClientWriteTask(models.Model):
 	fineshed		= models.FloatField(default=0,blank=True)
 	done			= models.BooleanField(default=False,blank=True)
 	failed			= models.BooleanField(default=False,blank=True)
-	
+
 
 class RecordedTime(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -143,7 +146,7 @@ class Log(models.Model):
 	def __unicode__(self):
 		return unicode(self.message)
 
-		
+
 class BackgroundTask(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	start 			= models.FloatField(default=0)
@@ -158,7 +161,7 @@ class BackgroundTask(models.Model):
 	stop_daemon		= models.BooleanField(default=False,blank=True)
 	label			= models.CharField(max_length=400, default='')
 	message			= models.CharField(max_length=400, default='')
-	
+
 	def __unicode__(self):
 		return unicode(self.timestamp)
 	def timestamp_ms(self):
@@ -180,8 +183,8 @@ class MailRecipient(models.Model):
 	subject_prefix  = models.TextField(default='')
 	message_suffix	= models.TextField(default='')
 	to_email		= models.EmailField(default='')
-	
-	
+
+
 class Event(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	label			= models.CharField(max_length=400, default='')
@@ -225,15 +228,15 @@ class Event(models.Model):
 		elif self.limit_type == 1:
 			return value <= self.fixed_limit
 		elif self.limit_type == 2:
-			return value == self.fixed_limit    
+			return value == self.fixed_limit
 		elif self.limit_type == 3:
 			return value >= self.fixed_limit
 		elif self.limit_type == 4:
 			return value > self.fixed_limit
 		else:
 			return False
-			
-	
+
+
 	def do_event_check(self,timestamp,value):
 		prev_event = RecordedEvent.objects.filter(event=self,active=True)
 
@@ -248,16 +251,15 @@ class Event(models.Model):
 				prev_event.active = False
 				prev_event.time_end = timestamp
 				prev_event.save()
-		return False	
-		
-		
-		
-		
-		
+		return False
+
+
+
+
+
 class RecordedEvent(models.Model):
 	id          = models.AutoField(primary_key=True)
 	event		= models.ForeignKey(Event,null=True, on_delete=models.SET_NULL)
 	time_begin  = models.ForeignKey(RecordedTime,null=True, on_delete=models.SET_NULL)
 	time_end  	= models.ForeignKey(RecordedTime,null=True, on_delete=models.SET_NULL,related_name="time_end")
 	active		= models.BooleanField(default=False,blank=True)
-	

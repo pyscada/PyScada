@@ -2,33 +2,83 @@
 """
 Created on Sat Nov 30 14:22:58 2013
 
-@author: martin schröder
+@author: Martin Schröder
 """
 import os
+import io
 import shutil
-import h5py as h5
+import h5py
+import time
 
-class mat:
-    def __init__(self,filename):
+
+def unix_time_stamp_to_matlab_datenum(timestamp):
+    '''
+    convert dtype to maltab class string
+    '''
+    return (timestamp/86400)+719529
+        
+def dtype_to_matlab_class(dtype):
+    '''
+    convert dtype to maltab class string
+    '''
+    if dtype.str in ['<f8']:
+        return 'double'
+    elif dtype.str in ['<f4']:
+        return 'single'
+    elif dtype.str in ['<i8']:
+        return 'int64'
+    elif dtype.str in ['<u8']:
+        return 'uint64'
+    elif dtype.str in ['<i4']:
+        return 'int32'
+    elif dtype.str in ['<u4']:
+        return 'uint32'
+    elif dtype.str in ['<i2']:
+        return 'int16'
+    elif dtype.str in ['<u2']:
+        return 'uint16'
+    elif dtype.str in ['|i1']:
+        return 'int8'
+    elif dtype.str in ['|u1']:
+        return 'uint8'
+
+class mat_compatible_h5:
+    def __init__(self,filename,**kwargs):
         """
 
 
         """
         self.filename       = os.path.expanduser(filename)
         self.filepath       = []
-        self._masterfilepath = os.path.abspath(os.path.dirname(__file__))
-        self._masterfilename = "HDF5_MatlabMaster.h5"
+
         if not os.path.exists(self.filename):
-            shutil.copyfile( os.path.join(self._masterfilepath,self._masterfilename),self.filename)
-        self._f = []
+            self.create_file()
+
         self.reopen()
+        for key, value in kwargs.iteritems():
+            if isinstance(value,basestring): 
+                self._f.attrs[key] = value
+            else:
+                self._f.attrs[key] = value.__str__()
+        self.reopen()
+
+    def create_file(self):
+        self._f = h5py.File(self.filename,'w',userblock_size=512)
+        self._f.close()
+        userblock_data = 'MATLAB 7.3 MAT-file, Platform: PCWIN64, Created on: %s HDF5 schema 1.00 .'%time.strftime('%a %b %d %H:%M:%S %Y')
+        while len(userblock_data)< 116:
+            userblock_data += ' '
+        userblock_data += chr(0)*9
+        userblock_data += 'IM';
+        with io.open(self.filename,'rb+') as f:
+            f.write(userblock_data)
 
     def close_file(self):
         if self._f:
             self._f.close();
     def reopen(self):
         self.close_file()
-        self._f = h5.File(self.filename)
+        self._f = h5py.File(self.filename)
         self._d = {}
         self._cd = {}
         for d in self._f.values():
@@ -48,25 +98,12 @@ class mat:
         self._d[name] = self._f.create_dataset(name,
                                 shape=(0,), dtype=dtype,maxshape=(None,),chunks=(CHUNCK,),
                                 compression='gzip',compression_opts=GZIP_LEVEL)
-        if dtype.str in ['<f8']:
-            self._d[name].attrs['MATLAB_class'] = 'double'
-        elif dtype.str in ['<f4']:
-            self._d[name].attrs['MATLAB_class'] = 'single'
-        elif dtype.str in ['<i4']:
-            self._d[name].attrs['MATLAB_class'] = 'int32'
-        elif dtype.str in ['<u4']:
-            self._d[name].attrs['MATLAB_class'] = 'uint32'
-        elif dtype.str in ['<i2']:
-            self._d[name].attrs['MATLAB_class'] = 'int16'
-        elif dtype.str in ['<u2']:
-            self._d[name].attrs['MATLAB_class'] = 'uint16'
-        elif dtype.str in ['|u1']:
-            self._d[name].attrs['MATLAB_class'] = 'uint8'
+        self._d[name].attrs['MATLAB_class'] = dtype_to_matlab_class(dtype)
         return self._d[name]
 
     def create_group(self,name):
         self._d[name] = self._f.create_group(name)
-        
+
     def create_complex_dataset(self,gname,dtype):
         CHUNCK      = 400
         GZIP_LEVEL  = 3
@@ -76,29 +113,22 @@ class mat:
         self._cd[gname+"/values"] = self._d[gname].create_dataset("values",
                                 shape=(0,), dtype=dtype,maxshape=(None,),chunks=(CHUNCK,),
                                 compression='gzip',compression_opts=GZIP_LEVEL)
-                                
+
         self._cd[gname+"/time"] = self._d[gname].create_dataset("time",
                                 shape=(0,), dtype="f8",maxshape=(None,),chunks=(CHUNCK,),
                                 compression='gzip',compression_opts=GZIP_LEVEL)
         self._cd[gname+"/time"].attrs['MATLAB_class'] = 'double'
-        if dtype.str in ['<f8']:
-            self._cd[gname+"/values"].attrs['MATLAB_class'] = 'double'
-        elif dtype.str in ['<f4']:
-            self._cd[gname+"/values"].attrs['MATLAB_class'] = 'single'
-        elif dtype.str in ['<i4']:
-            self._cd[gname+"/values"].attrs['MATLAB_class'] = 'int32'
-        elif dtype.str in ['<u4']:
-            self._cd[gname+"/values"].attrs['MATLAB_class'] = 'uint32'
-        elif dtype.str in ['<i2']:
-            self._cd[gname+"/values"].attrs['MATLAB_class'] = 'int16'
-        elif dtype.str in ['<u2']:
-            self._cd[gname+"/values"].attrs['MATLAB_class'] = 'uint16'
-        elif dtype.str in ['|u1']:
-            self._cd[gname+"/values"].attrs['MATLAB_class'] = 'uint8'
-        return self._d[gname]
-        
-    def write_data(self,name,data):
-        self.create_dataset(name,data.dtype);
+        self._cd[gname+"/values"].attrs['MATLAB_class'] = dtype_to_matlab_class(dtype)
+        return True
+
+    def write_data(self,name,data,**kwargs):
+        if self.create_dataset(name,data.dtype):
+            for key, value in kwargs.iteritems():
+                if isinstance(value,basestring): 
+                    self._d[name].attrs[key] = value
+                else:
+                    self._d[name].attrs[key] = value.__str__()
+
         dl = self._d[name].len()
         self._d[name].resize((dl+data.size,))
         self._d[name][dl::] = data
@@ -110,16 +140,16 @@ class mat:
         self._cd[gname+"/time"].resize((dl+data.size,))
         self._cd[gname+"/values"][dl::] = data
         self._cd[gname+"/time"][dl::] = times
-        
+
     def batch_write(self,data_list):
         for name in data_list:
             self.write_data(name,data_list[name])
-            
+
     def batch_complex_write(self,data_list):
         times = data_list.pop("time")
         self.write_data("time",times)
         for name in data_list:
             self.write_complex_data(name,data_list[name],times)
 
-    def unix_time_stamp_to_matlab(timestamp):
-        return (timestamp/86400)+719529
+    
+    
