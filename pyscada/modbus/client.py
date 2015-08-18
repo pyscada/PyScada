@@ -164,6 +164,7 @@ class client:
         self.trans_discrete_inputs  = []
         self.variables  = {}
         self._variable_config   = self._prepare_variable_config(client)
+        self._not_accessible_variable = []
         
 
     def _prepare_variable_config(self,client):
@@ -268,10 +269,16 @@ class client:
             if result is not None:
                 
                 data = dict(data.items() + result.items())
+                for variable_id in register_block.variable_id:
+                    if self._not_accessible_variable.count(variable_id) > 0:
+                        log.error(("variable with id: %d is now accessible")%(variable_id))
+                        self._not_accessible_variable.remove(variable_id)
                 
             else:
                 for variable_id in register_block.variable_id:
-                    log.error(("variable with id: %d is not accessible")%(variable_id))
+                    if self._not_accessible_variable.count(variable_id) == 0:
+                        log.error(("variable with id: %d is not accessible")%(variable_id))
+                        self._not_accessible_variable.append(variable_id)
                     data[variable_id] = None
             
         self._disconnect()
@@ -315,7 +322,11 @@ class client:
 
 class DataAcquisition:
     def __init__(self):
-        self._dt        = float(settings.PYSCADA_MODBUS['polling_interval'])
+        if settings.PYSCADA_MODBUS.has_key('polling_interval'):
+            self._dt        = float(settings.PYSCADA_MODBUS['polling_interval'])
+        else:
+            self._dt        = 5
+            
         self._com_dt    = 0
         self._dvf       = []
         self._dvi       = []
