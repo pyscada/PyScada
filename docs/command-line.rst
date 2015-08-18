@@ -34,3 +34,11 @@ Get Installed PyScada Version
 	import pyscada
 	pyscada.__version__
 	exit()
+
+
+Export Database Tables
+----------------------
+
+::
+
+	export_table_to_h5(TableName)

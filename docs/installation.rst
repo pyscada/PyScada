@@ -17,13 +17,18 @@ Install Dependencies
 	sudo apt-get update
 	sudo apt-get upgrade
 	sudo apt-get install mysql-server python-mysqldb
+	# on debian 7
 	sudo apt-get install python-pip libhdf5-7 libhdf5-dev python-dev
+	# on debian 8
+	sudo apt-get install python-pip libhdf5-8 libhdf5-dev python-dev
 	sudo apt-get install nginx
 	sudo pip install gunicorn
 	sudo pip install django">=1.7,<1.8"
 	sudo pip install cython
 	sudo pip install numpy
 	sudo pip install h5py
+	# if pip install h5 failes install
+	# sudo apt-get install python-h5py
 	sudo pip install python-daemon
 
 
@@ -238,7 +243,7 @@ add the following and adjust the server, /media, /static location
 		location /static {
 			alias /home/www-user/www/PyScadaServer/static; # your Django project's static files - amend as required
 		}
-
+		location / {
 			# an HTTP header important enough to have its own Wikipedia entry:
 			#   http://en.wikipedia.org/wiki/X-Forwarded-For
 			proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
