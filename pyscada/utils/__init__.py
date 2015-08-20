@@ -323,7 +323,7 @@ def import_xml_config_file(filename):
 		field_name = field.getAttribute('name')
 		values[field_name] = _cast(field.firstChild.nodeValue,_type)
 
-	# read all objects and
+	# read all objects
 	_Clients = []
 	_Variables = []
 	_Units = []
@@ -338,7 +338,6 @@ def import_xml_config_file(filename):
 		for field in fields:
 			_parse_field()
 		if obj_name.upper() in ['CLIENT']:
-			#name, description, client_type, active, modbus_protocol, modbus_ip_address, modbus_port, modbus_unit_id
 			_Clients.append(values)
 		elif obj_name.upper() in ['VARIABLE']:
 			_Variables.append(values)
@@ -350,30 +349,32 @@ def import_xml_config_file(filename):
 	## update/import Clients ###################################################
 	for entry in _Clients:
 		# Client (object)
-		cc, created = Client.objects.get_or_create(pk = entry['id'],defaults={'id':entry['id'],'short_name':entry['name'],'description':entry['description'],'client_type':entry['client_type']})
+		cc, created = Client.objects.get_or_create(pk = entry['id'],defaults={'id':entry['id'],'short_name':entry['name'],'description':entry['description'],'client_type':entry['client_type'],'active':entry['active']})
 		if created:
 			log.info(("created client: %s") %(entry['name']))
 		else:
 			cc.short_name = entry['name']
 			cc.description = entry['description']
 			cc.client_type = entry['client_type']
+			cc.active       = entry['active']
 			cc.save()
 			log.info(("updated client: %s (%d)") %(entry['name'],entry['id']))
 		# modbus config
-		# get protocol choice id
-		protocol_choices = ModbusClient._meta.get_field('protocol').choices
-		for prtc in protocol_choices:
-			if entry['modbus.protocol'] == prtc[1]:
-				entry['modbus.protocol'] = prtc[0]
+		if entry.has_key('modbus.protocol') and entry.has_key('modbus.ip_address') and entry.has_key('modbus.port') and entry.has_key('modbus.unit_id'):
+			# get protocol choice id
+			protocol_choices = ModbusClient._meta.get_field('protocol').choices
+			for prtc in protocol_choices:
+				if entry['modbus.protocol'] == prtc[1]:
+					entry['modbus.protocol'] = prtc[0]
 
-		if hasattr(cc,'modbusclient'):
-			cc.modbusclient.ip_address = entry['modbus.ip_address']
-			cc.modbusclient.port = entry['modbus.port']
-			cc.modbusclient.unit_id = entry['modbus.unit_id']
-			cc.modbusclient.protocol = entry['modbus.protocol']
-			cc.modbusclient.save()
-		else:
-			ModbusClient(modbus_client=cc,ip_address=entry['modbus.ip_address'],port=entry['modbus.port'],protocol=entry['modbus.protocol'],unit_id=entry['modbus.unit_id'])
+			if hasattr(cc,'modbusclient'):
+				cc.modbusclient.ip_address = entry['modbus.ip_address']
+				cc.modbusclient.port = entry['modbus.port']
+				cc.modbusclient.unit_id = entry['modbus.unit_id']
+				cc.modbusclient.protocol = entry['modbus.protocol']
+				cc.modbusclient.save()
+			else:
+				ModbusClient(modbus_client=cc,ip_address=entry['modbus.ip_address'],port=entry['modbus.port'],protocol=entry['modbus.protocol'],unit_id=entry['modbus.unit_id'])
 
 	# Unit (object)
 	for entry in _Units:
@@ -431,7 +432,7 @@ def import_xml_config_file(filename):
 		if hasattr(vc,'modbusvariable'):
 			if entry.has_key("modbus.address"):
 				vc.modbusvariable.address 				= entry["modbus.address"]
-			if entry.has_key("modbus.function_code_read"):	
+			if entry.has_key("modbus.function_code_read"):
 				vc.modbusvariable.function_code_read 	= entry["modbus.function_code_read"]
 			vc.modbusvariable.save()
 		else:

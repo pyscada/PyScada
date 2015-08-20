@@ -1,6 +1,6 @@
-/* Javascript library for the PyScada web client based on jquery and flot, 
+/* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.6.12
+version 0.6.13
 
 Copyright (c) 2013-2015 Martin Schröder
 Licensed under the GPL.
@@ -40,7 +40,7 @@ function hideUpdateStatus(){
 }
 
 function fetchConfig(){
-	
+
 	$.ajax({
 		url: RootUrl+"json/config/",
 		dataType: "json",
@@ -59,7 +59,7 @@ function fetchConfig(){
 }
 
 function fetchData() {
-	
+
 	if (auto_update_active) {
 		showUpdateStatus();
 		$.ajax({
@@ -67,7 +67,7 @@ function fetchData() {
 			dataType: "json",
 			timeout: fetch_data_timeout,
 			type: "POST",
-			data:{ timestamp: data_last_timestamp },
+			data:{ timestamp: data_last_timestamp, variables: PyScadaConfig.VariableKeys },
 			success: function(data) {
 				timestamp = data['timestamp']
 				if (data_last_timestamp < timestamp){
@@ -326,66 +326,40 @@ function PyScadaPlot(config){
 	},
 	series = [],		// just the active data series
 	keys   = [],		// list of variable keys
-	data = {},			// all the data
+	data   = {},			// all the data
 	flotPlot,			// handle to plot
 	BufferSize = 5760, 	// buffered points
 	WindowSize = 20, 	// displayed data window in minutes
-	prepared = false,	// 
+	prepared = false,	//
 	plot = this,
-	DoInit = true;	// 
-	
+	DoInit = true;	//
+
 	// public functions
-	plot.add				= add;
+	plot.add				  = add;
 	plot.addData 			= addData;
 	plot.update 			= update;
 	plot.prepare 			= prepare;
 	plot.expandToMaxWidth 	= expandToMaxWidth;
 	plot.getBufferSize		= function () { return BufferSize};
 	plot.setBufferSize		= setBufferSize;
-	plot.getData			= function () { return data };
-	plot.getSeries 			= function () { return series };
+	plot.getData			    = function () { return data };
+	plot.getSeries 			  = function () { return series };
 	plot.getFlotObject		= function () { return flotPlot};
 	plot.setWindowSize		= function (size){ WindowSize = size; update(); };
-	plot.getKeys			= function (){ return keys};
+	plot.getKeys			    = function (){ return keys};
 	// init data
 	$.each(config.variables,function(key){
 			data[key] = [];
 			keys.push(key);
 		});
-	
-	
+
+
 	function prepare(){
-		var LineColors = []
-		colorPool = ["#edc240", "#afd8f8", "#cb4b4b", "#4da74d", "#9440ed"];
-		colorPoolSize = colorPool.length;
-		neededColors = 50
-		variation = 0;
-		for (i = 0; i < neededColors; i++) {
-			c = $.color.parse(colorPool[i % colorPoolSize] || "#666");
-
-			// Each time we exhaust the colors in the pool we adjust
-			// a scaling factor used to produce more variations on
-			// those colors. The factor alternates negative/positive
-			// to produce lighter/darker colors.
-
-			// Reset the variation after every few cycles, or else
-			// it will end up producing only white or black colors.
-
-			if (i % colorPoolSize == 0 && i) {
-				if (variation >= 0) {
-					if (variation < 0.5) {
-						variation = -variation - 0.2;
-					} else variation = 0;
-				} else variation = -variation;
-			}
-
-			//colors.push(c.scale('rgb', 1 + variation));
-			LineColors.push(c.scale('rgb', 1 + variation));
-		}
-		
 		// prepare legend
+		// add and configure the tablesorter plugin
 		$(config.placeholder+'-table').tablesorter({sortList: [[2,0]]});
-		
+
+		// add change of checkbox status callback funktion to every checkbox
 		$.each(config.variables,function(key,val){
 			$(config.placeholder+'-'+key+'-checkbox').change(function() {
 				plot.update();
@@ -449,38 +423,38 @@ function PyScadaPlot(config){
 			flotPlot.draw();
 		});
 	}
-	
+
 	function setBufferSize(size){
 		if (size <= BufferSize){
 			BufferSize = size;
 			$.each(data,function(key){
 				if (data[key].length > BufferSize){
-        			// if buffer is full drop the first element
-       				data[key] = data[key].splice(data[key].length-BufferSize,data[key].length);
+        			// if buffer is full drop the oldest elements
+       				data[key].splice(-data[key].length,data[key].length-BufferSize);
         		}
 			});
 		}else{
-			BufferSize = size;	
+			BufferSize = size;
 		}
-		
+
 	}
-	
+
 	function addData(key,time,val){
 		if (typeof(data[key])==="object"){
 			data[key].push([time, val]);
         	if (data[key].length > BufferSize){
-        		// if buffer is full drop the first element
-       			data[key].splice(data[key].length-BufferSize);
+        		// if buffer is full drop the oldest elements
+       			data[key].splice(-data[key].length,data[key].length-BufferSize);
         	}
     	}
 	}
-	
+
 	function add(key,value){
 		if (typeof(data[key])==="object"){
 			data[key] = value.concat(data[key]);
     	}
 	}
-	
+
 	function update(){
 		if(!prepared ){
 			if($(config.placeholder).is(":visible")){
@@ -506,7 +480,7 @@ function PyScadaPlot(config){
 						start_id = findIndexSub(data[key],now - (WindowSize * 1000 * 60),0);
 					//}
 					series.push({"data":data[key].slice(start_id),"color":config.variables[key].color,"yaxis":config.variables[key].yaxis});
-					//series.push({"data":data[key],"color":config.variables[key].color,"yaxis":config.variables[key].yaxis});		
+					//series.push({"data":data[key],"color":config.variables[key].color,"yaxis":config.variables[key].yaxis});
 				};
 			});
 			// update flot plot
@@ -520,18 +494,18 @@ function PyScadaPlot(config){
 			$('.legend table').trigger("updateAll",["",function(table){}]);
 		}
 	}
-	
+
 	function expandToMaxWidth(){
 		contentAreaWidth = $(config.placeholder).closest('.main-chart-area').parent().width();
 		sidebarAreaWidth = $(config.legendplaceholder).closest('.legend-sidebar').width();
 		mainChartAreaWidth = contentAreaWidth - sidebarAreaWidth - 15;
 		$(config.placeholder).closest('.main-chart-area').width(mainChartAreaWidth);
 	}
-	
+
 	function loadInitData(){
 		// plot data
-		if (init_chart_data_fetch_pending_count > 2){
-			return;	
+		if (init_chart_data_fetch_pending_count > 0){ // only load for one chart
+			return;
 		}
 		showUpdateStatus();
 		init_chart_data_fetch_pending_count ++;
@@ -561,7 +535,7 @@ function PyScadaPlot(config){
 			}
 		});
 	}
-}
+} // end PyScadaPlot ===========================================================
 
 function setWindowSize(size){
 	$.each(PyScadaPlots,function(plot_id){

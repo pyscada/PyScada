@@ -25,18 +25,22 @@ export measurements from the database to a file
 """
 
 def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=None):
-    tp = BackgroundTask(start=time(),label='data export',message='init',timestamp=time())
+    tp = BackgroundTask(start=time(),label='pyscada.export.export_measurement_data_to_h5',message='init',timestamp=time(),pid=str(os.getpid()))
     tp.save()
 
     if filename is None:
-        if settings.PYSCADA_EXPORT.has_key('output_folder'):
-            backup_file_path = os.path.expanduser(settings.PYSCADA_EXPORT['output_folder'])
+        if hasattr(settings,'PYSCADA_EXPORT'):
+            if settings.PYSCADA_EXPORT.has_key('output_folder'):
+                backup_file_path = os.path.expanduser(settings.PYSCADA_EXPORT['output_folder'])
+            else:
+                backup_file_path = os.path.expanduser('~/measurement_data_dumps')
         else:
             backup_file_path = os.path.expanduser('~/measurement_data_dumps')
-            
+        
         backup_file_name = 'measurement_data'
-        if settings.PYSCADA_EXPORT.has_key('file_prefix'):
-            backup_file_name = settings.PYSCADA_EXPORT['file_prefix'] + backup_file_name
+        if hasattr(settings,'PYSCADA_EXPORT'):
+            if settings.PYSCADA_EXPORT.has_key('file_prefix'):
+                backup_file_name = settings.PYSCADA_EXPORT['file_prefix'] + backup_file_name
             
         if not os.path.exists(backup_file_path ):
             os.mkdir(backup_file_path)
@@ -211,14 +215,17 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
 
             bf.reopen()
         ## end for #################################################################
-    
-    if settings.PYSCADA_META.has_key('description'):
-        description = settings.PYSCADA_META['description']
+    if hasattr(settings,'PYSCADA_META'):
+        if settings.PYSCADA_META.has_key('description'):
+            description = settings.PYSCADA_META['description']
+        else:
+            description = 'None'
+        if settings.PYSCADA_META.has_key('name'):
+            name = settings.PYSCADA_META['name']
+        else:
+            name = 'None'
     else:
         description = 'None'
-    if settings.PYSCADA_META.has_key('name'):
-        name = settings.PYSCADA_META['name']
-    else:
         name = 'None'
     
     bf = mat(filename,version = '1.0',description = description ,name = name, creation_date = strftime('%d-%b-%Y %H:%M:%S'),xml=export_xml_config_file())
@@ -251,8 +258,12 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
     else:
         first_time_id = max(first_time_id,time_id_min)
 
-
-    chunk_size = 17280
+    if connection.vendor == 'sqlite':
+        # on sqlite limit querys to less then 999 elements
+        chunk_size = 998
+    else:
+        chunk_size = 17200
+        
     first_time_id_chunk = first_time_id
     last_time_id_chunk = first_time_id + chunk_size - 1
     if last_time_id_chunk > last_time_id:
