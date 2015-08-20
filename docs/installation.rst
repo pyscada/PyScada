@@ -157,6 +157,20 @@ Add all PyScada specific settings
 	# folder were the daemon pid files are stored
 	PID_ROOT = BASE_DIR + '/run/'
 
+	# meta informations
+	#
+	PYSCADA_META = {
+	    'name':'A SHORT NAME',
+	    'description':'A SHORT DESCRIPTION',
+	}
+
+	# export properties
+	#
+	PYSCADA_EXPORT = {
+	    'file_prefix':'PREFIX_',
+	    'output_folder':'~/measurement_data_dumps',
+	}
+
 	# list of available client Protocols
 	#
 	PYSCADA_CLIENTS = (
@@ -183,6 +197,8 @@ Add all PyScada specific settings
 		'recording_interval':5,
 		'pid_file_name': 'daemon-sysstat.pid'
 	}
+
+
 
 
 Initialize Database And Copy Static Files
@@ -849,3 +865,10 @@ Using pyscada background daemons in Windows is currently not supported, to start
 
 	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer
 	python manage.py PyScadaWindowsDaemonHandler daemon_name
+
+
+It is also posible to register the modbus daemon as an windows service, to do this download the from registratioen skript from https://raw.githubusercontent.com/trombastic/PyScada/stable/0.6.x/register_windows_service_modbus.py and copy it to the project root folder.
+
+::
+	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer
+	python register_windows_service_modbus.py
