@@ -306,7 +306,7 @@ def _last_matching_record(variable_class,time_id,variable_id,time_id_min):
         item = cursor.execute("SELECT time_id,value FROM pyscada_recordeddataint WHERE time_id <= %s AND time_id >= %s AND variable_id = %s ORDER BY time_id DESC LIMIT 1;",[time_id,time_id_min,variable_id])
         #item = cursor.execute("SELECT time_id,value FROM pyscada_recordeddataint WHERE id = (SELECT max(id) FROM pyscada_recordeddataboolean WHERE time_id <= %s AND time_id >= %s AND  variable_id = %s);",[time_id,time_id_min,variable_id])
 
-    elif variable_class.upper() in ['BOOL']:
+    elif variable_class.upper() in ['BOOL','BOOLEAN']:
         item = cursor.execute("SELECT time_id,value FROM pyscada_recordeddataboolean WHERE time_id <= %s AND time_id >= %s AND variable_id = %s ORDER BY time_id DESC LIMIT 1;",[time_id,time_id_min,variable_id])
         #item = cursor.execute("SELECT time_id,value FROM pyscada_recordeddataboolean WHERE id = (SELECT max(id) FROM pyscada_recordeddataboolean WHERE time_id <= %s AND time_id >= %s AND  variable_id = %s);",[time_id,time_id_min,variable_id])
 
@@ -668,7 +668,7 @@ def _cast_value(value,_type):
         return uint16(value)
     elif  _type.upper() in ['INT16','INT']:
         return int16(value)
-    elif _type.upper() in ['BOOL']:
+    elif _type.upper() in ['BOOL','BOOLEAN']:
         return uint8(value)
     else:
         return float64(value)

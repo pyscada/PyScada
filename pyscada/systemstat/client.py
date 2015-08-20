@@ -189,7 +189,7 @@ class DataAcquisition():
                         self._dvi.append(RecordedDataInt(time=timestamp,variable_id=var_idx,value=int(value)))
                     elif  variable_class.upper() in ['INT16','INT']:
                         self._dvi.append(RecordedDataInt(time=timestamp,variable_id=var_idx,value=int(value)))
-                    elif variable_class.upper() in ['BOOL']:
+                    elif variable_class.upper() in ['BOOL','BOOLEAN']:
                         self._dvb.append(RecordedDataBoolean(time=timestamp,variable_id=var_idx,value=bool(value)))
         
         RecordedDataCache.objects.filter(variable_id__in=del_idx).delete()

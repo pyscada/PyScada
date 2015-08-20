@@ -112,19 +112,19 @@ def config(request):
 				var_label = var.name
 			if len(var_label) > var_label_max_len:
 				var_label = var_label[:var_label_max_len-5] + '..' + var_label[-3:]
-			
+
 			vars[var.name] = {"yaxis":1,"color":color_code,"unit":var.unit.description,"label":var_label}
-			
-		config["config"].append({"label":chart.title,"xaxis":{"ticks":chart.x_axis_ticks},"axes":[{"yaxis":{"min":chart.y_axis_min,"max":chart.y_axis_max,'label':chart.y_axis_label}}],"placeholder":"#chart-%d"% chart.pk,"legendplaceholder":"#chart-%d-legend" % chart.pk,"variables":vars}) 
+
+		config["config"].append({"label":chart.title,"xaxis":{"ticks":chart.x_axis_ticks},"axes":[{"yaxis":{"min":chart.y_axis_min,"max":chart.y_axis_max,'label':chart.y_axis_label}}],"placeholder":"#chart-%d"% chart.pk,"legendplaceholder":"#chart-%d-legend" % chart.pk,"variables":vars})
 		chart_count += 1
-				
+
 	active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True))
 	active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
 	active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('custom_html_panels__variables',flat=True))
 	active_variables = list(set(active_variables))
-	
+
 	config["VariableKeys"]		= active_variables
-	
+
 	jdata = json.dumps(config,indent=2)
 	return HttpResponse(jdata, content_type='application/json')
 
@@ -215,16 +215,18 @@ def data(request):
 		t_min_ts = RecordedTime.objects.get(pk=t_min_pk).timestamp
 	else:
 		return HttpResponse('{\n}', content_type='application/json')
-	
-	variables = request.POST.getlist('variables[]')
-	#if variables:
+
+	if request.POST.has_key('variables[]'):
+		variables = request.POST.getlist('variables[]')
+	else:
+		return HttpResponse('{\n}', content_type='application/json')
+
 	active_variables = Variable.objects.filter(name__in=variables).values_list('pk',flat=True)
-	#else:
-	#	return HttpResponse('{\n}', content_type='application/json')
-		
+
+
 	data = {}
-	
-	for var in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL'), pk__in = active_variables):
+
+	for var in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL',), pk__in = active_variables):
 		var_id = var.pk
 		rto = RecordedDataFloat.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
 		if rto:
@@ -232,8 +234,8 @@ def data(request):
 			data[var.name].extend(list(RecordedDataFloat.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value')))
 		else:
 			data[var.name] = list(RecordedDataFloat.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value'))
-			
-	for var in Variable.objects.filter(value_class__in = ('INT32','UINT32','INT16','INT','WORD','UINT','UINT16'),pk__in = active_variables):
+
+	for var in Variable.objects.filter(value_class__in = ('INT32','UINT32','INT16','INT','WORD','UINT','UINT16',),pk__in = active_variables):
 		var_id = var.pk
 		rto = RecordedDataInt.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
 		if rto:
@@ -242,7 +244,7 @@ def data(request):
 		else:
 			data[var.name] = list(RecordedDataInt.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value'))
 
-	for var in Variable.objects.filter(value_class = 'BOOL', pk__in = active_variables):
+	for var in Variable.objects.filter(value_class__in = ('BOOL','BOOLEAN',), pk__in = active_variables):
 		var_id = var.pk
 		rto = RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
 		if rto:

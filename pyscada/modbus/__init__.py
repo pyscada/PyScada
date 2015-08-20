@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '0.6.8'
-__author__  = 'Martin Schroeder'
+import pyscada
+__version__ = pyscada.__version__
+__author__  = pyscada.__author__

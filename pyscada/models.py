@@ -59,6 +59,7 @@ class Variable(models.Model):
 	value_class_choices = (('FLOAT32','REAL'),
 						('FLOAT32','SINGLE'),
 						('FLOAT32','FLOAT32'),
+						('FLOAT64','LREAL'),
 						('FLOAT64','FLOAT'),
 						('FLOAT64','FLOAT64'),
 						('INT32','INT32'),
@@ -69,8 +70,9 @@ class Variable(models.Model):
 						('UINT16','UINT'),
 						('UINT16','UINT16'),
 						('BOOLEAN','BOOL'),
+						('BOOLEAN','BOOLEAN'),
 						)
-	value_class		= models.CharField(max_length=15, default='FLOAT', verbose_name="value_class",choices=value_class_choices)
+	value_class		= models.CharField(max_length=15, default='FLOAT64', verbose_name="value_class",choices=value_class_choices)
 	def __unicode__(self):
 		return unicode(self.name)
 

@@ -79,7 +79,7 @@ def encode_value(value,variable_class):
 
 def get_bits_by_class(variable_class):
 	"""
-	`BOOL`								1	1/16 WORD
+	`BOOLEAN`								1	1/16 WORD
 	`UINT8` `BYTE`						8	1/2 WORD
 	`INT8`								8	1/2 WORD
 	`UNT16` `WORD`						16	1 WORD
@@ -97,7 +97,7 @@ def get_bits_by_class(variable_class):
 		return 16
 	if variable_class.upper() in ['INT8','UINT8','BYTE','BCD8']:
 		return 8
-	if variable_class.upper() in ['BOOL']:
+	if variable_class.upper() in ['BOOL','BOOLEAN']:
 		return 1
 	else:
 		return 16
