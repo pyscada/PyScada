@@ -35,7 +35,7 @@ import json
 def index(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
-	
+
 	view_list = View.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).distinct()
 	t = loader.get_template('view_overview.html')
 	c = RequestContext(request,{
@@ -48,20 +48,20 @@ def index(request):
 def view(request,link_title):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
-	
+
 	page_template = loader.get_template('content_page.html')
 	widget_row_template = loader.get_template('widget_row.html')
-	
+
 	try:
 		view = View.objects.get(link_title=link_title)
 	except:
 		return HttpResponse(status=404)
-	
+
 	page_list = view.pages.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).distinct()
 
 	sliding_panel_list = view.sliding_panel_menus.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).distinct()
-	
-	visible_widget_list = Widget.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator,page__in=page_list.iterator).values_list('pk',flat=True)		
+
+	visible_widget_list = Widget.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator,page__in=page_list.iterator).values_list('pk',flat=True)
 	visible_custom_html_panel_list = CustomHTMLPanel.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).values_list('pk',flat=True)
 	visible_chart_list = Chart.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).values_list('pk',flat=True)
 
@@ -69,7 +69,7 @@ def view(request,link_title):
 
 	panel_list   = sliding_panel_list.filter(position__in=(1,2,))
 	control_list = sliding_panel_list.filter(position=0)
-	
+
 	current_row = 0
 	has_chart = False
 	widgets = []
@@ -109,7 +109,7 @@ def view(request,link_title):
 				widgets.append(widget)
 		widget_rows_html += widget_row_template.render(RequestContext(request,{'row':current_row,'has_chart':has_chart,'widgets':widgets,'visible_control_element_list':visible_control_element_list}))
 		pages_html += page_template.render(RequestContext(request,{'page':page,'widget_rows_html':widget_rows_html}))
-				
+
 	c = {
 		'page_list': page_list,
 		'pages_html':pages_html,
@@ -118,7 +118,7 @@ def view(request,link_title):
 		'user': request.user,
 		'view_title':view.title
 	}
-	
+
 	log.webnotice('open hmi',request.user)
 	return TemplateResponse(request, 'view.html', c)
 
@@ -128,14 +128,14 @@ def log_data(request):
 	if request.POST.has_key('timestamp'):
 		timestamp = float(request.POST['timestamp'])
 	else:
-		timestamp = time.time()-(60*60*24*14) # get log of last 14 days
-		
+		timestamp = time.time()-(300) # get log of last 5 minutes
+
 	data = Log.objects.filter(level__gte=6,timestamp__gt=float(timestamp)).order_by('-timestamp')
 	odata = []
 	for item in data:
 		odata.append({"timestamp":item.timestamp,"level":item.level,"message":item.message,"username":item.user.username if item.user else "None"})
 	jdata = json.dumps(odata,indent=2)
-	
+
 	return HttpResponse(jdata, content_type='application/json')
 
 def form_log_entry(request):
@@ -146,7 +146,7 @@ def form_log_entry(request):
 		return HttpResponse(status=200)
 	else:
 		return HttpResponse(status=404)
-	
+
 def	form_write_task(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
@@ -157,12 +157,10 @@ def	form_write_task(request):
 	else:
 		return HttpResponse(status=404)
 
-
-
 def get_cache_data(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
-		
+
 	timestamp = time.time()-120*60
 	if request.POST.has_key('timestamp'):
 		timestamp = max(float(request.POST['timestamp'])/1000.0,timestamp) # prevent from loading more then 120 Minutes of Data
@@ -170,16 +168,19 @@ def get_cache_data(request):
 		init = request.POST.has_key('init')
 	else:
 		init = False
-	
-	variables = request.POST.getlist('variables[]')
-	
+
+	if request.POST.has_key('variables[]'):
+		variables = request.POST.getlist('variables[]')
+	else:
+		return HttpResponse('{\n}', content_type='application/json')
+
 	data = {}
 	if RecordedDataCache.objects.last():
 		data["timestamp"] = RecordedDataCache.objects.last().last_update_ms()
 		data["server_time"] = time.time()*1000
 	else:
 		return HttpResponse('{\n}', content_type='application/json')
-	
+
 	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=variables,last_update__gt=timestamp).values_list('variable__name','float_value','int_value','last_update','last_change'))
 
 	for var in raw_data:
@@ -195,8 +196,8 @@ def get_cache_data(request):
 		else:
 			data[var[0]].append([var[3]*1000,var[2]])
 
-			
-			
+
+
 	jdata = json.dumps(data,indent=2)
 	return HttpResponse(jdata, content_type='application/json')
 
@@ -212,13 +213,13 @@ def user_profile_change(request):
 def dataaquisition_daemon_start(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
-	
+
 	call_command('PyScadaDaemon start')
 	return HttpResponse(status=200)
-	
+
 def dataaquisition_daemon_stop(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
-	
+
 	call_command('PyScadaDaemon stop')
 	return HttpResponse(status=200)

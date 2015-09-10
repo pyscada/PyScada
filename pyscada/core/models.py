@@ -38,24 +38,22 @@ class Variable(models.Model):
 	unit 			= models.ForeignKey(Unit,null=True, on_delete=models.SET_NULL)
 	writeable		= models.BooleanField(default=False)
 	record			= models.BooleanField(default=True)
-	value_class_choices = (('FLOAT32','FLOAT32'),
-						('SINGLE','SINGLE'),
-						('FLOAT','FLOAT'),
-						('FLOAT64','FLOAT64'),
-						('REAL','REAL'),
-						('INT32','INT32'),
-						('UINT32','UINT32'),
-						('INT16','INT16'),
-						('INT','INT'),
-						('WORD','WORD'),
-						('UINT','UINT'),
-						('UINT16','UINT16'),
-						('BOOL','BOOL'),
-						('BCD32','BCD32'),
-						('BCD24','BCD24'),
-						('BCD16','BCD16'),
-						)
-	value_class				= models.CharField(max_length=15, default='FLOAT', verbose_name="value_class",choices=value_class_choices)
+	value_class_choices = (	('FLOAT32','FLOAT32'),
+							('FLOAT64','FLOAT64'),
+							('INT64','INT64'),
+							('UINT64','UINT64'),
+							('INT32','INT32'),
+							('UINT32','UINT32'),
+							('INT16','INT16'),
+							('UINT16','UINT16'),
+							('INT8','INT8'),
+							('UNIT8','UINT8'),
+							('BOOLEAN','BOOLEAN'),
+							('BCD32','BCD32'),
+							('BCD24','BCD24'),
+							('BCD16','BCD16'),
+						 )
+	value_class				= models.CharField(max_length=15, default='FLOAT64', verbose_name="value_class",choices=value_class_choices)
 	byte_sequence_choises	= 	(
 							(0,'1 – 0 – 3 – 2'),
 							(1,'0 – 1 – 2 – 3'),
@@ -69,14 +67,14 @@ class Variable(models.Model):
 	scaling_input_max 			= models.FloatField(default=0)
 	scaling_output_min 			= models.FloatField(default=0)
 	scaling_output_max 			= models.FloatField(default=0)
-	
+
 	def __unicode__(self):
 		return unicode(self.name)
-	
+
 	def get_value_class_bit_len(self):
 		"""
 		return the number of bits the data type uses
-		
+
 		`BOOL`								1	1/16 WORD
 		`UINT8` `BYTE`						8	1/2 WORD
 		`INT8`								8	1/2 WORD
@@ -87,25 +85,25 @@ class Variable(models.Model):
 		`FLOAT32` `REAL` `SINGLE` 			32	2 WORD
 		`FLOAT64` `LREAL` `FLOAT` `DOUBLE`	64	4 WORD
 		"""
-		
+
 		if self.scaling_active:
 			value_class = self.scaling_input_value_class
 		else:
 			value_class = self.value_class
-		
-		if 	value_class.upper() in ['FLOAT64','DOUBLE','FLOAT','LREAL'] :
+
+		if 	value_class.upper() in ['FLOAT64','INT64','UINT64','BCD64','BCD48'] :
 			return 64
-		if 	value_class.upper() in ['FLOAT32','SINGLE','INT32','UINT32','DWORD','BCD32','BCD24','REAL'] :
+		if 	value_class.upper() in ['FLOAT32','INT32','UINT32','BCD32','BCD24'] :
 			return 32
-		if value_class.upper() in ['INT16','INT','WORD','UINT','UINT16','BCD16']:
+		if value_class.upper() in ['INT16','UINT16','BCD16']:
 			return 16
-		if value_class.upper() in ['INT8','UINT8','BYTE','BCD8']:
+		if value_class.upper() in ['INT8','UINT8','BCD8']:
 			return 8
-		if value_class.upper() in ['BOOL']:
+		if value_class.upper() in ['BOOLEAN']:
 			return 1
 		else:
 			return 16
-	
+
 	def scale_value(self,value):
 		'''
 		scale a given value
@@ -119,20 +117,20 @@ class Variable(models.Model):
 		if (self.scaling_input_max - self.scaling_input_min) == 0:
 			# prevent from division by zero
 			return value
-		
+
 		return  (	(\
 						(value - self.scaling_input_min)\
 						/ (self.scaling_input_max-self.scaling_input_min)\
 											)\
 					* (self.scaling_output_max - self.scaling_output_min)\
 				) 	+ self.scaling_output_min
-	
+
 	def decode_value(self,value):
 		if self.scaling_active:
 			value_class = self.scaling_input_value_class
 		else:
 			value_class = self.value_class
-		
+
 		if 	value_class.upper() in ['FLOAT32','SINGLE','FLOAT','REAL']:
 			# decode Float values
 			return unpack('f',pack('2H',value[0],value[1]))[0]
@@ -165,7 +163,7 @@ class Variable(models.Model):
 				return value[0]
 			else:
 				return None
-				
+
 	def encode_value(self,value):
 		if self.scaling_active:
 			value_class = self.scaling_input_value_class
@@ -189,9 +187,9 @@ class ClientWriteTask(models.Model):
 	failed			= models.BooleanField(default=False,blank=True)
 
 class RecordedDataCache(models.Model):
-	id			= models.BigIntegerField(primary_key=True) 
+	id			= models.BigIntegerField(primary_key=True)
 	float_value	= models.FloatField(default=None,blank=True,null=True,) # for all float types
-	int_value	= models.BigIntegerField(default=None,blank=True,null=True,) # for all intger types e.g. bool, uint8-32, int8-64 
+	int_value	= models.BigIntegerField(default=None,blank=True,null=True,) # for all intger types e.g. bool, uint8-32, int8-64
 	variable	= models.ForeignKey('Variable',null=True, on_delete=models.SET_NULL)
 	last_update	= models.FloatField()
 	last_change	= models.FloatField()
@@ -206,7 +204,7 @@ class RecordedDataCache(models.Model):
 			return self.int_value
 		else:
 			return self.float_value
-		
+
 
 class Log(models.Model):
 	level			= models.IntegerField(default=0, verbose_name="level")
@@ -218,7 +216,7 @@ class Log(models.Model):
 	def __unicode__(self):
 		return unicode(self.message)
 
-		
+
 class BackgroundTask(models.Model):
 	start 			= models.FloatField(default=0)
 	timestamp 		= models.FloatField(default=0)
@@ -232,7 +230,7 @@ class BackgroundTask(models.Model):
 	stop_daemon		= models.BooleanField(default=False,blank=True)
 	label			= models.CharField(max_length=400, default='')
 	message			= models.CharField(max_length=400, default='')
-	
+
 	def __unicode__(self):
 		return unicode(self.timestamp)
 	def timestamp_ms(self):
@@ -244,8 +242,8 @@ class MailRecipient(models.Model):
 	subject_prefix  = models.TextField(default='')
 	message_suffix	= models.TextField(default='')
 	to_email		= models.EmailField(default='')
-	
-	
+
+
 class Event(models.Model):
 	label			= models.CharField(max_length=400, default='')
 	variable    	= models.ForeignKey(Variable,null=True, on_delete=models.SET_NULL)
@@ -288,15 +286,15 @@ class Event(models.Model):
 		elif self.limit_type == 1:
 			return value <= self.fixed_limit
 		elif self.limit_type == 2:
-			return value == self.fixed_limit    
+			return value == self.fixed_limit
 		elif self.limit_type == 3:
 			return value >= self.fixed_limit
 		elif self.limit_type == 4:
 			return value > self.fixed_limit
 		else:
 			return False
-			
-	
+
+
 	def do_event_check(self,timestamp,value):
 		prev_event = RecordedEvent.objects.filter(event=self,active=True)
 
@@ -311,8 +309,8 @@ class Event(models.Model):
 				prev_event.active = False
 				prev_event.time_end = timestamp
 				prev_event.save()
-		return False	
-		
+		return False
+
 
 class RecordedEvent(models.Model):
 	event		= models.ForeignKey(Event,null=True, on_delete=models.SET_NULL)
@@ -325,4 +323,3 @@ class BackupFile(models.Model):
 	time_begin  = models.FloatField()
 	time_end  	= models.FloatField()
 	active		= models.BooleanField(default=False,blank=True)
-	
