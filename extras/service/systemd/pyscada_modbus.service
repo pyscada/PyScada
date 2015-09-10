@@ -1,0 +1,16 @@
+[Unit]
+Description=PyScada Modbus Daemon
+After=network.target
+
+[Service]
+PIDFile=/home/faks/www/PyScadaServer/run/modbus.pid
+User=faks
+Group=faks
+WorkingDirectory=/home/faks/www/PyScadaServer/
+ExecStart=/usr/bin/python /home/faks/www/PyScadaServer/manage.py PyScadaDaemonHandler modbus start
+# ExecReload=/usr/bin/python /home/faks/www/PyScadaServer/manage.py PyScadaDaemonHandler modbus restart
+ExecStop=/usr/bin/python /home/faks/www/PyScadaServer/manage.py PyScadaDaemonHandler modbus stop
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

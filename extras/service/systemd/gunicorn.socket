@@ -1,0 +1,10 @@
+[Unit]
+Description=gunicorn socket
+
+[Socket]
+ListenStream=/home/faks/www/PyScadaServer/run/gunicorn.sock
+#ListenStream=0.0.0.0:9000
+#ListenStream=[::]:8000
+
+[Install]
+WantedBy=sockets.target

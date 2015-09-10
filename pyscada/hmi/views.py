@@ -101,19 +101,20 @@ def config(request):
 	for chart_id in charts:
 		vars = {}
 		c_count = 0
-		chart = Chart.objects.get(pk=chart_id)
-		for var in chart.variables.filter(active=1).order_by('name'):
-			if not hasattr(var,'hmivariable'):
-				continue
-			color_code = var.hmivariable.chart_line_color_code()
-			if (var.hmivariable.short_name and var.hmivariable.short_name != '-'):
-				var_label = var.hmivariable.short_name
-			else:
-				var_label = var.name
-			if len(var_label) > var_label_max_len:
-				var_label = var_label[:var_label_max_len-5] + '..' + var_label[-3:]
+		if chart_id:
+			chart = Chart.objects.get(pk=chart_id)
+			for var in chart.variables.filter(active=1).order_by('name'):
+				if not hasattr(var,'hmivariable'):
+					continue
+				color_code = var.hmivariable.chart_line_color_code()
+				if (var.hmivariable.short_name and var.hmivariable.short_name != '-'):
+					var_label = var.hmivariable.short_name
+				else:
+					var_label = var.name
+				if len(var_label) > var_label_max_len:
+					var_label = var_label[:var_label_max_len-5] + '..' + var_label[-3:]
 
-			vars[var.name] = {"yaxis":1,"color":color_code,"unit":var.unit.description,"label":var_label}
+				vars[var.name] = {"yaxis":1,"color":color_code,"unit":var.unit.description,"label":var_label}
 
 		config["config"].append({"label":chart.title,"xaxis":{"ticks":chart.x_axis_ticks},"axes":[{"yaxis":{"min":chart.y_axis_min,"max":chart.y_axis_max,'label':chart.y_axis_label}}],"placeholder":"#chart-%d"% chart.pk,"legendplaceholder":"#chart-%d-legend" % chart.pk,"variables":vars})
 		chart_count += 1
@@ -134,14 +135,14 @@ def log_data(request):
 	if request.POST.has_key('timestamp'):
 		timestamp = float(request.POST['timestamp'])
 	else:
-		timestamp = time.time()-(60*60*24*14) # get log of last 14 days
-		
-	data = Log.objects.filter(level__gte=6,timestamp__gt=float(timestamp)).order_by('-timestamp')[:20]
+		timestamp = time.time()-(300) # get log of last 5 minutes
+
+	data = Log.objects.filter(level__gte=6,timestamp__gt=float(timestamp)).order_by('-timestamp')
 	odata = []
 	for item in data:
 		odata.append({"timestamp":item.timestamp,"level":item.level,"message":item.message,"username":item.user.username if item.user else "None"})
 	jdata = json.dumps(odata,indent=2)
-	
+
 	return HttpResponse(jdata, content_type='application/json')
 
 def form_log_entry(request):

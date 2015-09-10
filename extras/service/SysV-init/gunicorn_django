@@ -1,5 +1,5 @@
 #!/bin/bash
- 
+
 ### BEGIN INIT INFO
 # Provides:			 gunicorn_django
 # Required-Start:	 $all
@@ -50,6 +50,7 @@ start () {
 		# Create the run directory if it doesn't exist
 		RUNDIR=$(dirname ${data[1]}/run/gunicorn.sock)
 		test -d $RUNDIR || mkdir -p $RUNDIR
+    chown $RUN_AS:$RUN_AS $RUNDIR
 		export DJANGO_SETTINGS_MODULE=${data[0]}.settings
 		export PYTHONPATH=${data[1]}:$PYTHONPATH
 		# Start your Django Unicorn
@@ -59,7 +60,7 @@ start () {
 	done
 	return
 }
- 
+
 stop () {
 	for i in "${SERVERS[@]}"
 	do
@@ -80,7 +81,7 @@ stop () {
 		fi
 	done
 }
- 
+
 case "$1" in
   start)
 		echo "Starting"

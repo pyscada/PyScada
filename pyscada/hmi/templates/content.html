@@ -50,32 +50,10 @@
                                 <a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-wrench"></span> {{ panel.title }}<strong class="caret"></strong></a>
                                 <div class="dropdown-menu" style="padding: 15px; width:715px;">
                                     <div class="control-panel">
-                                    {% comment %}
-                                        {% set open = 0 %}
-                                        {% endcomment %}
                                         {% for item in panel.control_panel.items.all %}
                                             {% if item.pk in visable_control_element_list %}
-                                             {% comment %}
-                                                {% if item.position == 0 %}
-                                                    <div class="row">
-                                                    {% set open = 1 %}
-                                                {% elif item.position|divisibleby:2 and open == 1 %}
-                                                    </div>
-                                                    {% set open = 0 %}
-                                                {% elif item.position|divisibleby:2 and open == 0 %}
-                                                    <div class="row">
-                                                    {% set open = 1 %}
-                                                {% elif open == 1 %}
-                                                    </div><div class="row">
-                                                    {% set open = 1 %}
-                                                {% else %}
-                                                    <div class="row">
-                                                    {% set open = 1 %}
-                                                {% endif %}
-                                                {% endcomment %}
                                                 {% include "control_element.html" with item=item %}
-                                                
-                                            {% endif %}	
+                                            {% endif %}
                                         {% endfor %}
                                     </div>
                                 </div>
