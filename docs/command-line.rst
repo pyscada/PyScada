@@ -4,10 +4,21 @@ Command-line
 Start the PyScada Daemons
 -------------------------
 
+SysV-init and upstart:
+
 ::
 
 	service pyscada_daemon start
 
+
+systemd:
+
+::
+
+	systemctl start pyscada_daemon.service
+
+
+Django manage command:
 
 ::
 
@@ -17,9 +28,19 @@ Start the PyScada Daemons
 Start Gunicorn
 --------------
 
+SysV-init and upstart:
+
 ::
 
 	service gunicorn_django start
+
+
+systemd:
+
+::
+
+	systemctl start gunicorn_django.service
+
 
 
 .. _sec-get-installed-pyscada-version:

@@ -10,9 +10,9 @@ import sys
 
 
 class AppServerSvc (win32serviceutil.ServiceFramework):
-    _svc_name_ = "PyScada Modbus DAQ Daemon"
-    _svc_display_name_ = "PyScada Modbus DAQ Daemon"
-    _svc_description_ = "a PyScada Daemon for the Modbus Communication"
+    _svc_name_ = "PyScada Event Daemon"
+    _svc_display_name_ = "PyScada Event Daemon"
+    _svc_description_ = "a PyScada Daemon for the Event detection"
     def __init__(self,args):
         win32serviceutil.ServiceFramework.__init__(self,args)
         self.hWaitStop = win32event.CreateEvent(None,0,0,None)
@@ -51,10 +51,10 @@ class AppServerSvc (win32serviceutil.ServiceFramework):
         os.environ.setdefault("DJANGO_SETTINGS_MODULE", "PyScadaServer.settings")
         import django
         django.setup()
-        from pyscada.modbus import Handler
+        from pyscada.event import Handler
         from pyscada.utils import daemon_run
         daemon_run(
-            label='pyscada.modbus.daemon',
+            label='pyscada.event.daemon',
             handlerClass = Handler
             )
 

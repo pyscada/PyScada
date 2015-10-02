@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 from django.db import models
 from django.contrib.auth.models import User
-
 from django.utils import timezone
 from django.conf import settings
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 import time
 import datetime
 
@@ -182,10 +183,11 @@ class VariableChangeHistory(models.Model):
 
 class MailRecipient(models.Model):
 	id 				= models.AutoField(primary_key=True)
-	subject_prefix  = models.TextField(default='')
-	message_suffix	= models.TextField(default='')
+	subject_prefix  = models.TextField(default='',blank=True)
+	message_suffix	= models.TextField(default='',blank=True)
 	to_email		= models.EmailField(default='')
-
+	def __unicode__(self):
+		return unicode(self.to_email)
 
 class Event(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -208,55 +210,152 @@ class Event(models.Model):
 								(4,'value equals the limit'),
 							)
 	limit_type		= models.PositiveSmallIntegerField(default=0,choices=limit_type_choises)
+	hysteresis      = models.FloatField(default=0,blank=True)
 	action_choises	= 	(
 							(0,'just record'),
-							(1,'record and send mail'),
-							(2,'record, send mail and change variable'),
+							(1,'record and send mail only wenn event occurs'),
+							(2,'record and send mail'),
+							(3,'record, send mail and change variable'),
 						)
 	action			= models.PositiveSmallIntegerField(default=0,choices=action_choises)
 	mail_recipient	= models.ForeignKey(MailRecipient,blank=True,null=True,default=None, on_delete=models.SET_NULL)
 	variable_to_change    = models.ForeignKey(Variable,blank=True,null=True,default=None, on_delete=models.SET_NULL,related_name="variable_to_change")
 	new_value		= models.FloatField(default=0,blank=True,null=True)
-	def _check_limit(self,value):
+	def __unicode__(self):
+		return unicode(self.label)
+
+	def do_event_check(self):
 		'''
-		(0,'value is less than limit',),
+		
+		compair the actual value with the limit value
+		
+		(0,'value is below the limit',),
 		(1,'value is less than or equal to the limit',),
 		(2,'value is greater than the limit'),
 		(3,'value is greater than or equal to the limit'),
 		(4,'value equals the limit'),
 		'''
+		# 
+		# get recorded event
+		prev_event = RecordedEvent.objects.filter(event=self,active=True)
+		if prev_event:
+			prev_value = True
+		else:
+			prev_value = False
+		# get the actual value
+		actual_value = RecordedDataCache.objects.filter(variable=self.variable)
+		if not actual_value:
+			return False
+		timestamp = actual_value.last().time
+		actual_value = actual_value.last().value
+		# determin the limit type, variable or fixed
+		if self.variable_limit:
+			# item has a variable limit
+			# get the limit value
+			limit_value = RecordedDataCache.objects.filter(variable=self.variable_limit)
+			if not limit_value:
+				return False
+			if timestamp < limit_value.last().time:
+				# wenn limit value has changed after the actual value take that time
+				timestamp = limit_value.last().time
+			limit_value = limit_value.last().value # get value
+		else:
+			# item has a fixed limit
+			limit_value = self.fixed_limit
+	
 		if self.limit_type == 0:
-			return value < self.fixed_limit
+			if prev_value:
+				limit_check = actual_value < (limit_value + self.hysteresis)
+			else:
+				limit_check = actual_value < (limit_value - self.hysteresis)
+			
+			limit_string = 'below the limit'
 		elif self.limit_type == 1:
-			return value <= self.fixed_limit
+			if prev_value:
+				limit_check = actual_value <= (limit_value + self.hysteresis)
+			else:
+				limit_check = actual_value <= (limit_value - self.hysteresis)
+			limit_string = 'below or equals the limit'
 		elif self.limit_type == 2:
-			return value == self.fixed_limit
+			limit_check = actual_value <= limit_value + self.hysteresis and actual_value >= limit_value - self.hysteresis
+			limit_string = 'equal the limit'
 		elif self.limit_type == 3:
-			return value >= self.fixed_limit
+			if prev_value:
+				limit_check = actual_value >= (limit_value - self.hysteresis)
+			else:
+				limit_check = actual_value >= (limit_value + self.hysteresis)
+			limit_string = 'above or equal the limit'
 		elif self.limit_type == 4:
-			return value > self.fixed_limit
+			if prev_value:
+				limit_check = actual_value > (limit_value - self.hysteresis)
+			else:
+				limit_check = actual_value > (limit_value + self.hysteresis)
+			limit_string = 'above the limit'
 		else:
 			return False
-
-
-	def do_event_check(self,timestamp,value):
+		
+		# record event
 		prev_event = RecordedEvent.objects.filter(event=self,active=True)
-
-		if self._check_limit(value):
+		if limit_check: # value is outside of the limit
 			if not prev_event:
+				# record
 				prev_event = RecordedEvent(event = self,time_begin=timestamp,active=True)
 				prev_event.save()
-				return True
+				
+				# send mail
+				if self.limit_type >= 1:
+				
+					if self.mail_recipient:
+						mail_subject = self.mail_recipient.subject_prefix # to do,
+						if   self.level == 0: # infomation
+							mail_subject += " Infomation "
+						elif self.level == 1: # Ok
+							mail_subject += " "
+						elif self.level == 2: # warning
+							mail_subject += " Warning! "	
+						elif self.level == 3: # alert
+							mail_subject += " Alert! "	
+						mail_subject += self.variable.name+" is " + limit_string
+						mail_message = "Event " + self.label + " has been triggert\n" 
+						mail_message += mail_subject
+						mail_message += "Value of " + self.variable.name + " is " + actual_value.__str__() + " " + self.variable.unit.unit
+						mail_message += "Limit is " + limit_value.__str__() + " " + self.variable.unit.unit
+						mail_message += self.mail_recipient.message_suffix # to do
+						mail = MailQueue(subject = mail_subject, message = mail_message,timestamp = time.time())
+						mail.save()
+						mail.mail_recipients.add(self.mail_recipient.pk)
+						mail.save()
+				# do action
+				if self.limit_type >= 3:
+					
+					if self.variable_to_change:
+						ClientWriteTask(variable=self.variable_to_change,value=self.new_value,start=timestamp)
 		else:
 			if prev_event:
 				prev_event = prev_event.last()
 				prev_event.active = False
 				prev_event.time_end = timestamp
 				prev_event.save()
-		return False
-
-
-
+				# send mail
+				if self.limit_type >= 2:
+				
+					if self.mail_recipient:
+						mail_subject = self.mail_recipient.subject_prefix # to do,
+						if   self.level == 0: # infomation
+							mail_subject += " "
+						elif self.level == 1: # Ok
+							mail_subject += " "
+						elif self.level == 2: # warning
+							mail_subject += " "	
+						elif self.level == 3: # alert
+							mail_subject += " "	
+							
+						mail_message = "  "
+						mail_message += self.mail_recipient.message_suffix # to do
+						mail = MailQueue(subject = mail_subject, message = mail_message,timestamp = time.time())
+						mail.save()
+						mail.mail_recipients.add(self.mail_recipient.pk)
+						mail.save()
 
 
 class RecordedEvent(models.Model):
@@ -265,3 +364,16 @@ class RecordedEvent(models.Model):
 	time_begin  = models.ForeignKey(RecordedTime,null=True, on_delete=models.SET_NULL)
 	time_end  	= models.ForeignKey(RecordedTime,null=True, on_delete=models.SET_NULL,related_name="time_end")
 	active		= models.BooleanField(default=False,blank=True)
+
+
+class MailQueue(models.Model):
+	id 			= models.AutoField(primary_key=True)
+	subject     = models.TextField(default='',blank=True)
+	message     = models.TextField(default='',blank=True)
+	mail_from   = models.TextField(default=settings.EMAIL_FROM,blank=True)
+	mail_recipients = models.ManyToManyField(MailRecipient)
+	timestamp 	= models.FloatField(default=0,blank=True)
+	done		= models.BooleanField(default=False,blank=True)
+	send_fail_count = models.PositiveSmallIntegerField(default=0,blank=True)
+	def recipients_list(self,exclude_list=[]):
+		return [item.to_email for item in self.mail_recipients.exclude(pk__in=exclude_list)]

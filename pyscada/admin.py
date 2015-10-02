@@ -7,6 +7,9 @@ from pyscada.models import Log
 from pyscada.models import BackgroundTask
 from pyscada.models import RecordedDataCache
 from pyscada.models import Event
+from pyscada.models import RecordedEvent
+from pyscada.models import MailRecipient
+from pyscada.models import MailQueue
 from pyscada.utils import update_variable_set
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
@@ -16,17 +19,17 @@ import datetime
 
 class VariableAdminForm(forms.ModelForm):
     json_configuration = forms.CharField(widget=forms.Textarea)
-    
+
     class Meta:
-		fields = []
-		model = Variable
+        fields = []
+        model = Variable
 
 class VariableImportAdmin(admin.ModelAdmin):
     actions = None
     form = VariableAdminForm
     fields = ('json_configuration',)
     list_display = ('name','active')
-    
+
     def save_model(self, request, obj, form, change):
         update_variable_set(form.cleaned_data['json_configuration'])
 
@@ -56,7 +59,7 @@ class VarieblesAdmin(admin.ModelAdmin):
 
 
 class ClientWriteTaskAdmin(admin.ModelAdmin):
-    list_display = ('id','name','value','user_name','done','failed',)
+    list_display = ('id','name','value','user_name','start_time','done','failed',)
     #list_editable = ('active','writeable',)
     list_display_links = ('name',)
     list_filter = ('done', 'failed',)
@@ -67,8 +70,10 @@ class ClientWriteTaskAdmin(admin.ModelAdmin):
             return instance.user.username
         except:
             return 'None'
+    def start_time(self,instance):
+        return datetime.datetime.fromtimestamp(int(instance.start)).strftime('%Y-%m-%d %H:%M:%S')
     def has_delete_permission(self, request, obj=None):
-        return False 
+        return False
 
 class LogAdmin(admin.ModelAdmin):
     list_display = ('id','time','level','message_short','user_name',)
@@ -85,13 +90,14 @@ class LogAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         return False
     def has_delete_permission(self, request, obj=None):
-        return False    
+        return False
 
 class RecordedDataCacheAdmin(admin.ModelAdmin):
     list_display = ('id','last_change','name','value','unit','last_update',)
     list_display_links = ('name',)
     list_filter = ('variable__client','variable__unit')
     search_fields = ['variable__name',]
+    readonly_fields = ('last_change','last_update','time',)
     def name(self,instance):
         return instance.variable.name
     def  unit(self,instance):
@@ -104,13 +110,13 @@ class RecordedDataCacheAdmin(admin.ModelAdmin):
         return False
     def has_delete_permission(self, request, obj=None):
         return False
-    
- 
+
+
 class BackgroundTaskAdmin(admin.ModelAdmin):
     list_display = ('id','label','message','load','last_update','running_since','done','failed')
     list_display_links = ('label',)
     list_filter = ('done','failed')
-    search_fields = ['variable',]   
+    search_fields = ['variable',]
     def last_update(self,instance):
         return datetime.datetime.fromtimestamp(int(instance.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
     def running_since(self,instance):
@@ -119,12 +125,29 @@ class BackgroundTaskAdmin(admin.ModelAdmin):
         return False
     def has_delete_permission(self, request, obj=None):
         return False
-        
+
+class RecordedEventAdmin(admin.ModelAdmin):
+    list_display = ('id','event','time_begin','time_end','active',)
+    list_display_links = ('event',)
+    list_filter = ('event','active')
+    readonly_fields = ('time_begin','time_end',)
+
+class MailQueueAdmin(admin.ModelAdmin):
+    list_display = ('id','subject','message','last_update','done','send_fail_count',)
+    list_display_links = ('subject',)
+    list_filter = ('done',)
+    filter_horizontal = ('mail_recipients',)
+    def last_update(self,instance):
+        return datetime.datetime.fromtimestamp(int(instance.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+    
 admin.site.register(Client,ClientAdmin)
 admin.site.register(Variable,VarieblesAdmin)
 admin.site.register(VariableConfigFileImport,VariableImportAdmin)
 admin.site.register(Unit)
 admin.site.register(Event)
+admin.site.register(RecordedEvent,RecordedEventAdmin)
+admin.site.register(MailRecipient)
+admin.site.register(MailQueue,MailQueueAdmin)
 admin.site.register(ClientWriteTask,ClientWriteTaskAdmin)
 admin.site.register(Log,LogAdmin)
 admin.site.register(BackgroundTask,BackgroundTaskAdmin)

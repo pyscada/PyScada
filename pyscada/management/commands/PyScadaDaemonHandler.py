@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*- 
 from pyscada.models import BackgroundTask
+from pyscada.utils import daemon_run
 
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
@@ -57,11 +58,14 @@ class Command(BaseCommand):
     def start(self,context,daemon_name):
         if not context.pidfile.is_locked():
             try:
-                f = __import__('pyscada.%s.daemon'% daemon_name,fromlist=['a']).run
+                handlerClass = __import__('pyscada.%s.Handler'% daemon_name,fromlist=['a'])
             except:
                 self.stdout.write("no such daemon")
             context.open()
-            f()
+            daemon_run(
+                label='pyscada.%s.daemon'% daemon_name,
+                handlerClass = handlerClass
+                )
         else:
             self.stdout.write("process is already runnging")  
 

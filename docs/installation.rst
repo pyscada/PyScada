@@ -21,15 +21,15 @@ Install Dependencies
 	sudo apt-get install python-pip libhdf5-7 libhdf5-dev python-dev
 	# on debian 8
 	sudo apt-get install python-pip libhdf5-8 libhdf5-dev python-dev
-	sudo apt-get install nginx
-	sudo pip install gunicorn
+	sudo apt-get install nginx gunicorn
 	sudo pip install django">=1.7,<1.8"
+	sudo pip install python-daemon
 	sudo pip install cython
 	sudo pip install numpy
 	sudo pip install h5py
-	# if pip install h5 failes install
-	# sudo apt-get install python-h5py
-	sudo pip install python-daemon
+	# if pip install h5py fails install
+	sudo apt-get install python-h5py
+
 
 
 Install PyScada
@@ -147,7 +147,13 @@ Set the static file and media dir as followes.
 	MEDIA_ROOT = BASE_DIR + '/media/'
 
 
-Add all PyScada specific settings
+Add all PyScada specific settings, keep in mind to set the file right source file encoding in the settings.py file header (see also https://www.python.org/dev/peps/pep-0263/).
+
+::
+
+	#!/usr/bin/python
+	# -*- coding: <encoding name> -*-
+
 
 ::
 
@@ -303,19 +309,22 @@ after editing, enable the configuration and restart nginx, optionaly remove the 
 ::
 
 	sudo ln -s /etc/nginx/sites-available/pyscada.conf /etc/nginx/sites-enabled/pyscada.conf
+	# SysV-Init
 	sudo service nginx restart
+	# systemd
+	sudo systemctr restart nginx
 
 
-Add Init.d Scripts
-^^^^^^^^^^^^^^^^^^
+Add Init.d Scripts for SysV-Init
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
 To start the Dataaquasition daemon(s) and guinicorn, there are two example scripts in the git repository. Copy them to the init.d path of your machine and make them executible.
 
 ::
 
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/stable/0.6.x/pyscada_daemon -O /etc/init.d/pyscada_daemon
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/stable/0.6.x/gunicorn_django -O /etc/init.d/gunicorn_django
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/stable/0.6.x/extras/service/SysV-init/pyscada_daemon -O /etc/init.d/pyscada_daemon
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/stable/0.6.x/extras/service/SysV-init/gunicorn_django -O /etc/init.d/gunicorn_django
 	sudo chmod +x /etc/init.d/pyscada_daemon
 	sudo chmod +x /etc/init.d/gunicorn_django
 
@@ -354,7 +363,7 @@ Also fill in the path to your django project dir and replace the four spaces bet
 	#!/bin/sh
 	#/etc/default/gunicorn_django
 	SERVERS=(
-		'PyScadaServer	/home/www-user/www/PyScadaServer	10'
+		'PyScadaServer	/home/www-user/www/PyScadaServer	5'
 	)
 	RUN_AS='www-user'
 
@@ -365,6 +374,19 @@ Also fill in the path to your django project dir and replace the four spaces bet
 
 	sudo update-rc.d pyscada_daemon defaults
 	sudo update-rc.d gunicorn_django defaults
+
+
+Add Init.d Scripts for systemd
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Download the sample Unit-Files for systemd.
+
+::
+
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/stable/0.6.x/extras/service/systemd/pyscada_modbus.service -O /lib/systemd/system/pyscada_modbus.service
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/stable/0.6.x/extras/service/systemd/gunicorn.socket -O /lib/systemd/system/gunicorn.socket
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/stable/0.6.x/extras/service/systemd/gunicorn.service -O /lib/systemd/system/gunicorn.service
+
 
 
 
@@ -381,14 +403,9 @@ Install Dependencies
 
 	sudo apt-get update
 	sudo apt-get upgrade
-	sudo apt-get install mysql-server python-mysqldb
-	sudo apt-get install python-pip libhdf5-7 libhdf5-dev python-dev
-	sudo apt-get install nginx
-	sudo apt-get install cython python-h5py
-	sudo pip install gunicorn
-	sudo pip install django">=1.7,<1.8"
-	sudo pip install numpy
-	sudo pip install python-daemon
+	sudo apt-get install python-pip
+	sudo apt-get install nginx gunicorn
+
 
 
 Install PyScada
@@ -396,8 +413,9 @@ Install PyScada
 
 ::
 
-	cd /home/pi/
-	sudo pip install git+https://github.com/trombastic/PyScada.git@stable/0.6.x
+	sudo pip install pyscada=="0.7.0b"
+	sudo pip install pyscada_=="0.7.0b"
+
 
 Create a new Django Project
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,8 +1,7 @@
 include AUTHORS
 include LICENSE
-include README.md
+include README.rst
 include CHANGELOG.txt
-include pyscada/export/HDF5_MatlabMaster.h5
 recursive-include pyscada/templates *
 recursive-include pyscada/static *
 recursive-include pyscada/sql *

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '0.6.17b12'
-__author__  = 'Martin Schroeder'
+__version__ = '0.6.17b14'
+__author__  = 'Martin Schröder'
 
 
 def version():

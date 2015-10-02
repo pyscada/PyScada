@@ -1,17 +1,25 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 from pyscada import log
 from pyscada.models import Client
 from pyscada.models import Variable
-from pyscada.hmi.models import HMIVariable
+from pyscada.models import Unit
+from pyscada.models import ClientWriteTask
+from pyscada.models import BackgroundTask
 from pyscada.modbus.models import ModbusVariable
 from pyscada.modbus.models import ModbusClient
-from pyscada.models import Unit
 from pyscada.hmi.models import Color
-from struct import *
+from pyscada.hmi.models import HMIVariable
 
+from django.contrib.auth.models import User
+from django.conf import settings
+
+import os
 import json
 import codecs
-import time
+import time, datetime
+import traceback
+from struct import *
 
 def scale_input(Input,scaling):
 		return (float(Input)/float(2**scaling.bit))*(scaling.max_value-scaling.min_value)+scaling.min_value
@@ -168,8 +176,8 @@ def export_xml_config_file(filename=None):
 	export of the Variable Configuration as XML file
 	'''
 	from xml.dom.minidom import getDOMImplementation
-	import sys 
-	reload(sys)  
+	import sys
+	reload(sys)
 	sys.setdefaultencoding('utf8')
 	Meta = {}
 	Meta['name'] = ''
@@ -328,6 +336,7 @@ def import_xml_config_file(filename):
 	_Variables = []
 	_Units = []
 	_Colors = []
+	_ClientWriteTask = []
 	for obj in objects:
 		obj_name = obj.getAttribute('name')
 		fields = obj.getElementsByTagName('field')
@@ -345,6 +354,8 @@ def import_xml_config_file(filename):
 			_Units.append(values)
 		elif obj_name.upper() in ['COLOR']:
 			_Colors.append(values)
+		elif obj_name.upper() in ['CLIENTWRITETASK']:
+			_ClientWriteTask.append(values)
 
 	## update/import Clients ###################################################
 	for entry in _Clients:
@@ -385,7 +396,7 @@ def import_xml_config_file(filename):
 			uc.description = entry['description']
 			uc.udunit = entry['udunit']
 			uc.save()
-	
+
 	# Color (object)
 	for entry in _Colors:
 		# unit config
@@ -416,7 +427,7 @@ def import_xml_config_file(filename):
 			vc.unit_id = entry['unit_id']
 			vc.value_class = validate_value_class(entry["value_class"])
 			vc.save()
-		
+
 		if hasattr(vc,'hmivariable'):
 			if entry.has_key("hmi.chart_line_color_id"):
 				vc.hmivariable.chart_line_color_id = entry["hmi.chart_line_color_id"]
@@ -438,6 +449,39 @@ def import_xml_config_file(filename):
 		else:
 			if entry.has_key("modbus.address") and entry.has_key("modbus.function_code_read"):
 				ModbusVariable(modbus_variable=vc,address=entry["modbus.address"],function_code_read=entry["modbus.function_code_read"]).save()
+	
+	for entry in _ClientWriteTask:
+		# start
+		if isinstance(entry['start'],basestring):
+			# must be convertet from local datestr to datenum
+			timestamp = time.mktime(datetime.datetime.strptime(entry['start'], "%d-%b-%Y %H:%M:%S").timetuple())
+		else:
+			# is already datenum
+			timestamp = entry['start']
+		# verify timestamp
+		if timestamp < time.time():
+			continue
+		# user
+		user = User.objects.filter(username = entry['user'])
+		if user:
+			user = user.first()
+		else:
+			user = None
+		# variable
+		variable = Variable.objects.filter(name=entry['variable'],active=1,client__active=1)
+		if variable:
+			# check for duplicates
+			dcwt = ClientWriteTask.objects.filter(variable=variable.first(),value=entry['value'],user=user,start__range=(timestamp-2.5,timestamp+2.5))
+			if dcwt:
+				continue
+			# write to DB
+			cwt = ClientWriteTask(variable=variable.first(),value=entry['value'],user=user,start=timestamp)
+			cwt.save()
+			
+				
+		
+
+
 
 def validate_value_class(class_str):
 	if 	class_str.upper() in ['FLOAT64','DOUBLE','FLOAT','LREAL']:
@@ -470,3 +514,80 @@ def _cast(value,class_str):
 			return value.lower() == 'true'
 	else:
 		return value
+
+## daemon 
+def daemon_run(label,handlerClass):
+	pid     = str(os.getpid())
+
+	# init daemon
+	
+	try:
+		mh = handlerClass()
+		dt_set = mh.dt_set
+	except:
+		var = traceback.format_exc()
+		log.error("exeption while initialisation of %s:%s %s" % (label,os.linesep, var))
+		# on error mark the task as failed
+		bt = BackgroundTask.objects.get(pk=bt_id)
+		bt.message = 'failed'
+		bt.failed = True
+		bt.timestamp = time.time()
+		bt.save()
+		raise
+	# register the task in Backgroudtask list
+	bt = BackgroundTask(start=time.time(),label=label,message='daemonized',timestamp=time.time(),pid = pid)
+	bt.save()
+	bt_id = bt.pk
+
+	# mark the task as running
+	bt = BackgroundTask.objects.get(pk=bt_id)
+	bt.timestamp = time.time()
+	bt.message = 'running...'
+	bt.save()
+
+	log.notice("started %s"%label)
+	err_count = 0
+	# main loop
+	while not bt.stop_daemon:
+		t_start = time.time()
+		if bt.message == 'reinit':
+			mh = handlerClass()
+			bt = BackgroundTask.objects.get(pk=bt_id)
+			bt.timestamp = time.time()
+			bt.message = 'running...'
+			bt.save()
+			log.notice("reinit of %s daemon done"%label)
+		try:
+			# do actions
+			mh.run()
+			err_count = 0
+		except:
+			var = traceback.format_exc()
+			err_count +=1
+			# write log only
+			if err_count <= 3 or err_count == 10 or err_count%100 == 0:
+				log.debug("occ: %d, exeption in %s daemon%s%s %s" % (err_count,label,os.linesep,os.linesep,var),-1)
+			
+			# do actions
+			mh = handlerClass()
+			
+		# update BackgroudtaskTask
+		bt = BackgroundTask.objects.get(pk=bt_id)
+		bt.timestamp = time.time()
+		if dt_set>0:
+			bt.load= 1.-max(min((time.time()-t_start)/dt_set,1),0)
+		else:
+			bt.load= 1
+		bt.save()
+		dt = dt_set -(time.time()-t_start)
+		if dt>0:
+			time.sleep(dt)
+
+	## will be called after stop signal
+	log.notice("stopped %s execution"%label)
+	bt = BackgroundTask.objects.get(pk=bt_id)
+	bt.timestamp = time()
+	bt.done = True
+	bt.message = 'stopped'
+	bt.pid = 0
+	bt.save()
