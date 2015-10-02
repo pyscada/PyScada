@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from pyscada import version as core_version
 from pyscada.models import Client
 from pyscada.models import Variable
 from pyscada.models import RecordedDataFloat
@@ -78,7 +79,8 @@ def view(request,link_title):
 		'panel_list': panel_list,
 		'control_list':control_list,
 		'user': request.user,
-		'view_title':view.title
+		'view_title':view.title,
+		'core_version':core_version()
 	})
 	log.webnotice('open hmi',request.user)
 	return HttpResponse(t.render(c))
@@ -132,11 +134,10 @@ def config(request):
 def log_data(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
+	timestamp = 0
 	if request.POST.has_key('timestamp'):
 		timestamp = float(request.POST['timestamp'])
-	else:
-		timestamp = time.time()-(300) # get log of last 5 minutes
-
+	timestamp = max(timestamp,time.time()-(300)) # get log of last 5 minutes
 	data = Log.objects.filter(level__gte=6,timestamp__gt=float(timestamp)).order_by('-timestamp')
 	odata = []
 	for item in data:

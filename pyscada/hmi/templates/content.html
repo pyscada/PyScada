@@ -6,13 +6,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <meta name="description" content="PyScada html5 client application"/>
         <meta name="author" content="Martin Schroeder"/>
-        
+
         <title>PyScada Control Center - {{ view_title }}</title>
         <!-- Bootstrap core CSS -->
         <link href="{% static "pyscada/css/bootstrap.css" %}" rel="stylesheet"/>
         <!-- Bootstrap theme -->
         <link href="{% static "pyscada/css/bootstrap-theme.min.css" %}" rel="stylesheet"/>
-        <!-- Custom styles for this template -->    
+        <!-- Custom styles for this template -->
         <link href="{% static "pyscada/css/pyscada-theme.css" %}" rel="stylesheet"/>
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
@@ -25,7 +25,7 @@
         <![endif]-->
     </head>
     <body style="">
-    
+
         <!-- Fixed navbar -->
         <div class="navbar navbar-inverse navbar-fixed-top">
             <div class="container">
@@ -101,12 +101,13 @@
                                 <form class="navbar-form navbar-right" >
                                     <button type="button" class="btn btn-success" id="AutoUpdateButton" >auto update</button>
                                 </form>
+                              <a role="menuitem" class="disabled" tabindex="-1" href="#">Version: {{ core_version }}</a>
                             </div>
                         </li>
                         <li class="dropdown"><!-- User -->
                             <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon  glyphicon-user"></span> {% if user.first_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username }}{% endif %}<b class="caret"></b></a>
                             <ul class="dropdown-menu">
-								<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.first_name }} {{ user.last_name }}</a></li>	
+								<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.first_name }} {{ user.last_name }}</a></li>
 								<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
 								<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">change user info</a></li>
 								<li class="divider"></li>
@@ -114,7 +115,7 @@
 								<li class="divider"></li>
 								<li><a href="/accounts/logout"> logout</a></li>
                             </ul>
-                        </li>   
+                        </li>
                         <!--<li><a href="#page-help"><span class="glyphicon glyphicon-question-sign"></span> Help</a></li>-->
                         <li style="width:20px;"><a href="#" ><span id="AutoUpdateStatus" class="glyphicon glyphicon-transfer"></span></a><!--<img src="{% static "pyscada/img/load.gif" %}" alt="loading" id="AutoUpdateStatus" height="12px">--></li>
                     </ul>
@@ -131,7 +132,7 @@
                                 {% if widget.col == 0 and widget.row > 0 %}
                     </div>
                     <div class="row">
-        
+
                                 {% endif %}
                             <div id="widget_{{widget.pk}}" class="widget {{ widget.css_class}}"> <!-- {{ widget.title }} -->
                                 {% if widget.chart %}
@@ -148,8 +149,8 @@
                             </div>
                             {% endif %}
                         {% endfor %}
-                        
-                    </div>	
+
+                    </div>
                 </div>
             {% endfor %}
             <div id="page-log" class="sub-page" >
@@ -168,7 +169,7 @@
                     </thead>
                     <tbody></tbody>
                 </table>
-            </div> <!-- end page-log -->	
+            </div> <!-- end page-log -->
             {% for panel in panel_list %}
                 <div class="side-menu  {% if panel.position == 1 %}left{% elif panel.position == 2 %}right{% endif %}">
                     <ul class="status-panel">
@@ -195,12 +196,12 @@
         <script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.selection.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/bootstrap.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/pyscada/pyscada.js" %}"></script>
-        
+
         <script>
         $( document ).ready(function() {
             var debug = 0;
             // Handler for .ready() called.
-            
+
             // hide all pages
             $(".sub-page").hide();
             if (window.location.hash.length > 0) {
@@ -208,7 +209,7 @@
             }else{
                 window.location.hash = $('ul.navbar-nav li a').first().attr("href");
             }
-            
+
             // sidemenues
             $('.side-menu.left').mouseenter(function(){
                 $(this).stop().CSSAnimate({"left":0},500)
@@ -216,25 +217,25 @@
                 ow = $(this).outerWidth()
                 $(this).stop().CSSAnimate({"left":-(ow - 11)},500)
             });
-            
+
             $('.side-menu.right').mouseenter(function(){
                 $(this).stop().CSSAnimate({"right":0},500)
             }).mouseleave(function(){
                 ow = $(this).outerWidth()
                 $(this).stop().CSSAnimate({"right":-(ow - 11)},500)
             });
-            
+
             $('.side-menu.bottom').css('margin-left',- $('.side-menu.bottom').outerWidth(true)/2)
-            
+
             $('.side-menu.bottom').stop().CSSAnimate({"bottom":-($('.side-menu.bottom').outerHeight(true) - 31)},500)
-            
+
             $('.side-menu.bottom').mouseenter(function(){
                 $(this).stop().CSSAnimate({"bottom":0},500)
             }).mouseleave(function(){
                 oh = $(this).outerHeight(true)
                 $(this).stop().CSSAnimate({"bottom":-(oh - 31)},500)
             });
-            
+
             // auto update function
             $('#AutoUpdateButton').click(function(e) {
                 if (auto_update_active) {
@@ -251,7 +252,7 @@
                     fetchData();
                 }
             });
-            // prevent reloading by existent 
+            // prevent reloading by existent
             window.onbeforeunload = function() {
                 return "you realy wan't to reload/leave the page?";
             };
@@ -268,7 +269,7 @@
             });
             $('#ChartTimeWindow-set').click(function() {
                 setWindowSize(parseInt($('#ChartTimeWindow-input').val()));
-            }); 
+            });
         });
         </script>
     </body>

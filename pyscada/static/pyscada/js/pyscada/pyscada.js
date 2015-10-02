@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.6.13
+version 0.6.14
 
 Copyright (c) 2013-2015 Martin Schröder
 Licensed under the GPL.
 
 */
-
+var version = "0.6.14"
 var NotificationCount = 0
 var PyScadaConfig;
 var UpdateStatusCount = 0;
@@ -22,7 +22,7 @@ var log_frm_mesg = $('#page-log-form-message')
 var csrftoken = $.cookie('csrftoken');
 var fetch_data_timeout = 5000;
 var init_chart_data_fetch_pending_count = 0;
-var log_fetch_pending_count = 0;
+var log_fetch_pending_count = false;
 var RootUrl = window.location.protocol+"//"+window.location.host + "/";
 // the code
 var debug = 0;
@@ -109,7 +109,7 @@ function fetchData() {
 			error: function(x, t, m) {
 				if(JsonErrorCount % 5 == 0)
 					addNotification(t, 3);
-					
+
 				JsonErrorCount = JsonErrorCount + 1;
 				if (JsonErrorCount > 60) {
 					auto_update_active = false;
@@ -144,11 +144,9 @@ function fetchData() {
 }
 
 function updateLog() {
-	if (log_fetch_pending_count > 1){
-		return false;
-	}
+	if (log_fetch_pending_count){return false;}
 	showUpdateStatus();
-	log_fetch_pending_count ++;
+	log_fetch_pending_count = true;
 	$.ajax({
 		url: RootUrl+PyScadaConfig.LogDataFile,
 		type: 'post',
@@ -175,15 +173,15 @@ function updateLog() {
 				});
 			log_init = true;
 			$('#log-table').trigger("updateAll",["",function(table){}]);
-			if (log_fetch_pending_count > 0){
-				log_fetch_pending_count --;
+			if (log_fetch_pending_count){
+				log_fetch_pending_count = false;
 			}
 			hideUpdateStatus();
 		},
 		error: function(x, t, m) {
 			hideUpdateStatus();
-			if (log_fetch_pending_count > 0){
-				log_fetch_pending_count --;
+			if (log_fetch_pending_count){
+				log_fetch_pending_count = false;
 			}
 		}
 	});
@@ -205,7 +203,7 @@ function addNotification(message, level) {
         right = 4;
         top = 55;
     }
-    
+
     //<0 - Debug
 	//1 - Emergency
 	//2 - Critical
@@ -244,14 +242,14 @@ function addNotification(message, level) {
         level = 'info';
         message_pre = '<strong>Info</strong> ';
     }
-    
+
     $('#notification_area').append('<div id="notification_Nb' + NotificationCount + '" class="notification alert alert-' + level + ' alert-dismissable" style="position: fixed; top: ' + top + 'px; right: ' + right + 'px; "><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>'+message_pre+ new Date().toLocaleTimeString() + ': ' + message + '</div>');
     setTimeout('$("#notification_Nb' + NotificationCount + '").alert("close");', 7000);
     NotificationCount = NotificationCount + 1;
 }
 
 function updateDataValues(key,val){
-		
+
 		var r_val = Number(val);
 		if(Math.abs(r_val) == 0 ){
 			 r_val = 0;
@@ -281,7 +279,7 @@ function updateDataValues(key,val){
 			$(".label.type-bool.var-" + key).removeClass("label-danger");
 			// inverted
 			$(".label.type-bool.status-red-inv.var-" + key).addClass("label-danger");
-			
+
 			$('button.btn-default.write-task-btn.var-' + key).addClass("updateable");
 			$('button.updateable.write-task-btn.var-' + key).addClass("btn-default");
 			$('button.updateable.write-task-btn.var-' + key).removeClass("btn-success");
@@ -301,7 +299,7 @@ function updateDataValues(key,val){
 }
 
 function PyScadaPlot(config){
-	
+
 	var options = {
 		xaxis: {
             mode: "time",
@@ -370,15 +368,15 @@ function PyScadaPlot(config){
 				}
 			});
 		});
-		
+
 
 		expandToMaxWidth();
 		main_chart_area  = $(config.placeholder).closest('.main-chart-area');
-		
-		
+
+
 		contentAreaHeight = main_chart_area.parent().height();
 		mainChartAreaHeight = main_chart_area.height();
-		
+
 		if (contentAreaHeight>mainChartAreaHeight){
 			main_chart_area.height(contentAreaHeight);
 		}
@@ -387,7 +385,7 @@ function PyScadaPlot(config){
 		flotPlot = $.plot($(config.placeholder + ' .chart-placeholder'), series,options)
 		// update the plot
 		update()
-		// bind 
+		// bind
 		$(config.placeholder + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
 			pOpt = flotPlot.getOptions();
 			pOpt.yaxes[0].min = ranges.yaxis.from;
@@ -404,8 +402,8 @@ function PyScadaPlot(config){
 		chartTitle.css("margin-left", -chartTitle.width() / 2);
 		var yaxisLabel = $(config.placeholder + ' .axisLabel.yaxisLabel');
 		yaxisLabel.css("margin-top", yaxisLabel.width() / 2 - 20);
-		
-		
+
+
 		$(config.placeholder + " .btn.btn-default.chart-ResetSelection").click(function() {
 			pOpt = flotPlot.getOptions();
 			pOpt.yaxes[0].min = config.axes[0].yaxis.min;
@@ -413,7 +411,7 @@ function PyScadaPlot(config){
 			flotPlot.setupGrid();
 			flotPlot.draw();
 		});
-		
+
 		$(config.placeholder + " .btn.btn-default.chart-ZoomYToFit").click(function() {
 			pOpt = flotPlot.getOptions();
 			aOpt = flotPlot.getYAxes();
@@ -597,7 +595,7 @@ $.browserQueue = {
         $.browserQueue._queue = [];
     }
 };
-    
+
 function csrfSafeMethod(method) {
     // these HTTP methods do not require CSRF protection
     return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
@@ -644,13 +642,13 @@ function addWriteTask(var_id,value){
 			url: RootUrl+'form/write_task/',
 			data: {var_id:var_id,value:value},
 			success: function (data) {
-				
+
 			},
 			error: function(data) {
 				addNotification('add new write task failed',3);
 			}
 		});
-	
+
 };
 
 $('button.write-task-set').click(function(){
@@ -665,7 +663,7 @@ $('button.write-task-set').click(function(){
 				url: RootUrl+'form/write_task/',
 				data: {var_id:var_id,value:value},
 				success: function (data) {
-					
+
 				},
 				error: function(data) {
 					addNotification('add new write task failed',3);
@@ -712,7 +710,7 @@ $('button.write-task-btn').click(function(){
 $(function() {
 	// Setup drop down menu
 	$('.dropdown-toggle').dropdown();
- 
+
 	// Fix input element click problem
 	$('.dropdown input, .dropdown label, .dropdown button').click(function(e) {
 		e.stopPropagation();
