@@ -1,8 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 from pyscada.models import MailQueue, MailRecipient
+
 from django.core.mail import send_mail
+from django.conf import settings
+
 from time import time
+
+
 class Handler:
     def __init__(self):
         '''
@@ -25,7 +31,7 @@ class Handler:
     
         for mail in MailQueue.objects.filter(done=False,send_fail_count__lte=3):
             # limit number of mails in 24 h  
-            for recipient in mail.mail_recipients.exclude(blocked_recipient):
+            for recipient in mail.mail_recipients.exclude(to_email__in=blocked_recipient):
                 if recipient.mailqueue_set.filter(timestamp__gt=time()-(60*60*24)).count() > self.mail_count_limit:
                     blocked_recipient.append(recipient.pk)
             # send mails

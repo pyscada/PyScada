@@ -1,6 +1,15 @@
 # -*- coding: utf-8 -*-
 
 import pyscada
+from pyscada.models import Client, ClientWriteTask
+from pyscada.models import RecordedTime
+from pyscada.models import RecordedDataBoolean, RecordedDataFloat, RecordedDataInt, RecordedDataCache
+
+from django.conf import settings
+
+from time import time
+
+
 __version__ = pyscada.__version__
 __author__  = pyscada.__author__
 

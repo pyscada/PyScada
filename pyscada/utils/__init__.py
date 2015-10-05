@@ -570,6 +570,7 @@ def daemon_run(label,handlerClass):
 			
 			# do actions
 			mh = handlerClass()
+		
 			
 		# update BackgroudtaskTask
 		bt = BackgroundTask.objects.get(pk=bt_id)
@@ -584,10 +585,14 @@ def daemon_run(label,handlerClass):
 			time.sleep(dt)
 
 	## will be called after stop signal
+	try:
+		bt = BackgroundTask.objects.get(pk=bt_id)
+		bt.timestamp = time.time()
+		bt.done = True
+		bt.message = 'stopped'
+		bt.pid = 0
+		bt.save()
+	except:
+		var = traceback.format_exc()
+		log.error("exeption while shootdown of %s:%s %s" % (label,os.linesep, var))
 	log.notice("stopped %s execution"%label)
-	bt = BackgroundTask.objects.get(pk=bt_id)
-	bt.timestamp = time()
-	bt.done = True
-	bt.message = 'stopped'
-	bt.pid = 0
-	bt.save()
