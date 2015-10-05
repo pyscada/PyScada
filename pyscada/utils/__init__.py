@@ -385,8 +385,9 @@ def import_xml_config_file(filename):
 				cc.modbusclient.protocol = entry['modbus.protocol']
 				cc.modbusclient.save()
 			else:
-				ModbusClient(modbus_client=cc,ip_address=entry['modbus.ip_address'],port=entry['modbus.port'],protocol=entry['modbus.protocol'],unit_id=entry['modbus.unit_id'])
-
+				mc = ModbusClient(modbus_client=cc,ip_address=entry['modbus.ip_address'],port=entry['modbus.port'],protocol=entry['modbus.protocol'],unit_id=entry['modbus.unit_id'])
+				mc.save()
+				
 	# Unit (object)
 	for entry in _Units:
 		# unit config
@@ -438,8 +439,9 @@ def import_xml_config_file(filename):
 			vc.hmivariable.save()
 		else:
 			if entry.has_key("hmi.chart_line_color_id") and entry.has_key("hmi.short_name") and entry.has_key("hmi.chart_line_thickness"):
-				HMIVariable(hmi_variable=vc,short_name=entry["hmi.short_name"],chart_line_color_id=entry["hmi.chart_line_color_id"],chart_line_thickness = entry["hmi.chart_line_thickness"]).save()
-
+				hvc = HMIVariable(hmi_variable=vc,short_name=entry["hmi.short_name"],chart_line_color_id=entry["hmi.chart_line_color_id"],chart_line_thickness = entry["hmi.chart_line_thickness"]).save()
+				hvc.save()
+				
 		if hasattr(vc,'modbusvariable'):
 			if entry.has_key("modbus.address"):
 				vc.modbusvariable.address 				= entry["modbus.address"]
@@ -448,8 +450,9 @@ def import_xml_config_file(filename):
 			vc.modbusvariable.save()
 		else:
 			if entry.has_key("modbus.address") and entry.has_key("modbus.function_code_read"):
-				ModbusVariable(modbus_variable=vc,address=entry["modbus.address"],function_code_read=entry["modbus.function_code_read"]).save()
-	
+				mvc = ModbusVariable(modbus_variable=vc,address=entry["modbus.address"],function_code_read=entry["modbus.function_code_read"]).save()
+				mvc.save()
+				
 	for entry in _ClientWriteTask:
 		# start
 		if isinstance(entry['start'],basestring):
