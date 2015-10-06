@@ -439,8 +439,7 @@ def import_xml_config_file(filename):
 			vc.hmivariable.save()
 		else:
 			if entry.has_key("hmi.chart_line_color_id") and entry.has_key("hmi.short_name") and entry.has_key("hmi.chart_line_thickness"):
-				hvc = HMIVariable(hmi_variable=vc,short_name=entry["hmi.short_name"],chart_line_color_id=entry["hmi.chart_line_color_id"],chart_line_thickness = entry["hmi.chart_line_thickness"]).save()
-				hvc.save()
+				HMIVariable(hmi_variable=vc,short_name=entry["hmi.short_name"],chart_line_color_id=entry["hmi.chart_line_color_id"],chart_line_thickness = entry["hmi.chart_line_thickness"]).save()
 				
 		if hasattr(vc,'modbusvariable'):
 			if entry.has_key("modbus.address"):
@@ -450,8 +449,7 @@ def import_xml_config_file(filename):
 			vc.modbusvariable.save()
 		else:
 			if entry.has_key("modbus.address") and entry.has_key("modbus.function_code_read"):
-				mvc = ModbusVariable(modbus_variable=vc,address=entry["modbus.address"],function_code_read=entry["modbus.function_code_read"]).save()
-				mvc.save()
+				ModbusVariable(modbus_variable=vc,address=entry["modbus.address"],function_code_read=entry["modbus.function_code_read"]).save()
 				
 	for entry in _ClientWriteTask:
 		# start
@@ -478,8 +476,7 @@ def import_xml_config_file(filename):
 			if dcwt:
 				continue
 			# write to DB
-			cwt = ClientWriteTask(variable=variable.first(),value=entry['value'],user=user,start=timestamp)
-			cwt.save()
+			ClientWriteTask(variable=variable.first(),value=entry['value'],user=user,start=timestamp).save()
 			
 				
 		

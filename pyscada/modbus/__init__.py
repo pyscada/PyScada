@@ -4,7 +4,7 @@ import pyscada
 from pyscada.models import Client, ClientWriteTask
 from pyscada.models import RecordedTime
 from pyscada.models import RecordedDataBoolean, RecordedDataFloat, RecordedDataInt, RecordedDataCache
-
+from pyscada.modbus.client import client
 from django.conf import settings
 
 from time import time
