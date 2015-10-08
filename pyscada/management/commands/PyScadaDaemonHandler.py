@@ -60,13 +60,13 @@ class Command(BaseCommand):
     def start(self,context,daemon_name):
         if not context.pidfile.is_locked():
             try:
-				mod = __import__('pyscada.%s'% daemon_name, fromlist=['Handler'])
-				handlerClass = getattr(mod, 'Handler')
+                mod = __import__('pyscada.%s.handler'% daemon_name, fromlist=['Handler'])
+                handlerClass = getattr(mod, 'Handler')
             except:
                 self.stdout.write("no such daemon")
                 var = traceback.format_exc()
                 log.error("exeption while initialisation of %s:%s %s" % (daemon_name,os.linesep, var))
-			
+            
             context.open()
             daemon_run(
                 label='pyscada.%s.daemon'% daemon_name,
