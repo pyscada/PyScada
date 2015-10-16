@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '0.6.17b18'
+__version__ = '0.6.17b19'
 __author__  = 'Martin Schröder'
 
 

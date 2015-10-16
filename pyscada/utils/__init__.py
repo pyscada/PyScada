@@ -10,6 +10,9 @@ from pyscada.modbus.models import ModbusVariable
 from pyscada.modbus.models import ModbusClient
 from pyscada.hmi.models import Color
 from pyscada.hmi.models import HMIVariable
+from pyscada.hmi.models import Chart
+from pyscada.hmi.models import Page
+from pyscada.hmi.models import Widget
 
 from django.contrib.auth.models import User
 from django.conf import settings
@@ -218,6 +221,7 @@ def export_xml_config_file(filename=None):
 	# description (string)
 	obj.appendChild(field_('description','string',Meta['description']))
 	doc_node.appendChild(obj)
+	
 	# Variable (object)
 	for item in Variable.objects.all():
 		obj = xml_doc.createElement('object')
@@ -255,6 +259,7 @@ def export_xml_config_file(filename=None):
 		# hdf.dims
 		obj.appendChild(field_('hdf.dims','uint16',1))
 		doc_node.appendChild(obj)
+	
 	# Unit
 	for item in Unit.objects.all():
 		obj = xml_doc.createElement('object')
@@ -267,6 +272,7 @@ def export_xml_config_file(filename=None):
 		# udunit (string)
 		obj.appendChild(field_('udunit','string',item.udunit))
 		doc_node.appendChild(obj)
+	
 	# Client
 	for item in Client.objects.all():
 		obj = xml_doc.createElement('object')
@@ -290,6 +296,7 @@ def export_xml_config_file(filename=None):
 			# modbus.unit_id (uint8)
 			obj.appendChild(field_('modbus.unit_id','uint8',item.modbusclient.unit_id))
 		doc_node.appendChild(obj)
+	
 	# Color
 	for item in Color.objects.all():
 		obj = xml_doc.createElement('object')
@@ -304,6 +311,29 @@ def export_xml_config_file(filename=None):
 		# B (uint8)
 		obj.appendChild(field_('B','uint8',item.B))
 		doc_node.appendChild(obj)
+	
+	# Chart
+	for item in Chart.objects.all():
+		obj = xml_doc.createElement('object')
+		obj.setAttribute('name','Chart')
+		obj.setAttribute('id',item.pk.__str__())
+		# name (string)
+		obj.appendChild(field_('title','string',item.title))
+		# x_axis_label (string)
+		obj.appendChild(field_('x_axis_label','string',item.x_axis_label))
+		# x_axis_ticks (uint8)
+		obj.appendChild(field_('x_axis_ticks','uint8',item.x_axis_ticks))
+		# y_axis_label (string)
+		obj.appendChild(field_('y_axis_label','string',item.y_axis_label))
+		# y_axis_min (float64)
+		obj.appendChild(field_('y_axis_min','float64',item.y_axis_min))
+		# y_axis_max (float64)
+		obj.appendChild(field_('y_axis_max','float64',item.y_axis_max))
+		# variables (string)
+		variables_list = item.variables_list();
+		obj.appendChild(field_('variables','string',variables_list))
+		doc_node.appendChild(obj)
+	
 
 	if filename:
 		with open(filename, "wb") as file_:

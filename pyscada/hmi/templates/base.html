@@ -7,7 +7,7 @@
         <meta name="description" content="PyScada html5 client application"/>
         <meta name="author" content="Martin Schroeder"/>
         
-        <title>PyScada Control Center - Overview</title>
+        <title>{% block title %}{% endblock %}</title>
         <!-- Bootstrap core CSS -->
         <link href="{% static "pyscada/css/bootstrap.css" %}" rel="stylesheet"/>
         <!-- Bootstrap theme -->
@@ -24,61 +24,60 @@
         <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
         <![endif]-->
     </head>
-    <body>
-    
-        <!-- Fixed navbar -->
-        <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
-            <div class="container">
-                <div class="navbar-header">
-                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </button>
-                    <a  class="navbar-brand" href="/">PyScada</a>
+    <body {% block body_confic_data %} {% endblock %}>
+        <div id="wrap">
+            <!-- Fixed navbar -->
+            <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+                <div class="container">
+                    <div class="navbar-header">
+                        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </button>
+                        <a  class="navbar-brand" href="/">PyScada</a>
+                    </div>
+                    <div class="navbar-collapse collapse">
+                        <ul class="nav navbar-nav">
+                            {% block top_menu_left %}{% endblock %}
+                        </ul>
+                        <ul class="nav navbar-right navbar-nav">
+                            {% block top_menu_right %}{% endblock %}
+                            {% if user.pk %}
+                            <li class="dropdown"><!-- User -->
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon  glyphicon-user"></span> {% if user.first_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username }}{% endif %}<b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.first_name }} {{ user.last_name }}</a></li>	
+                                    <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
+                                    <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">change user info</a></li>
+                                    <li class="divider"></li>
+                                    <li><a href="/accounts/password_change" target="_blank"> change password</a></li>
+                                    <li class="divider"></li>
+                                    <li><a href="/accounts/logout"> logout</a></li>
+                                </ul>
+                            </li>
+                            {% endif %}
+                            <!--<li><a href="#page-help">Help</a></li>-->
+                        </ul>
+                    </div><!--/.nav-collapse -->
                 </div>
-                <div class="navbar-collapse collapse">
-                    <ul class="nav navbar-nav">
-                        {% block top_menu_left %}{% endblock %}
-                    </ul>
-                    <ul class="nav navbar-right navbar-nav">
-                        {% block top_menu_right %}{% endblock %}
-                        {% if user %}
-                        <li class="dropdown"><!-- User -->
-                            <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon  glyphicon-user"></span> {% if user.first_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username }}{% endif %}<b class="caret"></b></a>
-                            <ul class="dropdown-menu">
-								<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.first_name }} {{ user.last_name }}</a></li>	
-								<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
-								<li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">change user info</a></li>
-								<li class="divider"></li>
-								<li><a href="/accounts/password_change" target="_blank"> change password</a></li>
-								<li class="divider"></li>
-								<li><a href="/accounts/logout"> logout</a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-                        <!--<li><a href="#page-help">Help</a></li>-->
-                    </ul>
-                </div><!--/.nav-collapse -->
+                <div id="notification_area"></div>
             </div>
-            <div id="notification_area"></div>
+            <div class="container" id="content">
+                <!-- loading animation -->
+                <div id="notification_area_2"></div>
+                {% block content %}{% endblock %}
+            </div> <!-- /container -->
         </div>
-        <div class="container" id="content">
-            <!-- loading animation -->
-            <div id="loadingAnimation"> <div class="row"><div class="col-md-1 col-md-offset-6"><img src="{% static "pyscada/img/load.gif" %}" alt="loading"/></div></div></div>
-            {% block content %}{% endblock %}
-        </div> <!-- /container -->
+        <footer class="footer">
+        PyScada {% if version_string %}Version: {{version_string}}{% endif %}
+        </footer>
         <!-- Bootstrap core JavaScript
         ================================================== -->
         <!-- Placed at the end of the document so the pages load faster -->
-        <script type="text/javascript" src="{% static "pyscada/js/jquery.min.js" %}"></script>
-        <!--<script type="text/javascript" src="{% static "pyscada/js/jquery.cookie.js" %}"></script>-->
-        <script type="text/javascript" src="{% static "pyscada/js/bootstrap.min.js" %}"></script>
+        {% block include_bootom %}{% endblock %}
         <script>
-        $( document ).ready(function() {
-            // Handler for .ready() called.
-            $("#loadingAnimation").hide();
-        });
+        {% block script_bottom %}{% endblock %}
         </script>
     </body>
 </html>

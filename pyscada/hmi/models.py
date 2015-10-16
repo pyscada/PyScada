@@ -68,6 +68,8 @@ class Chart(models.Model):
 		return unicode(str(self.id) + ': ' + self.title)
 	def visable(self):
 		return True
+	def variables_list(self,exclude_list=[]):
+		return [item.pk for item in self.variables.exclude(pk__in=exclude_list)]
 
 class Page(models.Model):
 	id 				= models.AutoField(primary_key=True)

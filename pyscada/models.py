@@ -135,7 +135,10 @@ class RecordedDataCache(models.Model):
 	objects 		= RecordedDataValueManager()
 	def __unicode__(self):
 		return unicode(self.value)
-
+	def last_update_ms(self):
+		return self.time.timestamp * 1000
+	def last_change_ms(self):
+		return self.last_change * 1000
 
 
 class Log(models.Model):
