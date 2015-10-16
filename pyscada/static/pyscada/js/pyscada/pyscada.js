@@ -76,7 +76,7 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                     //append data to data array
                         if (typeof(val)==="object" && typeof plot_instance !== 'undefined'){
 							//alert(plot_id);
-                            plot_instance.AppendData(key,val);
+                            plot_instance.PreppendData(key,val);
                         }
                     });
 					init_chart_data_fetch_pending_count--;
@@ -511,7 +511,7 @@ function PyScadaPlot(id){
     
     function PreppendData(key,value){
         if (typeof(data[key])==="object"){
-            data[key].unshift(value);
+            data[key] = value.concat(data[key]);
         }
     }
     
