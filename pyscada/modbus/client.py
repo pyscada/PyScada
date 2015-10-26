@@ -2,16 +2,15 @@
 from pyscada import log
 from pyscada.models import ClientWriteTask
 from pyscada.models import Client
-from pyscada.models import RecordedEvent
 from pyscada.models import RecordedTime
 from pyscada.models import RecordedDataFloat
 from pyscada.models import RecordedDataInt
 from pyscada.models import RecordedDataBoolean
 from pyscada.models import RecordedDataCache
-from pyscada.models import Event
-from pyscada.utils import encode_value
-from pyscada.utils import get_bits_by_class
-from pyscada.utils import decode_value
+from pyscada.modbus.utils import encode_value
+from pyscada.modbus.utils import get_bits_by_class
+from pyscada.modbus.utils import decode_value
+from pyscada.utils import RecordData
 
 from django.conf import settings
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
@@ -165,7 +164,7 @@ class client:
         self.variables  = {}
         self._variable_config   = self._prepare_variable_config(client)
         self._not_accessible_variable = []
-        
+        self.data = []
 
     def _prepare_variable_config(self,client):
         
@@ -177,9 +176,10 @@ class client:
                 continue
             address      = var.modbusvariable.address
             bits_to_read = get_bits_by_class(var.value_class)
-            events       = Event.objects.filter(variable=var)
                 
-            self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'name':var.name,'adr':address,'bits':bits_to_read,'fc':FC,'events':events}
+            #self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'name':var.name,'adr':address,'bits':bits_to_read,'fc':FC}
+            self.variables[var.pk] = RecordData(var.pk,var.name,var.value_class,var.writeable,adr=address,bits=bits_to_read,fc=FC,accessible=True)
+            
             if FC == 1: # coils
                 self.trans_coils.append([address,var.pk,FC])
             elif FC == 2: # discrete inputs
@@ -252,11 +252,10 @@ class client:
         """
         self.slave.close()
     
-    def request_data(self):
+    def request_data(self,timestamp):
         """
     
         """
-        data = {};
         if not self._connect():
             return False
         for register_block in self._variable_config:
@@ -267,56 +266,55 @@ class client:
                 result = register_block.request_data(self.slave)
             
             if result is not None:
-                
-                data = dict(data.items() + result.items())
                 for variable_id in register_block.variable_id:
-                    if self._not_accessible_variable.count(variable_id) > 0:
+                    self.variables[variable_id].update_value(result[variable_id],timestamp)
+                    if not self.variables[variable_id].accessible:
                         log.error(("variable with id: %d is now accessible")%(variable_id))
-                        self._not_accessible_variable.remove(variable_id)
+                        self.variables[variable_id].accessible = True
                 
             else:
                 for variable_id in register_block.variable_id:
-                    if self._not_accessible_variable.count(variable_id) == 0:
+                    if self.variables[variable_id].accessible:
                         log.error(("variable with id: %d is not accessible")%(variable_id))
-                        self._not_accessible_variable.append(variable_id)
-                    data[variable_id] = None
+                        self.variables[variable_id].accessible = False
+                        self.variables[variable_id].update_value(None,timestamp)
             
         self._disconnect()
-        return data
+        return self.variables.values()
     
     def write_data(self,variable_id, value):
         """
         write value to single modbus register or coil
         """
-        if not self.variables[variable_id]['writeable']:
+        if not self.variables[variable_id].writeable:
             return False
 
-        if self.variables[variable_id]['fc'] == 3:
+        if self.variables[variable_id].fc == 3:
             # write register
-            if 0 <= self.variables[variable_id]['adr'] <= 65535:
+            if 0 <= self.variables[variable_id].adr <= 65535:
                 
                 self._connect()
-                if self.variables[variable_id]['bits']/16 == 1:
+                if self.variables[variable_id].bits/16 == 1:
                     # just write the value to one register
-                    self.slave.write_register(self.variables[variable_id]['adr'],int(value))
+                    self.slave.write_register(self.variables[variable_id].adr,int(value))
                 else:
                     # encode it first
-                    self.slave.write_registers(self.variables[variable_id]['adr'],list(encode_value(value,self.variables[variable_id]['value_class'])))
+                    self.slave.write_registers(self.variables[variable_id].adr,list(encode_value(value,self.variables[variable_id].value_class)))
                 self._disconnect()
                 return True
             else:
-                log.error('Modbus Address %d out of range'%self.variables[variable_id]['adr'])
+                log.error('Modbus Address %d out of range'%self.variables[variable_id].adr)
                 return False
-        elif self.variables[variable_id]['fc'] == 1:
+        elif self.variables[variable_id].fc == 1:
             # write coil
-            if 0 <= self.variables[variable_id]['adr'] <= 65535:
+            if 0 <= self.variables[variable_id].adr <= 65535:
                 self._connect()
-                self.slave.write_coil(self.variables[variable_id]['adr'],bool(value))
+                self.slave.write_coil(self.variables[variable_id].adr,bool(value))
                 self._disconnect()
                 return True
             else:
-                log.error('Modbus Address %d out of range'%self.variables[variable_id]['adr'])
+                log.error('Modbus Address %d out of range'%self.variables[variable_id].adr)
         else:
-            log.error('wrong function type %d'%self.variables[variable_id]['fc'])
+            log.error('wrong function type %d'%self.variables[variable_id].fc)
             return False
 

@@ -6,6 +6,7 @@ from pyscada.utils import daemon_run
 
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
+
 import daemon
 import os,sys
 import signal

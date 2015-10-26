@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
+import pyscada
 
+__version__ = pyscada.__version__
+__author__  = pyscada.__author__
 
+default_app_config = 'pyscada.export.apps.PyScadaExportConfig'
 # PyScada
 from pyscada import log
 from pyscada.utils import validate_value_class, export_xml_config_file
@@ -24,7 +28,7 @@ import math
 export measurements from the database to a file
 """
 
-def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=None):
+def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=None,active_vars=None):
     tp = BackgroundTask(start=time(),label='pyscada.export.export_measurement_data_to_h5',message='init',timestamp=time(),pid=str(os.getpid()))
     tp.save()
 
@@ -46,7 +50,13 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
             os.mkdir(backup_file_path)
         cdstr = strftime("%Y_%m_%d_%H%M",localtime())
         filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '.h5')
-    
+    # 
+    if active_vars is None:
+        active_vars = list(Variable.objects.filter(active = 1,record = 1,client__active=1).values_list('pk',flat=True))
+    else:
+        active_vars = list(Variable.objects.filter(pk__in = active_vars, active = 1,record = 1,client__active=1).values_list('pk',flat=True))
+
+            
     def _export_data_to_h5():
         tp.timestamp = time()
         tp.message = 'reading time values from SQL'
@@ -81,7 +91,7 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
         bf.reopen()
 
         data = {}
-        active_vars = list(Variable.objects.filter(active = 1,record = 1,client__active=1).values_list('pk',flat=True));
+        
         tp.timestamp = time()
         tp.message = 'reading float data values from SQL'
         tp.save()
@@ -141,7 +151,7 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
 
         pre_data = {}
         
-        for var in Variable.objects.filter(active = 1,record = 1,client__active=1).order_by('pk'):
+        for var in Variable.objects.filter(pk__in=active_vars).order_by('pk'):
             tp.timestamp = time()
             tp.message = 'processing variable_id %d'%var.pk
             tp.save()

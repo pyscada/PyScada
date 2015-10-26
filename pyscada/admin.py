@@ -11,10 +11,12 @@ from pyscada.models import RecordedEvent
 from pyscada.models import MailRecipient
 from pyscada.models import MailQueue
 from pyscada.utils import update_variable_set
+
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.admin import SimpleListFilter
 from django import forms
+
 import datetime
 
 class VariableAdminForm(forms.ModelForm):

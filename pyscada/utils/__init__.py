@@ -6,6 +6,8 @@ from pyscada.models import Variable
 from pyscada.models import Unit
 from pyscada.models import ClientWriteTask
 from pyscada.models import BackgroundTask
+from pyscada.models import RecordedTime
+from pyscada.models import RecordedDataBoolean, RecordedDataFloat, RecordedDataInt, RecordedDataCache
 from pyscada.modbus.models import ModbusVariable
 from pyscada.modbus.models import ModbusClient
 from pyscada.hmi.models import Color
@@ -589,7 +591,7 @@ def daemon_run(label,handlerClass):
 			log.notice("reinit of %s daemon done"%label)
 		try:
 			# do actions
-			mh.run()
+			add_recorded_data_to_database(mh.run()) # query data and write to database
 			err_count = 0
 		except:
 			var = traceback.format_exc()
@@ -626,3 +628,111 @@ def daemon_run(label,handlerClass):
 		var = traceback.format_exc()
 		log.error("exeption while shootdown of %s:%s %s" % (label,os.linesep, var))
 	log.notice("stopped %s execution"%label)
+
+def add_recorded_data_to_database(data):
+	'''
+	takes a list of "RecordData" elements and writen them to the Database
+	'''
+		
+	dvc = []
+	dvf = []
+	dvi = []
+	dvb = []
+	del_idx   = []
+	upd_idx   = []
+	
+	if data:
+		for item in data:
+			rdce = item.create_cache_element()
+			if rdce is None:
+				upd_idx.append(item.variable_id)
+			else:
+				dvc.append(rdce)
+				del_idx.append(item.variable_id)
+			rve = item.create_archive_element()
+			if not rve is None:
+				if type(rve) is RecordedDataFloat:
+					dvf.append(rve)
+				elif type(rve) is RecordedDataInt:
+					dvi.append(rve)
+				elif type(rve) is RecordedDataBoolean:
+					dvb.append(rve)
+		RecordedDataCache.objects.filter(variable_id__in=del_idx).delete()
+		RecordedDataCache.objects.filter(variable_id__in=upd_idx).update(time=item.timestamp)
+		RecordedDataCache.objects.bulk_create(dvc)
+		
+		RecordedDataFloat.objects.bulk_create(dvf)
+		RecordedDataInt.objects.bulk_create(dvi)
+		RecordedDataBoolean.objects.bulk_create(dvb)
+
+
+class RecordData():
+	def __init__(self,variable_id=None,name=None,variable_class=None, writeable=False,store_value = False,record_value=False,update_timestamp=None,**kwargs):
+		self.variable_id = variable_id
+		self.variable_class = variable_class
+		self.record_value = record_value
+		self.name = name
+		self.value = None
+		self.prev_value = None
+		self.timestamp = None
+		self.writeable = writeable
+		self.store_value = False		
+		self.update_timestamp = False
+		for key in kwargs:
+			setattr(self,key,kwargs[key])
+	
+	def update_value(self,value = None,timestamp=None):
+		'''
+		
+		'''
+		self.value =  value
+		self.timestamp = timestamp
+			
+		if self.prev_value is None:
+			self.store_value = True
+			self.update_timestamp = False
+		elif value is None:
+			self.store_value = False
+			self.update_timestamp = False
+		elif self.prev_value == self.value:
+			self.store_value = True
+			self.update_timestamp = False
+		else:
+			self.store_value = False
+			self.update_timestamp = True
+		self.prev_value = value
+	
+	
+		
+	def create_cache_element(self):
+		'''
+		
+		'''
+		if self.store_value and not self.value is None:
+			return RecordedDataCache(variable_id=self.variable_id,value=self.value,time=self.timestamp,last_change = self.timestamp)
+		else:
+			return None
+		
+	def create_archive_element(self):
+		'''
+		
+		'''
+		if self.store_value and self.record_value and not self.value is None:
+			variable_class = self._clients[idx].variables[var_idx]['value_class']
+			if self.variable_class.upper() in ['FLOAT','FLOAT64','DOUBLE']:
+				return RecordedDataFloat(time=self.timestamp,variable_id=self.variable_id,value=float(self.value))
+			elif self.variable_class.upper() in ['FLOAT32','SINGLE','REAL'] :
+				return RecordedDataFloat(time=self.timestamp,variable_id=self.variable_id,value=float(self.value))
+			elif  self.variable_class.upper() in ['INT32']:
+				return RecordedDataInt(time=self.timestamp,variable_id=self.variable_id,value=int(self.value))
+			elif  self.variable_class.upper() in ['WORD','UINT','UINT16']:
+				return RecordedDataInt(time=self.timestamp,variable_id=self.variable_id,value=int(self.value))
+			elif  self.variable_class.upper() in ['INT16','INT']:
+				return RecordedDataInt(time=self.timestamp,variable_id=self.variable_id,value=int(self.value))
+			elif self.variable_class.upper() in ['BOOL','BOOLEAN']:
+				return RecordedDataBoolean(time=self.timestamp,variable_id=self.variable_id,value=bool(self.value))
+			else:
+				return None
+		else:
+			return None
+			

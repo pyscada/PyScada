@@ -188,10 +188,10 @@ class MailRecipient(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	subject_prefix  = models.TextField(default='',blank=True)
 	message_suffix	= models.TextField(default='',blank=True)
-	to_email		= models.EmailField(default='')
+	to_email		= models.EmailField()
 	def __unicode__(self):
 		return unicode(self.to_email)
-
+	
 class Event(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	label			= models.CharField(max_length=400, default='')

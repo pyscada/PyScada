@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.6.19
+version 0.6.21
 
 Copyright (c) 2013-2015 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.6.19"
+var version = "0.6.21"
 var NotificationCount = 0
 var UpdateStatusCount = 0;
 var PyScadaPlots = [];
@@ -61,7 +61,7 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
     variable_keys = typeof variable_keys !== 'undefined' ? variable_keys : VariableKeys;
     first_timestamp = typeof first_timestamp !== 'undefined' ? first_timestamp : data_first_timestamp;
     init = typeof variable_keys !== 'undefined' ? init : 0; // ((first_timestamp == 0) ? 1:0)
-	
+
     if (auto_update_active) {
         showUpdateStatus();		
         $.ajax({
@@ -75,11 +75,10 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                     $.each(data, function(key, val) {
                     //append data to data array
                         if (typeof(val)==="object" && typeof plot_instance !== 'undefined'){
-							//alert(plot_id);
                             plot_instance.PreppendData(key,val);
                         }
                     });
-					init_chart_data_fetch_pending_count--;
+                    init_chart_data_fetch_pending_count--;
                 }else{
                     timestamp = data['timestamp'];
                     delete data['timestamp'];
@@ -126,10 +125,11 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                         };
                         $.browserQueue.add(doBind, this);
                     });
+                    setTimeout('fetchData()', refresh_rate);
                 }
                 UpdateStatusCount = UpdateStatusCount -1;
                 hideUpdateStatus();
-                setTimeout('fetchData()', refresh_rate);
+                
                 $("#AutoUpdateButton").removeClass("btn-warning");
                 $("#AutoUpdateButton").addClass("btn-success");
                 if (JsonErrorCount > 0) {
@@ -157,9 +157,9 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                         });
                     });
                 }
-				if (init){
-					init_chart_data_fetch_pending_count--;
-				}
+                if (init){
+                    init_chart_data_fetch_pending_count--;
+                }
                 $("#AutoUpdateButton").removeClass("btn-success");
                 $("#AutoUpdateButton").addClass("btn-warning");
                 $("#AutoUpdateStatus").hide();
@@ -530,7 +530,7 @@ function PyScadaPlot(id){
                 if (init_chart_data_fetch_pending_count < 1){
                     init_chart_data_fetch_pending_count++;
                     fetchData(keys,0,1,plot); // keys, from_time,init, id 
-					InitDone = true;
+                    InitDone = true;
                 }
             }
             // only update if plot is visible

@@ -1,7 +1,10 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 from pyscada.models import Client, ClientWriteTask
 from pyscada.models import RecordedTime
+from pyscada.models import RecordedDataBoolean, RecordedDataFloat, RecordedDataInt, RecordedDataCache
 
-from pyscada.modbus.client import client
+#from pyscada.__DAQ_Modul__.client import client
 
 from django.conf import settings
 
@@ -9,12 +12,16 @@ from time import time
 
 class Handler:
     def __init__(self):
-        if settings.PYSCADA_MODBUS.has_key('polling_interval'):
-            self.dt_set = float(settings.PYSCADA_MODBUS['polling_interval'])
+        '''
+        
+        '''
+        if settings.PYSCADA_DAQ_MODUL_NAME_.has_key('polling_interval'):
+            self.dt_set = float(settings.PYSCADA_DAQ_MODUL_NAME_['polling_interval'])
         else:
             self.dt_set = 5 # default value is 5 seconds
-        self._clients   = {} # init client dict
-        self._prepare_clients()
+        
+        self._clients   = {}    # init client dict
+        self._prepare_clients() # 
 
     def _prepare_clients(self):
         """
@@ -27,12 +34,13 @@ class Handler:
 
     def run(self):
         """
+            this function will be called every self._dt seconds
+            
             request data
         """
-        
         ## if there is something to write do it 
         self._do_write_task()
-
+        
         ## data acquisition
         timestamp = RecordedTime(timestamp=time())
         timestamp.save()
@@ -46,12 +54,12 @@ class Handler:
     
     def _do_write_task(self):
         """
-        check for and do write tasks
+        check for write tasks
         """
         
         for task in ClientWriteTask.objects.filter(done=False,start__lte=time(),failed=False):
             
-            if self._clients[task.variable.client_id].write_data(task.variable.id,task.value): # do write task
+            if self._clients[task.variable.client_id].write_data(task.variable.id,task.value):
                 task.done=True
                 task.fineshed=time()
                 task.save()
