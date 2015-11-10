@@ -11,6 +11,8 @@ from pyscada.hmi.models import CustomHTMLPanel
 from pyscada.hmi.models import ChartSet
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
+from pyscada.hmi.models import ProcessFlowDiagram
+from pyscada.hmi.models import ProcessFlowDiagramItem
 
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
@@ -43,6 +45,7 @@ class ChartAdmin(admin.ModelAdmin):
 class ControlItemAdmin(admin.ModelAdmin):
     list_display = ('id','position','label','type','variable',)
     list_filter = ('controlpanel',)
+    raw_id_fields = ('variable',)
 
 class SlidingPanelMenuForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -74,7 +77,7 @@ class WidgetAdmin(admin.ModelAdmin):
     list_filter = ('page',)
 
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
-    filter_horizontal = ('pages','sliding_panel_menus','charts','control_items','widgets','views','custom_html_panels')
+    filter_horizontal = ('pages','sliding_panel_menus','charts','control_items','widgets','views','custom_html_panels','ProcessFlowDiagram')
 
 class ControlPanelAdmin(admin.ModelAdmin):
     filter_horizontal = ('items',)
@@ -91,6 +94,12 @@ class PageAdmin(admin.ModelAdmin):
     list_editable = ('title','link_title','position',)
     list_filter = ('view__title',)
 
+class ProcessFlowDiagramItemAdmin(admin.ModelAdmin):
+    raw_id_fields = ('variable',)
+
+class ProcessFlowDiagramAdmin(admin.ModelAdmin):
+    filter_horizontal = ('process_flow_diagram_items',)
+
 admin.site.register(ControlItem,ControlItemAdmin)
 admin.site.register(Chart,ChartAdmin)
 admin.site.register(SlidingPanelMenu,SlidingPanelMenuAdmin)
@@ -103,3 +112,5 @@ admin.site.register(CustomHTMLPanel,CustomHTMLPanelAdmin)
 admin.site.register(ChartSet)
 admin.site.register(Widget,WidgetAdmin)
 admin.site.register(View,ViewAdmin)
+admin.site.register(ProcessFlowDiagram,ProcessFlowDiagramAdmin)
+admin.site.register(ProcessFlowDiagramItem,ProcessFlowDiagramItemAdmin)

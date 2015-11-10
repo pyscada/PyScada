@@ -5,6 +5,7 @@ __version__ = pyscada.__version__
 __author__  = pyscada.__author__
 
 default_app_config = 'pyscada.export.apps.PyScadaExportConfig'
+
 # PyScada
 from pyscada import log
 from pyscada.utils import validate_value_class, export_xml_config_file
@@ -24,11 +25,12 @@ from time import time, localtime, strftime,mktime
 from numpy import float64,float32,int32,uint32,uint16,int16,uint8, nan
 import math
 
-"""
-export measurements from the database to a file
-"""
+
 
 def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=None,active_vars=None):
+    """
+    export measurements from the database to a file
+    """
     tp = BackgroundTask(start=time(),label='pyscada.export.export_measurement_data_to_h5',message='init',timestamp=time(),pid=str(os.getpid()))
     tp.save()
 
@@ -54,7 +56,13 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
     if active_vars is None:
         active_vars = list(Variable.objects.filter(active = 1,record = 1,client__active=1).values_list('pk',flat=True))
     else:
-        active_vars = list(Variable.objects.filter(pk__in = active_vars, active = 1,record = 1,client__active=1).values_list('pk',flat=True))
+        if type(active_vars) is str:
+            if active_vars == 'all':
+                active_vars = list(Variable.objects.all().values_list('pk',flat=True))
+            else:
+                active_vars = list(Variable.objects.filter(active = 1,record = 1,client__active=1).values_list('pk',flat=True))
+        else:
+            active_vars = list(Variable.objects.filter(pk__in = active_vars, active = 1,record = 1,client__active=1).values_list('pk',flat=True))
 
             
     def _export_data_to_h5():
@@ -63,18 +71,7 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
         tp.save()
 
 
-        first_time = RecordedTime.objects.get(id=first_time_id_chunk)
-        time_id_min = BackgroundTask.objects.filter(label='data acquision daemon',start__lte=first_time.timestamp).last()
-        if time_id_min:
-            time_id_min = RecordedTime.objects.filter(timestamp__lte = time_id_min.start).last()
-            if time_id_min:
-                time_id_min = time_id_min.id
-                log.debug(("time_id_min %d to first_time_id %d")%(time_id_min,first_time_id_chunk))
-            else:
-                time_id_min = 1
-        else:
-            time_id_min = 1
-
+        
         timevalues = [unix_time_stamp_to_matlab_datenum(element) for element in RecordedTime.objects.filter(id__range = (first_time_id_chunk,last_time_id_chunk)).values_list('timestamp',flat=True)]
         time_ids = list(RecordedTime.objects.filter(id__range = (first_time_id_chunk,last_time_id_chunk)).values_list('id',flat=True))
 
@@ -149,7 +146,6 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
         tp.message = 'writing data to file'
         tp.save()
 
-        pre_data = {}
         
         for var in Variable.objects.filter(pk__in=active_vars).order_by('pk'):
             tp.timestamp = time()
@@ -167,22 +163,23 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
             else:
                 records = []
 
-            if not first_record:
-                if pre_data.has_key(var_id):
+            if not first_record: # get the most recent value
+                if pre_data.has_key(var_id): # if there is a prev value stored 
                     records.insert(0,pre_data[var_id])
                     first_record = True
-                else:
-                    first_record = _last_matching_record(variable_class,first_time_id_chunk,var_id,time_id_min)
+                else: # try to get it from the database only on the first run
+                    first_record = _last_matching_record(variable_class,first_time_id_chunk,var_id,time_id_min) 
                     if first_record:
                         records.insert(0,first_record)
 
             if not first_record and not records:
-                # write zeros if no data is availebil
+                # write zeros if no data is avail
                 bf.write_data(var.name,_cast_value([0]*len(time_ids),variable_class),\
                 id = var_id,\
                 description=var.description,\
                 value_class = validate_value_class(var.value_class),\
                 unit = var.unit.udunit)
+                pre_data[var_id] = 0 # add 0 to prev value list to speed up next run
                 bf.reopen()
                 continue
 
@@ -284,6 +281,19 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
     tp.max = math.ceil((last_time_id-first_time_id)/chunk_size)
     tp.save()
     pre_data = {}
+    
+    first_time = RecordedTime.objects.get(id=first_time_id_chunk)
+    time_id_min = BackgroundTask.objects.filter(label='data acquision daemon',start__lte=first_time.timestamp).last()
+    if time_id_min:
+        time_id_min = RecordedTime.objects.filter(timestamp__lte = time_id_min.start).last()
+        if time_id_min:
+            time_id_min = time_id_min.id
+            log.debug(("time_id_min %d to first_time_id %d")%(time_id_min,first_time_id_chunk))
+        else:
+            time_id_min = 1
+    else:
+        time_id_min = 1
+
     while first_time_id_chunk < last_time_id:
         # export data
         _export_data_to_h5()

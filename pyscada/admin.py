@@ -65,6 +65,7 @@ class ClientWriteTaskAdmin(admin.ModelAdmin):
     #list_editable = ('active','writeable',)
     list_display_links = ('name',)
     list_filter = ('done', 'failed',)
+    raw_id_fields = ('variable',)
     def name(self, instance):
         return instance.variable.name
     def user_name(self, instance):
@@ -141,12 +142,18 @@ class MailQueueAdmin(admin.ModelAdmin):
     filter_horizontal = ('mail_recipients',)
     def last_update(self,instance):
         return datetime.datetime.fromtimestamp(int(instance.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+
+class EventAdmin(admin.ModelAdmin):
+    list_display = ('id','label','variable','limit_type','level','action',)
+    list_display_links = ('id','label',)
+    list_filter = ('level','limit_type','action',)
+    raw_id_fields = ('variable',)
     
 admin.site.register(Client,ClientAdmin)
 admin.site.register(Variable,VarieblesAdmin)
 admin.site.register(VariableConfigFileImport,VariableImportAdmin)
 admin.site.register(Unit)
-admin.site.register(Event)
+admin.site.register(Event,EventAdmin)
 admin.site.register(RecordedEvent,RecordedEventAdmin)
 admin.site.register(MailRecipient)
 admin.site.register(MailQueue,MailQueueAdmin)

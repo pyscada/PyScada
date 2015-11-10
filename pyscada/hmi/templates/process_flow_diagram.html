@@ -1,54 +1,54 @@
 <div class="widget-body" >
-	<div class="panel panel-primary" style="height: {{ process_flow_diagram.background_image.height|add:"50" }}px; width: {{ process_flow_diagram.background_image.width|add:"50" }}px; margin-left:15px;">
-		{% if process_flow_diagram.title %}
-		<div class="panel-heading">
-			<h3 class="panel-title">{{ process_flow_diagram.title }}</h3>
-		</div>
-		{% endif %}
-		<div class="panel-body">
-			<div style="width: {{ process_flow_diagram.background_image.width }}px; position:relative;top:0; left:0; ">
-				<div style=" top:0px; left:0;position:absolute;" ><img src="{{ process_flow_diagram.background_image.url }}" alt="process flow diagram"></div>
-				{% for item in process_flow_diagram.process_flow_diagram_items.all %}
-					<div class="hidden variable-config" data-name="{{ item.variable.name }}" data-key="{{ item.variable.id }}"></div>
-					{% if item.type == 0 %}<!-- label blue -->
-						<div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
-							<div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-green var-{{ item.variable.name }}">{{ item.label }}</div></div></br>
-						</div>
-						
-					{% elif item.type == 1 %}<!-- label light blue -->
-						<div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
-							<div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-green var-{{ item.variable.name }}">{{ item.label }}</div></div></br>
-						</div>
-					{% elif item.type == 2 %}<!-- label ok -->
-						<div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
-							<div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-green var-{{ item.variable.name }}">{{ item.label }}</div></div></br>
-						</div>
-					{% elif item.type == 3 %}<!-- label warning -->
-						<div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
-							<div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-yello var-{{ item.variable.name }}">{{ item.label }}</div></div></br>
-						</div>
-					{% elif item.type == 4 %}<!-- label alarm -->
-						<div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
-							<div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-red var-{{ item.variable.name }}">{{ item.label }}</div></div></br>
-						</div>
-					{% elif item.type == 7 %}<!-- label alarm invertet -->
-						<div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
-							<div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-red-inv var-{{ item.variable.name }}">{{ item.label }}</div></div></br>
-						</div>
-					{% elif item.type == 5 %}<!-- input -->
-						{% if item.variable.value_class == 'BOOL' %}
-						<div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
-							<div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-green var-{{ item.variable.name }}">{{ item.label }}</div></div></br>
-						</div>
-						{% else %}
-							<div style="top:{{ item.top }}px; 	left: {{ item.left }}px;	position:absolute;	font-size: 12px;"><span class="type-unit"><span class="type-numeric var-{{ item.variable.name }}">-</span> {{ item.variable.unit.unit }}</span></div>
-						{% endif %}
-					{% elif item.type == 6 %}<!-- display value -->
-						<div style="top:{{ item.top }}px; 	left: {{ item.left }}px;	position:absolute;	font-size: 12px;"><span class="type-unit"><span class="type-numeric var-{{ item.variable.name }}">-</span> {{ item.variable.unit.unit }}</span></div>
-					{% endif %}
-				{% endfor %}
-			
-			</div>
-		</div>
-	</div>
+    <div class="panel panel-primary" style="height: {{ process_flow_diagram.background_image.height|add:"68" }}px; width: {{ process_flow_diagram.background_image.width|add:"30" }}px; margin-left:15px;">
+        {% if process_flow_diagram.title %}
+        <div class="panel-heading">
+            <h3 class="panel-title">{{ process_flow_diagram.title }}</h3>
+        </div>
+        {% endif %}
+        <div class="panel-body">
+            <div style="width: {{ process_flow_diagram.background_image.width }}px; position:relative;top:0; left:0; ">
+                <div style=" top:0px; left:0;position:absolute;" ><img src="{{ process_flow_diagram.background_image.url }}" alt="process flow diagram"></div>
+                {% for item in process_flow_diagram.process_flow_diagram_items.all %}
+                    <div class="hidden variable-config" data-name="{{ item.variable.name }}" data-key="{{ item.variable.id }}"></div>
+                    {% if item.type == 0 %}<!-- label blue -->
+                        <div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
+                            <div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-green var-{{ item.variable.name }}">{{ item.label }}</div></div></br>
+                        </div>
+                        
+                    {% elif item.type == 1 %}<!-- label light blue -->
+                        <div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
+                            <div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-green var-{{ item.variable.name }}">{{ item.label }}</div></div></br>
+                        </div>
+                    {% elif item.type == 2 %}<!-- label ok -->
+                        <div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
+                            <div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-green var-{{ item.variable.name }}">{{ item.label }}</div></div></br>
+                        </div>
+                    {% elif item.type == 3 %}<!-- label warning -->
+                        <div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
+                            <div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-yello var-{{ item.variable.name }}">{{ item.label }}</div></div></br>
+                        </div>
+                    {% elif item.type == 4 %}<!-- label alarm -->
+                        <div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
+                            <div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-red var-{{ item.variable.name }}">{{ item.label }}</div></div></br>
+                        </div>
+                    {% elif item.type == 7 %}<!-- label alarm invertet -->
+                        <div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
+                            <div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-red-inv var-{{ item.variable.name }}">{{ item.label }}</div></div></br>
+                        </div>
+                    {% elif item.type == 5 %}<!-- input -->
+                        {% if item.variable.value_class == 'BOOL' %}
+                        <div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
+                            <div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-green var-{{ item.variable.name }}">{{ item.label }}</div></div></br>
+                        </div>
+                        {% else %}
+                            <div style="top:{{ item.top }}px; 	left: {{ item.left }}px;	position:absolute;	font-size: 12px;"><span class="type-unit"><span class="type-numeric var-{{ item.variable.name }}">-</span> {{ item.variable.unit.unit }}</span></div>
+                        {% endif %}
+                    {% elif item.type == 6 %}<!-- display value -->
+                        <div style="top:{{ item.top }}px; 	left: {{ item.left }}px;	position:absolute;	font-size: 12px;"><span class="type-unit"><span class="type-numeric var-{{ item.variable.name }}">-</span> {{ item.variable.unit.unit }}</span></div>
+                    {% endif %}
+                {% endfor %}
+            
+            </div>
+        </div>
+    </div>
 </div>

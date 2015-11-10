@@ -257,7 +257,7 @@ class client:
     
         """
         if not self._connect():
-            return False
+            return []
         for register_block in self._variable_config:
             result = register_block.request_data(self.slave)
             if result is None:
