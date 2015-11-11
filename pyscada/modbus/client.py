@@ -178,7 +178,7 @@ class client:
             bits_to_read = get_bits_by_class(var.value_class)
                 
             #self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'name':var.name,'adr':address,'bits':bits_to_read,'fc':FC}
-            self.variables[var.pk] = RecordData(var.pk,var.name,var.value_class,var.writeable,adr=address,bits=bits_to_read,fc=FC,accessible=True)
+            self.variables[var.pk] = RecordData(var.pk,var.name,var.value_class,var.writeable,adr=address,bits=bits_to_read,fc=FC,accessible=True,record_value=var.record)
             
             if FC == 1: # coils
                 self.trans_coils.append([address,var.pk,FC])
@@ -299,7 +299,7 @@ class client:
                     self.slave.write_register(self.variables[variable_id].adr,int(value))
                 else:
                     # encode it first
-                    self.slave.write_registers(self.variables[variable_id].adr,list(encode_value(value,self.variables[variable_id].value_class)))
+                    self.slave.write_registers(self.variables[variable_id].adr,list(encode_value(value,self.variables[variable_id].variable_class)))
                 self._disconnect()
                 return True
             else:

@@ -1,48 +1,15 @@
-{% if chart_set.chart_1.pk in visable_chart_list  and chart_set.chart_2.pk in visable_chart_list %}
-        <div class="widget-body" id="a{{chart_set.chart_1.pk}}-t">
-            <div class="legend-sidebar">
-                <div id="chart-{{chart_set.chart_1.pk}}-legend">
-                    {% include "chart_legend.html" with chart=chart_set.chart_1 %}
-                </div>
-                <div class="clear-sep"></div>
-                <div id="chart-{{chart_set.chart_2.pk}}-legend">
-                    {% include "chart_legend.html" with chart=chart_set.chart_2 %}
-                </div>
-            </div>
-            <div class="main-chart-area" style=" height:350px;">
-            {% if chart_set.distribution == 0 %}
-                <!-- 1/2 | 1/2 -->
-                <div class="half-size-chart" >
-                    {% include "chart_placeholder.html" with chart=chart_set.chart_1 %}
-                </div>
-                <div class="chart_hspace"></div>
-                <div class="half-size-chart" >
-                    {% include "chart_placeholder.html" with chart=chart_set.chart_2 %}
-                </div>
-            {% elif chart_set.distribution == 1 %}
-                <!-- 2/3 | 1/3 -->
-                <div class="two-third-size-chart" >
-                    {% include "chart_placeholder.html" with chart=chart_set.chart_1 %}
-                </div>
-                <div class="chart_hspace"></div>
-                <div class="third-size-chart" >
-                    {% include "chart_placeholder.html" with chart=chart_set.chart_2 %}
-                </div>
-            {% elif chart_set.distribution == 2 %}
-                <!-- 1/3 | 2/3 -->
-                <div class="third-size-chart" >
-                    {% include "chart_placeholder.html" with chart=chart_set.chart_1 %}
-                </div>
-                <div class="chart_hspace"></div>
-                <div class="two-third-size-chart" >
-                    {% include "chart_placeholder.html" with chart=chart_set.chart_2 %}
-                </div>
-            {% endif %}
-            </div>
-        </div>
-    <!--</div>  end {{ chart_set.chart_1.title|upper }} {{ chart_set.chart_2.title|upper }} -->
-{% elif chart_set.chart_1.pk in visable_chart_list %}
-    {% include "chart.html" with chart=chart_set.chart_1 %}
-{% elif chart_set.chart_2.pk in visable_chart_list %}
-    {% include "chart.html" with chart=chart_set.chart_2 %}
-{% endif %}
+<div class="legend-sidebar">
+    {% include "chart_legend.html" with chart=chart_set.chart_1 widget_pk=widget.pk %}
+    <div class="clear-sep"></div>
+    {% include "chart_legend.html" with chart=chart_set.chart_2 widget_pk=widget.pk %}
+    <div class="clear-sep"></div>        
+</div>
+<div style="margin-left:240px;">
+    <div id="widget_{{widget.pk}}" class="widget col-xs-6 col-sm-6 col-md-6 col-lg-6"> <!-- {{ widget.title }} -->
+        {% include "chart.html" with chart=chart_set.chart_1 widget_pk=widget.pk%}
+    </div>
+    <div id="widget_{{widget.pk}}" class="widget col-xs-6 col-sm-6 col-md-6 col-lg-6"> <!-- {{ widget.title }} -->
+        {% include "chart.html" with chart=chart_set.chart_2 widget_pk=widget.pk%}
+    </div>
+ </div>
+<!--</div>  end {{ chart_set.chart_1.title|upper }} {{ chart_set.chart_2.title|upper }} -->

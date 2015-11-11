@@ -186,7 +186,6 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(serialize=False, primary_key=True)),
                 ('unit', models.CharField(max_length=80, verbose_name=b'Unit')),
                 ('description', models.TextField(default=b'', null=True, verbose_name=b'Description')),
-                ('udunit', models.CharField(max_length=500, verbose_name=b'udUnit')),
             ],
             options={
                 'managed': True,

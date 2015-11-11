@@ -631,7 +631,7 @@ def daemon_run(label,handlerClass):
 
 def add_recorded_data_to_database(data):
 	'''
-	takes a list of "RecordData" elements and writen them to the Database
+	takes a list of "RecordData" elements and write them to the Database
 	'''
 		
 	dvc = []
@@ -668,6 +668,9 @@ def add_recorded_data_to_database(data):
 
 class RecordData():
 	def __init__(self,variable_id=None,name=None,variable_class=None, writeable=False,store_value = False,record_value=False,update_timestamp=None,**kwargs):
+		'''
+		
+		'''
 		self.variable_id = variable_id
 		self.variable_class = variable_class
 		self.record_value = record_value
@@ -683,30 +686,34 @@ class RecordData():
 	
 	def update_value(self,value = None,timestamp=None):
 		'''
-		
+		update the value in the instance and detect value state change
 		'''
 		self.value =  value
 		self.timestamp = timestamp
 			
-		if self.prev_value is None:
+		if self.prev_value is None: 
+			# no old value in cache 
 			self.store_value = True
 			self.update_timestamp = False
-		elif value is None:
+		elif value is None:			
+			# value could not be queried
 			self.store_value = False
 			self.update_timestamp = False
-		elif self.prev_value == self.value:
-			self.store_value = True
-			self.update_timestamp = False
-		else:
+		elif self.prev_value == self.value: 
+			# value hasn't changed
 			self.store_value = False
 			self.update_timestamp = True
+		else:                               
+			# value has changed
+			self.store_value = True
+			self.update_timestamp = False
 		self.prev_value = value
 	
 	
 		
 	def create_cache_element(self):
 		'''
-		
+		create a new element to write to cache table
 		'''
 		if self.store_value and not self.value is None:
 			return RecordedDataCache(variable_id=self.variable_id,value=self.value,time=self.timestamp,last_change = self.timestamp)
@@ -715,10 +722,9 @@ class RecordData():
 		
 	def create_archive_element(self):
 		'''
-		
+		create a new element to write to archive table
 		'''
 		if self.store_value and self.record_value and not self.value is None:
-			variable_class = self._clients[idx].variables[var_idx]['value_class']
 			if self.variable_class.upper() in ['FLOAT','FLOAT64','DOUBLE']:
 				return RecordedDataFloat(time=self.timestamp,variable_id=self.variable_id,value=float(self.value))
 			elif self.variable_class.upper() in ['FLOAT32','SINGLE','REAL'] :

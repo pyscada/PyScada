@@ -2,7 +2,7 @@ from pyscada.models import Client, ClientWriteTask
 from pyscada.models import RecordedTime
 
 from pyscada.modbus.client import client
-
+from pyscada import log
 from django.conf import settings
 
 from time import time

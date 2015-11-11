@@ -1,4 +1,5 @@
 {% if item.variable.active == 1 and item.variable.client.active == 1 %}
+		<div class="hidden variable-config" data-name="{{ item.variable.name }}" data-key="{{ item.variable.pk }}" ></div>
 	{% if item.type == 0 %}<!-- label blue -->
 		<div class="input-group control_label"><span class="label label-default type-bool status-green var-{{ item.variable.name }}">{{ item.label }}</span></div>
 	{% elif item.type == 1 %}<!-- label light blue -->

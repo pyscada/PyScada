@@ -17,6 +17,8 @@
     <div id="widget_{{widget.pk}}" class="widget {{ widget.css_class}}"> <!-- {{ widget.title }} -->
         {% if widget.chart %}
             {% include "chart.html" with chart=widget.chart widget_pk=widget.pk%}
+        {% elif widget.chart_set %}
+            {% include "chart_set.html" with chart_set=widget.chart_set widget_pk=widget.pk%}
         {% elif widget.control_panel %}
             {% include "control_panel.html" with control_panel=widget.control_panel visible_control_element_list=visible_control_element_list%}
         {% elif widget.custom_html_panel %}
