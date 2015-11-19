@@ -20,7 +20,7 @@ class Color(models.Model):
 class HMIVariable(models.Model):
 	hmi_variable			= models.OneToOneField(Variable)
 	short_name			= models.CharField(default='',max_length=80, verbose_name="variable short name")
-	chart_line_color 	= models.ForeignKey('Color',default=0,null=True, on_delete=models.SET_NULL)
+	chart_line_color 	= models.ForeignKey('Color',default=0,null=True, on_delete=models.SET(1))
 	chart_line_thickness_choices = ((3,'3Px'),)
 	chart_line_thickness = models.PositiveSmallIntegerField(default=3,choices=chart_line_thickness_choices)
 	def name(self):
@@ -46,7 +46,7 @@ class ControlItem(models.Model):
 	position			= models.PositiveSmallIntegerField(default=0)
 	type_choices 	= ((0,'label blue'),(1,'label light blue'),(2,'label ok'),(3,'label warning'),(4,'label alarm'),(7,'label alarm inverted'),(5,'Control Element'),(6,'Display Value'),)
 	type			= models.PositiveSmallIntegerField(default=0,choices=type_choices)
-	variable    		= models.ForeignKey(Variable,null=True, on_delete=models.SET_NULL)
+	variable    		= models.ForeignKey(Variable,null=True)
 	class Meta:
 		ordering = ['position']
 	def __unicode__(self):
@@ -150,7 +150,7 @@ class ChartSet(models.Model):
 class Widget(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	title			= models.CharField(max_length=400, default='',blank=True)	
-	page 			= models.ForeignKey(Page,default=0,null=True, on_delete=models.SET_NULL)
+	page 			= models.ForeignKey(Page)
 	row_choises  	= ((0,"1. row"),(1,"2. row"),(2,"3. row"),(3,"4. row"),(4,"5. row"),(5,"6. row"),(6,"7. row"),(7,"8. row"),(8,"9. row"),(9,"10. row"),(10,"11. row"),(11,"12. row"),)
 	row				= models.PositiveSmallIntegerField(default=0,choices=row_choises)
 	col_choises		= ((0,"1. col"),(1,"2. col"),(2,"3. col"),(3,"4. col"))

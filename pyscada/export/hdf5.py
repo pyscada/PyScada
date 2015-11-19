@@ -50,11 +50,13 @@ class mat_compatible_h5:
         """
         self.filename       = os.path.expanduser(filename)
         self.filepath       = []
-
+        self.CHUNCK         = 4320 # 12V/Min * 60 Min/Hour * 6 Hours (1/4 Day)
+        self.GZIP_LEVEL     = 3
         if not os.path.exists(self.filename):
             self.create_file()
+        else:
+            self.open_file()
 
-        self.reopen()
         for key, value in kwargs.iteritems():
             if isinstance(value,basestring): 
                 self._f.attrs[key] = value
@@ -72,13 +74,16 @@ class mat_compatible_h5:
         userblock_data += 'IM';
         with io.open(self.filename,'rb+') as f:
             f.write(userblock_data)
+        self.reopen()
 
     def close_file(self):
         if self._f:
             self._f.close();
     def reopen(self):
         self.close_file()
-        self._f = h5py.File(self.filename)
+        self.open_file()
+    def open_file(self):
+        self._f = h5py.File(self.filename,'w')
         self._d = {}
         self._cd = {}
         for d in self._f.values():
@@ -86,18 +91,15 @@ class mat_compatible_h5:
             if d.__class__.__name__ == "Group":
                 for gm in d.values():
                     self._cd[gm.name[1::]] = gm
-
     def __del__(self):
         self.close_file();
 
     def create_dataset(self,name,dtype):
-        CHUNCK      = 400
-        GZIP_LEVEL  = 3
         if self._d.has_key(name):
             return False
         self._d[name] = self._f.create_dataset(name,
-                                shape=(0,), dtype=dtype,maxshape=(None,),chunks=(CHUNCK,),
-                                compression='gzip',compression_opts=GZIP_LEVEL)
+                                shape=(0,), dtype=dtype,maxshape=(None,),chunks=(self.CHUNCK,),
+                                compression='gzip',compression_opts=self.GZIP_LEVEL)
         self._d[name].attrs['MATLAB_class'] = dtype_to_matlab_class(dtype)
         return self._d[name]
 
@@ -105,18 +107,16 @@ class mat_compatible_h5:
         self._d[name] = self._f.create_group(name)
 
     def create_complex_dataset(self,gname,dtype):
-        CHUNCK      = 400
-        GZIP_LEVEL  = 3
         if self._d.has_key(gname):
             return False
         self.create_group(gname)
         self._cd[gname+"/values"] = self._d[gname].create_dataset("values",
-                                shape=(0,), dtype=dtype,maxshape=(None,),chunks=(CHUNCK,),
-                                compression='gzip',compression_opts=GZIP_LEVEL)
+                                shape=(0,), dtype=dtype,maxshape=(None,),chunks=(self.CHUNCK,),
+                                compression='gzip',compression_opts=self.GZIP_LEVEL)
 
         self._cd[gname+"/time"] = self._d[gname].create_dataset("time",
-                                shape=(0,), dtype="f8",maxshape=(None,),chunks=(CHUNCK,),
-                                compression='gzip',compression_opts=GZIP_LEVEL)
+                                shape=(0,), dtype="f8",maxshape=(None,),chunks=(self.CHUNCK,),
+                                compression='gzip',compression_opts=self.GZIP_LEVEL)
         self._cd[gname+"/time"].attrs['MATLAB_class'] = 'double'
         self._cd[gname+"/values"].attrs['MATLAB_class'] = dtype_to_matlab_class(dtype)
         return True

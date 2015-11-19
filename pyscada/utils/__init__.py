@@ -333,7 +333,7 @@ def export_xml_config_file(filename=None):
 		obj.appendChild(field_('y_axis_max','float64',item.y_axis_max))
 		# variables (string)
 		variables_list = item.variables_list();
-		obj.appendChild(field_('variables','string',variables_list))
+		obj.appendChild(field_('variables','string',str(variables_list)))
 		doc_node.appendChild(obj)
 	
 

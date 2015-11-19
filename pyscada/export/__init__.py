@@ -52,6 +52,7 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
             os.mkdir(backup_file_path)
         cdstr = strftime("%Y_%m_%d_%H%M",localtime())
         filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '.h5')
+        xml_filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '.xml')
     # 
     if active_vars is None:
         active_vars = list(Variable.objects.filter(active = 1,record = 1,client__active=1).values_list('pk',flat=True))
@@ -165,7 +166,7 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
 
             if not first_record: # get the most recent value
                 if pre_data.has_key(var_id): # if there is a prev value stored 
-                    records.insert(0,pre_data[var_id])
+                    records.insert(0,[first_time_id_chunk,pre_data[var_id]])
                     first_record = True
                 else: # try to get it from the database only on the first run
                     first_record = _last_matching_record(variable_class,first_time_id_chunk,var_id,time_id_min) 
@@ -174,11 +175,15 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
 
             if not first_record and not records:
                 # write zeros if no data is avail
+                if hasattr(var.unit,'udunit'):
+                    udunit = var.unit.udunit
+                else :
+                    udunit = 'None'
                 bf.write_data(var.name,_cast_value([0]*len(time_ids),variable_class),\
                 id = var_id,\
                 description=var.description,\
                 value_class = validate_value_class(var.value_class),\
-                unit = var.unit.udunit)
+                unit = udunit)
                 pre_data[var_id] = 0 # add 0 to prev value list to speed up next run
                 bf.reopen()
                 continue
@@ -214,12 +219,15 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
                 t_idx += 1
             pre_data[var_id] = tmp[-1]
             ## write data to file ##################################################
+            if hasattr(var.unit,'udunit'):
+                udunit = var.unit.udunit
+            else :
+                udunit = 'None'
             bf.write_data(var.name,_cast_value(tmp,variable_class),\
             id = var_id,\
             description=var.description,\
             value_class = validate_value_class(var.value_class),\
-            unit = var.unit.udunit)
-
+            unit =  udunit)
             bf.reopen()
         ## end for #################################################################
     if hasattr(settings,'PYSCADA_META'):
@@ -235,8 +243,10 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
         description = 'None'
         name = 'None'
     
-    bf = mat(filename,version = '1.0',description = description ,name = name, creation_date = strftime('%d-%b-%Y %H:%M:%S'),xml=export_xml_config_file())
-
+    bf = mat(filename,version = '1.1',description = description ,name = name, creation_date = strftime('%d-%b-%Y %H:%M:%S'))
+    # export config to an separate file to avoid attr > 64k
+    export_xml_config_file(xml_filename)
+    
     last_time_id = RecordedTime.objects.last().pk
     first_time_id = RecordedTime.objects.first().pk
     if type(time_id_min) is str:
@@ -479,7 +489,7 @@ def export_table_to_h5(**kwargs):
 
 
 
-    tp = BackgroundTask(start=time(),label='data export',message='init',timestamp=time(),max=math.ceil((last_id-first_id)/chunk_size),pid=os.getpid())
+    tp = BackgroundTask(start=time(),label='export.export_table_to_h5',message='init',timestamp=time(),max=math.ceil((last_id-first_id)/chunk_size),pid=os.getpid())
     tp.progress = 0
     tp.save()
     bt_id = tp.pk
