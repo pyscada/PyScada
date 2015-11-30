@@ -3,7 +3,7 @@
 
 
 
-from pyscada.models import MailQueue, MailRecipient
+from pyscada.models import Mail, MailRecipient
 
 from django.core.mail import send_mail
 from django.conf import settings

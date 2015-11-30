@@ -77,7 +77,7 @@ class WidgetAdmin(admin.ModelAdmin):
     list_filter = ('page',)
 
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
-    filter_horizontal = ('pages','sliding_panel_menus','charts','control_items','widgets','views','custom_html_panels','ProcessFlowDiagram')
+    filter_horizontal = ('pages','sliding_panel_menus','charts','control_items','widgets','views','custom_html_panels','process_flow_diagram')
 
 class ControlPanelAdmin(admin.ModelAdmin):
     filter_horizontal = ('items',)

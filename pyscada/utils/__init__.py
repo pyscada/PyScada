@@ -608,7 +608,7 @@ def daemon_run(label,handlerClass):
 		bt = BackgroundTask.objects.get(pk=bt_id)
 		bt.timestamp = time.time()
 		if dt_set>0:
-			bt.load= 1.-max(min((time.time()-t_start)/dt_set,1),0)
+			bt.load= max(min((time.time()-t_start)/dt_set,1),0)
 		else:
 			bt.load= 1
 		bt.save()

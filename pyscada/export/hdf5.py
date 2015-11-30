@@ -65,7 +65,7 @@ class mat_compatible_h5:
         self.reopen()
 
     def create_file(self):
-        self._f = h5py.File(self.filename,'w',userblock_size=512)
+        self._f = h5py.File(self.filename,'a',userblock_size=512)
         self._f.close()
         userblock_data = 'MATLAB 7.3 MAT-file, Platform: PCWIN64, Created on: %s HDF5 schema 1.00 .'%time.strftime('%a %b %d %H:%M:%S %Y')
         while len(userblock_data)< 116:
@@ -83,7 +83,7 @@ class mat_compatible_h5:
         self.close_file()
         self.open_file()
     def open_file(self):
-        self._f = h5py.File(self.filename,'w')
+        self._f = h5py.File(self.filename,'r+')
         self._d = {}
         self._cd = {}
         for d in self._f.values():

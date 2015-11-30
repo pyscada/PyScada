@@ -27,11 +27,18 @@ import math
 
 
 
-def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=None,active_vars=None):
+def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=None,active_vars=None,**kwargs):
     """
     export measurements from the database to a file
     """
-    tp = BackgroundTask(start=time(),label='pyscada.export.export_measurement_data_to_h5',message='init',timestamp=time(),pid=str(os.getpid()))
+    if kwargs.has_key('task_identifier'):
+        if BackgroundTask.objects.filter(identifier = kwargs['task_identifier'],failed=0):
+            return
+        else:
+            tp = BackgroundTask(start=time(),label='pyscada.export.export_measurement_data_to_h5',message='init',timestamp=time(),pid=str(os.getpid()),identifier = kwargs['task_identifier'])
+    else:
+        tp = BackgroundTask(start=time(),label='pyscada.export.export_measurement_data_to_h5',message='init',timestamp=time(),pid=str(os.getpid()))
+    
     tp.save()
 
     if filename is None:
@@ -51,8 +58,12 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
         if not os.path.exists(backup_file_path ):
             os.mkdir(backup_file_path)
         cdstr = strftime("%Y_%m_%d_%H%M",localtime())
-        filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '.h5')
-        xml_filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '.xml')
+        if kwargs.has_key('filename_suffix'):
+            filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '_' + kwargs['filename_suffix'] + '.h5')
+            xml_filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '_' + kwargs['filename_suffix'] + '.xml')
+        else:
+            filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '.h5')
+            xml_filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '.xml')
     # 
     if active_vars is None:
         active_vars = list(Variable.objects.filter(active = 1,record = 1,client__active=1).values_list('pk',flat=True))
@@ -185,7 +196,6 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
                 value_class = validate_value_class(var.value_class),\
                 unit = udunit)
                 pre_data[var_id] = 0 # add 0 to prev value list to speed up next run
-                bf.reopen()
                 continue
 
             ## blow up data ########################################################
@@ -228,7 +238,6 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
             description=var.description,\
             value_class = validate_value_class(var.value_class),\
             unit =  udunit)
-            bf.reopen()
         ## end for #################################################################
     if hasattr(settings,'PYSCADA_META'):
         if settings.PYSCADA_META.has_key('description'):
@@ -307,6 +316,7 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
     while first_time_id_chunk < last_time_id:
         # export data
         _export_data_to_h5()
+        bf.reopen()# moved here to avoid frequent write to hdf5 file
         # next chunk
         first_time_id_chunk = last_time_id_chunk + 1
         last_time_id_chunk  = first_time_id_chunk + chunk_size - 1

@@ -18,9 +18,9 @@ class Color(models.Model):
 
 
 class HMIVariable(models.Model):
-	hmi_variable			= models.OneToOneField(Variable)
+	hmi_variable		= models.OneToOneField(Variable)
 	short_name			= models.CharField(default='',max_length=80, verbose_name="variable short name")
-	chart_line_color 	= models.ForeignKey('Color',default=0,null=True, on_delete=models.SET(1))
+	chart_line_color 	= models.ForeignKey('Color',default=1,on_delete=models.SET(1))
 	chart_line_thickness_choices = ((3,'3Px'),)
 	chart_line_thickness = models.PositiveSmallIntegerField(default=3,choices=chart_line_thickness_choices)
 	def name(self):

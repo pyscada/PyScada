@@ -9,7 +9,7 @@ from pyscada.models import RecordedDataCache
 from pyscada.models import Event
 from pyscada.models import RecordedEvent
 from pyscada.models import MailRecipient
-from pyscada.models import MailQueue
+from pyscada.models import Mail
 from pyscada.utils import update_variable_set
 
 from django.contrib import admin
@@ -135,7 +135,7 @@ class RecordedEventAdmin(admin.ModelAdmin):
     list_filter = ('event','active')
     readonly_fields = ('time_begin','time_end',)
 
-class MailQueueAdmin(admin.ModelAdmin):
+class MailAdmin(admin.ModelAdmin):
     list_display = ('id','subject','message','last_update','done','send_fail_count',)
     list_display_links = ('subject',)
     list_filter = ('done',)
@@ -156,7 +156,7 @@ admin.site.register(Unit)
 admin.site.register(Event,EventAdmin)
 admin.site.register(RecordedEvent,RecordedEventAdmin)
 admin.site.register(MailRecipient)
-admin.site.register(MailQueue,MailQueueAdmin)
+admin.site.register(Mail,MailAdmin)
 admin.site.register(ClientWriteTask,ClientWriteTaskAdmin)
 admin.site.register(Log,LogAdmin)
 admin.site.register(BackgroundTask,BackgroundTaskAdmin)

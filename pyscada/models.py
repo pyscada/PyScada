@@ -167,6 +167,7 @@ class BackgroundTask(models.Model):
 	stop_daemon		= models.BooleanField(default=False,blank=True)
 	label			= models.CharField(max_length=400, default='')
 	message			= models.CharField(max_length=400, default='')
+	identifier      = models.CharField(max_length=400, default='')
 
 	def __unicode__(self):
 		return unicode(self.timestamp)
@@ -324,7 +325,7 @@ class Event(models.Model):
 						mail_message += "Value of " + self.variable.name + " is " + actual_value.__str__() + " " + self.variable.unit.unit
 						mail_message += "Limit is " + limit_value.__str__() + " " + self.variable.unit.unit
 						mail_message += self.mail_recipient.message_suffix # to do
-						mail = MailQueue(subject = mail_subject, message = mail_message,timestamp = time.time())
+						mail = Mail(subject = mail_subject, message = mail_message,timestamp = time.time())
 						mail.save()
 						mail.mail_recipients.add(self.mail_recipient.pk)
 						mail.save()
@@ -355,7 +356,7 @@ class Event(models.Model):
 							
 						mail_message = "  "
 						mail_message += self.mail_recipient.message_suffix # to do
-						mail = MailQueue(subject = mail_subject, message = mail_message,timestamp = time.time())
+						mail = Mail(subject = mail_subject, message = mail_message,timestamp = time.time())
 						mail.save()
 						mail.mail_recipients.add(self.mail_recipient.pk)
 						mail.save()
@@ -369,7 +370,7 @@ class RecordedEvent(models.Model):
 	active		= models.BooleanField(default=False,blank=True)
 
 
-class MailQueue(models.Model):
+class Mail(models.Model):
 	id 			= models.AutoField(primary_key=True)
 	subject     = models.TextField(default='',blank=True)
 	message     = models.TextField(default='',blank=True)
