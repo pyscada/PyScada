@@ -1,5 +1,5 @@
 #!/bin/bash
-
+ 
 ### BEGIN INIT INFO
 # Provides:			 pyscada_daemon
 # Required-Start:	 $all
@@ -17,6 +17,8 @@
 #)
 # RUN_AS='www-data'
 
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
 if [ -f /etc/default/pyscada_daemon ] ; then
 	. /etc/default/pyscada_daemon
 fi
@@ -32,7 +34,7 @@ start () {
 
 
 		echo "Spawning ${data[1]} ${data[0]} daemon"
-		/sbin/start-stop-daemon --start -c $RUN_AS -d ${data[1]} --exec manage.py -- PyScadaDaemonHandler ${data[0]} start
+		start-stop-daemon --start -c $RUN_AS -d ${data[1]} --exec manage.py -- PyScadaDaemonHandler ${data[0]} start
 
 	done
 	return
@@ -45,11 +47,11 @@ stop () {
 		:
 		set -- "$i"
 		IFS="	"; declare -a data=($*)
-	/sbin/start-stop-daemon --start -c $RUN_AS -d ${data[1]} --exec manage.py -- PyScadaDaemonHandler ${data[0]} stop
+	start-stop-daemon --start -c $RUN_AS -d ${data[1]} --exec manage.py -- PyScadaDaemonHandler ${data[0]} stop
 	done
 	return
 }
-
+ 
 case "$1" in
   start)
 		echo "Starting"
@@ -71,5 +73,5 @@ case "$1" in
 		exit 1
 		;;
 esac
-
+ 
 exit 0

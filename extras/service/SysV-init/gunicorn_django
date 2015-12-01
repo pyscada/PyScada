@@ -17,6 +17,7 @@
 # RUN_AS='www-data'
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
 if [ -f /etc/default/gunicorn_django ] ; then
 	. /etc/default/gunicorn_django
 fi
@@ -41,16 +42,16 @@ start () {
 			PID=$(cat ${data[1]}/run/gunicorn.pid)
 			if ps -p $PID > /dev/null
 			then
-   				echo "gunicorn service is already running ($PID)"
+				echo "gunicorn service is already running ($PID)"
 				exit 0
 			fi
-                fi
+				fi
 
 		echo "Spawning ${data[0]}"
 		# Create the run directory if it doesn't exist
 		RUNDIR=$(dirname ${data[1]}/run/gunicorn.sock)
 		test -d $RUNDIR || mkdir -p $RUNDIR
-    chown $RUN_AS:$RUN_AS $RUNDIR
+		chown $RUN_AS:$RUN_AS $RUNDIR
 		export DJANGO_SETTINGS_MODULE=${data[0]}.settings
 		export PYTHONPATH=${data[1]}:$PYTHONPATH
 		# Start your Django Unicorn

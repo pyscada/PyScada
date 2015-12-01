@@ -7,14 +7,14 @@ from django.db import models, migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('pyscada', '0001_initial'),
+        ('pyscada', '0007_auto_20151201_1613'),
     ]
 
     operations = [
-        migrations.AddField(
+        migrations.AlterField(
             model_name='unit',
             name='udunit',
-            field=models.CharField(max_length=500, verbose_name=b'udUnit',default=''),
+            field=models.CharField(default=b'', max_length=500, verbose_name=b'udUnit'),
             preserve_default=True,
         ),
     ]

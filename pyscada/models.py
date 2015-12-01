@@ -40,7 +40,7 @@ class Unit(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	unit			= models.CharField(max_length=80, verbose_name="Unit")
 	description 	= models.TextField(default='', verbose_name="Description",null=True)
-	udunit			= models.CharField(max_length=500, verbose_name="udUnit")
+	udunit			= models.CharField(max_length=500, verbose_name="udUnit",default='')
 	def __unicode__(self):
 		return unicode(self.unit)
 	class  Meta:

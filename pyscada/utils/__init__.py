@@ -185,9 +185,20 @@ def export_xml_config_file(filename=None):
 	reload(sys)
 	sys.setdefaultencoding('utf8')
 	Meta = {}
-	Meta['name'] = ''
-	Meta['description'] = ''
-	Meta['version'] = '1.0'
+	if hasattr(settings,'PYSCADA_META'):
+		if settings.PYSCADA_META.has_key('description'):
+			Meta['description'] = settings.PYSCADA_META['description']
+		else:
+			Meta['description'] = 'None'
+		if settings.PYSCADA_META.has_key('name'):
+			Meta['name'] = = settings.PYSCADA_META['name']
+		else:
+			Meta['name'] = = 'None'
+	else:
+		Meta['description'] = 'None'
+		Meta['name'] = = 'None'
+		
+	Meta['version'] = '1.1'
 	def field_(name,type_,value=None):
 		f = xml_doc.createElement('field')
 		f.setAttribute('name',name)

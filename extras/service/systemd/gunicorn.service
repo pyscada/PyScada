@@ -5,10 +5,10 @@ After=network.target
 
 [Service]
 PIDFile=/usr/local/bin/gunicorn
-User=faks
-Group=faks
-WorkingDirectory=/home/faks/www/PyScadaServer
-ExecStart=/usr/bin/gunicorn --pid /home/faks/www/PyScadaServer/run/gunicorn.pid PyScadaServer.wsgi:application
+User=pyscada
+Group=pyscada
+WorkingDirectory=/home/pyscada/www/PyScadaServer
+ExecStart=/usr/bin/gunicorn --pid /home/pyscada/www/PyScadaServer/run/gunicorn.pid PyScadaServer.wsgi:application
 ExecReload=/bin/kill -s HUP $MAINPID
 ExecStop=/bin/kill -s TERM $MAINPID
 PrivateTmp=true
