@@ -191,12 +191,12 @@ def export_xml_config_file(filename=None):
 		else:
 			Meta['description'] = 'None'
 		if settings.PYSCADA_META.has_key('name'):
-			Meta['name'] = = settings.PYSCADA_META['name']
+			Meta['name'] = settings.PYSCADA_META['name']
 		else:
-			Meta['name'] = = 'None'
+			Meta['name'] = 'None'
 	else:
 		Meta['description'] = 'None'
-		Meta['name'] = = 'None'
+		Meta['name'] = 'None'
 		
 	Meta['version'] = '1.1'
 	def field_(name,type_,value=None):
