@@ -189,7 +189,7 @@ class MailRecipient(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	subject_prefix  = models.TextField(default='',blank=True)
 	message_suffix	= models.TextField(default='',blank=True)
-	to_email		= models.EmailField()
+	to_email		= models.EmailField(max_length=254)
 	def __unicode__(self):
 		return unicode(self.to_email)
 	

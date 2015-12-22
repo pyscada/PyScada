@@ -200,14 +200,14 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
 
             ## blow up data ########################################################
             tmp = [0]*len(time_ids)
-            t_idx = 0
-            v_idx = 0
-            nb_v_idx = len(records)-1
-            for id in time_ids:
-                if nb_v_idx < v_idx:
+            t_idx = 0                 # index of the time value record
+            v_idx = 0                 # index of the value in record
+            nb_v_idx = len(records)-1 # number of values in record array
+            for id in time_ids:       # 
+                if nb_v_idx < v_idx:  # no records left, 
                     if t_idx > 0:
                         tmp[t_idx] = tmp[t_idx-1]
-                else:
+                else:                 # 
                     if records[v_idx][0]==id:
                         tmp[t_idx] = records[v_idx][1]
                         laid = id
@@ -221,11 +221,16 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
 
                     if nb_v_idx > v_idx:
                         logged = False
+                        # if more then 1 record has the same time id drop the 
+                        # duplicate values
                         while records[v_idx][0]<=id and v_idx <= nb_v_idx:
                             if not logged:
                                 log.debug(("double id %d in var %d")%(id,var_id))
                                 logged = True
-                            v_idx += 1
+                            if nb_v_idx > v_idx: # CHANGED
+                                v_idx += 1
+                            else:
+                                break
                 t_idx += 1
             pre_data[var_id] = tmp[-1]
             ## write data to file ##################################################
@@ -302,7 +307,9 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
     pre_data = {}
     
     first_time = RecordedTime.objects.get(id=first_time_id_chunk)
-    time_id_min = BackgroundTask.objects.filter(label='data acquision daemon',start__lte=first_time.timestamp).last()
+    time_id_min = BackgroundTask.objects.filter(label='pyscada.modbus.daemon',start__lte=first_time.timestamp).last() # FIXME 
+    if not time_id_min:
+        time_id_min = BackgroundTask.objects.filter(label='data acquision daemon',start__lte=first_time.timestamp).last()
     if time_id_min:
         time_id_min = RecordedTime.objects.filter(timestamp__lte = time_id_min.start).last()
         if time_id_min:

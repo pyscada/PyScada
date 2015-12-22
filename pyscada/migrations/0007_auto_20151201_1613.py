@@ -21,10 +21,4 @@ class Migration(migrations.Migration):
             field=models.CharField(default=b'', max_length=400),
             preserve_default=True,
         ),
-        migrations.AlterField(
-            model_name='mailrecipient',
-            name='to_email',
-            field=models.EmailField(max_length=75),
-            preserve_default=True,
-        ),
     ]
