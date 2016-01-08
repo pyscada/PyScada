@@ -2,714 +2,101 @@ Installation
 ============
 
 
-Debian/Ubuntu
--------------
-
-
 The installation of PyScada 0.6.x on `Debian <https://www.debian.org/>`_ based Linux systems using `MySQL <https://www.mysql.de/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
 
-Install Dependencies
-^^^^^^^^^^^^^^^^^^^^
+The installation of PyScada 0.6.x on `Fedora 22/23 <https://www.fedoraproject.org/>`_ based Linux systems using `MySQL <https://www.mysql.de/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
 
-
-::
-
-	sudo apt-get update
-	sudo apt-get upgrade
-	sudo apt-get install mysql-server python-mysqldb
-	# on debian 7
-	sudo apt-get install python-pip libhdf5-7 libhdf5-dev python-dev
-	# on debian 8
-	sudo apt-get install python-pip libhdf5-8 libhdf5-dev python-dev
-	sudo apt-get install nginx gunicorn
-	sudo pip install django">=1.7,<1.8"
-	sudo pip install python-daemon
-	sudo pip install cython
-	sudo pip install numpy
-	sudo pip install h5py
-	# if pip install h5py fails install
-	sudo apt-get install python-h5py
-
-
-
-Install PyScada
-^^^^^^^^^^^^^^^
-
-
-::
-
-	cd ~/
-	sudo pip install git+https://github.com/trombastic/PyScada.git@stable/0.6.x
-
-
-Create a Database
-^^^^^^^^^^^^^^^^^
-
-Create the Database and grand the nessesery permission. Replace `PyScada_db`, `PyScada-user` and `PyScada-user-password`.
-
-::
-
-	mysql -uroot -p -e "CREATE DATABASE PyScada_db CHARACTER SET utf8;"
-	mysql -uroot -p -e "GRANT ALL PRIVILEGES ON PyScada_db.* TO 'PyScada-user'@'localhost' IDENTIFIED BY 'PyScada-user-password';"
-
-
-Create a new Django Project
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-::
-
-	cd ~/
-	mkdir www
-	cd www
-	django-admin.py startproject PyScadaServer
-
-
-Edit urls.py And settings.py
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Open the urls configuration file and add the nesseary rewrite rule to the django URL dispatcher.
-
-::
-
-	nano ~/www/PyScadaServer/PyScadaServer/urls.py
-
-
-::
-
-	...
-		url(r'^admin/', include(admin.site.urls)),
-		url(r'^', include('pyscada.urls')),
-	...
-
-
-Open the django settings file and make the following modifications. See also the `django documentation <https://docs.djangoproject.com/en/1.8/ref/settings/>`_ for more Information.
-
-::
-
-	nano ~/www/PyScadaServer/PyScadaServer/settings.py
-
-
-First deaktivate the debuging, if debuging is active django will keep all SQL queries in the ram, the dataaquasition runs many queries so your system will run fast out of memory. Keep in mind to restart guinicorn and all dataaquasion daemons after you change the debuging state.
-
-::
-
-	DEBUG = False
-	TEMPLATE_DEBUG = DEBUG
-
-
-Add the host/domain of your machine, is this case every url that point to a ip of the machine is allowed.
-
-::
-
-	ALLOWED_HOSTS = ['*']
-
-
-Add the PyScada and the subapps to the installed apps list.
-
-::
-
-	INSTALLED_APPS = (
-		...
-		'pyscada',
-		'pyscada.modbus',
-		'pyscada.hmi',
-		'pyscada.systemstat'
-	)
-
-Fill in the database, the user and password as selected in the *create Database section*.
-
-::
-
-	DATABASES = {
-		'default': {
-			'ENGINE': 		'django.db.backends.mysql',
-			'NAME': 				'PyScada_db',
-			'USER': 				'PyScada-user',
-			'PASSWORD': 'PyScada-user-password'
-		}
-	}
-
-
-Set the static file and media dir as followes.
-
-::
-
-	...
-	# Static files (CSS, JavaScript, Images)
-	# https://docs.djangoproject.com/en/1.6/howto/static-files/
-
-	STATIC_URL = '/static/'
-
-	STATIC_ROOT = BASE_DIR + '/static/'
-
-	MEDIA_URL = '/media/'
-
-	MEDIA_ROOT = BASE_DIR + '/media/'
-
-
-Add all PyScada specific settings, keep in mind to set the file right source file encoding in the settings.py file header (see also https://www.python.org/dev/peps/pep-0263/).
-
-::
-
-	#!/usr/bin/python
-	# -*- coding: <encoding name> -*-
-
-
-::
-
-	# PyScada settings
-	# https://github.com/trombastic/PyScada
-
-	# folder were the daemon pid files are stored
-	PID_ROOT = BASE_DIR + '/run/'
-
-	# meta informations
-	#
-	PYSCADA_META = {
-	    'name':'A SHORT NAME',
-	    'description':'A SHORT DESCRIPTION',
-	}
-
-	# export properties
-	#
-	PYSCADA_EXPORT = {
-	    'file_prefix':'PREFIX_',
-	    'output_folder':'~/measurement_data_dumps',
-	}
-
-	# list of available client Protocols
-	#
-	PYSCADA_CLIENTS = (
-		('modbus','Modbus Client',),
-		('systemstat','Monitor Local System',),
-	)
-
-	# parameters for the Modbus Client
-	# 	polling_interval 	how often the modbus client requests data
-	#						from devices and write to the cache
-	#
-	#	recording_intervall how often the data is written to the database
-	#
-	# 	pid_file			file were the daemon pid is stored
-
-	PYSCADA_MODBUS = {
-		'polling_interval':5,
-		'recording_interval':5,
-		'pid_file_name': 'daemon-modbus.pid'
-	}
-
-	PYSCADA_SYSTEMSTAT = {
-		'polling_interval':5,
-		'recording_interval':5,
-		'pid_file_name': 'daemon-sysstat.pid'
-	}
-
-
-
-
-Initialize Database And Copy Static Files
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-::
-
-	cd ~/www/PyScadaServer
-	python manage.py migrate
-	python manage.py collectstatic
-
-
-if the migration fails just run the migration command twice.
-
-Add a Admin User To Your Django Project
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-::
-
-	cd ~/www/PyScadaServer
-	./manage.py createsuperuser
-
-
-Configuration of Nginx
-^^^^^^^^^^^^^^^^^^^^^^
-
-::
-
-	sudo nano /etc/nginx/sites-available/pyscada.conf
-
-add the following and adjust the server, /media, /static location
-
-::
-
-	# pyscada.conf
-
-	# the upstream component nginx needs to connect to
-	upstream django {
-		server unix:/home/www-user/www/PyScadaServer/run/gunicorn.sock fail_timeout=0; # for a file socket
-	}
-
-	# configuration of the server
-	server {
-		# the port your site will be served on
-		listen      80;
-		# the domain name it will serve for
-		server_name .example.com; # substitute your machine's IP address or FQDN
-		charset     utf-8;
-
-		# max upload size
-		client_max_body_size 75M;   # adjust to taste
-
-		# Django media
-		location /media  {
-			alias /home/www-user/www/PyScadaServer/media;  # your Django project's media files - amend as required
-		}
-
-		location /static {
-			alias /home/www-user/www/PyScadaServer/static; # your Django project's static files - amend as required
-		}
-		location / {
-			# an HTTP header important enough to have its own Wikipedia entry:
-			#   http://en.wikipedia.org/wiki/X-Forwarded-For
-			proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-
-			# enable this if and only if you use HTTPS, this helps Rack
-			# set the proper protocol for doing redirects:
-			# proxy_set_header X-Forwarded-Proto https;
-
-			# pass the Host: header from the client right along so redirects
-			# can be set properly within the Rack application
-			proxy_set_header Host $http_host;
-
-			# we don't want nginx trying to do something clever with
-			# redirects, we set the Host: header above already.
-			proxy_redirect off;
-
-			# set "proxy_buffering off" *only* for Rainbows! when doing
-			# Comet/long-poll stuff.  It's also safe to set if you're
-			# using only serving fast clients with Unicorn + nginx.
-			# Otherwise you _want_ nginx to buffer responses to slow
-			# clients, really.
-			# proxy_buffering off;
-
-			# Try to serve static files from nginx, no point in making an
-			# *application* server like Unicorn/Rainbows! serve static files.
-			if (!-f $request_filename) {
-				proxy_pass http://django;
-				break;
-			}
-		}
-	}
-
-
-after editing, enable the configuration and restart nginx, optionaly remove the default configuration
-
-::
-
-	sudo rm /etc/nginx/sites-enabled/default
-
-
-::
-
-	sudo ln -s /etc/nginx/sites-available/pyscada.conf /etc/nginx/sites-enabled/pyscada.conf
-	# SysV-Init
-	sudo service nginx restart
-	# systemd
-	sudo systemctr restart nginx
-
-
-Add Init.d Scripts for SysV-Init
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-To start the Dataaquasition daemon(s) and guinicorn, there are two example scripts in the git repository. Copy them to the init.d path of your machine and make them executible.
-
-::
-
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/stable/0.6.x/extras/service/SysV-init/pyscada_daemon -O /etc/init.d/pyscada_daemon
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/stable/0.6.x/extras/service/SysV-init/gunicorn_django -O /etc/init.d/gunicorn_django
-	sudo chmod +x /etc/init.d/pyscada_daemon
-	sudo chmod +x /etc/init.d/gunicorn_django
-
-
-add a configuration file for every script.
-
-::
-
-	sudo nano /etc/default/pyscada_daemon
-
-
-
-Fill in the full path to the django project dir (were the manage.py is located). Replace the four spaces between the daemon (modbus) and the path with a tab.
-
-::
-
-	#!/bin/sh
-	#/etc/default/pyscada_daemon
-	DAEMONS=(
-		'modbus	/home/www-user/www/PyScadaServer/'
-	)
-	RUN_AS='www-user'
-
-
-Edit the gunicorn init.d script.
-
-::
-
-	sudo nano /etc/default/gunicorn_django
-
-
-Also fill in the path to your django project dir and replace the four spaces between the django projectname (PyScadaserver) the project path and the number of workers (10) with tabs.
-
-::
-
-	#!/bin/sh
-	#/etc/default/gunicorn_django
-	SERVERS=(
-		'PyScadaServer	/home/www-user/www/PyScadaServer	5'
-	)
-	RUN_AS='www-user'
-
-
-(optinal) install System-V style init script links
-
-::
-
-	sudo update-rc.d pyscada_daemon defaults
-	sudo update-rc.d gunicorn_django defaults
-
-
-Add Init.d Scripts for systemd
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Download the sample Unit-Files for systemd.
-
-::
-
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/stable/0.6.x/extras/service/systemd/pyscada_modbus.service -O /lib/systemd/system/pyscada_modbus.service
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/stable/0.6.x/extras/service/systemd/gunicorn.socket -O /lib/systemd/system/gunicorn.socket
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/stable/0.6.x/extras/service/systemd/gunicorn.service -O /lib/systemd/system/gunicorn.service
-
-
-
-
-Raspberry Pi (RASPBIAN)
------------------------
 
 The installation of PyScada 0.6.x on `Raspbian <https://www.raspbian.org/>`_ Linux systems using `SQLite <https://www.sqlite.org/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
-
-Install Dependencies
-^^^^^^^^^^^^^^^^^^^^
-
-
-::
-
-	sudo apt-get update
-	sudo apt-get upgrade
-	sudo apt-get install python-pip
-	sudo apt-get install nginx gunicorn
-
-
-
-Install PyScada
-^^^^^^^^^^^^^^^
-
-::
-
-	sudo pip install pyscada=="0.7.0b"
-	sudo pip install pyscada_=="0.7.0b"
-
-
-Create a new Django Project
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-::
-
-	cd /home/pi
-	mkdir www
-	cd www
-	django-admin.py startproject PyScadaServer
-
-
-Edit urls.py And settings.py
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Open the urls configuration file and add the nesseary rewrite rule to the django URL dispatcher.
-
-::
-
-	nano /home/pi/www/PyScadaServer/PyScadaServer/urls.py
-
-
-::
-
-	...
-		url(r'^admin/', include(admin.site.urls)),
-		url(r'^', include('pyscada.urls')),
-	...
-
-
-Open the django settings file and make the following modifications. See also the `django documentation <https://docs.djangoproject.com/en/1.8/ref/settings/>`_ for more Information.
-
-::
-
-	nano /home/pi/www/PyScadaServer/PyScadaServer/settings.py
-
-
-First deaktivate the debuging, if debuging is active django will keep all SQL queries in the ram, the dataaquasition runs many queries so your system will run fast out of memory. Keep in mind to restart guinicorn and all dataaquasion daemons after you change the debuging state.
-
-::
-
-	DEBUG = False
-	TEMPLATE_DEBUG = DEBUG
-
-
-Add the host/domain of your machine, is this case every url that point to a ip of the machine is allowed.
-
-::
-
-	ALLOWED_HOSTS = ['*']
-
-
-Add the PyScada and the subapps to the installed apps list.
-
-::
-
-	INSTALLED_APPS = (
-		...
-		'pyscada',
-		'pyscada.modbus',
-		'pyscada.hmi',
-		'pyscada.systemstat'
-	)
-
-Set the static file and media dir as followes.
-
-::
-
-	...
-	# Static files (CSS, JavaScript, Images)
-	# https://docs.djangoproject.com/en/1.6/howto/static-files/
-
-	STATIC_URL = '/static/'
-
-	STATIC_ROOT = BASE_DIR + '/static/'
-
-	MEDIA_URL = '/media/'
-
-	MEDIA_ROOT = BASE_DIR + '/media/'
-
-
-Add all PyScada specific settings
-
-::
-
-	# PyScada settings
-	# https://github.com/trombastic/PyScada
-
-	# folder were the daemon pid files are stored
-	PID_ROOT = BASE_DIR + '/run/'
-
-	# list of available client Protocols
-	#
-	PYSCADA_CLIENTS = (
-		('modbus','Modbus Client',),
-		('systemstat','Monitor Local System',),
-	)
-
-	# parameters for the Modbus Client
-	# 	polling_interval 	how often the modbus client requests data
-	#						from devices and write to the cache
-	#
-	#	recording_intervall how often the data is written to the database
-	#
-	# 	pid_file			file were the daemon pid is stored
-
-	PYSCADA_MODBUS = {
-		'polling_interval':5,
-		'recording_interval':5,
-		'pid_file_name': 'daemon-modbus.pid'
-	}
-
-	PYSCADA_SYSTEMSTAT = {
-		'polling_interval':5,
-		'recording_interval':5,
-		'pid_file_name': 'daemon-sysstat.pid'
-	}
-
-
-Initialize Database And Copy Static Files
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-::
-
-	cd /home/pi/www/PyScadaServer
-	python manage.py migrate
-	python manage.py collectstatic
-
-
-if the migration fails just run the migration command twice.
-
-Add a Admin User To Your Django Project
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-::
-
-	cd /home/pi/www/PyScadaServer
-	./manage.py createsuperuser
-
-
-Configuration of Nginx
-^^^^^^^^^^^^^^^^^^^^^^
-
-::
-
-	sudo nano /etc/nginx/sites-available/pyscada.conf
-
-add the following and adjust the server, /media, /static location
-
-::
-
-	# pyscada.conf
-
-	# the upstream component nginx needs to connect to
-	upstream django {
-		server unix:/home/pi/www/PyScadaServer/run/gunicorn.sock fail_timeout=0; # for a file socket
-	}
-
-	# configuration of the server
-	server {
-		# the port your site will be served on
-		listen      80;
-		# the domain name it will serve for
-		server_name .example.com; # substitute your machine's IP address or FQDN
-		charset     utf-8;
-
-		# max upload size
-		client_max_body_size 75M;   # adjust to taste
-
-		# Django media
-		location /media  {
-			alias /home/pi/www/PyScadaServer/media;  # your Django project's media files - amend as required
-		}
-
-		location /static {
-			alias /home/pi/www/PyScadaServer/static; # your Django project's static files - amend as required
-		}
-
-			# an HTTP header important enough to have its own Wikipedia entry:
-			#   http://en.wikipedia.org/wiki/X-Forwarded-For
-			proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-
-			# enable this if and only if you use HTTPS, this helps Rack
-			# set the proper protocol for doing redirects:
-			# proxy_set_header X-Forwarded-Proto https;
-
-			# pass the Host: header from the client right along so redirects
-			# can be set properly within the Rack application
-			proxy_set_header Host $http_host;
-
-			# we don't want nginx trying to do something clever with
-			# redirects, we set the Host: header above already.
-			proxy_redirect off;
-
-			# set "proxy_buffering off" *only* for Rainbows! when doing
-			# Comet/long-poll stuff.  It's also safe to set if you're
-			# using only serving fast clients with Unicorn + nginx.
-			# Otherwise you _want_ nginx to buffer responses to slow
-			# clients, really.
-			# proxy_buffering off;
-
-			# Try to serve static files from nginx, no point in making an
-			# *application* server like Unicorn/Rainbows! serve static files.
-			if (!-f $request_filename) {
-				proxy_pass http://django;
-				break;
-			}
-		}
-	}
-
-
-after editing, enable the configuration and restart nginx, optionaly remove the default configuration
-
-::
-
-	sudo rm /etc/nginx/sites-enabled/default
-
-
-::
-
-	sudo ln -s /etc/nginx/sites-available/pyscada.conf /etc/nginx/sites-enabled/pyscada.conf
-	sudo service nginx restart
-
-
-Add Init.d Scripts
-^^^^^^^^^^^^^^^^^^
-
-
-To start the Dataaquasition daemon(s) and guinicorn, there are two example scripts in the git repository. Copy them to the init.d path of your machine and make them executible.
-
-::
-
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/stable/0.6.x/pyscada_daemon -O /etc/init.d/pyscada_daemon
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/stable/0.6.x/gunicorn_django -O /etc/init.d/gunicorn_django
-	sudo chmod +x /etc/init.d/pyscada_daemon
-	sudo chmod +x /etc/init.d/gunicorn_django
-
-
-add a configuration file for every script.
-
-::
-
-	sudo nano /etc/default/pyscada_daemon
-
-
-
-Fill in the full path to the django project dir (were the manage.py is located). Replace the four spaces between the daemon (modbus) and the path with a tab.
-
-::
-
-	#!/bin/sh
-	#/etc/default/pyscada_daemon
-	DAEMONS=(
-		'modbus	/home/pi/www/PyScadaServer/'
-	)
-	RUN_AS='pi'
-
-
-Edit the gunicorn init.d script.
-
-::
-
-	sudo nano /etc/default/gunicorn_django
-
-
-Also fill in the path to your django project dir and replace the four spaces between the django projectname (PyScadaserver) the project path and the number of workers (10) with tabs.
-
-::
-
-	#!/bin/sh
-	#/etc/default/gunicorn_django
-	SERVERS=(
-		'PyScadaServer	/home/pi/www/PyScadaServer	10'
-	)
-	RUN_AS='pi'
-
-
-install System-V style init script links
-
-::
-
-	sudo update-rc.d pyscada_daemon defaults
-	sudo update-rc.d gunicorn_django defaults
-
-
-
-Windows
--------
 
 The installation of PyScada 0.6.x on `Microsoft Windows <https://www.microsoft.com/>`_ systems using `SQLite <https://www.sqlite.org/>`_  as Database and the the Django Development Server as HTTP/WSGI Server.
 
 
-Install Dependencies and PyScada
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Add a new system-user for Pyscada (optinal)
+-------------------------------------------
+
+Add a dedicated user for pyscada and add the home directory for `static`/`media` files and setup a virtual environemt.
+
+::
+
+        su
+        useradd -r pyscada
+        mkdir -p /var/www/pyscada/http
+        chown -R pyscada:pyscada /var/www/pyscada
+        mkdir -p /home/pyscada
+        chown -R pyscada:pyscada /home/pyscada
+        su pyscada
+        ln -s /var/www/pyscada/ ~/www_pyscada
+        cd ~/
+        virtualenv -p /usr/bin/python2.7 venv
+        source venv/bin/activate
+
+
+        
+Install Dependencies
+--------------------
+
+
+Debian 7
+^^^^^^^^
+
+::
+
+	sudo apt-get update
+	sudo apt-get upgrade
+	sudo apt-get install mysql-server python-mysqldb python-pip libhdf5-7 libhdf5-dev python-dev nginx gunicorn
+	sudo pip install cython
+	sudo pip install numpy
+	sudo pip install h5py
+	sudo pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
+
+
+Debian 8
+^^^^^^^^
+
+
+::
+
+	sudo apt-get update
+	sudo apt-get upgrade
+	sudo apt-get install mysql-server python-mysqldb python-pip libhdf5-8 libhdf5-dev python-dev nginx gunicorn
+	pip install cython
+	pip install numpy
+	pip install h5py
+	pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
+
+
+
+Fedora 22/23 
+^^^^^^^^^^^^
+
+::
+        # as root
+        sudo dnf install libjpeg-turbo-devel-1.4.1-2.fc23 nginx mysql-server mysql-devel
+        # as user pyscada 
+        su pyscada
+        pip install cython
+        pip install numpy
+        pip install h5py
+        pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
+        pip install gunicorn
+        pip install MySQL-python
+
+Raspberry Pi (RASPBIAN)
+^^^^^^^^^^^^^^^^^^^^^^^
+
+::
+
+	sudo apt-get update
+	sudo apt-get upgrade
+	sudo apt-get install python-pip libhdf5-dev python-dev nginx gunicorn
+	sudo pip install cython
+	sudo pip install numpy
+	sudo pip install h5py
+	sudo pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
+
+Windows 
+^^^^^^^
 
  - Python 2.7 for Windows https://www.python.org/downloads/windows/
  - Microsoft Visual C++ Comiler for Python 2.7 https://www.microsoft.com/en-us/download/details.aspx?id=44266
@@ -727,153 +114,157 @@ Open a Shell (cmd.exe) and install the folowing packages via pip.
 	pip install pyscada
 
 
+
+Create a MySql Database (optinal)
+---------------------------------
+
+Create the Database and grand the nessesery permission. Replace `PyScada_db`, `PyScada-user` and `PyScada-user-password`.
+
+::
+
+	mysql -uroot -p -e "CREATE DATABASE PyScada_db CHARACTER SET utf8;"
+	mysql -uroot -p -e "GRANT ALL PRIVILEGES ON PyScada_db.* TO 'PyScada-user'@'localhost' IDENTIFIED BY 'PyScada-user-password';"
+
+
 Create a new Django Project
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Switch to your users root directory.
+---------------------------
 
 ::
 
-	mkdir www
-	cd www
-	django-admin startproject PyScadaServer
+	cd /var/www/pyscada/ # Linux
+	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer # Windows
+	django-admin.py startproject PyScadaServer
 
 
-Edit urls.py And settings.py
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Open the urls configuration file and add the nesseary rewrite rule to the django URL dispatcher.
+Setup Django
+------------
 
 ::
 
-	C:/Users/_YOUR_USERNAME_/www/PyScadaServer/PyScadaServer/urls.py
+        su pyscada
+        cd /var/www/pyscada/ # Linux
+        cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer # Windows
+        django-admin.py startproject PyScadaServer
+        
 
-
-::
-
-	...
-		url(r'^admin/', include(admin.site.urls)),
-		url(r'^', include('pyscada.urls')),
-	...
-
-
-Open the django settings file and make the following modifications. See also the `django documentation <https://docs.djangoproject.com/en/1.8/ref/settings/>`_ for more Information.
-
-::
-
-	C:/Users/_YOUR_USERNAME_/www/PyScadaServer/PyScadaServer/settings.py
-
-
-::
-
-	DEBUG = False
-	TEMPLATE_DEBUG = DEBUG
-
-
-Add the host/domain of your machine, is this case every url that point to a ip of the machine is allowed.
-
-::
-
-	ALLOWED_HOSTS = ['*']
-
-
-Add the PyScada and the subapps to the installed apps list.
-
-::
-
-	INSTALLED_APPS = (
-		...
-		'pyscada',
-		'pyscada.modbus',
-		'pyscada.hmi',
-		'pyscada.systemstat'
-	)
-
-Set the static file and media dir as followes.
-
-::
-
-	...
-	# Static files (CSS, JavaScript, Images)
-	# https://docs.djangoproject.com/en/1.6/howto/static-files/
-
-	STATIC_URL = '/static/'
-
-	STATIC_ROOT = BASE_DIR + '/static/'
-
-	MEDIA_URL = '/media/'
-
-	MEDIA_ROOT = BASE_DIR + '/media/'
-
-
-Add all PyScada specific settings
-
-::
-
-	# PyScada settings
-	# https://github.com/trombastic/PyScada
-
-	# folder were the daemon pid files are stored
-	PID_ROOT = BASE_DIR + '/run/'
-
-	# list of available client Protocols
-	#
-	PYSCADA_CLIENTS = (
-		('modbus','Modbus Client',),
-		('systemstat','Monitor Local System',),
-	)
-
-	# parameters for the Modbus Client
-	# 	polling_interval 	how often the modbus client requests data
-	#						from devices and write to the cache
-	#
-	#	recording_intervall how often the data is written to the database
-	#
-	# 	pid_file			file were the daemon pid is stored
-
-	PYSCADA_MODBUS = {
-		'polling_interval':5,
-		'recording_interval':5,
-		'pid_file_name': 'daemon-modbus.pid'
-	}
-
-	PYSCADA_SYSTEMSTAT = {
-		'polling_interval':5,
-		'recording_interval':5,
-		'pid_file_name': 'daemon-sysstat.pid'
-	}
+see :doc:`django_settings`
 
 
 Initialize Database And Copy Static Files
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------------------
 
 ::
 
-	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer
+	cd /var/www/pyscada/PyScadaServer
 	python manage.py migrate
 	python manage.py collectstatic
 
 
+if the migration fails just run the migration command twice.
 
 Add a Admin User To Your Django Project
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------------
 
 ::
 
-	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer
-	python manage.py createsuperuser
+	cd /var/www/pyscada/PyScadaServer
+	./manage.py createsuperuser
 
 
-Start the Django Development Server
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Setup of Nginx
+--------------
+
+see :doc:`nginx_setup`
+
+
+Add Init.d Scripts for SysV-Init (optional)
+-------------------------------------------
+
+
+To start the Dataaquasition daemon(s) and guinicorn, there are two example scripts in the git repository. Copy them to the init.d path of your machine and make them executible.
+
+::
+
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/SysV-init/pyscada_daemon -O /etc/init.d/pyscada_daemon
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/SysV-init/gunicorn_django -O /etc/init.d/gunicorn_django
+	sudo chmod +x /etc/init.d/pyscada_daemon
+	sudo chmod +x /etc/init.d/gunicorn_django
+
+
+add a configuration file for every script.
+
+::
+
+	sudo nano /etc/default/pyscada_daemon
+
+
+
+Fill in the full path to the django project dir (were the manage.py is located). Replace the four spaces between the daemon (modbus) and the path with a tab.
+
+::
+
+	#!/bin/sh
+	#/etc/default/pyscada_daemon
+	DAEMONS=(
+		'modbus	/var/www/pyscada/PyScadaServer/'
+	)
+	RUN_AS='www-user'
+
+
+Edit the gunicorn init.d script.
+
+::
+
+	sudo nano /etc/default/gunicorn_django
+
+
+Also fill in the path to your django project dir and replace the four spaces between the django projectname (PyScadaserver) the project path and the number of workers (10) with tabs.
+
+::
+
+	#!/bin/sh
+	#/etc/default/gunicorn_django
+	SERVERS=(
+		'PyScadaServer	/var/www/pyscada/PyScadaServer	5'
+	)
+	RUN_AS='www-user'
+
+
+(optinal) install System-V style init script links
+
+::
+
+	sudo update-rc.d pyscada_daemon defaults
+	sudo update-rc.d gunicorn_django defaults
+
+
+Add Init.d Scripts for systemd (optinal)
+----------------------------------------
+
+Download the sample Unit-Files for systemd.
+
+::
+
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/pyscada_modbus.service -O /lib/systemd/system/pyscada_modbus.service
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/gunicorn.socket -O /lib/systemd/system/gunicorn.socket
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/gunicorn.service -O /lib/systemd/system/gunicorn.service
+
+
+
+
+Start the Django Development Server (optinal)
+---------------------------------------------
 
 Open a Windows Command-line (cmd.exe) and start the Django Development Server.
 
 ::
 
-	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer
+	cd /var/www/pyscada/ # Linux
+	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer # Windows
 	python manage.py runserver --insecure
 
+	
 Start the PyScada Daemons
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -1,21 +1,12 @@
 # -*- coding: utf-8 -*-
 from pyscada import log
-from pyscada.models import ClientWriteTask
-from pyscada.models import Client
-from pyscada.models import RecordedTime
-from pyscada.models import RecordedDataFloat
-from pyscada.models import RecordedDataInt
-from pyscada.models import RecordedDataBoolean
-from pyscada.models import RecordedDataCache
 from pyscada.modbus.utils import encode_value
 from pyscada.modbus.utils import get_bits_by_class
 from pyscada.modbus.utils import decode_value
 from pyscada.utils import RecordData
 
-from django.conf import settings
 from pymodbus.client.sync import ModbusTcpClient as ModbusClient
 from math import isnan, isinf
-from time import time
 
 class InputRegisterBlock:
     def __init__(self):
@@ -54,7 +45,11 @@ class InputRegisterBlock:
         quantity = sum(self.variable_length) # number of bits to read
         first_address = min(self.variable_address)
         
-        result = slave.read_input_registers(first_address,quantity/16)
+        try:
+            result = slave.read_input_registers(first_address,quantity/16)
+        except:
+            # something went wrong (ie. Server/Slave is not excessible) 
+            return None
         if not hasattr(result, 'registers'):
             return None
 
@@ -84,8 +79,11 @@ class HoldingRegisterBlock(InputRegisterBlock):
     def request_data(self,slave):
         quantity = sum(self.variable_length) # number of bits to read
         first_address = min(self.variable_address)
-        
-        result = slave.read_holding_registers(first_address,quantity/16)
+        try:
+            result = slave.read_holding_registers(first_address,quantity/16)
+        except:
+            # something went wrong (ie. Server/Slave is not excessible) 
+            return None   
         if not hasattr(result, 'registers'):
             return None
 
@@ -115,10 +113,18 @@ class CoilBlock:
     
     
     def request_data(self,slave):
+        """
+        request data from the modbus slave/server
+        """
         quantity = len(self.variable_address) # number of bits to read
         first_address = min(self.variable_address)
-        
-        result = slave.read_coils(first_address,quantity)
+        try:
+            result = slave.read_coils(first_address,quantity)
+        except:
+            # something went wrong (ie. Server/Slave is not excessible) 
+            return None
+            
+            
         if not hasattr(result, 'bits'):
             return None
             
@@ -126,12 +132,18 @@ class CoilBlock:
         
 
     def decode_data(self,result):
+        """
+        map/decode input bits to output bit array
+        """
         out = {}
         for idx in self.variable_id:
             out[idx] = result.bits.pop(0)
         return out
     
     def find_gap(self,L,value):
+        """
+        try to find a address gap in the list of modbus registers
+        """
         for index in range(len(L)):
             if L[index] == value:
                 return None
@@ -143,7 +155,12 @@ class DiscreteInputBlock(CoilBlock):
         quantity = len(self.variable_address) # number of bits to read
         first_address = min(self.variable_address)
         
-        result = slave.read_discrete_inputs(first_address,quantity)
+        try:
+            result = slave.read_discrete_inputs(first_address,quantity)
+        except:
+            # something went wrong (ie. Server/Slave is not excessible) 
+            return None
+        
         if not hasattr(result, 'bits'):
             return None
             

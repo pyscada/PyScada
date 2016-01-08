@@ -167,7 +167,7 @@ class BackgroundTask(models.Model):
 	stop_daemon		= models.BooleanField(default=False,blank=True)
 	label			= models.CharField(max_length=400, default='')
 	message			= models.CharField(max_length=400, default='')
-	identifier      = models.CharField(max_length=400, default='')
+	identifier      = models.CharField(max_length=400, default='',blank=True)
 
 	def __unicode__(self):
 		return unicode(self.timestamp)

@@ -35,7 +35,7 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
         if BackgroundTask.objects.filter(identifier = kwargs['task_identifier'],failed=0):
             return
         else:
-            tp = BackgroundTask(start=time(),label='pyscada.export.export_measurement_data_to_h5',message='init',timestamp=time(),pid=str(os.getpid()),identifier = kwargs['task_identifier'])
+            tp = BackgroundTask(start=time(),label='pyscada.export.export_measurement_data_%s'%kwargs['task_identifier'],message='init',timestamp=time(),pid=str(os.getpid()),identifier = kwargs['task_identifier'])
     else:
         tp = BackgroundTask(start=time(),label='pyscada.export.export_measurement_data_to_h5',message='init',timestamp=time(),pid=str(os.getpid()))
     
