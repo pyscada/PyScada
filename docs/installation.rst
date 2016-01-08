@@ -19,20 +19,20 @@ Add a dedicated user for pyscada and add the home directory for `static`/`media`
 
 ::
 
-        su
-        useradd -r pyscada
-        mkdir -p /var/www/pyscada/http
-        chown -R pyscada:pyscada /var/www/pyscada
-        mkdir -p /home/pyscada
-        chown -R pyscada:pyscada /home/pyscada
-        su pyscada
-        ln -s /var/www/pyscada/ ~/www_pyscada
-        cd ~/
-        virtualenv -p /usr/bin/python2.7 venv
-        source venv/bin/activate
+	su
+	useradd -r pyscada
+	mkdir -p /var/www/pyscada/http
+	chown -R pyscada:pyscada /var/www/pyscada
+	mkdir -p /home/pyscada
+	chown -R pyscada:pyscada /home/pyscada
+	su pyscada
+	ln -s /var/www/pyscada/ ~/www_pyscada
+	cd ~/
+	#virtualenv -p /usr/bin/python2.7 venv
+	#source venv/bin/activate
 
 
-        
+
 Install Dependencies
 --------------------
 
@@ -71,16 +71,17 @@ Fedora 22/23
 ^^^^^^^^^^^^
 
 ::
-        # as root
-        sudo dnf install libjpeg-turbo-devel-1.4.1-2.fc23 nginx mysql-server mysql-devel
-        # as user pyscada 
-        su pyscada
-        pip install cython
-        pip install numpy
-        pip install h5py
-        pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
-        pip install gunicorn
-        pip install MySQL-python
+	
+	# as root
+	sudo dnf install libjpeg-turbo-devel-1.4.1-2.fc23 nginx mysql-server mysql-devel
+	# as user pyscada 
+	su pyscada
+	pip install cython
+	pip install numpy
+	pip install h5py
+	pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
+	pip install gunicorn
+	pip install MySQL-python
 
 Raspberry Pi (RASPBIAN)
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -132,7 +133,7 @@ Create a new Django Project
 ::
 
 	cd /var/www/pyscada/ # Linux
-	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer # Windows
+	cd C:/Users/_YOUR_USERNAME_/www # Windows
 	django-admin.py startproject PyScadaServer
 
 
@@ -141,11 +142,11 @@ Setup Django
 
 ::
 
-        su pyscada
-        cd /var/www/pyscada/ # Linux
-        cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer # Windows
-        django-admin.py startproject PyScadaServer
-        
+	su pyscada
+	cd /var/www/pyscada/ # Linux
+	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer # Windows
+	django-admin.py startproject PyScadaServer
+	
 
 see :doc:`django_settings`
 

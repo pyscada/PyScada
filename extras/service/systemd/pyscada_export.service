@@ -1,0 +1,16 @@
+[Unit]
+Description=PyScada Export Daemon
+After=network.target
+
+[Service]
+PIDFile=/tmp/pyscada_export.pid
+User=pyscada
+Group=pyscada
+WorkingDirectory=/var/www/pyscada/PyScadaServer/
+ExecStart=/usr/bin/python /var/www/pyscada/PyScadaServer/manage.py PyScadaDaemonHandler export start
+# ExecReload=/usr/bin/python /var/www/pyscada/PyScadaServer/manage.py PyScadaDaemonHandler export restart
+ExecStop=/usr/bin/python /var/www/pyscada/PyScadaServer/manage.py PyScadaDaemonHandler export stop
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
