@@ -6,10 +6,10 @@ After=network.target
 PIDFile=/tmp/pyscada_mail.pid
 User=pyscada
 Group=pyscada
-WorkingDirectory=/var/www/pyscada/PyScadaServer/
-ExecStart=/usr/bin/python /var/www/pyscada/PyScadaServer/manage.py PyScadaDaemonHandler mail start
-# ExecReload=/usr/bin/python /var/www/pyscada/PyScadaServer/manage.py PyScadaDaemonHandler mail restart
-ExecStop=/usr/bin/python /var/www/pyscada/PyScadaServer/manage.py PyScadaDaemonHandler mail stop
+WorkingDirectory=/var/www/%u/PyScadaServer/
+ExecStart=/usr/bin/python /var/www/%u/PyScadaServer/manage.py PyScadaDaemonHandler mail start
+# ExecReload=/usr/bin/python /var/www/%u/PyScadaServer/manage.py PyScadaDaemonHandler mail restart
+ExecStop=/usr/bin/python /var/www/%u/PyScadaServer/manage.py PyScadaDaemonHandler mail stop
 PrivateTmp=true
 
 [Install]

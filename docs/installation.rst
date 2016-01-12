@@ -248,14 +248,25 @@ Download the sample Unit-Files for systemd.
 ::
 
 	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/pyscada_modbus.service -O /lib/systemd/system/pyscada_modbus.service
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/pyscada_event.service -O /lib/systemd/system/pyscada_event.service
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/pyscada_mail.service -O /lib/systemd/system/pyscada_mail.service
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/pyscada_export.service -O /lib/systemd/system/pyscada_export.service
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/pyscada_systemstat.service -O /lib/systemd/system/pyscada_systemstat.service
 	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/gunicorn.socket -O /lib/systemd/system/gunicorn.socket
 	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/gunicorn.service -O /lib/systemd/system/gunicorn.service
+	# enable the services
+	sudo systemctl enable gunicorn
+	sudo systemctl enable pyscada_modbus
+	sudo systemctl enable pyscada_event
+	sudo systemctl enable pyscada_mail
+	sudo systemctl enable pyscada_export
+	sudo systemctl enable pyscada_systemstat
 
 
 
 
-Start the Django Development Server (optinal)
----------------------------------------------
+Start the Django Development Server on Windows (optinal)
+--------------------------------------------------------
 
 Open a Windows Command-line (cmd.exe) and start the Django Development Server.
 
@@ -266,8 +277,8 @@ Open a Windows Command-line (cmd.exe) and start the Django Development Server.
 	python manage.py runserver --insecure
 
 	
-Start the PyScada Daemons
-^^^^^^^^^^^^^^^^^^^^^^^^^
+Start the PyScada Daemons on Windows
+------------------------------------
 
 Using pyscada background daemons in Windows is currently not supported, to start the daemons in foreground open a Windows Command-line (cmd.exe) for every daemon and start it with the following command.
 
@@ -277,7 +288,7 @@ Using pyscada background daemons in Windows is currently not supported, to start
 	python manage.py PyScadaWindowsDaemonHandler daemon_name
 
 
-It is also posible to register the modbus daemon as an windows service, to do this download the from registratioen skript from https://raw.githubusercontent.com/trombastic/PyScada/stable/0.6.x/register_windows_service_modbus.py and copy it to the project root folder.
+It is also posible to register the modbus daemon as an windows service, to do this download the from registratioen skript from https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/windows/register_windows_service_modbus.py and copy it to the project root folder.
 
 ::
 	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer

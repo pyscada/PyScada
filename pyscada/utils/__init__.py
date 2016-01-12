@@ -689,6 +689,7 @@ class RecordData():
 		self.value = None
 		self.prev_value = None
 		self.timestamp = None
+		self.timestamp_old = None
 		self.writeable = writeable
 		self.store_value = False		
 		self.update_timestamp = False
@@ -701,23 +702,35 @@ class RecordData():
 		'''
 		self.value =  value
 		self.timestamp = timestamp
-			
 		if self.prev_value is None: 
 			# no old value in cache 
 			self.store_value = True
 			self.update_timestamp = False
+			self.timestamp_old = self.timestamp
 		elif value is None:			
 			# value could not be queried
 			self.store_value = False
 			self.update_timestamp = False
-		elif self.prev_value == self.value: 
-			# value hasn't changed
-			self.store_value = False
-			self.update_timestamp = True
+		elif self.prev_value == self.value:
+			if not self.timestamp_old is None:
+				if (self.timestamp.timestamp - self.timestamp_old.timestamp) >= (60*60):
+					# store Value if old Value is older then 1 hour
+					self.store_value = True
+					self.update_timestamp = False
+					self.timestamp_old = self.timestamp
+				else:
+					# value hasn't changed
+					self.store_value = False
+					self.update_timestamp = True
+			else:
+				# value hasn't changed
+				self.store_value = False
+				self.update_timestamp = True
 		else:                               
 			# value has changed
 			self.store_value = True
 			self.update_timestamp = False
+			self.timestamp_old = self.timestamp
 		self.prev_value = value
 	
 	
@@ -740,7 +753,7 @@ class RecordData():
 				return RecordedDataFloat(time=self.timestamp,variable_id=self.variable_id,value=float(self.value))
 			elif self.variable_class.upper() in ['FLOAT32','SINGLE','REAL'] :
 				return RecordedDataFloat(time=self.timestamp,variable_id=self.variable_id,value=float(self.value))
-			elif  self.variable_class.upper() in ['INT32']:
+			elif  self.variable_class.upper() in ['INT32','UINT32','DWORD']:
 				return RecordedDataInt(time=self.timestamp,variable_id=self.variable_id,value=int(self.value))
 			elif  self.variable_class.upper() in ['WORD','UINT','UINT16']:
 				return RecordedDataInt(time=self.timestamp,variable_id=self.variable_id,value=int(self.value))

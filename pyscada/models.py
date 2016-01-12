@@ -50,7 +50,7 @@ class Unit(models.Model):
 
 class Variable(models.Model):
 	id 				= models.AutoField(primary_key=True)
-	name 			= models.SlugField(max_length=80, verbose_name="variable name")
+	name 			= models.SlugField(max_length=80, verbose_name="variable name",unique=True)
 	description 	= models.TextField(default='', verbose_name="Description")
 	client			= models.ForeignKey(Client)
 	active			= models.BooleanField(default=True)
@@ -98,13 +98,45 @@ class RecordedTime(models.Model):
 	def timestamp_ms(self):
 		return self.timestamp * 1000
 
+# class RecordedData(models.Model):
+# 	id          		= models.AutoField(primary_key=True)
+# 	value_float32 	= models.FloatField(null=True,blank=True) 	 # float32
+# 	value_float64 	= models.FloatField(null=True,blank=True) 	 # float64
+# 	value_boolean   = models.RecordedDataBoolean(null=True,blank=True)  # boolean
+# 	value_int16     = models.SmallIntegerField(null=True,blank=True) # int16, uint8, int8
+# 	value_int32     = models.IntegerField(null=True,blank=True)  # uint8, int16, uint16, int32
+# 	value_int64     = models.BigIntegerField(null=True,blank=True) # uint32, int64
+# 	variable			= models.ForeignKey('Variable')
+# 	time			= models.ForeignKey('RecordedTime')
+# 	def __unicode__(self):
+# 		return unicode(self.value)
+# 	def value(self,value_class=None):
+# 		'''
+# 		return the stored value
+# 		'''
+# 		if value_class is None:
+# 			value_class = self.variable.value_class
+# 		
+# 		if value_class.upper() in ['FLOAT','FLOAT64','DOUBLE']:
+# 			return self.value_float64
+# 		elif value_class.upper() in ['FLOAT32','SINGLE','REAL']:
+# 			return self.value_float32
+# 		elif  value_class.upper() in ['INT64','UINT32','DWORD']:
+# 			return self.value_int64
+# 		elif  value_class.upper() in ['WORD','UINT','UINT16','INT32']:
+# 			return self.value_int32
+# 		elif self.variable_class.upper() in ['BOOL','BOOLEAN']:
+# 			return RecordedDataBoolean(time=self.timestamp,variable_id=self.variable_id,value=bool(self.value))
+# 		else:
+# 			return None
+
 
 class RecordedDataFloat(models.Model):
 	id          = models.AutoField(primary_key=True)
 	value	    = models.FloatField()
-	variable	= models.ForeignKey('Variable')
+	variable		= models.ForeignKey('Variable')
 	time		= models.ForeignKey('RecordedTime')
-	objects 	= RecordedDataValueManager()
+	objects 		= RecordedDataValueManager()
 	def __unicode__(self):
 		return unicode(self.value)
 

@@ -13,11 +13,19 @@ from time import time
 
 class ModbusClient(models.Model):
 	modbus_client 		= models.OneToOneField(Client)
-	protocol_choices 	= ((0,'TCP'),(1,'UDP'),(2,'serial ASCII'),(3,'serial RTU'),)
+	protocol_choices 	= ((0,'TCP'),(1,'UDP'),(2,'serial ASCII'),(3,'serial RTU'),(4,'serial Binary'),)
 	protocol				= models.PositiveSmallIntegerField(default=0,choices=protocol_choices)
 	ip_address  			= models.GenericIPAddressField(default='127.0.0.1')
 	port				= models.CharField(default='502',max_length=400,help_text="for TCP and UDP enter network port as number (def. 502, for serial ASCII and RTU enter serial port (/dev/pts/13))")
 	unit_id				= models.PositiveSmallIntegerField(default=0)
+	timeout				= models.PositiveSmallIntegerField(default=0, help_text="0 use default, else value in seconds")
+	stopbits_choices    = ((0,'default'),(1,'one stopbit'),(2,'2 stopbits'),)
+	stopbits				= models.PositiveSmallIntegerField(default=0,choices=stopbits_choices)
+	bytesize_choices    = ((0,'default'),(5,'FIVEBITS'),(6,'SIXBITS'),(7,'SEVENBITS'),(8,'EIGHTBITS'),)
+	bytesize				= models.PositiveSmallIntegerField(default=0,choices=bytesize_choices)
+	parity_choices    = ((0,'default'),(1,'NONE'),(2,'EVEN'),(3,'ODD'),)
+	parity				= models.PositiveSmallIntegerField(default=0,choices=parity_choices)
+	baudrate				= models.PositiveSmallIntegerField(default=0,help_text="0 use default")
 	def __unicode__(self):
 		return unicode(self.modbus_client.short_name)
 

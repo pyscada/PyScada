@@ -5,7 +5,10 @@ from pyscada.modbus.utils import get_bits_by_class
 from pyscada.modbus.utils import decode_value
 from pyscada.utils import RecordData
 
-from pymodbus.client.sync import ModbusTcpClient as ModbusClient
+from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.client.sync import ModbusSerialClient
+from pymodbus.client.sync import ModbusUdpClient
+from pymodbus.constants import Defaults
 from math import isnan, isinf
 
 class InputRegisterBlock:
@@ -14,7 +17,6 @@ class InputRegisterBlock:
         self.variable_length    = [] # in bytes
         self.variable_class     = [] #
         self.variable_id        = [] #
-
 
     def insert_item(self,variable_id,variable_address,variable_class,variable_length):
         if not self.variable_address:
@@ -41,14 +43,14 @@ class InputRegisterBlock:
                 self.variable_id.insert(i,variable_id)
 
 
-    def request_data(self,slave):
+    def request_data(self,slave,unit=0x00):
         quantity = sum(self.variable_length) # number of bits to read
         first_address = min(self.variable_address)
         
         try:
-            result = slave.read_input_registers(first_address,quantity/16)
+            result = slave.read_input_registers(first_address,quantity/16,unit=unit)
         except:
-            # something went wrong (ie. Server/Slave is not excessible) 
+            # something went wrong (ie. Server/Slave is not excessible)
             return None
         if not hasattr(result, 'registers'):
             return None
@@ -76,11 +78,11 @@ class InputRegisterBlock:
                 return index
 
 class HoldingRegisterBlock(InputRegisterBlock):
-    def request_data(self,slave):
+    def request_data(self,slave,unit=0x00):
         quantity = sum(self.variable_length) # number of bits to read
         first_address = min(self.variable_address)
         try:
-            result = slave.read_holding_registers(first_address,quantity/16)
+            result = slave.read_holding_registers(first_address,quantity/16,unit=unit)
         except:
             # something went wrong (ie. Server/Slave is not excessible) 
             return None   
@@ -93,7 +95,6 @@ class CoilBlock:
     def __init__(self):
         self.variable_id            = [] #
         self.variable_address       = [] #
-        
     
     def insert_item(self,variable_id,variable_address):
         if not self.variable_address:
@@ -112,14 +113,14 @@ class CoilBlock:
                 self.variable_id.insert(i,variable_id)
     
     
-    def request_data(self,slave):
+    def request_data(self,slave,unit=0x00):
         """
         request data from the modbus slave/server
         """
         quantity = len(self.variable_address) # number of bits to read
         first_address = min(self.variable_address)
         try:
-            result = slave.read_coils(first_address,quantity)
+            result = slave.read_coils(first_address,quantity,unit=unit)
         except:
             # something went wrong (ie. Server/Slave is not excessible) 
             return None
@@ -151,12 +152,12 @@ class CoilBlock:
                 return index
 
 class DiscreteInputBlock(CoilBlock):
-    def request_data(self,slave):
+    def request_data(self,slave,unit=0x00):
         quantity = len(self.variable_address) # number of bits to read
         first_address = min(self.variable_address)
         
         try:
-            result = slave.read_discrete_inputs(first_address,quantity)
+            result = slave.read_discrete_inputs(first_address,quantity,unit=unit)
         except:
             # something went wrong (ie. Server/Slave is not excessible) 
             return None
@@ -172,8 +173,33 @@ class client:
     Modbus client (Master) class
     """
     def __init__(self,client):
+        self._client_inst           = client
         self._address               = client.modbusclient.ip_address
+        self._unit_id               = client.modbusclient.unit_id
         self._port                  = client.modbusclient.port
+        self._protocol              = client.modbusclient.protocol
+        self._stopbits              = client.modbusclient.stopbits
+        self._bytesize              = client.modbusclient.bytesize
+        self._parity                = client.modbusclient.parity
+        self._baudrate              = client.modbusclient.baudrate
+        self._timeout               = client.modbusclient.timeout
+        self._client_not_accessible = False
+        # stopbits
+        if self._stopbits == 0:
+            self._stopbits = Defaults.Stopbits
+        # bytesize
+        if self._bytesize == 0:
+            self._bytesize = Defaults.Bytesize
+        # parity
+        parity_list = {0:Defaults.Parity,1:'N',2:'E',3:'O'}
+        self._parity = parity_list[self._parity]
+        # baudrate
+        if self._baudrate == 0:
+            self._baudrate = Defaults.Baudrate
+        # timeout
+        if self._timeout == 0:
+            self._timeout = Defaults.Timeout
+        
         self.trans_input_registers  = []
         self.trans_coils            = []
         self.trans_holding_registers = []
@@ -257,7 +283,22 @@ class client:
         """
         connect to the modbus slave (server)
         """
-        self.slave = ModbusClient(self._address,int(self._port))
+        if self._protocol == 0: # TCP
+            self.slave = ModbusTcpClient(self._address,int(self._port))
+        elif self._protocol == 1: # UDP
+            self.slave = ModbusUdpClient(self._address,int(self._port))
+        elif self._protocol in (2,3,4): # serial
+            method_list = {2:'ascii',3:'rtu',4:'binary'}
+            self.slave = ModbusSerialClient( \
+                method=method_list[self._protocol],\
+                port=self._port,\
+                stopbits=self._stopbits,\
+                bytesize =self._bytesize,\
+                parity   =self._parity,\
+                baudrate =self._baudrate,\
+                timeout  =self._timeout)
+        else:
+            raise NotImplementedError, "Protocol not supported"
         status = self.slave.connect()
         return status
         
@@ -274,19 +315,22 @@ class client:
     
         """
         if not self._connect():
+            if not self._client_not_accessible:
+                log.error("client with id: %d is not accessible"%(self._client_inst.pk))
+            self._client_not_accessible = True
             return []
         for register_block in self._variable_config:
-            result = register_block.request_data(self.slave)
+            result = register_block.request_data(self.slave,self._unit_id)
             if result is None:
                 self._disconnect()
                 self._connect()
-                result = register_block.request_data(self.slave)
+                result = register_block.request_data(self.slave,self._unit_id)
             
             if result is not None:
                 for variable_id in register_block.variable_id:
                     self.variables[variable_id].update_value(result[variable_id],timestamp)
                     if not self.variables[variable_id].accessible:
-                        log.error(("variable with id: %d is now accessible")%(variable_id))
+                        log.info(("variable with id: %d is now accessible")%(variable_id))
                         self.variables[variable_id].accessible = True
                 
             else:
@@ -295,7 +339,11 @@ class client:
                         log.error(("variable with id: %d is not accessible")%(variable_id))
                         self.variables[variable_id].accessible = False
                         self.variables[variable_id].update_value(None,timestamp)
-            
+        # reset client not accessible status 
+        if self._client_not_accessible:
+            log.info(("client with id: %d is now accessible")%(self._client_inst.pk))
+            self._client_not_accessible = False
+        
         self._disconnect()
         return self.variables.values()
     
@@ -313,10 +361,10 @@ class client:
                 self._connect()
                 if self.variables[variable_id].bits/16 == 1:
                     # just write the value to one register
-                    self.slave.write_register(self.variables[variable_id].adr,int(value))
+                    self.slave.write_register(self.variables[variable_id].adr,int(value),unit=self._unit_id)
                 else:
                     # encode it first
-                    self.slave.write_registers(self.variables[variable_id].adr,list(encode_value(value,self.variables[variable_id].variable_class)))
+                    self.slave.write_registers(self.variables[variable_id].adr,list(encode_value(value,self.variables[variable_id].variable_class)),unit=self._unit_id)
                 self._disconnect()
                 return True
             else:
@@ -326,7 +374,7 @@ class client:
             # write coil
             if 0 <= self.variables[variable_id].adr <= 65535:
                 self._connect()
-                self.slave.write_coil(self.variables[variable_id].adr,bool(value))
+                self.slave.write_coil(self.variables[variable_id].adr,bool(value),unit=self._unit_id)
                 self._disconnect()
                 return True
             else:
