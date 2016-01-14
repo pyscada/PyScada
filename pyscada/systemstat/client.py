@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 from pyscada.models import Client
+from pyscada.utils import RecordData
 
 from django.conf import settings
 import psutil
 from time import time
 
-class client:
+class Client:
     def __init__(self,client):
         self.variables  = []
         for var in client.variable_set.filter(active=1):
@@ -18,83 +19,98 @@ class client:
     def request_data(self,timestamp):
         '''
         (0,'cpu_percent'),
-        (1,'phymem_usage_total'),
-        (2,'phymem_usage_available'),
-        (3,'phymem_usage_percent'),
-        (4,'phymem_usage_used'),
-        (5,'phymem_usage_free'),
-        (6,'phymem_usage_active'),
-        (7,'phymem_usage_inactive'),
-        (8,'phymem_usage_buffers'),
-        (9,'phymem_usage_cached'),
+        (1,'virtual_memory_total'),
+        (2,'virtual_memory_available'),
+        (3,'virtual_memory_percent'),
+        (4,'virtual_memory_used'),
+        (5,'virtual_memory_free'),
+        (6,'virtual_memory_active'),
+        (7,'virtual_memory_inactive'),
+        (8,'virtual_memory_buffers'),
+        (9,'virtual_memory_cached'),
         (10,'swap_memory_total'),
         (11,'swap_memory_used'),
         (12,'swap_memory_free'),
         (13,'swap_memory_percent'),
         (14,'swap_memory_sin'),
         (15,'swap_memory_sout'),
-        (16,'cached_phymem'),
-        (17,'disk_usage_systemdisk'),
+        (17,'disk_usage_systemdisk_percent'),
+        (18,'disk_usage_disk_percent'),
         '''
         data = {}
         for item in self.variables:
             if item.inf_id == 0:
                 # cpu_percent
-                value = psutil.cpu_percent()
+                if hasattr(psutil,'cpu_percent'):
+                    value = psutil.cpu_percent()
             elif item.inf_id == 1:
-                # phymem_usage_total
-                value = psutil.phymem_usage().total
+                # virtual_memory_total
+                if hasattr(psutil,'virtual_memory'):
+                    value = psutil.virtual_memory().total
             elif item.inf_id == 2:
-                #phymem_usage_available
-                value = psutil.phymem_usage().available
+                #virtual_memory_available
+                if hasattr(psutil,'virtual_memory'):
+                    value = psutil.virtual_memory().available
             elif item.inf_id == 3:
-                #phymem_usage_percent
-                value = psutil.phymem_usage().percent
+                #virtual_memory_percent
+                if hasattr(psutil,'virtual_memory'):
+                    value = psutil.virtual_memory().percent
             elif item.inf_id == 4:
-                #phymem_usage_used
-                value = psutil.phymem_usage().used
+                #virtual_memory_used
+                if hasattr(psutil,'virtual_memory'):
+                    value = psutil.virtual_memory().used
             elif item.inf_id == 5:
-                #phymem_usage_free
-                value = psutil.phymem_usage().free
+                #virtual_memory_free
+                if hasattr(psutil,'virtual_memory'):
+                    value = psutil.virtual_memory().free
             elif item.inf_id == 6:
-                #phymem_usage_active
-                value = psutil.phymem_usage().active
+                #virtual_memory_active
+                if hasattr(psutil,'virtual_memory'):
+                    value = psutil.virtual_memory().active
             elif item.inf_id == 7:
-                #phymem_usage_inactive
-                value = psutil.phymem_usage().inactive
+                #virtual_memory_inactive
+                if hasattr(psutil,'virtual_memory'):
+                    value = psutil.virtual_memory().inactive
             elif item.inf_id == 8:
-                #phymem_usage_buffers
-                value = psutil.phymem_usage().buffers
+                #virtual_memory_buffers
+                if hasattr(psutil,'virtual_memory'):
+                    value = psutil.virtual_memory().buffers
             elif item.inf_id == 9:
-                #phymem_usage_cached
-                value = psutil.phymem_usage().cached
+                #virtual_memory_cached
+                if hasattr(psutil,'virtual_memory'):
+                    value = psutil.virtual_memory().cached
             elif item.inf_id == 10:
                 #swap_memory_total
-                value = psutil.swap_memory().total
+                if hasattr(psutil,'swap_memory'):
+                    value = psutil.swap_memory().total
             elif item.inf_id == 11:
                 #swap_memory_used
-                value = psutil.swap_memory().used
+                if hasattr(psutil,'swap_memory'):
+                    value = psutil.swap_memory().used
             elif item.inf_id == 12:
                 #swap_memory_free
-                value = psutil.swap_memory().free
+                if hasattr(psutil,'swap_memory'):
+                    value = psutil.swap_memory().free
             elif item.inf_id == 13:
                 #swap_memory_percent
-                value = psutil.swap_memory().percent
+                if hasattr(psutil,'swap_memory'):
+                    value = psutil.swap_memory().percent
             elif item.inf_id == 14:
                 #swap_memory_sin
-                value = psutil.swap_memory().sin
+                if hasattr(psutil,'swap_memory'):
+                    value = psutil.swap_memory().sin
             elif item.inf_id == 15:
                 #swap_memory_sout
-                value = psutil.swap_memory().sout
-            elif item.inf_id == 16:
-                #cached_phymem
-                value = psutil.cached_phymem()
+                if hasattr(psutil,'swap_memory'):
+                    value = psutil.swap_memory().sout
             elif item.inf_id == 17:
-                #disk_usage_systemdisk
-                value = psutil.disk_usage('/')
+                #disk_usage_systemdisk_percent
+                if hasattr(psutil,'disk_usage'):
+                    value = psutil.disk_usage('/').percent
             elif item.inf_id == 18:
-                #disk_usage_systemdisk
-                value = psutil.disk_usage(item.param)
+                #disk_usage_disk_percent
+                if hasattr(psutil,'disk_usage'):
+                    value = psutil.disk_usage(item.param).percent
             else:
                 value = 0
             # update variable

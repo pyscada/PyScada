@@ -168,7 +168,7 @@ class DiscreteInputBlock(CoilBlock):
         return self.decode_data(result)
 
 
-class client:
+class Client:
     """
     Modbus client (Master) class
     """

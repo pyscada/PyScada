@@ -31,7 +31,7 @@ class Handler:
         
         blocked_recipient = []
     
-        for mail in MailQueue.objects.filter(done=False,send_fail_count__lte=3):
+        for mail in Mail.objects.filter(done=False,send_fail_count__lte=3):
             # limit number of mails in 24 h  
             for recipient in mail.mail_recipients.exclude(to_email__in=blocked_recipient):
                 if recipient.mailqueue_set.filter(timestamp__gt=time()-(60*60*24)).count() > self.mail_count_limit:

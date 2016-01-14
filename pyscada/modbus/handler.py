@@ -1,7 +1,7 @@
 from pyscada.models import Client, ClientWriteTask
 from pyscada.models import RecordedTime
 
-from pyscada.modbus.client import client
+from pyscada.modbus.client import Client as ModbusClient
 from pyscada import log
 from django.conf import settings
 
@@ -22,7 +22,7 @@ class Handler:
         """
         for item in Client.objects.filter(active=1):
             if hasattr(item,'modbusclient'):
-                self._clients[item.pk] = client(item)
+                self._clients[item.pk] = ModbusClient(item)
 
 
     def run(self):

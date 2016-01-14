@@ -3,7 +3,7 @@
 from pyscada.models import Client
 from pyscada.models import RecordedTime
 
-from pyscada.systemstat.client import client
+from pyscada.systemstat.client import Client as SystemStatClient
 
 from django.conf import settings
 
@@ -37,4 +37,4 @@ class Handler:
         """
         for item in Client.objects.filter(active=1):
             if item.client_type == 'systemstat':
-                self._clients[item.pk] = client(item)
+                self._clients[item.pk] = SystemStatClient(item)

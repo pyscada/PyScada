@@ -1,34 +1,44 @@
 # -*- coding: utf-8 -*-
-from pyscada.models import Client as Client
-from pyscada.models import Variable as Variable
-
+from pyscada.models import Variable
+from pyscada.models import BackgroundTask
 
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+from time import time
 
 
 class SystemStatVariable(models.Model):
     system_stat_variable = models.OneToOneField(Variable)
     information_choices 	= (
         (0,'cpu_percent'),
-        (1,'phymem_usage_total'),
-        (2,'phymem_usage_available'),
-        (3,'phymem_usage_percent'),
-        (4,'phymem_usage_used'),
-        (5,'phymem_usage_free'),
-        (6,'phymem_usage_active'),
-        (7,'phymem_usage_inactive'),
-        (8,'phymem_usage_buffers'),
-        (9,'phymem_usage_cached'),
+        (1,'virtual_memory_usage_total'),
+        (2,'virtual_memory_usage_available'),
+        (3,'virtual_memory_usage_percent'),
+        (4,'virtual_memory_usage_used'),
+        (5,'virtual_memory_usage_free'),
+        (6,'virtual_memory_usage_active'),
+        (7,'virtual_memory_usage_inactive'),
+        (8,'virtual_memory_usage_buffers'),
+        (9,'virtual_memory_usage_cached'),
         (10,'swap_memory_total'),
         (11,'swap_memory_used'),
         (12,'swap_memory_free'),
         (13,'swap_memory_percent'),
         (14,'swap_memory_sin'),
         (15,'swap_memory_sout'),
-        (16,'cached_phymem'),
-        (17,'disk_usage_systemdisk'),
-        (18,'disk_usage'),
+        (17,'disk_usage_systemdisk_percent'),
+        (18,'disk_usage_percent'),
     )
     information	= models.PositiveSmallIntegerField(default=0,choices=information_choices)
     parameter   = models.CharField(default='',max_length=400,blank=True,null=True)
-    
+    def __unicode__(self):
+        return unicode(self.system_stat_variable.name)
+        
+@receiver(post_save, sender=SystemStatVariable)
+def _reinit_systemstat_daemon(sender, **kwargs):
+    """
+    update the systemstat daemons configuration wenn changes be applied in the model
+    """
+    BackgroundTask.objects.filter(label='pyscada.systemstat.daemon',done=0,failed=0).update(message='reinit',timestamp = time())

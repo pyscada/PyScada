@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-from pyscada.models import Client as Client
-from pyscada.models import Variable as Variable
+from pyscada.models import Client
+from pyscada.models import Variable
 from pyscada.models import BackgroundTask
 
 from django.db import models

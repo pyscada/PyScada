@@ -14,6 +14,7 @@ class ModbusClientAdmin(admin.ModelAdmin):
 class ModbusVariableAdmin(admin.ModelAdmin):
     search_fields = ['modbus_variable__name',]
     list_display = ('name','value_class','address',)
+    raw_id_fields = ('modbus_variable',)
     def name(self, instance):
         return instance.modbus_variable.name
     def value_class(self, instance):
