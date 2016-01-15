@@ -246,7 +246,7 @@ sudo /etc/init.d/nginx reload
 
 ## 6 setup pyscada
 
-### 6.1 set the configuration of field clients 
+### 6.1 set the configuration of field devices 
 
 ### 6.2 create and import the variables configuration
 

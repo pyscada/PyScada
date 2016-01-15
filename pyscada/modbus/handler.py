@@ -1,7 +1,7 @@
-from pyscada.models import Client, ClientWriteTask
+from pyscada.models import Device, DeviceWriteTask
 from pyscada.models import RecordedTime
 
-from pyscada.modbus.client import Client as ModbusClient
+from pyscada.modbus.device import Device as ModbusDevice
 from pyscada import log
 from django.conf import settings
 
@@ -13,16 +13,16 @@ class Handler:
             self.dt_set = float(settings.PYSCADA_MODBUS['polling_interval'])
         else:
             self.dt_set = 5 # default value is 5 seconds
-        self._clients   = {} # init client dict
-        self._prepare_clients()
+        self._devices   = {} # init device dict
+        self._prepare_devices()
 
-    def _prepare_clients(self):
+    def _prepare_devices(self):
         """
-        prepare clients for query
+        prepare devices for query
         """
-        for item in Client.objects.filter(active=1):
-            if hasattr(item,'modbusclient'):
-                self._clients[item.pk] = ModbusClient(item)
+        for item in Device.objects.filter(active=1):
+            if hasattr(item,'modbusdevice'):
+                self._devices[item.pk] = ModbusDevice(item)
 
 
     def run(self):
@@ -37,8 +37,8 @@ class Handler:
         timestamp = RecordedTime(timestamp=time())
         timestamp.save()
         data = []
-        for idx in self._clients:
-            data += self._clients[idx].request_data(timestamp)
+        for idx in self._devices:
+            data += self._devices[idx].request_data(timestamp)
         
         return data
     
@@ -49,9 +49,9 @@ class Handler:
         check for and do write tasks
         """
         
-        for task in ClientWriteTask.objects.filter(done=False,start__lte=time(),failed=False):
+        for task in DeviceWriteTask.objects.filter(done=False,start__lte=time(),failed=False):
             
-            if self._clients[task.variable.client_id].write_data(task.variable.id,task.value): # do write task
+            if self._devices[task.variable.device_id].write_data(task.variable.id,task.value): # do write task
                 task.done=True
                 task.fineshed=time()
                 task.save()

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from pyscada.models import Client
+from pyscada.models import Device
 from pyscada.models import Variable
 from pyscada.models import Unit
-from pyscada.models import ClientWriteTask
+from pyscada.models import DeviceWriteTask
 from pyscada.models import Log
 from pyscada.models import BackgroundTask
 from pyscada.models import RecordedDataCache
@@ -45,22 +45,22 @@ class VariableConfigFileImport(Variable):
         proxy = True
 
 
-class ClientAdmin(admin.ModelAdmin):
+class DeviceAdmin(admin.ModelAdmin):
     list_display = ('id','short_name','description','active',)
     list_display_links = ('short_name', 'description')
 
 
 class VarieblesAdmin(admin.ModelAdmin):
-    list_display = ('id','name','description','client_name','value_class','active','writeable',)
+    list_display = ('id','name','description','device_name','value_class','active','writeable',)
     list_editable = ('active','writeable',)
     list_display_links = ('name',)
-    list_filter = ('client__short_name', 'active','writeable')
+    list_filter = ('device__short_name', 'active','writeable')
     search_fields = ['name',]
-    def client_name(self, instance):
-        return instance.client.short_name
+    def device_name(self, instance):
+        return instance.device.short_name
 
 
-class ClientWriteTaskAdmin(admin.ModelAdmin):
+class DeviceWriteTaskAdmin(admin.ModelAdmin):
     list_display = ('id','name','value','user_name','start_time','done','failed',)
     #list_editable = ('active','writeable',)
     list_display_links = ('name',)
@@ -98,7 +98,7 @@ class LogAdmin(admin.ModelAdmin):
 class RecordedDataCacheAdmin(admin.ModelAdmin):
     list_display = ('id','last_change','name','value','unit','last_update',)
     list_display_links = ('name',)
-    list_filter = ('variable__client','variable__unit')
+    list_filter = ('variable__device','variable__unit')
     search_fields = ['variable__name',]
     readonly_fields = ('last_change','last_update','time',)
     def name(self,instance):
@@ -149,7 +149,7 @@ class EventAdmin(admin.ModelAdmin):
     list_filter = ('level','limit_type','action',)
     raw_id_fields = ('variable',)
     
-admin.site.register(Client,ClientAdmin)
+admin.site.register(Device,DeviceAdmin)
 admin.site.register(Variable,VarieblesAdmin)
 admin.site.register(VariableConfigFileImport,VariableImportAdmin)
 admin.site.register(Unit)
@@ -157,7 +157,7 @@ admin.site.register(Event,EventAdmin)
 admin.site.register(RecordedEvent,RecordedEventAdmin)
 admin.site.register(MailRecipient)
 admin.site.register(Mail,MailAdmin)
-admin.site.register(ClientWriteTask,ClientWriteTaskAdmin)
+admin.site.register(DeviceWriteTask,DeviceWriteTaskAdmin)
 admin.site.register(Log,LogAdmin)
 admin.site.register(BackgroundTask,BackgroundTaskAdmin)
 admin.site.register(RecordedDataCache,RecordedDataCacheAdmin)

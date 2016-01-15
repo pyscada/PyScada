@@ -1,4 +1,4 @@
-{% if item.variable.active == 1 and item.variable.client.active == 1 %}
+{% if item.variable.active == 1 and item.variable.device.active == 1 %}
 	<li>	
 		<div class="hidden variable-config" data-name="{{ item.variable.name }}" data-key="{{ item.variable.pk }}" ></div>
     {% if item.type == 0 %}<!-- label blue -->

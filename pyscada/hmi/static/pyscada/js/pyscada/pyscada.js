@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.6.21
+version 0.6.22
 
 Copyright (c) 2013-2015 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.6.21"
+var version = "0.6.22"
 var NotificationCount = 0
 var UpdateStatusCount = 0;
 var PyScadaPlots = [];
@@ -69,7 +69,7 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
             dataType: "json",
             timeout: ((first_timestamp == 0) ? fetch_data_timeout*10 : fetch_data_timeout),
             type: "POST",
-            data:{ timestamp: data_last_timestamp, variables: variable_keys, first_timestamp:first_timestamp, init: init},
+            data:{ timestamp: init ? data_first_timestamp:data_last_timestamp, variables: variable_keys, first_timestamp:first_timestamp, init: init},
             success: function(data) {
                 if (init){
                     $.each(data, function(key, val) {

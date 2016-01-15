@@ -1,0 +1,82 @@
+[
+{
+    "fields": {
+        "active": true,
+        "device_type": "systemstat",
+        "description": "Monitoring the local system",
+        "short_name": "localhost"
+    },
+    "model": "pyscada.device",
+    "pk": 1
+},
+
+{
+    "fields": {
+        "writeable": false,
+        "name": "CPU_LOAD",
+        "record": true,
+        "device": 1,
+        "value_class": "FLOAT32",
+        "active": true,
+        "unit": 2,
+        "description": "CPU load of the Server"
+    },
+    "model": "pyscada.variable",
+    "pk": 1
+},
+{
+    "fields": {
+        "writeable": false,
+        "name": "PYSICAL_MEM_USAGE",
+        "record": true,
+        "device": 1,
+        "value_class": "FLOAT32",
+        "active": true,
+        "unit": 2,
+        "description": "usage of the physical memory"
+    },
+"model": "pyscada.variable",
+    "pk": 2
+},
+{
+    "fields": {
+        "writeable": false,
+        "name": "DISK_USAGE",
+        "record": true,
+        "device": 1,
+        "value_class": "FLOAT32",
+        "active": true,
+        "unit": 2,
+        "description": "Usage of the systemdisk /"
+    },
+    "model": "pyscada.variable",
+    "pk": 3
+},
+{
+    "fields": {
+        "information": 0,
+        "system_stat_variable": 1,
+        "parameter": ""
+    },
+    "model": "systemstat.systemstatvariable",
+    "pk": 1
+},
+{
+    "fields": {
+        "information": 3,
+        "system_stat_variable": 2,
+        "parameter": ""
+    },
+    "model": "systemstat.systemstatvariable",
+    "pk": 5
+},
+{
+    "fields": {
+        "information": 17,
+        "system_stat_variable": 3,
+        "parameter": ""
+    },
+    "model": "systemstat.systemstatvariable",
+    "pk": 6
+}
+]

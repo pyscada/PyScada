@@ -168,22 +168,22 @@ class DiscreteInputBlock(CoilBlock):
         return self.decode_data(result)
 
 
-class Client:
+class Device:
     """
-    Modbus client (Master) class
+    Modbus device (Master) class
     """
-    def __init__(self,client):
-        self._client_inst           = client
-        self._address               = client.modbusclient.ip_address
-        self._unit_id               = client.modbusclient.unit_id
-        self._port                  = client.modbusclient.port
-        self._protocol              = client.modbusclient.protocol
-        self._stopbits              = client.modbusclient.stopbits
-        self._bytesize              = client.modbusclient.bytesize
-        self._parity                = client.modbusclient.parity
-        self._baudrate              = client.modbusclient.baudrate
-        self._timeout               = client.modbusclient.timeout
-        self._client_not_accessible = False
+    def __init__(self,device):
+        self._device_inst           = device
+        self._address               = device.modbusdevice.ip_address
+        self._unit_id               = device.modbusdevice.unit_id
+        self._port                  = device.modbusdevice.port
+        self._protocol              = device.modbusdevice.protocol
+        self._stopbits              = device.modbusdevice.stopbits
+        self._bytesize              = device.modbusdevice.bytesize
+        self._parity                = device.modbusdevice.parity
+        self._baudrate              = device.modbusdevice.baudrate
+        self._timeout               = device.modbusdevice.timeout
+        self._device_not_accessible = False
         # stopbits
         if self._stopbits == 0:
             self._stopbits = Defaults.Stopbits
@@ -205,13 +205,13 @@ class Client:
         self.trans_holding_registers = []
         self.trans_discrete_inputs  = []
         self.variables  = {}
-        self._variable_config   = self._prepare_variable_config(client)
+        self._variable_config   = self._prepare_variable_config(device)
         self._not_accessible_variable = []
         self.data = []
 
-    def _prepare_variable_config(self,client):
+    def _prepare_variable_config(self,device):
         
-        for var in client.variable_set.filter(active=1):
+        for var in device.variable_set.filter(active=1):
             if not hasattr(var,'modbusvariable'):
                 continue
             FC = var.modbusvariable.function_code_read
@@ -315,9 +315,9 @@ class Client:
     
         """
         if not self._connect():
-            if not self._client_not_accessible:
-                log.error("client with id: %d is not accessible"%(self._client_inst.pk))
-            self._client_not_accessible = True
+            if not self._device_not_accessible:
+                log.error("device with id: %d is not accessible"%(self._device_inst.pk))
+            self._device_not_accessible = True
             return []
         for register_block in self._variable_config:
             result = register_block.request_data(self.slave,self._unit_id)
@@ -339,10 +339,10 @@ class Client:
                         log.error(("variable with id: %d is not accessible")%(variable_id))
                         self.variables[variable_id].accessible = False
                         self.variables[variable_id].update_value(None,timestamp)
-        # reset client not accessible status 
-        if self._client_not_accessible:
-            log.info(("client with id: %d is now accessible")%(self._client_inst.pk))
-            self._client_not_accessible = False
+        # reset device not accessible status 
+        if self._device_not_accessible:
+            log.info(("device with id: %d is now accessible")%(self._device_inst.pk))
+            self._device_not_accessible = False
         
         self._disconnect()
         return self.variables.values()

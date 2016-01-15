@@ -26,10 +26,10 @@ class RecordedDataValueManager(models.Manager):
 # Model
 #
 
-class Client(models.Model):
+class Device(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	short_name		= models.CharField(max_length=400, default='')
-	client_type		= models.CharField(default='generic',choices=settings.PYSCADA_CLIENTS,max_length=400)
+	device_type		= models.CharField(default='generic',choices=settings.PYSCADA_DEVICES,max_length=400)
 	description 	= models.TextField(default='', verbose_name="Description",null=True)
 	active			= models.BooleanField(default=True)
 	def __unicode__(self):
@@ -52,7 +52,7 @@ class Variable(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	name 			= models.SlugField(max_length=80, verbose_name="variable name",unique=True)
 	description 	= models.TextField(default='', verbose_name="Description")
-	client			= models.ForeignKey(Client)
+	device			= models.ForeignKey(Device)
 	active			= models.BooleanField(default=True)
 	unit 			= models.ForeignKey(Unit,on_delete=models.SET(1))
 	writeable		= models.BooleanField(default=False)
@@ -79,7 +79,7 @@ class Variable(models.Model):
 
 
 
-class ClientWriteTask(models.Model):
+class DeviceWriteTask(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	variable	 	= models.ForeignKey('Variable')
 	value			= models.FloatField()
@@ -365,7 +365,7 @@ class Event(models.Model):
 				if self.limit_type >= 3:
 					
 					if self.variable_to_change:
-						ClientWriteTask(variable=self.variable_to_change,value=self.new_value,start=timestamp)
+						DeviceWriteTask(variable=self.variable_to_change,value=self.new_value,start=timestamp)
 		else:
 			if prev_event:
 				prev_event = prev_event.last()

@@ -9,7 +9,7 @@ default_app_config = 'pyscada.export.apps.PyScadaExportConfig'
 # PyScada
 from pyscada import log
 from pyscada.utils import validate_value_class, export_xml_config_file
-from pyscada.models import Variable, Client, Unit, RecordedDataFloat, RecordedDataInt, RecordedDataBoolean, RecordedTime, BackgroundTask 
+from pyscada.models import Variable, Device, Unit, RecordedDataFloat, RecordedDataInt, RecordedDataBoolean, RecordedTime, BackgroundTask 
 from pyscada.export.hdf5 import mat_compatible_h5 as mat
 from pyscada.export.hdf5 import unix_time_stamp_to_matlab_datenum
 # Django
@@ -66,15 +66,15 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
             xml_filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '.xml')
     # 
     if active_vars is None:
-        active_vars = list(Variable.objects.filter(active = 1,record = 1,client__active=1).values_list('pk',flat=True))
+        active_vars = list(Variable.objects.filter(active = 1,record = 1,device__active=1).values_list('pk',flat=True))
     else:
         if type(active_vars) is str:
             if active_vars == 'all':
                 active_vars = list(Variable.objects.all().values_list('pk',flat=True))
             else:
-                active_vars = list(Variable.objects.filter(active = 1,record = 1,client__active=1).values_list('pk',flat=True))
+                active_vars = list(Variable.objects.filter(active = 1,record = 1,device__active=1).values_list('pk',flat=True))
         else:
-            active_vars = list(Variable.objects.filter(pk__in = active_vars, active = 1,record = 1,client__active=1).values_list('pk',flat=True))
+            active_vars = list(Variable.objects.filter(pk__in = active_vars, active = 1,record = 1,device__active=1).values_list('pk',flat=True))
 
             
     def _export_data_to_h5():
@@ -446,7 +446,7 @@ def export_data_tables(**kwargs):
             XMLSerializer = serializers.get_serializer("xml")
             xml_serializer = XMLSerializer()
             with open(filename, "w") as file_:
-                xml_serializer.serialize(list(Variable.objects.all())+list(Unit.objects.all()) + list(Client.objects.all()), stream=file_)
+                xml_serializer.serialize(list(Variable.objects.all())+list(Unit.objects.all()) + list(Device.objects.all()), stream=file_)
 
         tp.message = 'done'
         tp.timestamp=time()

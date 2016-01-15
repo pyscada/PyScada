@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from pyscada.models import Client
+from pyscada.models import Device
 from pyscada.models import Variable
 from pyscada.models import BackgroundTask
 
@@ -11,8 +11,8 @@ from django.contrib.auth.models import Group
 
 from time import time
 
-class ModbusClient(models.Model):
-	modbus_client 		= models.OneToOneField(Client)
+class ModbusDevice(models.Model):
+	modbus_device 		= models.OneToOneField(Device)
 	protocol_choices 	= ((0,'TCP'),(1,'UDP'),(2,'serial ASCII'),(3,'serial RTU'),(4,'serial Binary'),)
 	protocol				= models.PositiveSmallIntegerField(default=0,choices=protocol_choices)
 	ip_address  			= models.GenericIPAddressField(default='127.0.0.1')
@@ -27,7 +27,7 @@ class ModbusClient(models.Model):
 	parity				= models.PositiveSmallIntegerField(default=0,choices=parity_choices)
 	baudrate				= models.PositiveSmallIntegerField(default=0,help_text="0 use default")
 	def __unicode__(self):
-		return unicode(self.modbus_client.short_name)
+		return unicode(self.modbus_device.short_name)
 
 class ModbusVariable(models.Model):
 	modbus_variable 				= models.OneToOneField(Variable)
@@ -36,7 +36,7 @@ class ModbusVariable(models.Model):
 	function_code_read			= models.PositiveSmallIntegerField(default=0,choices=function_code_read_choices,help_text="")
 
 
-@receiver(post_save, sender=ModbusClient)
+@receiver(post_save, sender=ModbusDevice)
 @receiver(post_save, sender=ModbusVariable)
 def _reinit_modbus_daemons(sender, **kwargs):
 	"""

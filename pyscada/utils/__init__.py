@@ -1,15 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 from pyscada import log
-from pyscada.models import Client
+from pyscada.models import Device
 from pyscada.models import Variable
 from pyscada.models import Unit
-from pyscada.models import ClientWriteTask
+from pyscada.models import DeviceWriteTask
 from pyscada.models import BackgroundTask
 from pyscada.models import RecordedTime
 from pyscada.models import RecordedDataBoolean, RecordedDataFloat, RecordedDataInt, RecordedDataCache
 from pyscada.modbus.models import ModbusVariable
-from pyscada.modbus.models import ModbusClient
+from pyscada.modbus.models import ModbusDevice
 from pyscada.hmi.models import Color
 from pyscada.hmi.models import HMIVariable
 from pyscada.hmi.models import Chart
@@ -123,13 +123,13 @@ def update_variable_set(json_data):
 	# deactivate all variables
 
 	for entry in data:
-		# client
-		cc, ccc = Client.objects.get_or_create(id = entry['client_id'],defaults={'short_name':entry['client_id'],'description':entry['client_id']})
+		# device
+		cc, ccc = Device.objects.get_or_create(id = entry['device_id'],defaults={'short_name':entry['device_id'],'description':entry['device_id']})
 		# unit config
 		uc, ucc = Unit.objects.get_or_create(unit = entry['unit'].replace(' ',''))
 		# variable exist
 		obj, created = Variable.objects.get_or_create(id=entry['id'],
-		defaults={'id':entry['id'],'name':entry['variable_name'].replace(' ',''),'description': entry['description'],'client':cc,'active':bool(entry['active']),'writeable':bool(entry['writeable']),'unit':uc,'value_class':entry["value_class"].replace(' ','')})
+		defaults={'id':entry['id'],'name':entry['variable_name'].replace(' ',''),'description': entry['description'],'device':cc,'active':bool(entry['active']),'writeable':bool(entry['writeable']),'unit':uc,'value_class':entry["value_class"].replace(' ','')})
 
 		if created:
 			log.info(("created variable: %s") %(entry['variable_name']))
@@ -138,7 +138,7 @@ def update_variable_set(json_data):
 
 			obj.name = entry['variable_name']
 			obj.description = entry['description']
-			obj.client_id = entry['client_id']
+			obj.device_id = entry['device_id']
 			obj.active = bool(entry['active'])
 			obj.writeable = bool(entry['writeable'])
 			obj.unit = uc
@@ -159,22 +159,22 @@ def update_variable_set(json_data):
 		else:
 			ModbusVariable(modbus_variable=obj,address=entry["modbus_ip.address"],function_code_read=entry["modbus_ip.function_code_read"]).save()
 
-def update_client_set(json_data):
+def update_device_set(json_data):
 	data = json.loads(json_data)
 	for entry in data:
-		# client
-		cc, created = Client.objects.get_or_create(id = entry['client_id'],defaults={'short_name':entry['short_name'],'description':entry['description']})
+		# device
+		cc, created = Device.objects.get_or_create(id = entry['device_id'],defaults={'short_name':entry['short_name'],'description':entry['description']})
 		if created:
-			log.info(("created client: %s") %(entry['short_name']))
+			log.info(("created device: %s") %(entry['short_name']))
 		else:
-			log.info(("updated client: %s") %(entry['short_name']))
+			log.info(("updated device: %s") %(entry['short_name']))
 		# modbus config
-		if hasattr(cc,'modbusclient'):
-			cc.modbusclient.ip_address = entry['modbus_ip.ip_address']
-			cc.modbusclient.port = entry['modbus_ip.port']
-			cc.modbusclient.protocol = entry['modbus_ip.protocol']
+		if hasattr(cc,'modbusdevice'):
+			cc.modbusdevice.ip_address = entry['modbus_ip.ip_address']
+			cc.modbusdevice.port = entry['modbus_ip.port']
+			cc.modbusdevice.protocol = entry['modbus_ip.protocol']
 		else:
-			ModbusClient(modbus_client=cc,ip_address=entry['modbus_ip.ip_address'],port=entry['modbus_ip.port'],protocol=entry['modbus_ip.protocol'])
+			ModbusDevice(modbus_device=cc,ip_address=entry['modbus_ip.ip_address'],port=entry['modbus_ip.port'],protocol=entry['modbus_ip.protocol'])
 
 def export_xml_config_file(filename=None):
 	'''
@@ -252,8 +252,8 @@ def export_xml_config_file(filename=None):
 		obj.appendChild(field_('record','boolean',item.record))
 		# value_class (string)
 		obj.appendChild(field_('value_class','string',validate_value_class(item.value_class)))
-		# client_id ()
-		obj.appendChild(field_('client_id','uint16',item.client_id))
+		# device_id ()
+		obj.appendChild(field_('device_id','uint16',item.device_id))
 		# unit_id
 		obj.appendChild(field_('unit_id','uint16',item.unit_id))
 		if hasattr(item,'modbusvariable'):
@@ -286,28 +286,28 @@ def export_xml_config_file(filename=None):
 		obj.appendChild(field_('udunit','string',item.udunit))
 		doc_node.appendChild(obj)
 	
-	# Client
-	for item in Client.objects.all():
+	# Device
+	for item in Device.objects.all():
 		obj = xml_doc.createElement('object')
-		obj.setAttribute('name','Client')
+		obj.setAttribute('name','Device')
 		obj.setAttribute('id',item.pk.__str__())
 		# name (string)
 		obj.appendChild(field_('name','string',item.short_name))
 		# description (string)
 		obj.appendChild(field_('description','string',item.description))
-		# client_type (string)
-		obj.appendChild(field_('client_type','string',item.client_type))
+		# device_type (string)
+		obj.appendChild(field_('device_type','string',item.device_type))
 		# active (boolean)
 		obj.appendChild(field_('active','boolean',item.active))
-		if hasattr(item,'modbusclient'):
+		if hasattr(item,'modbusdevice'):
 			# modbus.protocol (string)
-			obj.appendChild(field_('modbus.protocol','string',item.modbusclient.protocol_choices[item.modbusclient.protocol][1]))
+			obj.appendChild(field_('modbus.protocol','string',item.modbusdevice.protocol_choices[item.modbusdevice.protocol][1]))
 			# modbus.ip_address (string)
-			obj.appendChild(field_('modbus.ip_address','string',item.modbusclient.ip_address))
+			obj.appendChild(field_('modbus.ip_address','string',item.modbusdevice.ip_address))
 			# modbus.port (string)
-			obj.appendChild(field_('modbus.port','string',item.modbusclient.port))
+			obj.appendChild(field_('modbus.port','string',item.modbusdevice.port))
 			# modbus.unit_id (uint8)
-			obj.appendChild(field_('modbus.unit_id','uint8',item.modbusclient.unit_id))
+			obj.appendChild(field_('modbus.unit_id','uint8',item.modbusdevice.unit_id))
 		doc_node.appendChild(obj)
 	
 	# Color
@@ -375,11 +375,11 @@ def import_xml_config_file(filename):
 		values[field_name] = _cast(field.firstChild.nodeValue,_type)
 
 	# read all objects
-	_Clients = []
+	_Devices = []
 	_Variables = []
 	_Units = []
 	_Colors = []
-	_ClientWriteTask = []
+	_DeviceWriteTask = []
 	for obj in objects:
 		obj_name = obj.getAttribute('name')
 		fields = obj.getElementsByTagName('field')
@@ -389,46 +389,46 @@ def import_xml_config_file(filename):
 		values['id'] = int(obj.getAttribute('id'))
 		for field in fields:
 			_parse_field()
-		if obj_name.upper() in ['CLIENT']:
-			_Clients.append(values)
+		if obj_name.upper() in ['DEVICE']:
+			_Devices.append(values)
 		elif obj_name.upper() in ['VARIABLE']:
 			_Variables.append(values)
 		elif obj_name.upper() in ['UNIT']:
 			_Units.append(values)
 		elif obj_name.upper() in ['COLOR']:
 			_Colors.append(values)
-		elif obj_name.upper() in ['CLIENTWRITETASK']:
-			_ClientWriteTask.append(values)
+		elif obj_name.upper() in ['DEVICEWRITETASK']:
+			_DeviceWriteTask.append(values)
 
-	## update/import Clients ###################################################
-	for entry in _Clients:
-		# Client (object)
-		cc, created = Client.objects.get_or_create(pk = entry['id'],defaults={'id':entry['id'],'short_name':entry['name'],'description':entry['description'],'client_type':entry['client_type'],'active':entry['active']})
+	## update/import Devices ###################################################
+	for entry in _Devices:
+		# Device (object)
+		cc, created = Device.objects.get_or_create(pk = entry['id'],defaults={'id':entry['id'],'short_name':entry['name'],'description':entry['description'],'device_type':entry['device_type'],'active':entry['active']})
 		if created:
-			log.info(("created client: %s") %(entry['name']))
+			log.info(("created device: %s") %(entry['name']))
 		else:
 			cc.short_name = entry['name']
 			cc.description = entry['description']
-			cc.client_type = entry['client_type']
+			cc.device_type = entry['device_type']
 			cc.active       = entry['active']
 			cc.save()
-			log.info(("updated client: %s (%d)") %(entry['name'],entry['id']))
+			log.info(("updated device: %s (%d)") %(entry['name'],entry['id']))
 		# modbus config
 		if entry.has_key('modbus.protocol') and entry.has_key('modbus.ip_address') and entry.has_key('modbus.port') and entry.has_key('modbus.unit_id'):
 			# get protocol choice id
-			protocol_choices = ModbusClient._meta.get_field('protocol').choices
+			protocol_choices = ModbusDevice._meta.get_field('protocol').choices
 			for prtc in protocol_choices:
 				if entry['modbus.protocol'] == prtc[1]:
 					entry['modbus.protocol'] = prtc[0]
 
-			if hasattr(cc,'modbusclient'):
-				cc.modbusclient.ip_address = entry['modbus.ip_address']
-				cc.modbusclient.port = entry['modbus.port']
-				cc.modbusclient.unit_id = entry['modbus.unit_id']
-				cc.modbusclient.protocol = entry['modbus.protocol']
-				cc.modbusclient.save()
+			if hasattr(cc,'modbusdevice'):
+				cc.modbusdevice.ip_address = entry['modbus.ip_address']
+				cc.modbusdevice.port = entry['modbus.port']
+				cc.modbusdevice.unit_id = entry['modbus.unit_id']
+				cc.modbusdevice.protocol = entry['modbus.protocol']
+				cc.modbusdevice.save()
 			else:
-				mc = ModbusClient(modbus_client=cc,ip_address=entry['modbus.ip_address'],port=entry['modbus.port'],protocol=entry['modbus.protocol'],unit_id=entry['modbus.unit_id'])
+				mc = ModbusDevice(modbus_device=cc,ip_address=entry['modbus.ip_address'],port=entry['modbus.port'],protocol=entry['modbus.protocol'],unit_id=entry['modbus.unit_id'])
 				mc.save()
 				
 	# Unit (object)
@@ -455,7 +455,7 @@ def import_xml_config_file(filename):
 	# Variable (object)
 	for entry in _Variables:
 		vc, created = Variable.objects.get_or_create(pk=entry['id'],
-		defaults={'id':entry['id'],'name':entry['name'],'description': entry['description'],'client_id':entry['client_id'],'active':entry['active'],'writeable':entry['writeable'],'record':entry['record'],'unit_id':entry['unit_id'],'value_class':validate_value_class(entry["value_class"])})
+		defaults={'id':entry['id'],'name':entry['name'],'description': entry['description'],'device_id':entry['device_id'],'active':entry['active'],'writeable':entry['writeable'],'record':entry['record'],'unit_id':entry['unit_id'],'value_class':validate_value_class(entry["value_class"])})
 
 		if created:
 			log.info(("created variable: %s") %(entry['name']))
@@ -464,7 +464,7 @@ def import_xml_config_file(filename):
 
 			vc.name = entry['name']
 			vc.description = entry['description']
-			vc.client_id = entry['client_id']
+			vc.device_id = entry['device_id']
 			vc.active =entry['active']
 			vc.writeable = entry['writeable']
 			vc.record = entry['record']
@@ -494,7 +494,7 @@ def import_xml_config_file(filename):
 			if entry.has_key("modbus.address") and entry.has_key("modbus.function_code_read"):
 				ModbusVariable(modbus_variable=vc,address=entry["modbus.address"],function_code_read=entry["modbus.function_code_read"]).save()
 				
-	for entry in _ClientWriteTask:
+	for entry in _DeviceWriteTask:
 		# start
 		if isinstance(entry['start'],basestring):
 			# must be convertet from local datestr to datenum
@@ -512,14 +512,14 @@ def import_xml_config_file(filename):
 		else:
 			user = None
 		# variable
-		variable = Variable.objects.filter(name=entry['variable'],active=1,client__active=1)
+		variable = Variable.objects.filter(name=entry['variable'],active=1,device__active=1)
 		if variable:
 			# check for duplicates
-			dcwt = ClientWriteTask.objects.filter(variable=variable.first(),value=entry['value'],user=user,start__range=(timestamp-2.5,timestamp+2.5))
+			dcwt = DeviceWriteTask.objects.filter(variable=variable.first(),value=entry['value'],user=user,start__range=(timestamp-2.5,timestamp+2.5))
 			if dcwt:
 				continue
 			# write to DB
-			ClientWriteTask(variable=variable.first(),value=entry['value'],user=user,start=timestamp).save()
+			DeviceWriteTask(variable=variable.first(),value=entry['value'],user=user,start=timestamp).save()
 			
 				
 		

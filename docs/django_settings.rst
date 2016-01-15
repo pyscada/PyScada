@@ -122,15 +122,15 @@ Add all PyScada specific settings, keep in mind to set the file right source fil
 	    'output_folder':'~/measurement_data_dumps',
 	}
 
-	# list of available client Protocols
+	# list of available device Protocols
 	#
-	PYSCADA_CLIENTS = (
-		('modbus','Modbus Client',),
+	PYSCADA_DEVICES = (
+		('modbus','Modbus Device',),
 		('systemstat','Monitor Local System',),
 	)
 
-	# parameters for the Modbus Client
-	# 	polling_interval 	how often the modbus client requests data
+	# parameters for the Modbus Device
+	# 	polling_interval 	how often the modbus device requests data
 	#						from devices and write to the cache
 	#
 	#	recording_intervall how often the data is written to the database

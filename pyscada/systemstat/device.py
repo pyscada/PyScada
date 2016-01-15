@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
-from pyscada.models import Client
+from pyscada.models import Device
 from pyscada.utils import RecordData
 
 from django.conf import settings
 import psutil
 from time import time
 
-class Client:
-    def __init__(self,client):
+class Device:
+    def __init__(self,device):
         self.variables  = []
-        for var in client.variable_set.filter(active=1):
+        for var in device.variable_set.filter(active=1):
             if not hasattr(var,'systemstatvariable'):
                 continue
             #self.variables[var.pk] = {'value_class':var.value_class,'record':var.record,'name':var.name,'inf_id':var.systemstatvariable.information,'param':var.systemstatvariable.parameter}

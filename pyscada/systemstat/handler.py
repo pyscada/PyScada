@@ -1,9 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from pyscada.models import Client
+from pyscada.models import Device
 from pyscada.models import RecordedTime
 
-from pyscada.systemstat.client import Client as SystemStatClient
+from pyscada.systemstat.device import Device as SystemStatDevice
 
 from django.conf import settings
 
@@ -15,8 +15,8 @@ class Handler:
             self.dt_set = float(settings.PYSCADA_SYSTEMSTAT['polling_interval'])
         else:
             self.dt_set = 5 # default value is 5 seconds
-        self._clients   = {}
-        self._prepare_clients()
+        self._devices   = {}
+        self._prepare_devices()
 
     def run(self):
         """
@@ -26,15 +26,15 @@ class Handler:
         timestamp = RecordedTime(timestamp=time())
         timestamp.save()
         data = []
-        for idx in self._clients:
-            data += self._clients[idx].request_data(timestamp)
+        for idx in self._devices:
+            data += self._devices[idx].request_data(timestamp)
         
         return data
     
-    def _prepare_clients(self):
+    def _prepare_devices(self):
         """
-        prepare clients for query
+        prepare devices for query
         """
-        for item in Client.objects.filter(active=1):
-            if item.client_type == 'systemstat':
-                self._clients[item.pk] = SystemStatClient(item)
+        for item in Device.objects.filter(active=1):
+            if item.device_type == 'systemstat':
+                self._devices[item.pk] = SystemStatDevice(item)

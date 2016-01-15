@@ -13,7 +13,7 @@
             </thead>
             <tbody>
             {% for var in chart.variables.all %}
-                {% if var.active and var.client.active %}
+                {% if var.active and var.device.active %}
                 <tr class="legendSeries">
                     <td>
                         <span class="hidden" id="chart-legend-checkbox-status-{{widget.pk}}-{{chart.pk}}-{{var.name}}" >1</span>

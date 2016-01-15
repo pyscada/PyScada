@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from pyscada import version as core_version
-from pyscada.models import Client
 from pyscada.models import Variable
 from pyscada.models import RecordedDataFloat
 from pyscada.models import RecordedDataInt
@@ -18,7 +17,7 @@ from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
 
 from pyscada.models import Log
-from pyscada.models import ClientWriteTask
+from pyscada.models import DeviceWriteTask
 
 from pyscada import log
 #from pyscada.export import timestamp_unix_to_matlab
@@ -179,7 +178,7 @@ def	form_write_task(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
 	if request.POST.has_key('var_id') and request.POST.has_key('value'):
-		cwt = ClientWriteTask(variable_id = request.POST['var_id'],value=request.POST['value'],start=time.time(),user=request.user)
+		cwt = DeviceWriteTask(variable_id = request.POST['var_id'],value=request.POST['value'],start=time.time(),user=request.user)
 		cwt.save()
 		return HttpResponse(status=200)
 	else:

@@ -108,14 +108,14 @@ MEDIA_ROOT = BASE_DIR + '/media/'
 # folder were the daemon pid files are stored
 PID_ROOT = BASE_DIR + '/run/'
 
-# list of available client Protocols
+# list of available device Protocols
 #
-PYSCADA_CLIENTS = (
-	('modbus','Modbus Client',),
+PYSCADA_DEVICES = (
+	('modbus','Modbus Device',),
 	('systemstat','Monitor Local System',),
 )
 
-# parameters for the Modbus Client
+# parameters for the Modbus Device
 # 	polling_interval 	how often the modbus client requests data
 #						from devices and write to the cache
 #

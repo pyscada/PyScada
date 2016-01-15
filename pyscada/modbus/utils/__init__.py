@@ -1,14 +1,7 @@
 # -*- coding: utf-8 -*-
 #from pyscada.utils import modbus
-from pyscada import log
-from pyscada.models import Client
-from pyscada.models import Variable
-from pyscada.hmi.models import HMIVariable as WebVariable
-from pyscada.models import Unit
 from struct import *
 
-import json
-import codecs
 
 def scale_input(Input,scaling):
 		return (float(Input)/float(2**scaling.bit))*(scaling.max_value-scaling.min_value)+scaling.min_value

@@ -37,8 +37,9 @@ Features
 - HTML5 based HMI
 - Supports the following industrial Protocols
 	* Modbus TCP/IP
-	* Modbus RTU (in development)
-	* Modbus ASCII (in development)
+	* Modbus RTU
+	* Modbus ASCII
+	* Modbus Binary
 	* BACNet/IP (in development)
 	* Meter-Bus, MBus (in development)
 - very low Hardware requirements for the Server
