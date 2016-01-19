@@ -20,7 +20,8 @@ class RecordedDataValueManager(models.Manager):
 			output[val.variable.variable_name] = val.value()
 		return output
 
-
+	# def value_class_aware_bulk_create(self,objects):
+	# 	pass
 
 #
 # Model
@@ -99,13 +100,12 @@ class RecordedTime(models.Model):
 		return self.timestamp * 1000
 
 # class RecordedData(models.Model):
-# 	id          		= models.AutoField(primary_key=True)
-# 	value_float32 	= models.FloatField(null=True,blank=True) 	 # float32
-# 	value_float64 	= models.FloatField(null=True,blank=True) 	 # float64
-# 	value_boolean   = models.RecordedDataBoolean(null=True,blank=True)  # boolean
+# 	id				= models.BigIntegerField(primary_key=True)
+# 	value_boolean   = models.BooleanField(null=True,blank=True)  # boolean
 # 	value_int16     = models.SmallIntegerField(null=True,blank=True) # int16, uint8, int8
 # 	value_int32     = models.IntegerField(null=True,blank=True)  # uint8, int16, uint16, int32
 # 	value_int64     = models.BigIntegerField(null=True,blank=True) # uint32, int64
+# 	value_float64 	= models.FloatField(null=True,blank=True) 	 # float64
 # 	variable			= models.ForeignKey('Variable')
 # 	time			= models.ForeignKey('RecordedTime')
 # 	def __unicode__(self):
@@ -117,16 +117,16 @@ class RecordedTime(models.Model):
 # 		if value_class is None:
 # 			value_class = self.variable.value_class
 # 		
-# 		if value_class.upper() in ['FLOAT','FLOAT64','DOUBLE']:
+# 		if value_class.upper() in ['FLOAT','FLOAT64','DOUBLE','FLOAT32','SINGLE','REAL']:
 # 			return self.value_float64
-# 		elif value_class.upper() in ['FLOAT32','SINGLE','REAL']:
-# 			return self.value_float32
-# 		elif  value_class.upper() in ['INT64','UINT32','DWORD']:
+# 		elif value_class.upper() in ['INT64','UINT32','DWORD']:
 # 			return self.value_int64
-# 		elif  value_class.upper() in ['WORD','UINT','UINT16','INT32']:
+# 		elif value_class.upper() in ['WORD','UINT','UINT16','INT32']:
 # 			return self.value_int32
+#       elif value_class.upper() in ['INT16','INT8','UINT8']:
+#			return self.value_int16
 # 		elif self.variable_class.upper() in ['BOOL','BOOLEAN']:
-# 			return RecordedDataBoolean(time=self.timestamp,variable_id=self.variable_id,value=bool(self.value))
+# 			return self.value_boolean
 # 		else:
 # 			return None
 
@@ -142,7 +142,7 @@ class RecordedDataFloat(models.Model):
 
 class RecordedDataInt(models.Model):
 	id          = models.AutoField(primary_key=True)
-	value       = models.IntegerField()
+	value       = models.BigIntegerField()
 	variable    = models.ForeignKey('Variable')
 	time        = models.ForeignKey('RecordedTime')
 	objects     = RecordedDataValueManager()
@@ -157,6 +157,7 @@ class RecordedDataBoolean(models.Model):
 	objects     = RecordedDataValueManager()
 	def __unicode__(self):
 		return unicode(self.value)
+
 
 class RecordedDataCache(models.Model):
 	value	    = models.FloatField()
