@@ -33,7 +33,7 @@ setup(
         'django>=1.6,<1.9',
         'pymodbus>=1.2',
         'numpy>=1.6.0',
-        'h5py>=2.1.1',
+        'h5py>=2.2.1',
         'psutil>=2.1.1',
         'pillow',
         'python-daemon'

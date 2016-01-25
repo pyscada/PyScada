@@ -10,6 +10,8 @@ nginx configuration
 
         sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/nginx_sample.conf -O /etc/nginx/sites-available/pyscada.conf
         sudo nano /etc/nginx/sites-available/pyscada.conf
+        
+
 
 
 
@@ -17,7 +19,8 @@ nginx configuration
 after editing, enable the configuration and restart nginx, optionaly remove the default configuration
 
 ::
-
+        
+        sudo ln -s /etc/nginx/sites-available/pyscada.conf /etc/nginx/sites-enabled/
 	sudo rm /etc/nginx/sites-enabled/default
 
 

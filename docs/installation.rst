@@ -60,10 +60,10 @@ Debian 8
 	sudo apt-get update
 	sudo apt-get upgrade
 	sudo apt-get install mysql-server python-mysqldb python-pip libhdf5-8 libhdf5-dev python-dev nginx gunicorn
-	pip install cython
-	pip install numpy
-	pip install h5py
-	pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
+	sudopip install cython
+	sudopip install numpy
+	sudo HDF5_DIR=/usr/lib/x86_64-linux-gnu/hdf5/serial/ sudo pip install h5py 
+	sudo pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
 
 
 
