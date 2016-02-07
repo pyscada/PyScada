@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from pyscada.models import Device
 from pyscada.models import Variable
+from pyscada.models import Scaling
 from pyscada.models import Unit
 from pyscada.models import DeviceWriteTask
 from pyscada.models import Log
@@ -151,6 +152,7 @@ class EventAdmin(admin.ModelAdmin):
     
 admin.site.register(Device,DeviceAdmin)
 admin.site.register(Variable,VarieblesAdmin)
+admin.site.register(Scaling)
 admin.site.register(VariableConfigFileImport,VariableImportAdmin)
 admin.site.register(Unit)
 admin.site.register(Event,EventAdmin)

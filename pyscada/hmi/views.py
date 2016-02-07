@@ -229,7 +229,7 @@ def get_cache_data(request):
 			jdata = json.dumps(data,indent=2)
 			return HttpResponse(jdata, content_type='application/json')
 
-		for var in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL',), pk__in = active_variables):
+		for var in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL',), pk__in = active_variables) | Variable.objects.filter(scaling__isnull = False ,pk__in = active_variables):
 			var_id = var.pk
 			rto = RecordedDataFloat.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
 			if rto:
@@ -238,7 +238,7 @@ def get_cache_data(request):
 			else:
 				data[var.name] = list(RecordedDataFloat.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value'))
 	
-		for var in Variable.objects.filter(value_class__in = ('INT32','UINT32','INT16','INT','WORD','UINT','UINT16',),pk__in = active_variables):
+		for var in Variable.objects.filter(value_class__in = ('INT32','UINT32','INT16','INT','WORD','UINT','UINT16',),pk__in = active_variables,scaling__isnull = True):
 			var_id = var.pk
 			rto = RecordedDataInt.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
 			if rto:

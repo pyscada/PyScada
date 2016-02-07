@@ -64,6 +64,9 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
         else:
             filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '.h5')
             xml_filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '.xml')
+    else:
+        xml_filename =  filename.split('.')[0] + '.xml'
+    
     # 
     if active_vars is None:
         active_vars = list(Variable.objects.filter(active = 1,record = 1,device__active=1).values_list('pk',flat=True))

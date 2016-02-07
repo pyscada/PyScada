@@ -15,14 +15,14 @@ systemd:
 
 ::
 
-	systemctl start pyscada_daemon.service
+	systemctl start pyscada_daemon_name.service
 
 
 Django manage command:
 
 ::
 
-  python manage.py PyScadaDaemonHandler daemon_name start
+	python manage.py PyScadaDaemonHandler daemon_name start
 
 
 Start Gunicorn
@@ -39,11 +39,12 @@ systemd:
 
 ::
 
-	systemctl start gunicorn_django.service
+	systemctl start gunicorn.service
 
 
 
 .. _sec-get-installed-pyscada-version:
+
 
 Get Installed PyScada Version
 ---------------------------
@@ -62,4 +63,9 @@ Export Database Tables
 
 ::
 
-	export_table_to_h5(TableName)
+	python manage.py PyScadaExportData # last 24 houres
+	python manage.py PyScadaExportData "01-Mar-2015 00:00:00" # from 01. of March until now
+	# from 01. of March until now, with the given filename
+	python manage.py PyScadaExportData "01-Mar-2015 00:00:00" "filename.h5" 
+	# from 01. of March until 10. of March, with the given filename
+	python manage.py PyScadaExportData "01-Mar-2015 00:00:00" "filename.h5" "10-Mar-2015 00:00:00"

@@ -47,7 +47,28 @@ class Unit(models.Model):
 	class  Meta:
 		managed=True
 
-
+class Scaling(models.Model):
+	id 				= models.AutoField(primary_key=True)
+	description 	= models.TextField(default='', verbose_name="Description",null=True,blank=True)
+	input_low		= models.FloatField()
+	input_high		= models.FloatField()
+	output_low		= models.FloatField()
+	output_high		= models.FloatField()
+	def __unicode__(self):
+		if self.description:
+			return unicode(self.description)
+		else:
+			return unicode(str(self.id) + '_[' + str(self.input_low) + ':' + \
+					str(self.input_high) + '] -> [' + str(self.output_low) + ':'\
+					+ str(self.output_low) + ']')
+	def scale_value(self,input_value):
+		input_value = float(input_value)
+		norm_value = (input_value - self.input_low)/(self.input_high - self.input_low)
+		return norm_value * (self.output_high - self.output_low) + self.output_low
+	def scale_output_value(self,input_value):
+		input_value = float(input_value)
+		norm_value = (input_value - self.output_low)/(self.output_high - self.output_low)
+		return norm_value * (self.input_high - self.input_low) + self.input_low
 
 class Variable(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -74,6 +95,7 @@ class Variable(models.Model):
 						('BOOLEAN','BOOL'),
 						('BOOLEAN','BOOLEAN'),
 						)
+	scaling			= models.ForeignKey(Scaling,null=True, on_delete=models.SET_NULL)
 	value_class		= models.CharField(max_length=15, default='FLOAT64', verbose_name="value_class",choices=value_class_choices)
 	def __unicode__(self):
 		return unicode(self.name)

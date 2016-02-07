@@ -678,7 +678,7 @@ def add_recorded_data_to_database(data):
 
 
 class RecordData():
-	def __init__(self,variable_id=None,name=None,variable_class=None, writeable=False,store_value = False,record_value=False,update_timestamp=None,**kwargs):
+	def __init__(self,variable_id=None,name=None,variable_class=None, writeable=False,store_value = False,record_value=False,update_timestamp=None,scaling=None,**kwargs):
 		'''
 		
 		'''
@@ -693,6 +693,13 @@ class RecordData():
 		self.writeable = writeable
 		self.store_value = False		
 		self.update_timestamp = False
+		if scaling is None:
+			self.scale_value = None
+		elif self.variable_class.upper() in ['BOOL','BOOLEAN']:
+			# ignore scaling for BOOLEAN values
+			self.scale_value = None
+		else:
+			self.scale_value = scaling.scale_value
 		for key in kwargs:
 			setattr(self,key,kwargs[key])
 	
@@ -700,14 +707,19 @@ class RecordData():
 		'''
 		update the value in the instance and detect value state change
 		'''
-		self.value =  value
+		
+		if self.scale_value is None or value is None:
+			self.value =  value
+		else:
+			self.value =  self.scale_value(value)
+			#log.notice('%d value %1.3f --> %1.3f'%(self.variable_id,value,self.value))
 		self.timestamp = timestamp
 		if self.prev_value is None: 
 			# no old value in cache 
 			self.store_value = True
 			self.update_timestamp = False
 			self.timestamp_old = self.timestamp
-		elif value is None:			
+		elif self.value is None:			
 			# value could not be queried
 			self.store_value = False
 			self.update_timestamp = False
@@ -731,7 +743,7 @@ class RecordData():
 			self.store_value = True
 			self.update_timestamp = False
 			self.timestamp_old = self.timestamp
-		self.prev_value = value
+		self.prev_value = self.value
 	
 	
 		
@@ -749,7 +761,8 @@ class RecordData():
 		create a new element to write to archive table
 		'''
 		if self.store_value and self.record_value and not self.value is None:
-			if self.variable_class.upper() in ['FLOAT','FLOAT64','DOUBLE']:
+			if self.variable_class.upper() in ['FLOAT','FLOAT64','DOUBLE'] or not self.scale_value is None:
+				# scaled values will always be stored as float
 				return RecordedDataFloat(time=self.timestamp,variable_id=self.variable_id,value=float(self.value))
 			elif self.variable_class.upper() in ['FLOAT32','SINGLE','REAL'] :
 				return RecordedDataFloat(time=self.timestamp,variable_id=self.variable_id,value=float(self.value))

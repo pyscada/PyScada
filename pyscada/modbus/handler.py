@@ -50,6 +50,8 @@ class Handler:
         """
         
         for task in DeviceWriteTask.objects.filter(done=False,start__lte=time(),failed=False):
+            if not task.variable.scaling is None:
+                task.value = task.variable.scaling.scale_output_value(task.value)
             
             if self._devices[task.variable.device_id].write_data(task.variable.id,task.value): # do write task
                 task.done=True

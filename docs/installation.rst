@@ -6,14 +6,13 @@ The installation of PyScada 0.6.x on `Debian <https://www.debian.org/>`_ based L
 
 The installation of PyScada 0.6.x on `Fedora 22/23 <https://www.fedoraproject.org/>`_ based Linux systems using `MySQL <https://www.mysql.de/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
 
-
 The installation of PyScada 0.6.x on `Raspbian <https://www.raspbian.org/>`_ Linux systems using `SQLite <https://www.sqlite.org/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
 
 The installation of PyScada 0.6.x on `Microsoft Windows <https://www.microsoft.com/>`_ systems using `SQLite <https://www.sqlite.org/>`_  as Database and the the Django Development Server as HTTP/WSGI Server.
 
 
-Add a new system-user for Pyscada (optinal)
--------------------------------------------
+Add a new system-user for Pyscada (optional)
+--------------------------------------------
 
 Add a dedicated user for pyscada and add the home directory for `static`/`media` files and setup a virtual environemt.
 
@@ -83,7 +82,7 @@ Fedora 22/23
 	pip install gunicorn
 	pip install MySQL-python
 
-Raspberry Pi (RASPBIAN)
+Raspberry Pi (RASPBIAN, Jessie)
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 ::
@@ -93,8 +92,9 @@ Raspberry Pi (RASPBIAN)
 	sudo apt-get install python-pip libhdf5-dev python-dev nginx gunicorn
 	sudo pip install cython
 	sudo pip install numpy
-	sudo pip install h5py
+	sudo HDF5_DIR=/usr/lib/x86_64-linux-gnu/hdf5/serial/ sudo pip install h5py
 	sudo pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
+
 
 Windows 
 ^^^^^^^
@@ -116,8 +116,8 @@ Open a Shell (cmd.exe) and install the folowing packages via pip.
 
 
 
-Create a MySql Database (optinal)
----------------------------------
+Create a MySql Database (optional)
+----------------------------------
 
 Create the Database and grand the nessesery permission. Replace `PyScada_db`, `PyScada-user` and `PyScada-user-password`.
 
@@ -132,21 +132,12 @@ Create a new Django Project
 
 ::
 
+	sudo su pyscada
 	cd /var/www/pyscada/ # Linux
 	cd C:/Users/_YOUR_USERNAME_/www # Windows
-	django-admin.py startproject PyScadaServer
+	# both
+	python django-admin.py startproject PyScadaServer
 
-
-Setup Django
-------------
-
-::
-
-	su pyscada
-	cd /var/www/pyscada/ # Linux
-	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer # Windows
-	django-admin.py startproject PyScadaServer
-	
 
 see :doc:`django_settings`
 
@@ -156,20 +147,23 @@ Initialize Database And Copy Static Files
 
 ::
 
-	cd /var/www/pyscada/PyScadaServer
+	sudo su pyscada # linux
+	cd /var/www/pyscada/PyScadaServer # linux
+	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer # Windows
+	# both
 	python manage.py migrate
 	python manage.py collectstatic
 
-
-if the migration fails just run the migration command twice.
 
 Add a Admin User To Your Django Project
 ---------------------------------------
 
 ::
 
-	cd /var/www/pyscada/PyScadaServer
-	./manage.py createsuperuser
+	cd /var/www/pyscada/PyScadaServer # linux
+	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer # Windows
+	# both
+	python manage.py createsuperuser
 
 
 
@@ -240,8 +234,8 @@ Also fill in the path to your django project dir and replace the four spaces bet
 	sudo update-rc.d gunicorn_django defaults
 
 
-Add Init.d Scripts for systemd (optinal)
-----------------------------------------
+Add Init.d Scripts for systemd (optional)
+-----------------------------------------
 
 Download the sample Unit-Files for systemd.
 
@@ -265,20 +259,21 @@ Download the sample Unit-Files for systemd.
 
 
 
-Start the Django Development Server on Windows (optinal)
---------------------------------------------------------
+Start the Django Development Server on Windows (optional)
+---------------------------------------------------------
 
 Open a Windows Command-line (cmd.exe) and start the Django Development Server.
 
 ::
 
-	cd /var/www/pyscada/ # Linux
+
 	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer # Windows
 	python manage.py runserver --insecure
 
 	
-Start the PyScada Daemons on Windows
-------------------------------------
+Add/Start the PyScada Services on Windows (optional)
+----------------------------------------------------
+
 
 Using pyscada background daemons in Windows is currently not supported, to start the daemons in foreground open a Windows Command-line (cmd.exe) for every daemon and start it with the following command.
 
@@ -291,5 +286,7 @@ Using pyscada background daemons in Windows is currently not supported, to start
 It is also posible to register the modbus daemon as an windows service, to do this download the from registratioen skript from https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/windows/register_windows_service_modbus.py and copy it to the project root folder.
 
 ::
+	
+	
 	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer
 	python register_windows_service_modbus.py

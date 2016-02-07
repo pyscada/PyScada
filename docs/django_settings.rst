@@ -61,7 +61,7 @@ Add the PyScada and the subapps to the installed apps list.
 		'pyscada.export'
 	)
 
-Fill in the database, the user and password as selected in the *create Database section*.
+To use the MySQL Database, fill in the database, the user and password as selected in the *create Database section*.
 
 ::
 
@@ -108,18 +108,31 @@ Add all PyScada specific settings, keep in mind to set the file right source fil
 	# folder were the daemon pid files are stored
 	PID_ROOT = BASE_DIR + '/run/'
 
+	# email settings
+	EMAIL_FROM = 'example@host.com'
+	EMAIL_HOST = 'mail.host.com'
+	EMAIL_PORT = 587
+	EMAIL_HOST_USER = 'pyscada@host.com'
+	EMAIL_USE_TLS = True
+	EMAIL_USE_SSL = False
+	EMAIL_HOST_PASSWORD = 'password'
+	
+	# global 
+	PYSCADA = {
+			'mail_count_limit': 20,
+	}
 	# meta informations
 	#
 	PYSCADA_META = {
-	    'name':'A SHORT NAME',
-	    'description':'A SHORT DESCRIPTION',
+		'name':'A SHORT NAME',
+		'description':'A SHORT DESCRIPTION',
 	}
 
 	# export properties
 	#
 	PYSCADA_EXPORT = {
-	    'file_prefix':'PREFIX_',
-	    'output_folder':'~/measurement_data_dumps',
+		'file_prefix':'PREFIX_',
+		'output_folder':'~/measurement_data_dumps',
 	}
 
 	# list of available device Protocols
@@ -140,11 +153,9 @@ Add all PyScada specific settings, keep in mind to set the file right source fil
 	PYSCADA_MODBUS = {
 		'polling_interval':5,
 		'recording_interval':5,
-		'pid_file_name': 'daemon-modbus.pid'
 	}
 
 	PYSCADA_SYSTEMSTAT = {
 		'polling_interval':5,
 		'recording_interval':5,
-		'pid_file_name': 'daemon-sysstat.pid'
 	}
