@@ -3,10 +3,11 @@ include LICENSE
 include README.rst
 include CHANGELOG.txt
 recursive-include pyscada/templates *
-recursive-include pyscada/sql *
-recursive-include pyscada/hmi/sql *
+recursive-include pyscada/fixtures *
+recursive-include pyscada/hmi/fixtures *
 recursive-include pyscada/hmi/templates *
 recursive-include pyscada/hmi/static *
-recursive-include pyscada/modbus/sql *
+recursive-include pyscada/modbus/fixtures *
+recursive-include pyscada/systemstat/fixtures *
 recursive-include docs *
 recursive-exclude * *.pyc

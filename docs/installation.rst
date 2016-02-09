@@ -18,13 +18,12 @@ Add a dedicated user for pyscada and add the home directory for `static`/`media`
 
 ::
 
-	su
+	sudo -i
 	useradd -r pyscada
 	mkdir -p /var/www/pyscada/http
 	chown -R pyscada:pyscada /var/www/pyscada
 	mkdir -p /home/pyscada
 	chown -R pyscada:pyscada /home/pyscada
-	su pyscada
 	ln -s /var/www/pyscada/ ~/www_pyscada
 	cd ~/
 	#virtualenv -p /usr/bin/python2.7 venv
@@ -59,8 +58,8 @@ Debian 8
 	sudo apt-get update
 	sudo apt-get upgrade
 	sudo apt-get install mysql-server python-mysqldb python-pip libhdf5-8 libhdf5-dev python-dev nginx gunicorn
-	sudopip install cython
-	sudopip install numpy
+	sudo pip install cython
+	sudo pip install numpy
 	sudo HDF5_DIR=/usr/lib/x86_64-linux-gnu/hdf5/serial/ sudo pip install h5py 
 	sudo pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
 
@@ -73,14 +72,13 @@ Fedora 22/23
 	
 	# as root
 	sudo dnf install libjpeg-turbo-devel-1.4.1-2.fc23 nginx mysql-server mysql-devel
-	# as user pyscada 
-	su pyscada
-	pip install cython
-	pip install numpy
-	pip install h5py
-	pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
-	pip install gunicorn
-	pip install MySQL-python
+	# 
+	sudo pip install cython
+	sudo pip install numpy
+	sudo pip install h5py
+	sudo pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
+	sudo pip install gunicorn
+	sudo pip install MySQL-python
 
 Raspberry Pi (RASPBIAN, Jessie)
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -131,12 +129,14 @@ Create a new Django Project
 ---------------------------
 
 ::
-
-	sudo su pyscada
-	cd /var/www/pyscada/ # Linux
-	cd C:/Users/_YOUR_USERNAME_/www # Windows
-	# both
+	
+	# Linux/OSX
+	cd /var/www/pyscada/ 
+	sudo -u pyscada django-admin.py startproject PyScadaServer
+	# Windows
+	cd C:/Users/_YOUR_USERNAME_/www 
 	python django-admin.py startproject PyScadaServer
+	
 
 
 see :doc:`django_settings`
@@ -147,10 +147,12 @@ Initialize Database And Copy Static Files
 
 ::
 
-	sudo su pyscada # linux
+	# linux
 	cd /var/www/pyscada/PyScadaServer # linux
-	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer # Windows
-	# both
+	sudo -u pyscada python manage.py migrate
+	sudo -u pyscada python manage.py collectstatic
+	# Windows
+	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer 
 	python manage.py migrate
 	python manage.py collectstatic
 
@@ -204,7 +206,7 @@ Fill in the full path to the django project dir (were the manage.py is located).
 	DAEMONS=(
 		'modbus	/var/www/pyscada/PyScadaServer/'
 	)
-	RUN_AS='www-user'
+	RUN_AS='pyscada'
 
 
 Edit the gunicorn init.d script.
@@ -223,7 +225,7 @@ Also fill in the path to your django project dir and replace the four spaces bet
 	SERVERS=(
 		'PyScadaServer	/var/www/pyscada/PyScadaServer	5'
 	)
-	RUN_AS='www-user'
+	RUN_AS='pyscada'
 
 
 (optinal) install System-V style init script links

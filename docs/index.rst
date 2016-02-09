@@ -28,7 +28,7 @@ A Open Source SCADA System with HTML5 HMI, build using the Django framework. If 
 .. toctree::
    :maxdepth: 2
    :caption: Using the Backend
-
+   backend
 
 
 Features
@@ -50,7 +50,7 @@ Dependencies
 
 - core/HMI
 	* python 2.7
-	* django>=1.6
+	* django>=1.7
 	* numpy>=1.6.0
 	* pillow
 	* python-daemon
