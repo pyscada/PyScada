@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from pyscada.models import Device
-from pyscada.utils import RecordData
 
 from django.conf import settings
 import psutil
@@ -13,8 +12,8 @@ class Device:
             if not hasattr(var,'systemstatvariable'):
                 continue
             #self.variables[var.pk] = {'value_class':var.value_class,'record':var.record,'name':var.name,'inf_id':var.systemstatvariable.information,'param':var.systemstatvariable.parameter}
-            self.variables.append(RecordData(var.pk,var.name,var.value_class,inf_id=var.systemstatvariable.information,param=var.systemstatvariable.parameter))
-        
+            #self.variables.append(RecordData(var.pk,var.name,var.value_class,inf_id=var.systemstatvariable.information,param=var.systemstatvariable.parameter))
+            self.variables.append(vars)
                 
     def request_data(self,timestamp):
         '''
@@ -39,78 +38,78 @@ class Device:
         '''
         data = {}
         for item in self.variables:
-            if item.inf_id == 0:
+            if item.systemstatvariable.information == 0:
                 # cpu_percent
                 if hasattr(psutil,'cpu_percent'):
                     value = psutil.cpu_percent()
-            elif item.inf_id == 1:
+            elif item.systemstatvariable.information == 1:
                 # virtual_memory_total
                 if hasattr(psutil,'virtual_memory'):
                     value = psutil.virtual_memory().total
-            elif item.inf_id == 2:
+            elif item.systemstatvariable.information == 2:
                 #virtual_memory_available
                 if hasattr(psutil,'virtual_memory'):
                     value = psutil.virtual_memory().available
-            elif item.inf_id == 3:
+            elif item.systemstatvariable.information == 3:
                 #virtual_memory_percent
                 if hasattr(psutil,'virtual_memory'):
                     value = psutil.virtual_memory().percent
-            elif item.inf_id == 4:
+            elif item.systemstatvariable.information == 4:
                 #virtual_memory_used
                 if hasattr(psutil,'virtual_memory'):
                     value = psutil.virtual_memory().used
-            elif item.inf_id == 5:
+            elif item.systemstatvariable.information == 5:
                 #virtual_memory_free
                 if hasattr(psutil,'virtual_memory'):
                     value = psutil.virtual_memory().free
-            elif item.inf_id == 6:
+            elif item.systemstatvariable.information == 6:
                 #virtual_memory_active
                 if hasattr(psutil,'virtual_memory'):
                     value = psutil.virtual_memory().active
-            elif item.inf_id == 7:
+            elif item.systemstatvariable.information == 7:
                 #virtual_memory_inactive
                 if hasattr(psutil,'virtual_memory'):
                     value = psutil.virtual_memory().inactive
-            elif item.inf_id == 8:
+            elif item.systemstatvariable.information == 8:
                 #virtual_memory_buffers
                 if hasattr(psutil,'virtual_memory'):
                     value = psutil.virtual_memory().buffers
-            elif item.inf_id == 9:
+            elif item.systemstatvariable.information == 9:
                 #virtual_memory_cached
                 if hasattr(psutil,'virtual_memory'):
                     value = psutil.virtual_memory().cached
-            elif item.inf_id == 10:
+            elif item.systemstatvariable.information == 10:
                 #swap_memory_total
                 if hasattr(psutil,'swap_memory'):
                     value = psutil.swap_memory().total
-            elif item.inf_id == 11:
+            elif item.systemstatvariable.information == 11:
                 #swap_memory_used
                 if hasattr(psutil,'swap_memory'):
                     value = psutil.swap_memory().used
-            elif item.inf_id == 12:
+            elif item.systemstatvariable.information == 12:
                 #swap_memory_free
                 if hasattr(psutil,'swap_memory'):
                     value = psutil.swap_memory().free
-            elif item.inf_id == 13:
+            elif item.systemstatvariable.information == 13:
                 #swap_memory_percent
                 if hasattr(psutil,'swap_memory'):
                     value = psutil.swap_memory().percent
-            elif item.inf_id == 14:
+            elif item.systemstatvariable.information == 14:
                 #swap_memory_sin
                 if hasattr(psutil,'swap_memory'):
                     value = psutil.swap_memory().sin
-            elif item.inf_id == 15:
+            elif item.systemstatvariable.information == 15:
                 #swap_memory_sout
                 if hasattr(psutil,'swap_memory'):
                     value = psutil.swap_memory().sout
-            elif item.inf_id == 17:
+            elif item.systemstatvariable.information == 17:
                 #disk_usage_systemdisk_percent
                 if hasattr(psutil,'disk_usage'):
                     value = psutil.disk_usage('/').percent
-            elif item.inf_id == 18:
+            elif item.systemstatvariable.information == 18:
                 #disk_usage_disk_percent
                 if hasattr(psutil,'disk_usage'):
-                    value = psutil.disk_usage(item.param).percent
+                    value = psutil.disk_usage(item.systemstatvariable.parameter).percent
             else:
                 value = 0
             # update variable

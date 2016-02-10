@@ -58,14 +58,19 @@ class Handler:
         """
         
         for task in DeviceWriteTask.objects.filter(done=False,start__lte=time(),failed=False):
-            
-            if self._devices[task.variable.device_id].write_data(task.variable.id,task.value):
-                task.done=True
-                task.fineshed=time()
-                task.save()
-                log.notice('changed variable %s (new value %1.6g %s)'%(task.variable.name,task.value,task.variable.unit.description),task.user)
+            if self._devices.has_key(task.variable.device_id):
+                if self._devices[task.variable.device_id].write_data(task.variable.id,task.value):
+                    task.done=True
+                    task.fineshed=time()
+                    task.save()
+                    log.notice('changed variable %s (new value %1.6g %s)'%(task.variable.name,task.value,task.variable.unit.description),task.user)
+                else:
+                    task.failed = True
+                    task.fineshed=time()
+                    task.save()
+                    log.error('change of variable %s failed'%(task.variable.name),task.user)
             else:
                 task.failed = True
                 task.fineshed=time()
                 task.save()
-                log.error('change of variable %s failed'%(task.variable.name),task.user)
+                log.error('device id not valid %d '%(task.variable.device_id),task.user)

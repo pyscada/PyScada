@@ -3,12 +3,9 @@
 from struct import *
 
 
-def scale_input(Input,scaling):
-		return (float(Input)/float(2**scaling.bit))*(scaling.max_value-scaling.min_value)+scaling.min_value
-
 def decode_float(value):
 	"""
-	this is a function that convert two UINT values to float value according to the IEEE 7?? specification
+	this function convert two UINT values to float value according to the IEEE 7?? specification
 	"""
 	return unpack('f',pack('2H',value[0],value[1]))[0]
 
@@ -72,27 +69,4 @@ def encode_value(value,variable_class):
 
 
 
-def get_bits_by_class(variable_class):
-	"""
-	`BOOLEAN`								1	1/16 WORD
-	`UINT8` `BYTE`						8	1/2 WORD
-	`INT8`								8	1/2 WORD
-	`UNT16` `WORD`						16	1 WORD
-	`INT16`	`INT`						16	1 WORD
-	`UINT32` `DWORD`					32	2 WORD
-	`INT32`								32	2 WORD
-	`FLOAT32` `REAL` `SINGLE` 			32	2 WORD
-	`FLOAT64` `LREAL` `FLOAT` `DOUBLE`	64	4 WORD
-	"""
-	if 	variable_class.upper() in ['FLOAT64','DOUBLE','FLOAT','LREAL'] :
-		return 64
-	if 	variable_class.upper() in ['FLOAT32','SINGLE','INT32','UINT32','DWORD','BCD32','BCD24','REAL'] :
-		return 32
-	if variable_class.upper() in ['INT16','INT','WORD','UINT','UINT16','BCD16']:
-		return 16
-	if variable_class.upper() in ['INT8','UINT8','BYTE','BCD8']:
-		return 8
-	if variable_class.upper() in ['BOOL','BOOLEAN']:
-		return 1
-	else:
-		return 16
+

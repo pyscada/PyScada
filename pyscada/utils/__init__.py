@@ -656,10 +656,10 @@ def add_recorded_data_to_database(data):
 		for item in data:
 			rdce = item.create_cache_element()
 			if rdce is None:
-				upd_idx.append(item.variable_id)
+				upd_idx.append(item.pk)
 			else:
 				dvc.append(rdce)
-				del_idx.append(item.variable_id)
+				del_idx.append(item.pk)
 			rve = item.create_archive_element()
 			if not rve is None:
 				if type(rve) is RecordedDataFloat:
@@ -676,106 +676,4 @@ def add_recorded_data_to_database(data):
 		RecordedDataInt.objects.bulk_create(dvi)
 		RecordedDataBoolean.objects.bulk_create(dvb)
 
-
-class RecordData():
-	def __init__(self,variable_id=None,name=None,variable_class=None, writeable=False,store_value = False,record_value=False,update_timestamp=None,scaling=None,**kwargs):
-		'''
-		
-		'''
-		self.variable_id = variable_id
-		self.variable_class = variable_class
-		self.record_value = record_value
-		self.name = name
-		self.value = None
-		self.prev_value = None
-		self.timestamp = None
-		self.timestamp_old = None
-		self.writeable = writeable
-		self.store_value = False		
-		self.update_timestamp = False
-		if scaling is None:
-			self.scale_value = None
-		elif self.variable_class.upper() in ['BOOL','BOOLEAN']:
-			# ignore scaling for BOOLEAN values
-			self.scale_value = None
-		else:
-			self.scale_value = scaling.scale_value
-		for key in kwargs:
-			setattr(self,key,kwargs[key])
-	
-	def update_value(self,value = None,timestamp=None):
-		'''
-		update the value in the instance and detect value state change
-		'''
-		
-		if self.scale_value is None or value is None:
-			self.value =  value
-		else:
-			self.value =  self.scale_value(value)
-			#log.notice('%d value %1.3f --> %1.3f'%(self.variable_id,value,self.value))
-		self.timestamp = timestamp
-		if self.prev_value is None: 
-			# no old value in cache 
-			self.store_value = True
-			self.update_timestamp = False
-			self.timestamp_old = self.timestamp
-		elif self.value is None:			
-			# value could not be queried
-			self.store_value = False
-			self.update_timestamp = False
-		elif self.prev_value == self.value:
-			if not self.timestamp_old is None:
-				if (self.timestamp.timestamp - self.timestamp_old.timestamp) >= (60*60):
-					# store Value if old Value is older then 1 hour
-					self.store_value = True
-					self.update_timestamp = False
-					self.timestamp_old = self.timestamp
-				else:
-					# value hasn't changed
-					self.store_value = False
-					self.update_timestamp = True
-			else:
-				# value hasn't changed
-				self.store_value = False
-				self.update_timestamp = True
-		else:                               
-			# value has changed
-			self.store_value = True
-			self.update_timestamp = False
-			self.timestamp_old = self.timestamp
-		self.prev_value = self.value
-	
-	
-		
-	def create_cache_element(self):
-		'''
-		create a new element to write to cache table
-		'''
-		if self.store_value and not self.value is None:
-			return RecordedDataCache(variable_id=self.variable_id,value=self.value,time=self.timestamp,last_change = self.timestamp)
-		else:
-			return None
-		
-	def create_archive_element(self):
-		'''
-		create a new element to write to archive table
-		'''
-		if self.store_value and self.record_value and not self.value is None:
-			if self.variable_class.upper() in ['FLOAT','FLOAT64','DOUBLE'] or not self.scale_value is None:
-				# scaled values will always be stored as float
-				return RecordedDataFloat(time=self.timestamp,variable_id=self.variable_id,value=float(self.value))
-			elif self.variable_class.upper() in ['FLOAT32','SINGLE','REAL'] :
-				return RecordedDataFloat(time=self.timestamp,variable_id=self.variable_id,value=float(self.value))
-			elif  self.variable_class.upper() in ['INT32','UINT32','DWORD']:
-				return RecordedDataInt(time=self.timestamp,variable_id=self.variable_id,value=int(self.value))
-			elif  self.variable_class.upper() in ['WORD','UINT','UINT16']:
-				return RecordedDataInt(time=self.timestamp,variable_id=self.variable_id,value=int(self.value))
-			elif  self.variable_class.upper() in ['INT16','INT']:
-				return RecordedDataInt(time=self.timestamp,variable_id=self.variable_id,value=int(self.value))
-			elif self.variable_class.upper() in ['BOOL','BOOLEAN']:
-				return RecordedDataBoolean(time=self.timestamp,variable_id=self.variable_id,value=bool(self.value))
-			else:
-				return None
-		else:
-			return None
 			

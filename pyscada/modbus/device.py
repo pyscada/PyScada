@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 from pyscada import log
 from pyscada.modbus.utils import encode_value
-from pyscada.modbus.utils import get_bits_by_class
+#from pyscada.modbus.utils import get_bits_by_class
 from pyscada.modbus.utils import decode_value
-from pyscada.utils import RecordData
 
 from pymodbus.client.sync import ModbusTcpClient
 from pymodbus.client.sync import ModbusSerialClient
@@ -15,31 +14,31 @@ class InputRegisterBlock:
     def __init__(self):
         self.variable_address   = [] #
         self.variable_length    = [] # in bytes
-        self.variable_class     = [] #
+        self.value_class     = [] #
         self.variable_id        = [] #
 
-    def insert_item(self,variable_id,variable_address,variable_class,variable_length):
+    def insert_item(self,variable_id,variable_address,value_class,variable_length):
         if not self.variable_address:
             self.variable_address.append(variable_address)
             self.variable_length.append(variable_length)
-            self.variable_class.append(variable_class)
+            self.value_class.append(value_class)
             self.variable_id.append(variable_id)
         elif max(self.variable_address) < variable_address:
             self.variable_address.append(variable_address)
             self.variable_length.append(variable_length)
-            self.variable_class.append(variable_class)
+            self.value_class.append(value_class)
             self.variable_id.append(variable_id)
         elif min(self.variable_address) > variable_address:
             self.variable_address.insert(0,variable_address)
             self.variable_length.insert(0,variable_length)
-            self.variable_class.insert(0,variable_class)
+            self.value_class.insert(0,value_class)
             self.variable_id.insert(0,variable_id)
         else:
             i = self.find_gap(self.variable_address,variable_address)
             if (i is not None):
                 self.variable_address.insert(i,variable_address)
                 self.variable_length.insert(i,variable_length)
-                self.variable_class.insert(i,variable_class)
+                self.value_class.insert(i,value_class)
                 self.variable_id.insert(i,variable_id)
 
 
@@ -65,7 +64,7 @@ class InputRegisterBlock:
             tmp = []
             for i in range(self.variable_length[idx]/16):
                 tmp.append(result.registers.pop(0))
-            out[self.variable_id[idx]] = decode_value(tmp,self.variable_class[idx])
+            out[self.variable_id[idx]] = decode_value(tmp,self.value_class[idx])
             if isnan(out[self.variable_id[idx]]) or isinf(out[self.variable_id[idx]]):
                     out[self.variable_id[idx]] = None
         return out
@@ -217,22 +216,28 @@ class Device:
             FC = var.modbusvariable.function_code_read
             if FC == 0:
                 continue
-            address      = var.modbusvariable.address
-            bits_to_read = get_bits_by_class(var.value_class)
+            #address      = var.modbusvariable.address
+            #bits_to_read = get_bits_by_class(var.value_class)
                 
             #self.variables[var.pk] = {'value_class':var.value_class,'writeable':var.writeable,'record':var.record,'name':var.name,'adr':address,'bits':bits_to_read,'fc':FC}
-            self.variables[var.pk] = RecordData(var.pk,var.name,var.value_class,\
-                var.writeable,adr=address,bits=bits_to_read,fc=FC,accessible=True,\
-                record_value=var.record,scaling = var.scaling)
+            # self.variables[var.pk] = RecordData(var.pk,var.name,var.value_class,\
+            #     var.writeable,adr=address,bits=bits_to_read,fc=FC,accessible=True,\
+            #     record_value=var.record,scaling = var.scaling)
+            
+            # add some attr to the var model 
+            var.add_attr(accessible=True)
+            # add the var to the list of 
+            self.variables[var.pk] = var
+            
             
             if FC == 1: # coils
-                self.trans_coils.append([address,var.pk,FC])
+                self.trans_coils.append([var.modbusvariable.address,var.pk,FC])
             elif FC == 2: # discrete inputs
-                self.trans_discrete_inputs.append([address,var.pk,FC])
+                self.trans_discrete_inputs.append([var.modbusvariable.address,var.pk,FC])
             elif FC == 3: # holding registers
-                self.trans_holding_registers.append([address,var.value_class,bits_to_read,var.pk,FC])
+                self.trans_holding_registers.append([var.modbusvariable.address,var.value_class,var.get_bits_by_class(),var.pk,FC])
             elif FC == 4: # input registers
-                self.trans_input_registers.append([address,var.value_class,bits_to_read,var.pk,FC])
+                self.trans_input_registers.append([var.modbusvariable.address,var.value_class,var.get_bits_by_class(),var.pk,FC])
             else:
                 continue
 
@@ -356,32 +361,32 @@ class Device:
         if not self.variables[variable_id].writeable:
             return False
 
-        if self.variables[variable_id].fc == 3:
+        if self.variables[variable_id].modbusvariable.function_code_read == 3:
             # write register
-            if 0 <= self.variables[variable_id].adr <= 65535:
+            if 0 <= self.variables[variable_id].modbusvariable.address <= 65535:
                 
                 self._connect()
-                if self.variables[variable_id].bits/16 == 1:
+                if self.variables[variable_id].get_bits_by_class()/16 == 1:
                     # just write the value to one register
-                    self.slave.write_register(self.variables[variable_id].adr,int(value),unit=self._unit_id)
+                    self.slave.write_register(self.variables[variable_id].modbusvariable.address,int(value),unit=self._unit_id)
                 else:
                     # encode it first
-                    self.slave.write_registers(self.variables[variable_id].adr,list(encode_value(value,self.variables[variable_id].variable_class)),unit=self._unit_id)
+                    self.slave.write_registers(self.variables[variable_id].modbusvariable.address,list(encode_value(value,self.variables[variable_id].value_class)),unit=self._unit_id)
                 self._disconnect()
                 return True
             else:
-                log.error('Modbus Address %d out of range'%self.variables[variable_id].adr)
+                log.error('Modbus Address %d out of range'%self.variables[variable_id].modbusvariable.address)
                 return False
-        elif self.variables[variable_id].fc == 1:
+        elif self.variables[variable_id].modbusvariable.function_code_read == 1:
             # write coil
-            if 0 <= self.variables[variable_id].adr <= 65535:
+            if 0 <= self.variables[variable_id].modbusvariable.address <= 65535:
                 self._connect()
-                self.slave.write_coil(self.variables[variable_id].adr,bool(value),unit=self._unit_id)
+                self.slave.write_coil(self.variables[variable_id].modbusvariable.address,bool(value),unit=self._unit_id)
                 self._disconnect()
                 return True
             else:
-                log.error('Modbus Address %d out of range'%self.variables[variable_id].adr)
+                log.error('Modbus Address %d out of range'%self.variables[variable_id].modbusvariable.address)
         else:
-            log.error('wrong function type %d'%self.variables[variable_id].fc)
+            log.error('wrong function type %d'%self.variables[variable_id].modbusvariable.function_code_read)
             return False
 

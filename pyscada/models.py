@@ -95,12 +95,120 @@ class Variable(models.Model):
 						('BOOLEAN','BOOL'),
 						('BOOLEAN','BOOLEAN'),
 						)
-	scaling			= models.ForeignKey(Scaling,null=True, on_delete=models.SET_NULL)
+	scaling			= models.ForeignKey(Scaling,null=True,blank=True, on_delete=models.SET_NULL)
 	value_class		= models.CharField(max_length=15, default='FLOAT64', verbose_name="value_class",choices=value_class_choices)
+	# for RecodedVariable
+	value           	= None
+	prev_value 			= None
+	store_value 		= False		
+	update_timestamp 	= False
+	
 	def __unicode__(self):
 		return unicode(self.name)
-
-
+	
+	def add_attr(self,**kwargs):
+		for key in kwargs:
+			setattr(self,key,kwargs[key])
+	
+	def get_bits_by_class(self):
+		"""
+		`BOOLEAN`							1	1/16 WORD
+		`UINT8` `BYTE`						8	1/2 WORD
+		`INT8`								8	1/2 WORD
+		`UNT16` `WORD`						16	1 WORD
+		`INT16`	`INT`						16	1 WORD
+		`UINT32` `DWORD`					32	2 WORD
+		`INT32`								32	2 WORD
+		`FLOAT32` `REAL` `SINGLE` 			32	2 WORD
+		`FLOAT64` `LREAL` `FLOAT` `DOUBLE`	64	4 WORD
+		"""
+		if 	self.value_class.upper() in ['FLOAT64','DOUBLE','FLOAT','LREAL'] :
+			return 64
+		if 	self.value_class.upper() in ['FLOAT32','SINGLE','INT32','UINT32','DWORD','BCD32','BCD24','REAL'] :
+			return 32
+		if self.value_class.upper() in ['INT16','INT','WORD','UINT','UINT16','BCD16']:
+			return 16
+		if self.value_class.upper() in ['INT8','UINT8','BYTE','BCD8']:
+			return 8
+		if self.value_class.upper() in ['BOOL','BOOLEAN']:
+			return 1
+		else:
+			return 16
+	
+	
+	def update_value(self,value = None,timestamp=None):
+		'''
+		update the value in the instance and detect value state change
+		'''
+		
+		if self.scaling is None or value is None or self.value_class.upper() in ['BOOL','BOOLEAN']:
+			self.value =  value
+		else:
+			self.value =  self.scaling.scale_value(value)
+			#log.notice('%d value %1.3f --> %1.3f'%(self.variable_id,value,self.value))
+		self.timestamp = timestamp
+		if self.prev_value is None: 
+			# no old value in cache 
+			self.store_value = True
+			self.update_timestamp = False
+			self.timestamp_old = self.timestamp
+		elif self.value is None:			
+			# value could not be queried
+			self.store_value = False
+			self.update_timestamp = False
+		elif self.prev_value == self.value:
+			if not self.timestamp_old is None:
+				if (self.timestamp.timestamp - self.timestamp_old.timestamp) >= (60*60):
+					# store Value if old Value is older then 1 hour
+					self.store_value = True
+					self.update_timestamp = False
+					self.timestamp_old = self.timestamp
+				else:
+					# value hasn't changed
+					self.store_value = False
+					self.update_timestamp = True
+			else:
+				# value hasn't changed
+				self.store_value = False
+				self.update_timestamp = True
+		else:                               
+			# value has changed
+			self.store_value = True
+			self.update_timestamp = False
+			self.timestamp_old = self.timestamp
+		self.prev_value = self.value
+	
+	def create_cache_element(self):
+		'''
+		create a new element to write to cache table
+		'''
+		if self.store_value and not self.value is None:
+			return RecordedDataCache(variable_id=self.pk,value=self.value,time=self.timestamp,last_change = self.timestamp)
+		else:
+			return None
+		
+	def create_archive_element(self):
+		'''
+		create a new element to write to archive table
+		'''
+		if self.store_value and self.record and not self.value is None:
+			if self.value_class.upper() in ['FLOAT','FLOAT64','DOUBLE'] or not self.scaling is None:
+				# scaled values will always be stored as float
+				return RecordedDataFloat(time=self.timestamp,variable_id=self.pk,value=float(self.value))
+			elif self.value_class.upper() in ['FLOAT32','SINGLE','REAL'] :
+				return RecordedDataFloat(time=self.timestamp,variable_id=self.pk,value=float(self.value))
+			elif  self.value_class.upper() in ['INT32','UINT32','DWORD']:
+				return RecordedDataInt(time=self.timestamp,variable_id=self.pk,value=int(self.value))
+			elif  self.value_class.upper() in ['WORD','UINT','UINT16']:
+				return RecordedDataInt(time=self.timestamp,variable_id=self.pk,value=int(self.value))
+			elif  self.value_class.upper() in ['INT16','INT']:
+				return RecordedDataInt(time=self.timestamp,variable_id=self.pk,value=int(self.value))
+			elif self.value_class.upper() in ['BOOL','BOOLEAN']:
+				return RecordedDataBoolean(time=self.timestamp,variable_id=self.pk,value=bool(self.value))
+			else:
+				return None
+		else:
+			return None
 
 class DeviceWriteTask(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -147,7 +255,7 @@ class RecordedTime(models.Model):
 # 			return self.value_int32
 #       elif value_class.upper() in ['INT16','INT8','UINT8']:
 #			return self.value_int16
-# 		elif self.variable_class.upper() in ['BOOL','BOOLEAN']:
+# 		elif self.value_class.upper() in ['BOOL','BOOLEAN']:
 # 			return self.value_boolean
 # 		else:
 # 			return None
