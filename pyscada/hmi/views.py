@@ -215,8 +215,8 @@ def get_cache_data(request):
 		if request.POST.has_key('first_timestamp'):
 			first_timestamp = max(float(request.POST['first_timestamp'])/1000.0,first_timestamp) # prevent from loading more then 120 Minutes of Data
 		
-		if first_timestamp > timestamp:
-			data["error"] = "fist timestamp is greater then last timestemp"
+		if first_timestamp >= timestamp:
+			data["error"] = "fist timestamp is greater or equel then last timestemp"
 			jdata = json.dumps(data,indent=2)
 			return HttpResponse(jdata, content_type='application/json')
 		
