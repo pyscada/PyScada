@@ -209,7 +209,7 @@ def get_cache_data(request):
 		timestamp = time.time()
 		if request.POST.has_key('timestamp'):
 			# load data from future is not supported
-			timestamp = min(float(request.POST['timestamp']/1000.0,timestamp)) 
+			timestamp = min(float(request.POST['timestamp'])/1000.0,timestamp) 
 		
 		first_timestamp = timestamp-120*60 # maximum is 120 minutes back
 		if request.POST.has_key('first_timestamp'):
