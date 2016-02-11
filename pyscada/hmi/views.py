@@ -208,11 +208,17 @@ def get_cache_data(request):
 	if init:
 		timestamp = time.time()
 		if request.POST.has_key('timestamp'):
-			timestamp = max(float(request.POST['timestamp'])/1000.0,timestamp) # prevent from loading more then 120 Minutes of Data
+			# load data from future is not supported
+			timestamp = min(float(request.POST['timestamp']/1000.0,timestamp)) 
 		
-		first_timestamp = time.time()-120*60
+		first_timestamp = timestamp-120*60 # maximum is 120 minutes back
 		if request.POST.has_key('first_timestamp'):
-			timestamp = max(float(request.POST['first_timestamp'])/1000.0,timestamp) # prevent from loading more then 120 Minutes of Data
+			first_timestamp = max(float(request.POST['first_timestamp'])/1000.0,first_timestamp) # prevent from loading more then 120 Minutes of Data
+		
+		if first_timestamp > timestamp:
+			data["error"] = "fist timestamp is greater then last timestemp"
+			jdata = json.dumps(data,indent=2)
+			return HttpResponse(jdata, content_type='application/json')
 		
 		if connection.vendor == 'sqlite':
 			# on sqlite limit querys to less then 999 elements
