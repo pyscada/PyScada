@@ -497,7 +497,7 @@ class Event(models.Model):
 					
 					if self.variable_to_change:
 						DeviceWriteTask(variable=self.variable_to_change,value=self.new_value,start=timestamp)
-		else:
+		else: # inside of limit
 			if prev_event:
 				prev_event = prev_event.last()
 				prev_event.active = False
