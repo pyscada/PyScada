@@ -38,6 +38,9 @@ class Handler:
                     blocked_recipient.append(recipient.pk)
             # send mails
             if mail.recipients_list(exclude_list=blocked_recipient):
+                if isempty(mail.mail_from):
+                    if hasattr(settings,'EMAIL_FROM'):
+                        mail.mail_from = settings.EMAIL_FROM
                 if send_mail(mail.subject,mail.message,mail.mail_from,mail.recipients_list(),fail_silently=True) >= 1:
                     mail.done       = True
                     mail.timestamp  = time()

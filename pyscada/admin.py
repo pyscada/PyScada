@@ -141,6 +141,7 @@ class MailAdmin(admin.ModelAdmin):
     list_display_links = ('subject',)
     list_filter = ('done',)
     filter_horizontal = ('mail_recipients',)
+    readonly_fields = ('mail_from',)
     def last_update(self,instance):
         return datetime.datetime.fromtimestamp(int(instance.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
 

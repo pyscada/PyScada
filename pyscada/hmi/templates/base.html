@@ -75,7 +75,11 @@
         <!-- Bootstrap core JavaScript
         ================================================== -->
         <!-- Placed at the end of the document so the pages load faster -->
+        <script type="text/javascript" src="{% static "pyscada/js/jquery.min.js" %}"></script>
+        <script type="text/javascript" src="{% static "pyscada/js/jquery.cookie.js" %}"></script>
+        <script type="text/javascript" src="{% static "pyscada/js/bootstrap.min.js" %}"></script>
         {% block include_bootom %}{% endblock %}
+        
         <script>
         {% block script_bottom %}{% endblock %}
         </script>

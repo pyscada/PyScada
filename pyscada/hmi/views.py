@@ -41,12 +41,11 @@ def index(request):
 		return redirect('/accounts/login/?next=%s' % request.path)
 
 	view_list = View.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).distinct()
-	t = loader.get_template('view_overview.html')
-	c = RequestContext(request,{
+	c = {
 		'user': request.user,
 		'view_list':view_list
-	})
-	return HttpResponse(t.render(c))
+	}
+	return TemplateResponse(request, 'view_overview.html', c) # HttpResponse(t.render(c))
 
 @requires_csrf_token
 def view(request,link_title):
