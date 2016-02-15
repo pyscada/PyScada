@@ -9,7 +9,6 @@ from pyscada.models import BackgroundTask
 from pyscada.models import RecordedDataCache
 from pyscada.models import Event
 from pyscada.models import RecordedEvent
-from pyscada.models import MailRecipient
 from pyscada.models import Mail
 from pyscada.utils import update_variable_set
 
@@ -140,8 +139,6 @@ class MailAdmin(admin.ModelAdmin):
     list_display = ('id','subject','message','last_update','done','send_fail_count',)
     list_display_links = ('subject',)
     list_filter = ('done',)
-    filter_horizontal = ('mail_recipients',)
-    readonly_fields = ('mail_from',)
     def last_update(self,instance):
         return datetime.datetime.fromtimestamp(int(instance.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
 
@@ -149,6 +146,8 @@ class EventAdmin(admin.ModelAdmin):
     list_display = ('id','label','variable','limit_type','level','action',)
     list_display_links = ('id','label',)
     list_filter = ('level','limit_type','action',)
+    filter_horizontal = ('mail_recipients',)
+
     raw_id_fields = ('variable',)
     
 admin.site.register(Device,DeviceAdmin)
@@ -158,7 +157,6 @@ admin.site.register(VariableConfigFileImport,VariableImportAdmin)
 admin.site.register(Unit)
 admin.site.register(Event,EventAdmin)
 admin.site.register(RecordedEvent,RecordedEventAdmin)
-admin.site.register(MailRecipient)
 admin.site.register(Mail,MailAdmin)
 admin.site.register(DeviceWriteTask,DeviceWriteTaskAdmin)
 admin.site.register(Log,LogAdmin)

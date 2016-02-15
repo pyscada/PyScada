@@ -13,7 +13,7 @@ class Device:
                 continue
             #self.variables[var.pk] = {'value_class':var.value_class,'record':var.record,'name':var.name,'inf_id':var.systemstatvariable.information,'param':var.systemstatvariable.parameter}
             #self.variables.append(RecordData(var.pk,var.name,var.value_class,inf_id=var.systemstatvariable.information,param=var.systemstatvariable.parameter))
-            self.variables.append(vars)
+            self.variables.append(var)
                 
     def request_data(self,timestamp):
         '''

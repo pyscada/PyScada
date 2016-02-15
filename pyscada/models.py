@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.core.mail import send_mail
 import time
 import datetime
 
@@ -348,13 +349,13 @@ class VariableChangeHistory(models.Model):
 	def __unicode__(self):
 		return unicode(self.field)
 
-class MailRecipient(models.Model):
-	id 				= models.AutoField(primary_key=True)
-	subject_prefix  = models.TextField(default='',blank=True)
-	message_suffix	= models.TextField(default='',blank=True)
-	to_email		= models.EmailField(max_length=254)
-	def __unicode__(self):
-		return unicode(self.to_email)
+# class MailRecipient(models.Model):
+# 	id 				= models.AutoField(primary_key=True)
+# 	subject_prefix  = models.TextField(default='',blank=True)
+# 	message_suffix	= models.TextField(default='',blank=True)
+# 	to_email		= models.EmailField(max_length=254)
+# 	def __unicode__(self):
+# 		return unicode(self.to_email)
 	
 class Event(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -384,10 +385,10 @@ class Event(models.Model):
 							(2,'record and send mail'),
 							(3,'record, send mail and change variable'),
 						)
-	action			= models.PositiveSmallIntegerField(default=0,choices=action_choises)
-	mail_recipient	= models.ForeignKey(MailRecipient,blank=True,null=True,default=None, on_delete=models.SET_NULL)
-	variable_to_change    = models.ForeignKey(Variable,blank=True,null=True,default=None, on_delete=models.SET_NULL,related_name="variable_to_change")
-	new_value		= models.FloatField(default=0,blank=True,null=True)
+	action				= models.PositiveSmallIntegerField(default=0,choices=action_choises)
+	mail_recipients		= models.ManyToManyField(User)
+	variable_to_change  = models.ForeignKey(Variable,blank=True,null=True,default=None, on_delete=models.SET_NULL,related_name="variable_to_change")
+	new_value			= models.FloatField(default=0,blank=True,null=True)
 	def __unicode__(self):
 		return unicode(self.label)
 
@@ -402,6 +403,30 @@ class Event(models.Model):
 		(3,'value is greater than or equal to the limit'),
 		(4,'value equals the limit'),
 		'''
+		def compose_mail(active):
+			if hasattr(settings,'EMAIL_SUBJECT_PREFIX'):
+				subject = settings.EMAIL_SUBJECT_PREFIX
+			else:
+				subject = ''
+			
+			message = ''
+			if active:
+				if   self.level == 0: # infomation
+					subject += " Infomation "
+				elif self.level == 1: # Ok
+					subject += " "
+				elif self.level == 2: # warning
+					subject += " Warning! "	
+				elif self.level == 3: # alert
+					subject += " Alert! "
+				subject += self.variable.name + " has exceeded the limit"
+			else:
+				subject += " Infomation "
+				subject += self.variable.name + " is back in limit"
+			message = "The Event " + self.label + " has been triggert\n"
+			message += "Value of " + self.variable.name + " is " + actual_value.__str__() + " " + self.variable.unit.unit
+			message += " Limit is " + limit_value.__str__() + " " + self.variable.unit.unit
+			return (subject,message,)
 		# 
 		# get recorded event
 		prev_event = RecordedEvent.objects.filter(event=self,active=True)
@@ -435,94 +460,55 @@ class Event(models.Model):
 				limit_check = actual_value < (limit_value + self.hysteresis)
 			else:
 				limit_check = actual_value < (limit_value - self.hysteresis)
-			
-			limit_string = 'below the limit'
 		elif self.limit_type == 1:
 			if prev_value:
 				limit_check = actual_value <= (limit_value + self.hysteresis)
 			else:
 				limit_check = actual_value <= (limit_value - self.hysteresis)
-			limit_string = 'below or equals the limit'
 		elif self.limit_type == 2:
 			limit_check = actual_value <= limit_value + self.hysteresis and actual_value >= limit_value - self.hysteresis
-			limit_string = 'equal the limit'
 		elif self.limit_type == 3:
 			if prev_value:
 				limit_check = actual_value >= (limit_value - self.hysteresis)
 			else:
 				limit_check = actual_value >= (limit_value + self.hysteresis)
-			limit_string = 'above or equal the limit'
 		elif self.limit_type == 4:
 			if prev_value:
 				limit_check = actual_value > (limit_value - self.hysteresis)
 			else:
 				limit_check = actual_value > (limit_value + self.hysteresis)
-			limit_string = 'above the limit'
 		else:
 			return False
 		
 		# record event
-		prev_event = RecordedEvent.objects.filter(event=self,active=True)
 		if limit_check: # value is outside of the limit
 			if not prev_event:
-				# record
+				# if there is no previus event record the Event
 				prev_event = RecordedEvent(event = self,time_begin=timestamp,active=True)
 				prev_event.save()
-				
-				# send mail
+
 				if self.limit_type >= 1:
+					# compose and send mail
+					(subject,message,) = compose_mail(True)
+					for recipient in self.mail_recipients.exclude(email=''):
+						Mail(None,subject,message,recipient.email,time.time()).save()
 				
-					if self.mail_recipient:
-						mail_subject = self.mail_recipient.subject_prefix # to do,
-						if   self.level == 0: # infomation
-							mail_subject += " Infomation "
-						elif self.level == 1: # Ok
-							mail_subject += " "
-						elif self.level == 2: # warning
-							mail_subject += " Warning! "	
-						elif self.level == 3: # alert
-							mail_subject += " Alert! "	
-						mail_subject += self.variable.name+" is " + limit_string
-						mail_message = "Event " + self.label + " has been triggert\n" 
-						mail_message += mail_subject
-						mail_message += "Value of " + self.variable.name + " is " + actual_value.__str__() + " " + self.variable.unit.unit
-						mail_message += "Limit is " + limit_value.__str__() + " " + self.variable.unit.unit
-						mail_message += self.mail_recipient.message_suffix # to do
-						mail = Mail(subject = mail_subject, message = mail_message,timestamp = time.time())
-						mail.save()
-						mail.mail_recipients.add(self.mail_recipient.pk)
-						mail.save()
-				# do action
 				if self.limit_type >= 3:
-					
+					# do action
 					if self.variable_to_change:
 						DeviceWriteTask(variable=self.variable_to_change,value=self.new_value,start=timestamp)
 		else: # inside of limit
-			if prev_event:
+			if prev_event: # 
 				prev_event = prev_event.last()
 				prev_event.active = False
 				prev_event.time_end = timestamp
 				prev_event.save()
-				# send mail
-				if self.limit_type >= 2:
 				
-					if self.mail_recipient:
-						mail_subject = self.mail_recipient.subject_prefix # to do,
-						if   self.level == 0: # infomation
-							mail_subject += " "
-						elif self.level == 1: # Ok
-							mail_subject += " "
-						elif self.level == 2: # warning
-							mail_subject += " "	
-						elif self.level == 3: # alert
-							mail_subject += " "	
-							
-						mail_message = "  "
-						mail_message += self.mail_recipient.message_suffix # to do
-						mail = Mail(subject = mail_subject, message = mail_message,timestamp = time.time())
-						mail.save()
-						mail.mail_recipients.add(self.mail_recipient.pk)
-						mail.save()
+				if self.limit_type >= 2:
+					# compose and send mail
+					(subject,message,) = compose_mail(False)
+					for recipient in self.mail_recipients.exclude(email=''):
+						Mail(None,subject,message,recipient.email,time.time()).save()
 
 
 class RecordedEvent(models.Model):
@@ -537,10 +523,33 @@ class Mail(models.Model):
 	id 			= models.AutoField(primary_key=True)
 	subject     = models.TextField(default='',blank=True)
 	message     = models.TextField(default='',blank=True)
-	mail_from   = models.TextField(default=settings.EMAIL_FROM,blank=True)
-	mail_recipients = models.ManyToManyField(MailRecipient)
+	to_email	= models.EmailField(max_length=254)
 	timestamp 	= models.FloatField(default=0,blank=True)
 	done		= models.BooleanField(default=False,blank=True)
 	send_fail_count = models.PositiveSmallIntegerField(default=0,blank=True)
-	def recipients_list(self,exclude_list=[]):
-		return [item.to_email for item in self.mail_recipients.exclude(pk__in=exclude_list)]
+	def send_mail(self):
+		# TODO check email limit
+		# blocked_recipient = [] # list of blocked mail recipoients
+		# if settings.PYSCADA.has_key('mail_count_limit'):
+		# 	mail_count_limit = float(settings.PYSCADA['mail_count_limit'])
+		# else:
+		# 	mail_count_limit = 200 # send max 200 Mails per 24h per user
+		# 	
+		# for recipient in mail.mail_recipients.exclude(to_email__in=blocked_recipient):
+		# 	if recipient.mail_set.filter(timestamp__gt=time()-(60*60*24)).count() > self.mail_count_limit:
+		# 		blocked_recipient.append(recipient.pk)
+		if self.send_fail_count >= 3 or self.done: 
+			# only try to send an email three times
+			return False
+		# send the mail
+		if send_mail(self.subject,self.message,settings.DEFAULT_FROM_EMAIL,[self.to_email],fail_silently=True):
+			self.done       = True
+			self.timestamp  = time.time()
+			self.save()
+			return True
+		else:
+			self.send_fail_count = self.send_fail_count + 1
+			self.timestamp  = time.time()
+			self.save()
+			return False
+		

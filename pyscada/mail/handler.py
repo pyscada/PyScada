@@ -1,15 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-
-
-from pyscada.models import Mail, MailRecipient
-
-from django.core.mail import send_mail
-from django.conf import settings
+from pyscada.models import Mail
 
 from time import time
-
 
 class Handler:
     def __init__(self):
@@ -17,39 +11,18 @@ class Handler:
         init the handler
         '''
         self.dt_set = 5;
-        if settings.PYSCADA.has_key('mail_count_limit'):
-            self.mail_count_limit        = float(settings.PYSCADA['mail_count_limit'])
-        else:
-            self.mail_count_limit        = 200 # only send 200 Mails per 24h per user
+
         
 
     def run(self):
         '''
-        check for events and trigger action
+        check for mails and send them
         '''
-        # Mail limitation ()
+        for mail in Mail.objects.filter(done=False,send_fail_count__lt=3):
+            # send all emails that are not already send or failed to send less 
+            # then three times
+            mail.send_mail()
         
-        blocked_recipient = []
-    
-        for mail in Mail.objects.filter(done=False,send_fail_count__lte=3):
-            # limit number of mails in 24 h  
-            for recipient in mail.mail_recipients.exclude(to_email__in=blocked_recipient):
-                if recipient.mail_set.filter(timestamp__gt=time()-(60*60*24)).count() > self.mail_count_limit:
-                    blocked_recipient.append(recipient.pk)
-            # send mails
-            if mail.recipients_list(exclude_list=blocked_recipient):
-                if mail.mail_from == '' or mail.mail_from is None:
-                    if hasattr(settings,'EMAIL_FROM'):
-                        mail.mail_from = settings.EMAIL_FROM
-                if send_mail(mail.subject,mail.message,mail.mail_from,mail.recipients_list(),fail_silently=True) >= 1:
-                    mail.done       = True
-                    mail.timestamp  = time()
-                    mail.save()
-                else:
-                    mail.send_fail_count = mail.send_fail_count + 1
-                    mail.timestamp  = time()
-                    mail.save()
-            else:
-                mail.done       = True
-                mail.timestamp  = time()
-                mail.save()
+        for mail in Mail.objects.filter(done=True,timestamp__lt=time()-60*60*24*7):
+            # delete all done emails older then one week
+            mail.delete()
