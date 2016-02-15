@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 from pyscada.models import Device
-
 from django.conf import settings
-import psutil
+try:
+    import psutil
+    driver_ok = True
+except ImportError:
+    driver_ok = False
+    
+    
 from time import time
 
 class Device:
@@ -14,7 +19,7 @@ class Device:
             #self.variables[var.pk] = {'value_class':var.value_class,'record':var.record,'name':var.name,'inf_id':var.systemstatvariable.information,'param':var.systemstatvariable.parameter}
             #self.variables.append(RecordData(var.pk,var.name,var.value_class,inf_id=var.systemstatvariable.information,param=var.systemstatvariable.parameter))
             self.variables.append(var)
-                
+            
     def request_data(self,timestamp):
         '''
         (0,'cpu_percent'),
@@ -36,6 +41,8 @@ class Device:
         (17,'disk_usage_systemdisk_percent'),
         (18,'disk_usage_disk_percent'),
         '''
+        if not driver_ok:
+            return None
         data = {}
         for item in self.variables:
             if item.systemstatvariable.information == 0:

@@ -109,17 +109,18 @@ Add all PyScada specific settings, keep in mind to set the file right source fil
 	PID_ROOT = BASE_DIR + '/run/'
 
 	# email settings
-	EMAIL_FROM = 'example@host.com'
+	DEFAULT_FROM_EMAIL = 'example@host.com'
 	EMAIL_HOST = 'mail.host.com'
 	EMAIL_PORT = 587
 	EMAIL_HOST_USER = 'pyscada@host.com'
 	EMAIL_USE_TLS = True
 	EMAIL_USE_SSL = False
 	EMAIL_HOST_PASSWORD = 'password'
+	EMAIL_SUBJECT_PREFIX = 'PREFIX' # Mail subject will be "PREFIX subjecttext"
 	
 	# global 
 	PYSCADA = {
-			'mail_count_limit': 20,
+			'mail_count_limit': 20, # number of mails per emailadress per day
 	}
 	# meta informations
 	#
@@ -135,20 +136,12 @@ Add all PyScada specific settings, keep in mind to set the file right source fil
 		'output_folder':'~/measurement_data_dumps',
 	}
 
-	# list of available device Protocols
-	#
-	PYSCADA_DEVICES = (
-		('modbus','Modbus Device',),
-		('systemstat','Monitor Local System',),
-	)
-
-	# parameters for the Modbus Device
+	# parameters for the Modbus and Systemstat Device
 	# 	polling_interval 	how often the modbus device requests data
 	#						from devices and write to the cache
 	#
 	#	recording_intervall how often the data is written to the database
-	#
-	# 	pid_file			file were the daemon pid is stored
+
 
 	PYSCADA_MODBUS = {
 		'polling_interval':5,

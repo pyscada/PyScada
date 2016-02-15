@@ -44,11 +44,31 @@ class VariableConfigFileImport(Variable):
     class Meta:
         proxy = True
 
+class DeviceAdminFrom(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(DeviceAdminFrom, self).__init__(*args, **kwargs)
+        wtf = Variable.objects.all();
+        w = self.fields['device_type'].widget
+        # return a list of installed drivers for device classes
+        device_type_choises = (('generic','no Device'),)
+        # Check if psutil is installed for the system statistics device module
+        try:
+            import psutil
+            device_type_choises += (('systemstat','Local System Monitoring',),)
+        except ImportError:
+            pass
+        # Check if pymodbus is installed for the modbus device module
+        try:
+            import pymodbus
+            device_type_choises += (('modbus','Modbus Device',),)
+        except ImportError:
+            pass
+        w.choices = device_type_choises
 
 class DeviceAdmin(admin.ModelAdmin):
     list_display = ('id','short_name','description','active',)
     list_display_links = ('short_name', 'description')
-
+    form = DeviceAdminFrom
 
 class VarieblesAdmin(admin.ModelAdmin):
     list_display = ('id','name','description','device_name','value_class','active','writeable',)

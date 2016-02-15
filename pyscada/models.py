@@ -9,8 +9,9 @@ from django.core.mail import send_mail
 import time
 import datetime
 
+
 #
-# Manager
+## Manager
 #
 
 class RecordedDataValueManager(models.Manager):
@@ -25,13 +26,14 @@ class RecordedDataValueManager(models.Manager):
 	# 	pass
 
 #
-# Model
+## Models
 #
 
 class Device(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	short_name		= models.CharField(max_length=400, default='')
-	device_type		= models.CharField(default='generic',choices=settings.PYSCADA_DEVICES,max_length=400)
+	device_type_choises = (('generic','no Device'),('systemstat','Local System Monitoring',),('modbus','Modbus Device',),)
+	device_type		= models.CharField(default='generic',choices=device_type_choises,max_length=400)
 	description 	= models.TextField(default='', verbose_name="Description",null=True)
 	active			= models.BooleanField(default=True)
 	def __unicode__(self):

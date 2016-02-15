@@ -10,8 +10,10 @@ default_app_config = 'pyscada.export.apps.PyScadaExportConfig'
 from pyscada import log
 from pyscada.utils import validate_value_class, export_xml_config_file
 from pyscada.models import Variable, Device, Unit, RecordedDataFloat, RecordedDataInt, RecordedDataBoolean, RecordedTime, BackgroundTask 
-from pyscada.export.hdf5 import mat_compatible_h5 as mat
+from pyscada.export.hdf5 import mat_compatible_h5
 from pyscada.export.hdf5 import unix_time_stamp_to_matlab_datenum
+from pyscada.export.csv import excel_compatible_csv
+from pyscada.export.csv import unix_time_stamp_to_excel_datenum
 # Django
 from django.db import connection
 from django.core import serializers
@@ -27,7 +29,7 @@ import math
 
 
 
-def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=None,active_vars=None,**kwargs):
+def export_measurement_data_to_file(time_id_min=None,filename=None,time_id_max=None,active_vars=None,file_extension=None,**kwargs):
     """
     export measurements from the database to a file
     """
@@ -37,11 +39,13 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
         else:
             tp = BackgroundTask(start=time(),label='pyscada.export.export_measurement_data_%s'%kwargs['task_identifier'],message='init',timestamp=time(),pid=str(os.getpid()),identifier = kwargs['task_identifier'])
     else:
-        tp = BackgroundTask(start=time(),label='pyscada.export.export_measurement_data_to_h5',message='init',timestamp=time(),pid=str(os.getpid()))
+        tp = BackgroundTask(start=time(),label='pyscada.export.export_measurement_data_to_file',message='init',timestamp=time(),pid=str(os.getpid()))
     
     tp.save()
-
+    
     if filename is None:
+        if file_extension is None:
+            file_extension = '.h5'
         if hasattr(settings,'PYSCADA_EXPORT'):
             if settings.PYSCADA_EXPORT.has_key('output_folder'):
                 backup_file_path = os.path.expanduser(settings.PYSCADA_EXPORT['output_folder'])
@@ -59,14 +63,21 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
             os.mkdir(backup_file_path)
         cdstr = strftime("%Y_%m_%d_%H%M",localtime())
         if kwargs.has_key('filename_suffix'):
-            filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '_' + kwargs['filename_suffix'] + '.h5')
+            filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '_' + kwargs['filename_suffix'] + file_extension)
             xml_filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '_' + kwargs['filename_suffix'] + '.xml')
         else:
-            filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '.h5')
+            filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + file_extension)
             xml_filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr + '.xml')
     else:
-        xml_filename =  filename.split('.')[0] + '.xml'
+        xml_filename    = filename.split('.')[0] + '.xml'
+        file_extension  = '.' + filename.split('.')[-1]
     
+    if not file_extension in ['.h5','.mat','.csv']:
+        tp.timestamp = time()
+        tp.message = 'failed wrong file type'
+        tp.failed = 1
+        tp.save()
+        return
     # 
     if active_vars is None:
         active_vars = list(Variable.objects.filter(active = 1,record = 1,device__active=1).values_list('pk',flat=True))
@@ -80,14 +91,16 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
             active_vars = list(Variable.objects.filter(pk__in = active_vars, active = 1,record = 1,device__active=1).values_list('pk',flat=True))
 
             
-    def _export_data_to_h5():
+    def _export_data_to_file():
         tp.timestamp = time()
         tp.message = 'reading time values from SQL'
         tp.save()
 
 
-        
-        timevalues = [unix_time_stamp_to_matlab_datenum(element) for element in RecordedTime.objects.filter(id__range = (first_time_id_chunk,last_time_id_chunk)).values_list('timestamp',flat=True)]
+        if file_extension in ['.h5','.mat']:
+            timevalues = [unix_time_stamp_to_matlab_datenum(element) for element in RecordedTime.objects.filter(id__range = (first_time_id_chunk,last_time_id_chunk)).values_list('timestamp',flat=True)]
+        elif file_extension in ['.csv']:
+            timevalues = [unix_time_stamp_to_excel_datenum(element) for element in RecordedTime.objects.filter(id__range = (first_time_id_chunk,last_time_id_chunk)).values_list('timestamp',flat=True)]
         time_ids = list(RecordedTime.objects.filter(id__range = (first_time_id_chunk,last_time_id_chunk)).values_list('id',flat=True))
 
         tp.timestamp = time()
@@ -100,7 +113,6 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
             description="global time vector",\
             value_class = validate_value_class('FLOAT64'),\
             unit = "Days since 0000-1-1 00:00:00")
-        bf.reopen()
 
         data = {}
         
@@ -259,8 +271,10 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
     else:
         description = 'None'
         name = 'None'
-    
-    bf = mat(filename,version = '1.1',description = description ,name = name, creation_date = strftime('%d-%b-%Y %H:%M:%S'))
+    if file_extension in ['.h5','.mat']:
+        bf = mat_compatible_h5(filename,version = '1.1',description = description ,name = name, creation_date = strftime('%d-%b-%Y %H:%M:%S'))
+    elif file_extension in ['.csv']:
+        bf = excel_compatible_csv(filename,version = '1.1',description = description ,name = name, creation_date = strftime('%d-%b-%Y %H:%M:%S'))
     # export config to an separate file to avoid attr > 64k
     export_xml_config_file(xml_filename)
     
@@ -325,7 +339,7 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
 
     while first_time_id_chunk < last_time_id:
         # export data
-        _export_data_to_h5()
+        _export_data_to_file()
         bf.reopen()# moved here to avoid frequent write to hdf5 file
         # next chunk
         first_time_id_chunk = last_time_id_chunk + 1
@@ -336,13 +350,14 @@ def export_measurement_data_to_h5(time_id_min=None,filename=None,time_id_max=Non
         tp.message = 'next chunk'
         tp.progress = tp.progress +1
         tp.save()
-
+    
+    bf.close_file()
     tp.timestamp = time()
     tp.message = 'done'
     tp.progress = tp.max
     tp.done = 1
     tp.save()
-
+    
     
 
 
@@ -668,7 +683,7 @@ def export_table_to_h5(**kwargs):
         ids = []
 
 
-    bf = mat(filename)
+    bf = mat_compatible_h5(filename)
     export = True
     last_id_chunk = first_id - 1
 

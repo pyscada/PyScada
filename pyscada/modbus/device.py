@@ -3,11 +3,15 @@ from pyscada import log
 from pyscada.modbus.utils import encode_value
 #from pyscada.modbus.utils import get_bits_by_class
 from pyscada.modbus.utils import decode_value
-
-from pymodbus.client.sync import ModbusTcpClient
-from pymodbus.client.sync import ModbusSerialClient
-from pymodbus.client.sync import ModbusUdpClient
-from pymodbus.constants import Defaults
+try:
+    from pymodbus.client.sync import ModbusTcpClient
+    from pymodbus.client.sync import ModbusSerialClient
+    from pymodbus.client.sync import ModbusUdpClient
+    from pymodbus.constants import Defaults
+    driver_ok = True
+except ImportError:
+    driver_ok = False
+    
 from math import isnan, isinf
 
 class InputRegisterBlock:
@@ -208,6 +212,7 @@ class Device:
         self._not_accessible_variable = []
         self.data = []
 
+        
     def _prepare_variable_config(self,device):
         
         for var in device.variable_set.filter(active=1):
@@ -321,6 +326,8 @@ class Device:
         """
     
         """
+        if not driver_ok:
+            return None
         if not self._connect():
             if not self._device_not_accessible:
                 log.error("device with id: %d is not accessible"%(self._device_inst.pk))
