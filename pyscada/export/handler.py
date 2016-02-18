@@ -12,7 +12,7 @@ def export_task(export_job):
     '''
     handle the export job 
     '''
-    
+    passa
 
 
 class Handler:
@@ -40,11 +40,11 @@ class Handler:
                 active_vars = job.variables.values_list('pk',flat=True)
                 today       = date.today()
                 end_time    = '%s %02d:59:59'%(today.strftime('%d-%b-%Y'),23 - job.day_time) # "%d-%b-%Y %H:%M:%S"
-                if file_format.upper() == 'HDF5':
+                if job.file_format.upper() == 'HDF5':
                     file_ext    = '.h5'
-                elif file_format.upper() == 'MAT':
+                elif job.file_format.upper() == 'MAT':
                     file_ext    = '.mat'
-                elif file_format.upper() == 'CSV_EXCEL':
+                elif job.file_format.upper() == 'CSV_EXCEL':
                     file_ext    = '.csv'
                 if job.export_period == 1: # daily
                     start_time  = '%s %02d:00:00'%((today - timedelta(1)).strftime('%d-%b-%Y'),job.day_time) # "%d-%b-%Y %H:%M:%S"

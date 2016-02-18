@@ -1,4 +1,7 @@
-import csv,os
+import csv
+import os
+
+
 def unix_time_stamp_to_excel_datenum(timestamp):
     '''
     convert from unix time (seconds since 01/01/1970) to Excel datenum (days since 01/01/1900)

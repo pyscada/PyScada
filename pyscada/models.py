@@ -437,11 +437,11 @@ class Event(models.Model):
 		else:
 			prev_value = False
 		# get the actual value
-		actual_value = RecordedDataCache.objects.filter(variable=self.variable)
+		actual_value = RecordedDataCache.objects.filter(variable=self.variable).last()
 		if not actual_value:
 			return False
-		timestamp = actual_value.last().time
-		actual_value = actual_value.last().value
+		timestamp = actual_value.time
+		actual_value = actual_value.value
 		# determin the limit type, variable or fixed
 		if self.variable_limit:
 			# item has a variable limit
@@ -499,7 +499,7 @@ class Event(models.Model):
 					# do action
 					if self.variable_to_change:
 						DeviceWriteTask(variable=self.variable_to_change,value=self.new_value,start=timestamp)
-		else: # inside of limit
+		else: # back inside of limit
 			if prev_event: # 
 				prev_event = prev_event.last()
 				prev_event.active = False

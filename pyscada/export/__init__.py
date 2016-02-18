@@ -10,10 +10,10 @@ default_app_config = 'pyscada.export.apps.PyScadaExportConfig'
 from pyscada import log
 from pyscada.utils import validate_value_class, export_xml_config_file
 from pyscada.models import Variable, Device, Unit, RecordedDataFloat, RecordedDataInt, RecordedDataBoolean, RecordedTime, BackgroundTask 
-from pyscada.export.hdf5 import mat_compatible_h5
-from pyscada.export.hdf5 import unix_time_stamp_to_matlab_datenum
-from pyscada.export.csv import excel_compatible_csv
-from pyscada.export.csv import unix_time_stamp_to_excel_datenum
+from pyscada.export.hdf5_file import mat_compatible_h5
+from pyscada.export.hdf5_file import unix_time_stamp_to_matlab_datenum
+from pyscada.export.csv_file import excel_compatible_csv
+from pyscada.export.csv_file import unix_time_stamp_to_excel_datenum
 # Django
 from django.db import connection
 from django.core import serializers
