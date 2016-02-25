@@ -25,6 +25,8 @@ import codecs
 import time, datetime
 import traceback
 from struct import *
+import threading
+
 
 def scale_input(Input,scaling):
 		return (float(Input)/float(2**scaling.bit))*(scaling.max_value-scaling.min_value)+scaling.min_value
@@ -558,7 +560,7 @@ def _cast(value,class_str):
 	else:
 		return value
 
-## daemon 
+## daemon
 def daemon_run(label,handlerClass):
 	pid     = str(os.getpid())
 
@@ -570,12 +572,6 @@ def daemon_run(label,handlerClass):
 	except:
 		var = traceback.format_exc()
 		log.error("exeption while initialisation of %s:%s %s" % (label,os.linesep, var))
-		# on error mark the task as failed
-		bt = BackgroundTask.objects.get(pk=bt_id)
-		bt.message = 'failed'
-		bt.failed = True
-		bt.timestamp = time.time()
-		bt.save()
 		raise
 	# register the task in Backgroudtask list
 	bt = BackgroundTask(start=time.time(),label=label,message='daemonized',timestamp=time.time(),pid = pid)
@@ -627,6 +623,83 @@ def daemon_run(label,handlerClass):
 		if dt>0:
 			time.sleep(dt)
 
+	## will be called after stop signal
+	try:
+		bt = BackgroundTask.objects.get(pk=bt_id)
+		bt.timestamp = time.time()
+		bt.done = True
+		bt.message = 'stopped'
+		bt.pid = 0
+		bt.save()
+	except:
+		var = traceback.format_exc()
+		log.error("exeption while shootdown of %s:%s %s" % (label,os.linesep, var))
+	log.notice("stopped %s execution"%label)
+
+def daq_daemon_run(label,handlerClasses):
+	'''
+	aquire data from the different devices/protocols
+	'''
+	
+	
+	pid     = str(os.getpid())
+	mh 		= []
+	dt_set  = 10
+	# init daemons
+	for handlerClass in handlerClasses:
+		try:
+			mh.append(handlerClass())
+			dt_set = min(mh.dt_set,dt_set) # find the fastest running task
+		except:
+			var = traceback.format_exc()
+			log.error("exeption while initialisation of %s:%s %s" % (label,os.linesep, var))
+
+	# register the task in Backgroudtask list
+	bt = BackgroundTask(start=time.time(),label=label,message='daemonized',timestamp=time.time(),pid = pid)
+	bt.save()
+	bt_id = bt.pk
+
+	# mark the task as running
+	bt = BackgroundTask.objects.get(pk=bt_id)
+	bt.timestamp = time.time()
+	bt.message = 'running...'
+	bt.save()
+
+	log.notice("started %s"%label)
+	err_count = 0
+	# main loop
+	while not bt.stop_daemon:
+		# add a new timestamp
+		timestamp = RecordedTime(timestamp=time())
+		timestamp.save()
+		# handle reinit
+		# start the tasks
+		tasks = []
+		for item in mh:
+			try:
+				# do actions
+				add_recorded_data_to_database(item.run(timestamp)) # query data and write to database
+				err_count = 0
+			except:
+				var = traceback.format_exc()
+				err_count +=1
+				# write log only
+				if err_count <= 3 or err_count == 10 or err_count%100 == 0:
+					log.debug("occ: %d, exeption in %s daemon%s%s %s" % (err_count,label,os.linesep,os.linesep,var),-1)
+				# do actions
+				#mh = handlerClass()
+			
+		# update BackgroudtaskTask
+		bt = BackgroundTask.objects.get(pk=bt_id)
+		bt.timestamp = time.time()
+		if dt_set>0:
+			bt.load= max(min((time.time()-t_start)/dt_set,1),0)
+		else:
+			bt.load= 1
+		bt.save()
+		dt = dt_set -(time.time()-t_start)
+		if dt>0:
+			time.sleep(dt)
 	## will be called after stop signal
 	try:
 		bt = BackgroundTask.objects.get(pk=bt_id)

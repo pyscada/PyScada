@@ -25,7 +25,7 @@ class Handler:
                 self._devices[item.pk] = ModbusDevice(item)
 
 
-    def run(self):
+    def run(self,timestamp=None):
         """
             request data
         """
@@ -34,8 +34,9 @@ class Handler:
         self._do_write_task()
 
         ## data acquisition
-        timestamp = RecordedTime(timestamp=time())
-        timestamp.save()
+        if timestamp is None:
+            timestamp = RecordedTime(timestamp=time())
+            timestamp.save()
         data = []
         for idx in self._devices:
             data += self._devices[idx].request_data(timestamp)

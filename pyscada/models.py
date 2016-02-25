@@ -16,15 +16,140 @@ import datetime
 
 class RecordedDataValueManager(models.Manager):
 	def by_time_id(self,time_id):
-		data = super(RecordedDataValueManager, self).get_query_set().filter(time_id=time_id)
+		data = super(RecordedDataValueManager, self).get_queryset().filter(time_id=time_id)
 		output = {}
 		for val in data:
 			output[val.variable.variable_name] = val.value()
 		return output
+	
+	def filter_time(self,time_min=None,time_max=None,**kwargs):
+		if time_min is None:
+			time_min = 0
+		else:
+			time_min = time_min*2097152*1000
+		if time_max is None:
+			time_max = time.time()*2097152*1000+2097151
+		else:
+			time_max = time_max*2097152*1000+2097151
+		return super(RecordedDataValueManager, self).get_queryset().filter(id__range=(time_min,time_max),**kwargs)
+	
+	def get_values_in_time_range(self,time_min=None,time_max=None,query_first_value=False,**kwargs):
+		if time_min is None:
+			time_min = 0
+		else:
+			time_min = time_min*2097152*1000
+		if time_max is None:
+			time_max = time.time()*2097152*1000+2097151
+		else:
+			time_max = time_max*2097152*1000+2097151
+		values = {}
+		if kwargs.has_key('variable'):
+			return values # just return one value
+		elif kwargs.has_key('variable__pk__in'):
+			# return all values for the given variables
+			variables = Variable.objects.filter(pk__in=kwargs['variable__in'])
+		else:
+			variables = Variable.objects.all()
+		
+		tmp_time_max = 0 # get the most recent time value
+		tmp_time_min = time_max
 
-	# def value_class_aware_bulk_create(self,objects):
-	# 	pass
-
+		# read float32, 64 values
+		tmp_vars = variables.filter(\
+				value_class__in=('FLOAT','FLOAT64','DOUBLE','FLOAT32','SINGLE','REAL',)\
+				).values_list('id',flat=True)
+		if tmp_vars:
+			tmp = super(RecordedDataValueManager, self).get_queryset().filter(\
+				id__range=(time_min,time_max),\
+				variable_id__in=tmp_vars\
+				).values_list('variable_id','pk','value_float64')
+			for item in tmp:
+				if not values.has_key(item[0]):
+					values[item[0]] = []
+				tmp_time = (item[1]-item[0])/(2097152.0*1000.0)
+				tmp_time_max = max(tmp_time,tmp_time_max)
+				tmp_time_min = min(tmp_time,tmp_time_min)
+				values[item[0]].append([tmp_time,item[2]]) # time, value
+		# read 'INT64','UINT32','DWORD'
+		tmp_vars = variables.filter(\
+				value_class__in=('INT64','UINT32','DWORD',)\
+				).values_list('id',flat=True)
+		if tmp_vars:
+			tmp = super(RecordedDataValueManager, self).get_queryset().filter(\
+				id__range=(time_min,time_max),\
+				variable_id__in=tmp_vars\
+				).values_list('variable_id','pk','value_int64')
+			for item in tmp:
+				if not values.has_key(item[0]):
+					values[item[0]] = []
+				tmp_time = (item[1]-item[0])/(2097152.0*1000.0)
+				tmp_time_max = max(tmp_time,tmp_time_max)
+				tmp_time_min = min(tmp_time,tmp_time_min)
+				values[item[0]].append([tmp_time,item[2]]) # time, value
+		# read 'WORD','UINT','UINT16','INT32'
+		tmp_vars = variables.filter(\
+				value_class__in=('WORD','UINT','UINT16','INT32',)\
+				).values_list('id',flat=True)
+		if tmp_vars:
+			tmp = super(RecordedDataValueManager, self).get_queryset().filter(\
+				id__range=(time_min,time_max),\
+				variable_id__in=tmp_vars\
+				).values_list('variable_id','pk','value_int32')
+			for item in tmp:
+				if not values.has_key(item[0]):
+					values[item[0]] = []
+				tmp_time = (item[1]-item[0])/(2097152.0*1000.0)
+				tmp_time_max = max(tmp_time,tmp_time_max)
+				tmp_time_min = min(tmp_time,tmp_time_min)
+				values[item[0]].append([tmp_time,item[2]]) # time, value
+		# read 'INT16','INT8','UINT8'
+		tmp_vars = variables.filter(\
+				value_class__in=('INT16','INT8','UINT8',)\
+				).values_list('id',flat=True)
+		if tmp_vars:
+			tmp = super(RecordedDataValueManager, self).get_queryset().filter(\
+				id__range=(time_min,time_max),\
+				variable_id__in=tmp_vars\
+				).values_list('variable_id','pk','value_int16')
+			for item in tmp:
+				if not values.has_key(item[0]):
+					values[item[0]] = []
+				tmp_time = (item[1]-item[0])/(2097152.0*1000.0)
+				tmp_time_max = max(tmp_time,tmp_time_max)
+				tmp_time_min = min(tmp_time,tmp_time_min)
+				values[item[0]].append([tmp_time,item[2]]) # time, value
+		# read 'BOOL','BOOLEAN'
+		tmp_vars = variables.filter(\
+				value_class__in=('BOOL','BOOLEAN',)\
+				).values_list('id',flat=True)
+		if tmp_vars:
+			tmp = super(RecordedDataValueManager, self).get_queryset().filter(\
+				id__range=(time_min,time_max),\
+				variable_id__in=tmp_vars\
+				).values_list('variable_id','pk','value_boolean')
+			for item in tmp:
+				if not values.has_key(item[0]):
+					values[item[0]] = []
+				tmp_time = (item[1]-item[0])/(2097152.0*1000.0)
+				tmp_time_max = max(tmp_time,tmp_time_max)
+				tmp_time_min = min(tmp_time,tmp_time_min)
+				values[item[0]].append([tmp_time,item[2]]) # time, value
+			
+		# check if for all variables the first and last value is present
+		for key, item in values.iteritems():
+			if item[-1][0] < tmp_time_max:
+				# append last value
+				item.append([tmp_time_max,item[-1][1]])
+			if query_first_value and item[0][0] > tmp_time_min:
+				# prepend first value
+				# item.insert(tmp_time_min,)
+				value = super(RecordedDataValueManager, self).get_queryset().filter(\
+					id__range=(time_min-(3600*1000*2097152),time_min),\
+					variable_id = key).order_by('pk').last()
+				if not value is None:
+					item.insert(0,[tmp_time_min,value])
+				
+		return values
 #
 ## Models
 #
@@ -232,36 +357,65 @@ class RecordedTime(models.Model):
 	def timestamp_ms(self):
 		return self.timestamp * 1000
 
-# class RecordedData(models.Model):
-# 	id				= models.BigIntegerField(primary_key=True)
-# 	value_boolean   = models.BooleanField(null=True,blank=True)  # boolean
-# 	value_int16     = models.SmallIntegerField(null=True,blank=True) # int16, uint8, int8
-# 	value_int32     = models.IntegerField(null=True,blank=True)  # uint8, int16, uint16, int32
-# 	value_int64     = models.BigIntegerField(null=True,blank=True) # uint32, int64
-# 	value_float64 	= models.FloatField(null=True,blank=True) 	 # float64
-# 	variable			= models.ForeignKey('Variable')
-# 	time			= models.ForeignKey('RecordedTime')
-# 	def __unicode__(self):
-# 		return unicode(self.value)
-# 	def value(self,value_class=None):
-# 		'''
-# 		return the stored value
-# 		'''
-# 		if value_class is None:
-# 			value_class = self.variable.value_class
-# 		
-# 		if value_class.upper() in ['FLOAT','FLOAT64','DOUBLE','FLOAT32','SINGLE','REAL']:
-# 			return self.value_float64
-# 		elif value_class.upper() in ['INT64','UINT32','DWORD']:
-# 			return self.value_int64
-# 		elif value_class.upper() in ['WORD','UINT','UINT16','INT32']:
-# 			return self.value_int32
-#       elif value_class.upper() in ['INT16','INT8','UINT8']:
-#			return self.value_int16
-# 		elif self.value_class.upper() in ['BOOL','BOOLEAN']:
-# 			return self.value_boolean
-# 		else:
-# 			return None
+class RecordedData(models.Model):
+	# Big Int first 42 bis is used for unixtime in ms, unsigt because we only 
+	# store time values that are later then 1970, rest 21 bits for the 
+	# variable id to have a uniqe primary key
+	# 63 bit 111111111111111111111111111111111111111111111111111111111111111
+	# 42 bit 111111111111111111111111111111111111111111000000000000000000000
+	# 21 bit 										  1000000000000000000000
+
+	id				= models.BigIntegerField(primary_key=True)
+	value_boolean   = models.BooleanField(default=False,blank=True)  	# boolean
+	value_int16     = models.SmallIntegerField(null=True,blank=True) 	# int16, uint8, int8
+	value_int32     = models.IntegerField(null=True,blank=True)  		# uint8, int16, uint16, int32
+	value_int64     = models.BigIntegerField(null=True,blank=True) 		# uint32, int64
+	value_float64 	= models.FloatField(null=True,blank=True) 	 		# float64
+	variable		= models.ForeignKey('Variable')
+	objects 		= RecordedDataValueManager()
+	
+	def __init__(self, *args, **kwargs):
+		
+		super(RecordedData, self).__init__(*args, **kwargs)
+		if not self.id and self.variable:
+			self.calculate_pk()
+				
+	def calculate_pk(self,timestamp=None):
+		'''
+		calculate the primary key from the timestamp in seconds
+		'''
+		if timestamp is None:
+			timestamp = time.time()
+		self.pk = int(int(int(timestamp*1000)*2097152)+self.variable.pk)
+
+	def __unicode__(self):
+		return unicode(self.value())
+
+	def time_value(self):
+		'''
+		return the timestamp in seconds calculated from the id
+		'''
+		return (self.pk-self.variable.pk)/2097152/1000.0 # value in seconds 
+
+	def value(self,value_class=None):
+		'''
+		return the stored value
+		'''
+		if value_class is None:
+			value_class = self.variable.value_class
+		
+		if value_class.upper() in ['FLOAT','FLOAT64','DOUBLE','FLOAT32','SINGLE','REAL']:
+			return self.value_float64
+		elif value_class.upper() in ['INT64','UINT32','DWORD']:
+			return self.value_int64
+		elif value_class.upper() in ['WORD','UINT','UINT16','INT32']:
+			return self.value_int32
+		elif value_class.upper() in ['INT16','INT8','UINT8']:
+			return self.value_int16
+		elif value_class.upper() in ['BOOL','BOOLEAN']:
+			return self.value_boolean
+		else:
+			return None
 
 
 class RecordedDataFloat(models.Model):
