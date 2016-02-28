@@ -204,91 +204,102 @@ def get_cache_data(request):
 	data = {}
 	
 		
-	if init:
-		timestamp = time.time()
-		if request.POST.has_key('timestamp'):
-			# load data from future is not supported
-			timestamp = min(float(request.POST['timestamp'])/1000.0,timestamp) 
-		
-		first_timestamp = timestamp-120*60 # maximum is 120 minutes back
-		if request.POST.has_key('first_timestamp'):
-			first_timestamp = max(float(request.POST['first_timestamp'])/1000.0,first_timestamp) # prevent from loading more then 120 Minutes of Data
-		
-		if first_timestamp >= timestamp:
-			data["error"] = "fist timestamp is greater or equel then last timestemp"
-			jdata = json.dumps(data,indent=2)
-			return HttpResponse(jdata, content_type='application/json')
-		
-		if connection.vendor == 'sqlite':
-			# on sqlite limit querys to less then 999 elements
-			rto = list(reversed(RecordedTime.objects.filter(timestamp__gte=float(first_timestamp),timestamp__lt=float(timestamp)).order_by('-id')[:998].values_list('pk',flat=True)))
-		else:
-			rto = list(RecordedTime.objects.filter(timestamp__gte=float(first_timestamp),timestamp__lt=float(timestamp)).values_list('pk',flat=True))
-	
-		if rto:
-			t_min_pk = rto[0]
-			rto_ids     = rto
-			t_min_ts = RecordedTime.objects.get(pk=t_min_pk).timestamp
-		else:
-			data["error"] = "no rto value"
-			jdata = json.dumps(data,indent=2)
-			return HttpResponse(jdata, content_type='application/json')
+	# if init:
+	# 	timestamp = time.time()
+	# 	if request.POST.has_key('timestamp'):
+	# 		# load data from future is not supported
+	# 		timestamp = min(float(request.POST['timestamp'])/1000.0,timestamp) 
+	# 	
+	# 	first_timestamp = timestamp-120*60 # maximum is 120 minutes back
+	# 	if request.POST.has_key('first_timestamp'):
+	# 		first_timestamp = max(float(request.POST['first_timestamp'])/1000.0,first_timestamp) # prevent from loading more then 120 Minutes of Data
+	# 	
+	# 	if first_timestamp >= timestamp:
+	# 		data["error"] = "fist timestamp is greater or equel then last timestemp"
+	# 		jdata = json.dumps(data,indent=2)
+	# 		return HttpResponse(jdata, content_type='application/json')
+	# 	
+	# 	if connection.vendor == 'sqlite':
+	# 		# on sqlite limit querys to less then 999 elements
+	# 		rto = list(reversed(RecordedTime.objects.filter(timestamp__gte=float(first_timestamp),timestamp__lt=float(timestamp)).order_by('-id')[:998].values_list('pk',flat=True)))
+	# 	else:
+	# 		rto = list(RecordedTime.objects.filter(timestamp__gte=float(first_timestamp),timestamp__lt=float(timestamp)).values_list('pk',flat=True))
+	# 
+	# 	if rto:
+	# 		t_min_pk = rto[0]
+	# 		rto_ids     = rto
+	# 		t_min_ts = RecordedTime.objects.get(pk=t_min_pk).timestamp
+	# 	else:
+	# 		data["error"] = "no rto value"
+	# 		jdata = json.dumps(data,indent=2)
+	# 		return HttpResponse(jdata, content_type='application/json')
 
-		for var in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL',), pk__in = active_variables) | Variable.objects.filter(scaling__isnull = False ,pk__in = active_variables):
-			var_id = var.pk
-			rto = RecordedDataFloat.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
-			if rto:
-				data[var.name] = [(t_min_ts,rto.value)]
-				data[var.name].extend(list(RecordedDataFloat.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value')))
-			else:
-				data[var.name] = list(RecordedDataFloat.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value'))
+##  		for var in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL',), pk__in = active_variables) | Variable.objects.filter(scaling__isnull = False ,pk__in = active_variables):
+	# 		var_id = var.pk
+	# 		rto = RecordedDataFloat.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
+	# 		if rto:
+	# 			data[var.name] = [(t_min_ts,rto.value)]
+	# 			data[var.name].extend(list(RecordedDataFloat.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value')))
+	# 		else:
+	# 			data[var.name] = list(RecordedDataFloat.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value'))
+	# 
+	# 	for var in Variable.objects.filter(value_class__in = ('INT32','UINT32','INT16','INT','WORD','UINT','UINT16',),pk__in = active_variables,scaling__isnull = True):
+	# 		var_id = var.pk
+	# 		rto = RecordedDataInt.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
+	# 		if rto:
+	# 			data[var.name] = [(t_min_ts,rto.value)]
+	# 			data[var.name].extend(list(RecordedDataInt.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value')))
+	# 		else:
+	# 			data[var.name] = list(RecordedDataInt.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value'))
+	# 
+	# 
+	# 	for var in Variable.objects.filter(value_class__in = ('BOOL','BOOLEAN',), pk__in = active_variables):
+	# 		var_id = var.pk
+	# 		rto = RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
+	# 		if rto:
+	# 			data[var.name] = [(t_min_ts,rto.value)]
+	# 			data[var.name].extend(list(RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value')))
+	# 		else:
+	# 			data[var.name] = list(RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value'))
+	# 			
+	# 	for key in data:
+	# 		for idx,item in enumerate(data[key]):
+	# 			data[key][idx] = (item[0]*1000,item[1])
+	# 	if RecordedDataCache.objects.last():
+	# 		data["timestamp"] = RecordedDataCache.objects.last().last_update_ms()
+	# 		data["server_time"] = time.time()*1000
+	# 	else:
+	# 		data["error"] = "no RecordedDataCache.objects.last() value"
+	# 		jdata = json.dumps(data,indent=2)
+	# 		return HttpResponse(jdata, content_type='application/json')
+	# else: # cache Data
+	# 	
+	# 	data = {}
+	# 	if RecordedDataCache.objects.first():
+	# 		data["timestamp"] = RecordedDataCache.objects.last().time.timestamp_ms()
+	# 		data["server_time"] = time.time()*1000			
+	# 	else:
+	# 		data["error"] = "no RecordedDataCache.objects.last() value"
+	# 		jdata = json.dumps(data,indent=2)
+	# 		return HttpResponse(jdata, content_type='application/json')
+	# 	
+	# 	# read data from cache
+	# 	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__name','value','time__timestamp'))
+	# 
+	# 	for var in raw_data:
+	# 		data[var[0]] = [[var[2]*1000,var[1]]]
 	
-		for var in Variable.objects.filter(value_class__in = ('INT32','UINT32','INT16','INT','WORD','UINT','UINT16',),pk__in = active_variables,scaling__isnull = True):
-			var_id = var.pk
-			rto = RecordedDataInt.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
-			if rto:
-				data[var.name] = [(t_min_ts,rto.value)]
-				data[var.name].extend(list(RecordedDataInt.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value')))
-			else:
-				data[var.name] = list(RecordedDataInt.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value'))
+	data = {}
 	
-	
-		for var in Variable.objects.filter(value_class__in = ('BOOL','BOOLEAN',), pk__in = active_variables):
-			var_id = var.pk
-			rto = RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
-			if rto:
-				data[var.name] = [(t_min_ts,rto.value)]
-				data[var.name].extend(list(RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value')))
-			else:
-				data[var.name] = list(RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value'))
-				
-		for key in data:
-			for idx,item in enumerate(data[key]):
-				data[key][idx] = (item[0]*1000,item[1])
-		if RecordedDataCache.objects.last():
-			data["timestamp"] = RecordedDataCache.objects.last().last_update_ms()
-			data["server_time"] = time.time()*1000
-		else:
-			data["error"] = "no RecordedDataCache.objects.last() value"
-			jdata = json.dumps(data,indent=2)
-			return HttpResponse(jdata, content_type='application/json')
-	else:
+	data = RecordedData.objects.get_values_in_time_range(\
+		time_min = time.time()-24*60*60-60,\
+		time_max = time.time()-24*60*60,
+		query_first_value = bool(init),\
+		time_in_ms = True,\
+		key_is_variable_name = True)
 		
-		data = {}
-		if RecordedDataCache.objects.first():
-			data["timestamp"] = RecordedDataCache.objects.last().time.timestamp_ms()
-			data["server_time"] = time.time()*1000			
-		else:
-			data["error"] = "no RecordedDataCache.objects.last() value"
-			jdata = json.dumps(data,indent=2)
-			return HttpResponse(jdata, content_type='application/json')
-		
-		# read data from cache
-		raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__name','value','time__timestamp'))
-	
-		for var in raw_data:
-			data[var[0]] = [[var[2]*1000,var[1]]]
-			
+	data["timestamp"] = time.time()*1000 # TODO max_time from data
+	data["server_time"] = time.time()*1000
 	data["init"] = init
 	jdata = json.dumps(data,indent=2)
 	return HttpResponse(jdata, content_type='application/json')

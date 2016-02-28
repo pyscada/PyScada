@@ -35,8 +35,7 @@ class Handler:
 
         ## data acquisition
         if timestamp is None:
-            timestamp = RecordedTime(timestamp=time())
-            timestamp.save()
+            timestamp = time()
         data = []
         for idx in self._devices:
             data += self._devices[idx].request_data(timestamp)

@@ -8,6 +8,7 @@ from pyscada.models import DeviceWriteTask
 from pyscada.models import BackgroundTask
 from pyscada.models import RecordedTime
 from pyscada.models import RecordedDataBoolean, RecordedDataFloat, RecordedDataInt, RecordedDataCache
+from pyscada.models import RecordedData
 from pyscada.modbus.models import ModbusVariable
 from pyscada.modbus.models import ModbusDevice
 from pyscada.hmi.models import Color
@@ -636,20 +637,21 @@ def daemon_run(label,handlerClass):
 		log.error("exeption while shootdown of %s:%s %s" % (label,os.linesep, var))
 	log.notice("stopped %s execution"%label)
 
-def daq_daemon_run(label,handlerClasses):
+def daq_daemon_run(label):
 	'''
 	aquire data from the different devices/protocols
 	'''
 	
 	
 	pid     = str(os.getpid())
-	mh 		= []
+	devices = []
 	dt_set  = 10
 	# init daemons
-	for handlerClass in handlerClasses:
+	for item in Device.objects.exclude(device_type='generic').filter(active=1):
 		try:
-			mh.append(handlerClass())
-			dt_set = min(mh.dt_set,dt_set) # find the fastest running task
+			tmp_device = item.get_device_instance()
+			if tmp_device is not None:
+				devices.append(tmp_device)
 		except:
 			var = traceback.format_exc()
 			log.error("exeption while initialisation of %s:%s %s" % (label,os.linesep, var))
@@ -669,16 +671,27 @@ def daq_daemon_run(label,handlerClasses):
 	err_count = 0
 	# main loop
 	while not bt.stop_daemon:
-		# add a new timestamp
-		timestamp = RecordedTime(timestamp=time())
-		timestamp.save()
+		t_start = time.time()
 		# handle reinit
+		if bt.message == 'reinit':
+			for item in devices:
+				item.__init__()
+		
+		# add a new timestamp
+		timestamp = time.time()
 		# start the tasks
-		tasks = []
-		for item in mh:
+		data = [[]]
+		for item in devices:
 			try:
 				# do actions
-				add_recorded_data_to_database(item.run(timestamp)) # query data and write to database
+				tmp_data = item.request_data(timestamp) # query data
+				if tmp_data is not None and len(tmp_data) > 0:
+					if len(data[-1])+len(tmp_data) < 998 :
+						# add to the last write job
+						data[-1] += tmp_data
+					else:
+						# add to next write job
+						data.append(tmp_data)
 				err_count = 0
 			except:
 				var = traceback.format_exc()
@@ -687,8 +700,10 @@ def daq_daemon_run(label,handlerClasses):
 				if err_count <= 3 or err_count == 10 or err_count%100 == 0:
 					log.debug("occ: %d, exeption in %s daemon%s%s %s" % (err_count,label,os.linesep,os.linesep,var),-1)
 				# do actions
-				#mh = handlerClass()
-			
+		
+		# write data to the database
+		for item in data:
+			RecordedData.objects.bulk_create(item)
 		# update BackgroudtaskTask
 		bt = BackgroundTask.objects.get(pk=bt_id)
 		bt.timestamp = time.time()
@@ -718,35 +733,10 @@ def add_recorded_data_to_database(data):
 	takes a list of "RecordData" elements and write them to the Database
 	'''
 		
-	dvc = []
-	dvf = []
-	dvi = []
-	dvb = []
-	del_idx   = []
-	upd_idx   = []
-	
+	rde = []
 	if data:
 		for item in data:
-			rdce = item.create_cache_element()
-			if rdce is None:
-				upd_idx.append(item.pk)
-			else:
-				dvc.append(rdce)
-				del_idx.append(item.pk)
-			rve = item.create_archive_element()
-			if not rve is None:
-				if type(rve) is RecordedDataFloat:
-					dvf.append(rve)
-				elif type(rve) is RecordedDataInt:
-					dvi.append(rve)
-				elif type(rve) is RecordedDataBoolean:
-					dvb.append(rve)
-		RecordedDataCache.objects.filter(variable_id__in=del_idx).delete()
-		RecordedDataCache.objects.filter(variable_id__in=upd_idx).update(time=item.timestamp)
-		RecordedDataCache.objects.bulk_create(dvc)
-		
-		RecordedDataFloat.objects.bulk_create(dvf)
-		RecordedDataInt.objects.bulk_create(dvi)
-		RecordedDataBoolean.objects.bulk_create(dvb)
+			rde = item.create_recorded_data_element()
+		RecordedData.objects.bulk_create(rde)
 
 			

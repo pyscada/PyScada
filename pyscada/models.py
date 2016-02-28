@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+
+
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -14,15 +18,11 @@ import datetime
 ## Manager
 #
 
-class RecordedDataValueManager(models.Manager):
-	def by_time_id(self,time_id):
-		data = super(RecordedDataValueManager, self).get_queryset().filter(time_id=time_id)
-		output = {}
-		for val in data:
-			output[val.variable.variable_name] = val.value()
-		return output
-	
+class RecordedDataValueManager(models.Manager):	
 	def filter_time(self,time_min=None,time_max=None,**kwargs):
+		'''
+		
+		'''
 		if time_min is None:
 			time_min = 0
 		else:
@@ -33,7 +33,25 @@ class RecordedDataValueManager(models.Manager):
 			time_max = time_max*2097152*1000+2097151
 		return super(RecordedDataValueManager, self).get_queryset().filter(id__range=(time_min,time_max),**kwargs)
 	
-	def get_values_in_time_range(self,time_min=None,time_max=None,query_first_value=False,**kwargs):
+	def last_element(self,**kwargs):
+		'''
+		
+		'''
+		if kwargs.has_key('time_min'):
+			time_min = kwargs.pop('time_min')*2097152*1000
+		else:
+			time_min = (time.time()-3660)*2097152*1000 # all values will be stored once in a hour
+		
+		if kwargs.has_key('time_max'):
+			time_max = kwargs.pop('time_max')*2097152*1000
+		else:
+			time_max = time.time()*2097152*1000 # values can't be more recent then now
+		
+		return super(RecordedDataValueManager, self).get_queryset().filter(\
+				id__range=(time_min,time_max),**kwargs).last()
+		
+			
+	def get_values_in_time_range(self,time_min=None,time_max=None,query_first_value=False,time_in_ms=False,key_is_variable_name=False,**kwargs):
 		if time_min is None:
 			time_min = 0
 		else:
@@ -50,9 +68,12 @@ class RecordedDataValueManager(models.Manager):
 			variables = Variable.objects.filter(pk__in=kwargs['variable__in'])
 		else:
 			variables = Variable.objects.all()
-		
-		tmp_time_max = 0 # get the most recent time value
-		tmp_time_min = time_max
+		if time_in_ms:
+			f_time_scale = 1
+		else:
+			f_time_scale = 1000
+		tmp_time_max = 0           # get the most recent time value
+		tmp_time_min = time.time() # 
 
 		# read float32, 64 values
 		tmp_vars = variables.filter(\
@@ -66,7 +87,7 @@ class RecordedDataValueManager(models.Manager):
 			for item in tmp:
 				if not values.has_key(item[0]):
 					values[item[0]] = []
-				tmp_time = (item[1]-item[0])/(2097152.0*1000.0)
+				tmp_time = (item[1]-item[0])/(2097152.0*f_time_scale)
 				tmp_time_max = max(tmp_time,tmp_time_max)
 				tmp_time_min = min(tmp_time,tmp_time_min)
 				values[item[0]].append([tmp_time,item[2]]) # time, value
@@ -82,7 +103,7 @@ class RecordedDataValueManager(models.Manager):
 			for item in tmp:
 				if not values.has_key(item[0]):
 					values[item[0]] = []
-				tmp_time = (item[1]-item[0])/(2097152.0*1000.0)
+				tmp_time = (item[1]-item[0])/(2097152.0*f_time_scale)
 				tmp_time_max = max(tmp_time,tmp_time_max)
 				tmp_time_min = min(tmp_time,tmp_time_min)
 				values[item[0]].append([tmp_time,item[2]]) # time, value
@@ -98,7 +119,7 @@ class RecordedDataValueManager(models.Manager):
 			for item in tmp:
 				if not values.has_key(item[0]):
 					values[item[0]] = []
-				tmp_time = (item[1]-item[0])/(2097152.0*1000.0)
+				tmp_time = (item[1]-item[0])/(2097152.0*f_time_scale)
 				tmp_time_max = max(tmp_time,tmp_time_max)
 				tmp_time_min = min(tmp_time,tmp_time_min)
 				values[item[0]].append([tmp_time,item[2]]) # time, value
@@ -114,7 +135,7 @@ class RecordedDataValueManager(models.Manager):
 			for item in tmp:
 				if not values.has_key(item[0]):
 					values[item[0]] = []
-				tmp_time = (item[1]-item[0])/(2097152.0*1000.0)
+				tmp_time = (item[1]-item[0])/(2097152.0*f_time_scale)
 				tmp_time_max = max(tmp_time,tmp_time_max)
 				tmp_time_min = min(tmp_time,tmp_time_min)
 				values[item[0]].append([tmp_time,item[2]]) # time, value
@@ -130,7 +151,7 @@ class RecordedDataValueManager(models.Manager):
 			for item in tmp:
 				if not values.has_key(item[0]):
 					values[item[0]] = []
-				tmp_time = (item[1]-item[0])/(2097152.0*1000.0)
+				tmp_time = (item[1]-item[0])/(2097152.0*f_time_scale)
 				tmp_time_max = max(tmp_time,tmp_time_max)
 				tmp_time_min = min(tmp_time,tmp_time_min)
 				values[item[0]].append([tmp_time,item[2]]) # time, value
@@ -148,6 +169,12 @@ class RecordedDataValueManager(models.Manager):
 					variable_id = key).order_by('pk').last()
 				if not value is None:
 					item.insert(0,[tmp_time_min,value])
+		# change the key in the output dict 
+		if key_is_variable_name:
+			for item in variables:
+				if values.has_key(item.pk):
+					values[item.name] = values.pop(item.pk)
+		
 				
 		return values
 #
@@ -157,13 +184,20 @@ class RecordedDataValueManager(models.Manager):
 class Device(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	short_name		= models.CharField(max_length=400, default='')
-	device_type_choises = (('generic','no Device'),('systemstat','Local System Monitoring',),('modbus','Modbus Device',),)
+	device_type_choises = (('generic','no Protocol'),('systemstat','Local System Monitoring',),('modbus','Modbus Device',),)
 	device_type		= models.CharField(default='generic',choices=device_type_choises,max_length=400)
 	description 	= models.TextField(default='', verbose_name="Description",null=True)
 	active			= models.BooleanField(default=True)
 	def __unicode__(self):
 		return unicode(self.short_name)
 
+	def get_device_instance(self):
+		from pyscada.modbus.device import Device as ModbusDevice
+		from pyscada.systemstat.device import Device as SystemStatDevice
+		if self.device_type == 'systemstat':
+			return SystemStatDevice(self)
+		elif self.device_type == 'modbus' and hasattr(self,'modbusdevice'):
+			return ModbusDevice(self)
 
 class Unit(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -206,7 +240,6 @@ class Variable(models.Model):
 	active			= models.BooleanField(default=True)
 	unit 			= models.ForeignKey(Unit,on_delete=models.SET(1))
 	writeable		= models.BooleanField(default=False)
-	record			= models.BooleanField(default=True)
 	value_class_choices = (('FLOAT32','REAL'),
 						('FLOAT32','SINGLE'),
 						('FLOAT32','FLOAT32'),
@@ -225,11 +258,11 @@ class Variable(models.Model):
 						)
 	scaling			= models.ForeignKey(Scaling,null=True,blank=True, on_delete=models.SET_NULL)
 	value_class		= models.CharField(max_length=15, default='FLOAT64', verbose_name="value_class",choices=value_class_choices)
+	cov_increment   = models.FloatField(default=0,blank=True)
 	# for RecodedVariable
 	value           	= None
 	prev_value 			= None
 	store_value 		= False		
-	update_timestamp 	= False
 	
 	def __unicode__(self):
 		return unicode(self.name)
@@ -273,68 +306,34 @@ class Variable(models.Model):
 			self.value =  value
 		else:
 			self.value =  self.scaling.scale_value(value)
-			#log.notice('%d value %1.3f --> %1.3f'%(self.variable_id,value,self.value))
 		self.timestamp = timestamp
-		if self.prev_value is None: 
-			# no old value in cache 
+		self.store_value = False
+		if self.prev_value is None:
+			# no prev value in the cache, always store the value
 			self.store_value = True
-			self.update_timestamp = False
 			self.timestamp_old = self.timestamp
-		elif self.value is None:			
+		elif self.value is None:
 			# value could not be queried
 			self.store_value = False
-			self.update_timestamp = False
-		elif self.prev_value == self.value:
-			if not self.timestamp_old is None:
+		elif abs(self.prev_value - self.value) < self.cov_increment:
+			if self.timestamp_old is not None:
 				if (self.timestamp.timestamp - self.timestamp_old.timestamp) >= (60*60):
 					# store Value if old Value is older then 1 hour
 					self.store_value = True
-					self.update_timestamp = False
 					self.timestamp_old = self.timestamp
-				else:
-					# value hasn't changed
-					self.store_value = False
-					self.update_timestamp = True
-			else:
-				# value hasn't changed
-				self.store_value = False
-				self.update_timestamp = True
 		else:                               
 			# value has changed
 			self.store_value = True
-			self.update_timestamp = False
 			self.timestamp_old = self.timestamp
 		self.prev_value = self.value
+		return self.store_value
 	
-	def create_cache_element(self):
-		'''
-		create a new element to write to cache table
-		'''
-		if self.store_value and not self.value is None:
-			return RecordedDataCache(variable_id=self.pk,value=self.value,time=self.timestamp,last_change = self.timestamp)
-		else:
-			return None
-		
-	def create_archive_element(self):
+	def create_recorded_data_element(self):
 		'''
 		create a new element to write to archive table
 		'''
-		if self.store_value and self.record and not self.value is None:
-			if self.value_class.upper() in ['FLOAT','FLOAT64','DOUBLE'] or not self.scaling is None:
-				# scaled values will always be stored as float
-				return RecordedDataFloat(time=self.timestamp,variable_id=self.pk,value=float(self.value))
-			elif self.value_class.upper() in ['FLOAT32','SINGLE','REAL'] :
-				return RecordedDataFloat(time=self.timestamp,variable_id=self.pk,value=float(self.value))
-			elif  self.value_class.upper() in ['INT32','UINT32','DWORD']:
-				return RecordedDataInt(time=self.timestamp,variable_id=self.pk,value=int(self.value))
-			elif  self.value_class.upper() in ['WORD','UINT','UINT16']:
-				return RecordedDataInt(time=self.timestamp,variable_id=self.pk,value=int(self.value))
-			elif  self.value_class.upper() in ['INT16','INT']:
-				return RecordedDataInt(time=self.timestamp,variable_id=self.pk,value=int(self.value))
-			elif self.value_class.upper() in ['BOOL','BOOLEAN']:
-				return RecordedDataBoolean(time=self.timestamp,variable_id=self.pk,value=bool(self.value))
-			else:
-				return None
+		if self.store_value and not self.value is None:
+			return RecordedData(timestamp=self.timestamp,variable=self,value=self.value)
 		else:
 			return None
 
@@ -348,14 +347,6 @@ class DeviceWriteTask(models.Model):
 	done			= models.BooleanField(default=False,blank=True)
 	failed			= models.BooleanField(default=False,blank=True)
 
-
-class RecordedTime(models.Model):
-	id 				= models.AutoField(primary_key=True)
-	timestamp 		= models.FloatField()
-	def __unicode__(self):
-		return unicode(datetime.datetime.fromtimestamp(int(self.timestamp)).strftime('%Y-%m-%d %H:%M:%S'))
-	def timestamp_ms(self):
-		return self.timestamp * 1000
 
 class RecordedData(models.Model):
 	# Big Int first 42 bis is used for unixtime in ms, unsigt because we only 
@@ -375,10 +366,34 @@ class RecordedData(models.Model):
 	objects 		= RecordedDataValueManager()
 	
 	def __init__(self, *args, **kwargs):
-		
+		if kwargs.has_key('timestamp'):
+			timestamp = kwargs.pop('timestamp')
+		else:
+			timestamp = time.time()
+		if kwargs.has_key('variable_id'):
+			variable_id = kwargs['variable_id']
+		elif kwargs.has_key('variable'):
+			variable_id = kwargs['variable'].pk
+		else:
+			variable_id = None
+		if not variable_id is None:
+			kwargs['id'] = int(int(int(timestamp*1000)*2097152)+variable_id)
+		if kwargs.has_key('variable') and kwargs.has_key('value'):
+			if kwargs['variable'].value_class.upper() in ['FLOAT','FLOAT64','DOUBLE','FLOAT32','SINGLE','REAL']:
+				kwargs['value_float64'] = kwargs.pop('value')
+			elif kwargs['variable'].scaling and not kwargs['variable'].value_class.upper() in ['BOOL','BOOLEAN']:
+				kwargs['value_float64'] = kwargs.pop('value')
+			elif kwargs['variable'].value_class.upper() in ['INT64','UINT32','DWORD']:
+				kwargs['value_int64'] = kwargs.pop('value')
+			elif kwargs['variable'].value_class.upper() in ['WORD','UINT','UINT16','INT32']:
+				kwargs['value_int32'] = kwargs.pop('value')
+			elif kwargs['variable'].value_class.upper() in ['INT16','INT8','UINT8']:
+				kwargs['value_int16'] = kwargs.pop('value')
+			elif kwargs['variable'].value_class.upper() in ['BOOL','BOOLEAN']:
+				kwargs['value_boolean'] = kwargs.pop('value')
+		# call the django moidel __init__
 		super(RecordedData, self).__init__(*args, **kwargs)
-		if not self.id and self.variable:
-			self.calculate_pk()
+		self.timestamp = self.time_value()
 				
 	def calculate_pk(self,timestamp=None):
 		'''
@@ -404,7 +419,10 @@ class RecordedData(models.Model):
 		if value_class is None:
 			value_class = self.variable.value_class
 		
+			
 		if value_class.upper() in ['FLOAT','FLOAT64','DOUBLE','FLOAT32','SINGLE','REAL']:
+			return self.value_float64
+		elif self.variable.scaling and not value_class.upper() in ['BOOL','BOOLEAN']:
 			return self.value_float64
 		elif value_class.upper() in ['INT64','UINT32','DWORD']:
 			return self.value_int64
@@ -418,12 +436,19 @@ class RecordedData(models.Model):
 			return None
 
 
+class RecordedTime(models.Model):
+	id 				= models.AutoField(primary_key=True)
+	timestamp 		= models.FloatField()
+	def __unicode__(self):
+		return unicode(datetime.datetime.fromtimestamp(int(self.timestamp)).strftime('%Y-%m-%d %H:%M:%S'))
+	def timestamp_ms(self):
+		return self.timestamp * 1000
+
 class RecordedDataFloat(models.Model):
 	id          = models.AutoField(primary_key=True)
 	value	    = models.FloatField()
 	variable		= models.ForeignKey('Variable')
 	time		= models.ForeignKey('RecordedTime')
-	objects 		= RecordedDataValueManager()
 	def __unicode__(self):
 		return unicode(self.value)
 
@@ -441,7 +466,6 @@ class RecordedDataBoolean(models.Model):
 	value       = models.NullBooleanField()
 	variable    = models.ForeignKey('Variable')
 	time        = models.ForeignKey('RecordedTime')
-	objects     = RecordedDataValueManager()
 	def __unicode__(self):
 		return unicode(self.value)
 
@@ -452,7 +476,6 @@ class RecordedDataCache(models.Model):
 	time		= models.ForeignKey('RecordedTime')
 	last_change	= models.ForeignKey('RecordedTime',related_name="last_change")
 	version		= models.PositiveIntegerField(default=0,null=True,blank=True)
-	objects 	= RecordedDataValueManager()
 	def __unicode__(self):
 		return unicode(self.value)
 	def last_update_ms(self):
@@ -494,24 +517,6 @@ class BackgroundTask(models.Model):
 	def timestamp_ms(self):
 		return self.timestamp * 1000
 
-
-class VariableChangeHistory(models.Model):
-	id 				= models.AutoField(primary_key=True)
-	variable	 	= models.ForeignKey(Variable)
-	time        	= models.ForeignKey(RecordedTime)
-	field_choices 	= ((0,'active'),(1,'writable'),(2,'value_class'),(3,'variable_name'))
-	field			= models.PositiveSmallIntegerField(default=0,choices=field_choices)
-	old_value		= models.TextField(default='')
-	def __unicode__(self):
-		return unicode(self.field)
-
-# class MailRecipient(models.Model):
-# 	id 				= models.AutoField(primary_key=True)
-# 	subject_prefix  = models.TextField(default='',blank=True)
-# 	message_suffix	= models.TextField(default='',blank=True)
-# 	to_email		= models.EmailField(max_length=254)
-# 	def __unicode__(self):
-# 		return unicode(self.to_email)
 	
 class Event(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -670,8 +675,8 @@ class Event(models.Model):
 class RecordedEvent(models.Model):
 	id          = models.AutoField(primary_key=True)
 	event		= models.ForeignKey(Event)
-	time_begin  = models.ForeignKey(RecordedTime)
-	time_end  	= models.ForeignKey(RecordedTime,null=True, on_delete=models.SET_NULL,related_name="time_end")
+	time_begin  = models.FloatField(default=0)
+	time_end	= models.FloatField(null=True,blank=True)
 	active		= models.BooleanField(default=False,blank=True)
 
 

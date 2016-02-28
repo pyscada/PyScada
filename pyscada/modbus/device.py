@@ -333,6 +333,7 @@ class Device:
                 log.error("device with id: %d is not accessible"%(self._device_inst.pk))
             self._device_not_accessible = True
             return []
+        output = []
         for register_block in self._variable_config:
             result = register_block.request_data(self.slave,self._unit_id)
             if result is None:
@@ -342,7 +343,8 @@ class Device:
             
             if result is not None:
                 for variable_id in register_block.variable_id:
-                    self.variables[variable_id].update_value(result[variable_id],timestamp)
+                    if self.variables[variable_id].update_value(result[variable_id],timestamp):
+                        output.append(self.variables[variable_id].create_recorded_data_element())
                     if not self.variables[variable_id].accessible:
                         log.info(("variable with id: %d is now accessible")%(variable_id))
                         self.variables[variable_id].accessible = True
@@ -359,7 +361,7 @@ class Device:
             self._device_not_accessible = False
         
         self._disconnect()
-        return self.variables.values()
+        return output
     
     def write_data(self,variable_id, value):
         """

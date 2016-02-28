@@ -16,8 +16,6 @@ class Device:
         for var in device.variable_set.filter(active=1):
             if not hasattr(var,'systemstatvariable'):
                 continue
-            #self.variables[var.pk] = {'value_class':var.value_class,'record':var.record,'name':var.name,'inf_id':var.systemstatvariable.information,'param':var.systemstatvariable.parameter}
-            #self.variables.append(RecordData(var.pk,var.name,var.value_class,inf_id=var.systemstatvariable.information,param=var.systemstatvariable.parameter))
             self.variables.append(var)
             
     def request_data(self,timestamp):
@@ -43,7 +41,8 @@ class Device:
         '''
         if not driver_ok:
             return None
-        data = {}
+        
+        output = []
         for item in self.variables:
             if item.systemstatvariable.information == 0:
                 # cpu_percent
@@ -120,7 +119,8 @@ class Device:
             else:
                 value = 0
             # update variable
-            item.update_value(value,timestamp)
+            if item.update_value(value,timestamp):
+                output.append(item.create_recorded_data_element())
             
             
-        return self.variables
+        return output
