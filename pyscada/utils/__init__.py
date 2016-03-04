@@ -644,14 +644,14 @@ def daq_daemon_run(label):
 	
 	
 	pid     = str(os.getpid())
-	devices = []
-	dt_set  = 10
+	devices = {}
+	dt_set  = 2.5
 	# init daemons
 	for item in Device.objects.exclude(device_type='generic').filter(active=1):
 		try:
 			tmp_device = item.get_device_instance()
 			if tmp_device is not None:
-				devices.append(tmp_device)
+				devices[item.pk] = tmp_device
 		except:
 			var = traceback.format_exc()
 			log.error("exeption while initialisation of %s:%s %s" % (label,os.linesep, var))
@@ -674,24 +674,44 @@ def daq_daemon_run(label):
 		t_start = time.time()
 		# handle reinit
 		if bt.message == 'reinit':
-			for item in devices:
+			for item in devices.itervalues():
 				item.__init__()
-		
+		# process write tasks
+		for task in DeviceWriteTask.objects.filter(done=False,start__lte=time.time(),failed=False):
+			if not task.variable.scaling is None:
+				task.value = task.variable.scaling.scale_output_value(task.value)
+			if devices.has_key(task.variable.device_id):
+				if devices[task.variable.device_id].write_data(task.variable.id,task.value): # do write task
+					task.done=True
+					task.fineshed=time.time()
+					task.save()
+					log.notice('changed variable %s (new value %1.6g %s)'%(task.variable.name,task.value,task.variable.unit.description),task.user)
+				else:
+					task.failed = True
+					task.fineshed=time.time()
+					task.save()
+					log.error('change of variable %s failed'%(task.variable.name),task.user)
+			else:
+				task.failed = True
+				task.fineshed=time.time()
+				task.save()
+				log.error('device id not valid %d '%(task.variable.device_id),task.user)
 		# add a new timestamp
 		timestamp = time.time()
 		# start the tasks
 		data = [[]]
-		for item in devices:
+		for item in devices.itervalues():
 			try:
 				# do actions
 				tmp_data = item.request_data(timestamp) # query data
-				if tmp_data is not None and len(tmp_data) > 0:
-					if len(data[-1])+len(tmp_data) < 998 :
-						# add to the last write job
-						data[-1] += tmp_data
-					else:
-						# add to next write job
-						data.append(tmp_data)
+				if  isinstance(tmp_data,list):
+					if len(tmp_data) > 0:
+						if len(data[-1])+len(tmp_data) < 998 :
+							# add to the last write job
+							data[-1] += tmp_data
+						else:
+							# add to next write job
+							data.append(tmp_data)
 				err_count = 0
 			except:
 				var = traceback.format_exc()

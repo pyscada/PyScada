@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 from pyscada import version as core_version
 from pyscada.models import Variable
-from pyscada.models import RecordedDataFloat
-from pyscada.models import RecordedDataInt
-from pyscada.models import RecordedDataBoolean
-from pyscada.models import RecordedDataCache
-from pyscada.models import RecordedTime
+from pyscada.models import RecordedData
 from pyscada.models import RecordedEvent
 from pyscada.hmi.models import Chart
 from pyscada.hmi.models import Page
@@ -200,8 +196,6 @@ def get_cache_data(request):
 		active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
 		active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('custom_html_panels__variables',flat=True))
 		active_variables = list(set(active_variables))
-
-	data = {}
 	
 		
 	# if init:
@@ -288,19 +282,29 @@ def get_cache_data(request):
 	# 
 	# 	for var in raw_data:
 	# 		data[var[0]] = [[var[2]*1000,var[1]]]
+	timestamp = time.time()
+	if request.POST.has_key('timestamp'):
+		# load data from future is not supported
+		if float(request.POST['timestamp']) >= timestamp-120*60:
+			timestamp = min(float(request.POST['timestamp'])/1000.0,timestamp) 
 	
+	if init:
+		first_timestamp = timestamp - 120*60
+		last_timestamp  = timestamp
+	else:
+		first_timestamp = timestamp
+		last_timestamp  = time.time()
 	data = {}
-	
 	data = RecordedData.objects.get_values_in_time_range(\
-		time_min = time.time()-24*60*60-60,\
-		time_max = time.time()-24*60*60,
-		query_first_value = bool(init),\
+		time_min = first_timestamp,\
+		time_max = last_timestamp,\
+		query_first_value = init,\
 		time_in_ms = True,\
-		key_is_variable_name = True)
+		key_is_variable_name = True,\
+		variable_id__in = active_variables)
 		
 	data["timestamp"] = time.time()*1000 # TODO max_time from data
 	data["server_time"] = time.time()*1000
-	data["init"] = init
 	jdata = json.dumps(data,indent=2)
 	return HttpResponse(jdata, content_type='application/json')
 

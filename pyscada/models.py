@@ -62,10 +62,16 @@ class RecordedDataValueManager(models.Manager):
 			time_max = time_max*2097152*1000+2097151
 		values = {}
 		if kwargs.has_key('variable'):
-			return values # just return one value
+			return values # TODO just return one value
 		elif kwargs.has_key('variable__pk__in'):
 			# return all values for the given variables
-			variables = Variable.objects.filter(pk__in=kwargs['variable__in'])
+			variables = Variable.objects.filter(pk__in=kwargs['variable__pk__in'])
+		elif kwargs.has_key('variable_id__in'):
+			# return all values for the given variables
+			variables = Variable.objects.filter(pk__in=kwargs['variable_id__in'])
+		elif kwargs.has_key('variable__in'):
+			# return all values for the given variables
+			variables = kwargs['variable__in']
 		else:
 			variables = Variable.objects.all()
 		if time_in_ms:
@@ -168,7 +174,7 @@ class RecordedDataValueManager(models.Manager):
 					id__range=(time_min-(3600*1000*2097152),time_min),\
 					variable_id = key).order_by('pk').last()
 				if not value is None:
-					item.insert(0,[tmp_time_min,value])
+					item.insert(0,[tmp_time_min,value.value()])
 		# change the key in the output dict 
 		if key_is_variable_name:
 			for item in variables:
@@ -376,7 +382,7 @@ class RecordedData(models.Model):
 			variable_id = kwargs['variable'].pk
 		else:
 			variable_id = None
-		if not variable_id is None:
+		if not variable_id is None and not kwargs.has_key('id'):
 			kwargs['id'] = int(int(int(timestamp*1000)*2097152)+variable_id)
 		if kwargs.has_key('variable') and kwargs.has_key('value'):
 			if kwargs['variable'].value_class.upper() in ['FLOAT','FLOAT64','DOUBLE','FLOAT32','SINGLE','REAL']:
@@ -387,11 +393,12 @@ class RecordedData(models.Model):
 				kwargs['value_int64'] = kwargs.pop('value')
 			elif kwargs['variable'].value_class.upper() in ['WORD','UINT','UINT16','INT32']:
 				kwargs['value_int32'] = kwargs.pop('value')
-			elif kwargs['variable'].value_class.upper() in ['INT16','INT8','UINT8']:
+			elif kwargs['variable'].value_class.upper() in ['INT16','INT8','UINT8','INT']:
 				kwargs['value_int16'] = kwargs.pop('value')
 			elif kwargs['variable'].value_class.upper() in ['BOOL','BOOLEAN']:
 				kwargs['value_boolean'] = kwargs.pop('value')
-		# call the django moidel __init__
+				
+		# call the django model __init__
 		super(RecordedData, self).__init__(*args, **kwargs)
 		self.timestamp = self.time_value()
 				

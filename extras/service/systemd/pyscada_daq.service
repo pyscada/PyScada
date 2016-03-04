@@ -1,0 +1,16 @@
+[Unit]
+Description=PyScada Data Aquasition Daemon
+After=network.target
+
+[Service]
+PIDFile=/tmp/pyscada_daq.pid
+User=pyscada
+Group=pyscada
+WorkingDirectory=/var/www/%u/PyScadaServer/
+ExecStart=/usr/bin/python /var/www/%u/PyScadaServer/manage.py daqdaemon start
+# ExecReload=/usr/bin/python /var/www/%u/PyScadaServer/manage.py daqdaemon modbus restart
+ExecStop=/usr/bin/python /var/www/%u/PyScadaServer/manage.py daqdaemon modbus stop
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

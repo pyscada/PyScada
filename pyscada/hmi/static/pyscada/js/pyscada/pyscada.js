@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.6.22
+version 0.6.23
 
-Copyright (c) 2013-2015 Martin Schröder
+Copyright (c) 2013-2016 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.6.22"
+var version = "0.6.23"
 var NotificationCount = 0
 var UpdateStatusCount = 0;
 var PyScadaPlots = [];
@@ -70,12 +70,20 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
             timeout: ((first_timestamp == 0) ? fetch_data_timeout*10 : fetch_data_timeout),
             type: "POST",
             data:{ timestamp: init ? data_first_timestamp:data_last_timestamp, variables: variable_keys, first_timestamp:first_timestamp, init: init},
-            success: function(data) {
+            dataType:"json"
+            }).done(function(data) {
+                update_charts = true;
                 if (init){
+                    timestamp = data['timestamp'];
+                    delete data['timestamp'];
+                    server_time = data['server_time'];
+                    delete data['server_time'];
+                    
                     $.each(data, function(key, val) {
                     //append data to data array
                         if (typeof(val)==="object" && typeof plot_instance !== 'undefined'){
                             plot_instance.PreppendData(key,val);
+                            update_charts = 1;
                         }
                     });
                     init_chart_data_fetch_pending_count--;
@@ -91,7 +99,7 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                     if (data_first_timestamp == 0){
                         data_first_timestamp = data_last_timestamp;
                     }
-                
+                    update_charts = data.length > 0;
                     DataOutOfDate = (server_time - timestamp  > cache_timeout);
                     if (DataOutOfDate){
                         raiseDataOutOfDateError();
@@ -102,6 +110,7 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                                 updateDataValues(val,Number.NaN);
                             });
                         });
+                        update_charts = true;
                     }else{
                         clearDataOutOfDateError();
                         $.each(data, function(key, val) {
@@ -111,20 +120,23 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                                     PyScadaPlots[plot_id].AppendData(key,val);
                                 });
                                 val = val.pop();
-                                if (typeof(val[1])==="number"){
+                                if (typeof(val[1])==="number" | typeof(val[1])==="boolean"){
                                     updateDataValues(key,val[1]);
                                 }else{
                                     updateDataValues(key,Number.NaN);
                                 }
+                                update_charts = true;
                             }
                         });
                     }
-                    $.each(PyScadaPlots,function(plot_id){
-                        var self = this, doBind = function() {
-                            PyScadaPlots[plot_id].update();
-                        };
-                        $.browserQueue.add(doBind, this);
-                    });
+                    if (update_charts){
+                        $.each(PyScadaPlots,function(plot_id){
+                            var self = this, doBind = function() {
+                                PyScadaPlots[plot_id].update();
+                            };
+                            $.browserQueue.add(doBind, this);
+                        });
+                    }
                     setTimeout('fetchData()', refresh_rate);
                 }
                 UpdateStatusCount = UpdateStatusCount -1;
@@ -135,8 +147,7 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                 if (JsonErrorCount > 0) {
                     JsonErrorCount = JsonErrorCount - 1;
                 }
-            },
-            error: function(x, t, m) {
+            }).fail(function(x, t, m) {
                 if(JsonErrorCount % 5 == 0)
                     addNotification(t, 3);
 
@@ -164,7 +175,7 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                 $("#AutoUpdateButton").addClass("btn-warning");
                 $("#AutoUpdateStatus").hide();
                 }
-        });
+        );
         updateLog();
     }else{
         $.each(PyScadaPlots,function(plot_id){
@@ -285,52 +296,60 @@ function addNotification(message, level,timeout,clearable) {
 }
 
 function updateDataValues(key,val){
-        
-        var r_val = Number(val);
-        if(Math.abs(r_val) == 0 ){
-            r_val = 0;
-        }else if(Math.abs(r_val) < 0.001) {
-            r_val = r_val.toExponential(2);
-        }else if (Math.abs(r_val) < 0.01) {
-            r_val = r_val.toPrecision(1);
-        }else if(Math.abs(r_val) < 0.1) {
-            r_val = r_val.toPrecision(2);
-        }else if(Math.abs(r_val) < 1) {
-            r_val = r_val.toPrecision(3);
-        }else if(r_val > 100) {
-            r_val = r_val.toPrecision(4);
-        }else{
-            r_val = r_val.toPrecision(4);
+        if (typeof(val)==="number"){
+            var r_val = Number(val);
+            if(Math.abs(r_val) == 0 ){
+                r_val = 0;
+            }else if(Math.abs(r_val) < 0.001) {
+                r_val = r_val.toExponential(2);
+            }else if (Math.abs(r_val) < 0.01) {
+                r_val = r_val.toPrecision(1);
+            }else if(Math.abs(r_val) < 0.1) {
+                r_val = r_val.toPrecision(2);
+            }else if(Math.abs(r_val) < 1) {
+                r_val = r_val.toPrecision(3);
+            }else if(r_val > 100) {
+                r_val = r_val.toPrecision(4);
+            }else{
+                r_val = r_val.toPrecision(4);
+            }
+            $(".type-numeric.var-" + key).html(r_val);
+            $('input.var-'+ key).attr("placeholder",r_val);
         }
+        
         // set value fields
-        $(".type-numeric.var-" + key).html(r_val);
-        $('input.var-'+ key).attr("placeholder",r_val);
-        // set button colors
-        if (val === 0) {
-            $(".label.type-bool.var-" + key).addClass("label-default");
-            $(".label.type-bool.var-" + key).removeClass("label-primary");
-            $(".label.type-bool.var-" + key).removeClass("label-info");
-            $(".label.type-bool.var-" + key).removeClass("label-success");
-            $(".label.type-bool.var-" + key).removeClass("label-warning");
-            $(".label.type-bool.var-" + key).removeClass("label-danger");
-            // inverted
-            $(".label.type-bool.status-red-inv.var-" + key).addClass("label-danger");
-            
-            $('button.btn-default.write-task-btn.var-' + key).addClass("updateable");
-            $('button.updateable.write-task-btn.var-' + key).addClass("btn-default");
-            $('button.updateable.write-task-btn.var-' + key).removeClass("btn-success");
-        } else {
-            $(".label.type-bool.var-" + key).removeClass("label-default");
-            $(".label.type-bool.var-" + key).removeClass("label-danger");
-            $(".label.type-bool.status-blue.var-" + key).addClass("label-primary");
-            $(".label.type-bool.status-info.var-" + key).addClass("label-info");
-            $(".label.type-bool.status-green.var-" + key).addClass("label-success");
-            $(".label.type-bool.status-yello.var-" + key).addClass("label-warning");
-            $(".label.type-bool.status-red.var-" + key).addClass("label-danger");
-            $(".label.type-bool.status-red-inv.var-" + key).addClass("label-default");
-            $('button.btn-success.write-task-btn.var-' + key).addClass("updateable");
-            $('button.updateable.write-task-btn.var-' + key).removeClass("btn-default");
-            $('button.updateable.write-task-btn.var-' + key).addClass("btn-success");
+        if (typeof(val)==="boolean"){
+            // set button colors
+            if (val === 0 | val == false) {
+                $(".label.type-bool.var-" + key).addClass("label-default");
+                $(".label.type-bool.var-" + key).removeClass("label-primary");
+                $(".label.type-bool.var-" + key).removeClass("label-info");
+                $(".label.type-bool.var-" + key).removeClass("label-success");
+                $(".label.type-bool.var-" + key).removeClass("label-warning");
+                $(".label.type-bool.var-" + key).removeClass("label-danger");
+                // inverted
+                $(".label.type-bool.status-red-inv.var-" + key).addClass("label-danger");
+                
+                $('button.btn-default.write-task-btn.var-' + key).addClass("updateable");
+                $('button.updateable.write-task-btn.var-' + key).addClass("btn-default");
+                $('button.updateable.write-task-btn.var-' + key).removeClass("btn-success");
+                $(".type-numeric.var-" + key).html(0);
+                $('input.var-'+ key).attr("placeholder",0);
+            } else {
+                $(".label.type-bool.var-" + key).removeClass("label-default");
+                $(".label.type-bool.var-" + key).removeClass("label-danger");
+                $(".label.type-bool.status-blue.var-" + key).addClass("label-primary");
+                $(".label.type-bool.status-info.var-" + key).addClass("label-info");
+                $(".label.type-bool.status-green.var-" + key).addClass("label-success");
+                $(".label.type-bool.status-yello.var-" + key).addClass("label-warning");
+                $(".label.type-bool.status-red.var-" + key).addClass("label-danger");
+                $(".label.type-bool.status-red-inv.var-" + key).addClass("label-default");
+                $('button.btn-success.write-task-btn.var-' + key).addClass("updateable");
+                $('button.updateable.write-task-btn.var-' + key).removeClass("btn-default");
+                $('button.updateable.write-task-btn.var-' + key).addClass("btn-success");
+                $(".type-numeric.var-" + key).html(1);
+                $('input.var-'+ key).attr("placeholder",1);
+            }
         }
 }
 
@@ -749,5 +768,5 @@ $( document ).ready(function() {
             VariableKeys.push(val)
         }
     });
-    fetchData();
+    setTimeout('fetchData()', 10000);
 });

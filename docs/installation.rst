@@ -243,20 +243,18 @@ Download the sample Unit-Files for systemd.
 
 ::
 
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/pyscada_modbus.service -O /lib/systemd/system/pyscada_modbus.service
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/pyscada_daq.service -O /lib/systemd/system/pyscada_daq.service
 	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/pyscada_event.service -O /lib/systemd/system/pyscada_event.service
 	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/pyscada_mail.service -O /lib/systemd/system/pyscada_mail.service
 	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/pyscada_export.service -O /lib/systemd/system/pyscada_export.service
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/pyscada_systemstat.service -O /lib/systemd/system/pyscada_systemstat.service
 	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/gunicorn.socket -O /lib/systemd/system/gunicorn.socket
 	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/gunicorn.service -O /lib/systemd/system/gunicorn.service
 	# enable the services
 	sudo systemctl enable gunicorn
-	sudo systemctl enable pyscada_modbus
+	sudo systemctl enable pyscada_daq
 	sudo systemctl enable pyscada_event
 	sudo systemctl enable pyscada_mail
 	sudo systemctl enable pyscada_export
-	sudo systemctl enable pyscada_systemstat
 
 
 
