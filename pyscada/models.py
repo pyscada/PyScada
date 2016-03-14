@@ -190,7 +190,7 @@ class RecordedDataValueManager(models.Manager):
 class Device(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	short_name		= models.CharField(max_length=400, default='')
-	device_type_choises = (('generic','no Protocol'),('systemstat','Local System Monitoring',),('modbus','Modbus Device',),)
+	device_type_choises = (('generic','no Protocol'),('systemstat','Local System Monitoring',),('modbus','Modbus Device',),('smbus','SMBus/I2C Device',))
 	device_type		= models.CharField(default='generic',choices=device_type_choises,max_length=400)
 	description 	= models.TextField(default='', verbose_name="Description",null=True)
 	active			= models.BooleanField(default=True)

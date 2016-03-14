@@ -611,7 +611,7 @@ def daemon_run(label,handlerClass):
 			# do actions
 			mh = handlerClass()
 		
-			
+		
 		# update BackgroudtaskTask
 		bt = BackgroundTask.objects.get(pk=bt_id)
 		bt.timestamp = time.time()
@@ -755,8 +755,6 @@ def add_recorded_data_to_database(data):
 		
 	rde = []
 	if data:
-		for item in data:
-			rde = item.create_recorded_data_element()
-		RecordedData.objects.bulk_create(rde)
+		RecordedData.objects.bulk_create(data)
 
 			

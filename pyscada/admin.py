@@ -63,6 +63,12 @@ class DeviceAdminFrom(forms.ModelForm):
             device_type_choises += (('modbus','Modbus Device',),)
         except ImportError:
             pass
+        # Check if pymodbus is installed for the modbus device module
+        try:
+            import smbus
+            device_type_choises += (('smbus','SMBus/I2C Device',),)
+        except ImportError:
+            pass
         w.choices = device_type_choises
 
 class DeviceAdmin(admin.ModelAdmin):

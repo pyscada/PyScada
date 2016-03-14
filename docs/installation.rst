@@ -60,7 +60,9 @@ Debian 8
 	sudo apt-get install mysql-server python-mysqldb python-pip libhdf5-8 libhdf5-dev python-dev nginx gunicorn
 	sudo pip install cython
 	sudo pip install numpy
-	sudo HDF5_DIR=/usr/lib/x86_64-linux-gnu/hdf5/serial/ sudo pip install h5py 
+	# for 64bit 
+	sudo HDF5_DIR=/usr/lib/x86_64-linux-gnu/hdf5/serial/ sudo pip install h5py
+	# for 32 bit 
 	sudo pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
 
 
@@ -90,7 +92,7 @@ Raspberry Pi (RASPBIAN, Jessie)
 	sudo apt-get install python-pip libhdf5-dev python-dev nginx gunicorn
 	sudo pip install cython
 	sudo pip install numpy
-	sudo HDF5_DIR=/usr/lib/x86_64-linux-gnu/hdf5/serial/ sudo pip install h5py
+	sudo HDF5_DIR=/usr/lib/arm-linux-gnueabihf/hdf5/serial/ sudo pip install h5py
 	sudo pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
 
 
