@@ -63,9 +63,9 @@ class RecordedDataValueManager(models.Manager):
 		values = {}
 		if kwargs.has_key('variable'):
 			return values # TODO just return one value
-		elif kwargs.has_key('variable__pk__in'):
+		elif kwargs.has_key('variable_pk__in'):
 			# return all values for the given variables
-			variables = Variable.objects.filter(pk__in=kwargs['variable__pk__in'])
+			variables = Variable.objects.filter(pk__in=kwargs['variable_pk__in'])
 		elif kwargs.has_key('variable_id__in'):
 			# return all values for the given variables
 			variables = Variable.objects.filter(pk__in=kwargs['variable_id__in'])
@@ -82,9 +82,11 @@ class RecordedDataValueManager(models.Manager):
 		tmp_time_min = time.time() # 
 
 		# read float32, 64 values
+		#TODO inlude scaled variables
 		tmp_vars = variables.filter(\
 				value_class__in=('FLOAT','FLOAT64','DOUBLE','FLOAT32','SINGLE','REAL',)\
 				).values_list('id',flat=True)
+		
 		if tmp_vars:
 			tmp = super(RecordedDataValueManager, self).get_queryset().filter(\
 				id__range=(time_min,time_max),\

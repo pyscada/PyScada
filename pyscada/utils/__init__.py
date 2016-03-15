@@ -251,8 +251,6 @@ def export_xml_config_file(filename=None):
 		obj.appendChild(field_('active','boolean',item.active))
 		# writeable (boolean)
 		obj.appendChild(field_('writeable','boolean',item.writeable))
-		# record (boolean)
-		obj.appendChild(field_('record','boolean',item.record))
 		# value_class (string)
 		obj.appendChild(field_('value_class','string',validate_value_class(item.value_class)))
 		# device_id ()
