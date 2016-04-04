@@ -52,6 +52,7 @@ class RecordedDataValueManager(models.Manager):
 		
 			
 	def get_values_in_time_range(self,time_min=None,time_max=None,query_first_value=False,time_in_ms=False,key_is_variable_name=False,**kwargs):
+		#tic = time.time()
 		if time_min is None:
 			time_min = 0
 		else:
@@ -61,8 +62,11 @@ class RecordedDataValueManager(models.Manager):
 		else:
 			time_max = time_max*2097152*1000+2097151
 		values = {}
+		var_filter = True
 		if kwargs.has_key('variable'):
-			return values # TODO just return one value
+			variables = Variable.objects.filter(pk=kwargs['variable'].pk)
+		elif kwargs.has_key('variable_id'):
+			variables = Variable.objects.filter(pk=kwargs['variable_id'])
 		elif kwargs.has_key('variable_pk__in'):
 			# return all values for the given variables
 			variables = Variable.objects.filter(pk__in=kwargs['variable_pk__in'])
@@ -74,15 +78,70 @@ class RecordedDataValueManager(models.Manager):
 			variables = kwargs['variable__in']
 		else:
 			variables = Variable.objects.all()
+			var_filter = False
+		# export in seconds or millis
 		if time_in_ms:
 			f_time_scale = 1
 		else:
 			f_time_scale = 1000
+		
+		variable_ids = variables.values_list('pk',flat=True)
+		# only filter by variable wenn less the 70% of all variables are queried
+		if len(variable_ids) > Variable.objects.count()*0.7:
+			var_filter = False
+		
 		tmp_time_max = 0           # get the most recent time value
 		tmp_time_min = time.time() # 
-
+		#print '%1.3fs'%(time.time()-tic)
+		#tic = time.time()
+		#for var in variables:
+		time_slice = 2097152*1000*60*max(60,min(24*60,-3*len(variable_ids)+1440))
+		query_time_min = time_min
+		query_time_max = min(time_min+time_slice,time_max)
+		while  query_time_min < time_max:
+			if var_filter:
+				tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(\
+					id__range=(query_time_min,min(query_time_max,time_max)),\
+					variable__in=variables\
+					).values_list('variable_id','pk','value_float64',\
+						'value_int64','value_int32','value_int16',\
+						'value_boolean'))
+			else:
+				tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(\
+					id__range=(query_time_min,min(query_time_max,time_max))\
+					).values_list('variable_id','pk','value_float64',\
+					'value_int64','value_int32','value_int16','value_boolean'))
+	
+		#	print '%1.3fs'%(time.time()-tic)
+			for item in tmp:
+				if item[0] not in variable_ids:
+					continue
+				if not values.has_key(item[0]):
+					values[item[0]] = []
+				tmp_time = (item[1]-item[0])/(2097152.0*f_time_scale)
+				tmp_time_max = max(tmp_time,tmp_time_max)
+				tmp_time_min = min(tmp_time,tmp_time_min)
+				if   item[2] is not None: # float64
+					values[item[0]].append([tmp_time,item[2]]) # time, value
+				elif item[3] is not None: # int64
+					values[item[0]].append([tmp_time,item[3]]) # time, value
+				elif item[4] is not None: # int32
+					values[item[0]].append([tmp_time,item[4]]) # time, value	
+				elif item[5] is not None: # int16
+					values[item[0]].append([tmp_time,item[5]]) # time, value	
+				elif item[6] is not None: # boolean
+					values[item[0]].append([tmp_time,item[6]]) # time, value
+				else:
+					values[item[0]].append([tmp_time,0]) # time, value
+			
+			del tmp
+			query_time_min = query_time_max + 1
+			query_time_max = query_time_min+time_slice
+		#	print '%1.3fs'%(time.time()-tic)
+		#	tic = time.time()
+		
+		'''
 		# read float32, 64 values
-		#TODO inlude scaled variables
 		tmp_vars = variables.filter(\
 				value_class__in=('FLOAT','FLOAT64','DOUBLE','FLOAT32','SINGLE','REAL',)\
 				).values_list('id',flat=True)
@@ -99,6 +158,8 @@ class RecordedDataValueManager(models.Manager):
 				tmp_time_max = max(tmp_time,tmp_time_max)
 				tmp_time_min = min(tmp_time,tmp_time_min)
 				values[item[0]].append([tmp_time,item[2]]) # time, value
+		print '%1.3fs'%(time.time()-tic)
+		tic = time.time()
 		# read 'INT64','UINT32','DWORD'
 		tmp_vars = variables.filter(\
 				value_class__in=('INT64','UINT32','DWORD',)\
@@ -115,6 +176,8 @@ class RecordedDataValueManager(models.Manager):
 				tmp_time_max = max(tmp_time,tmp_time_max)
 				tmp_time_min = min(tmp_time,tmp_time_min)
 				values[item[0]].append([tmp_time,item[2]]) # time, value
+		print '%1.3fs'%(time.time()-tic)
+		tic = time.time()
 		# read 'WORD','UINT','UINT16','INT32'
 		tmp_vars = variables.filter(\
 				value_class__in=('WORD','UINT','UINT16','INT32',)\
@@ -131,6 +194,8 @@ class RecordedDataValueManager(models.Manager):
 				tmp_time_max = max(tmp_time,tmp_time_max)
 				tmp_time_min = min(tmp_time,tmp_time_min)
 				values[item[0]].append([tmp_time,item[2]]) # time, value
+		print '%1.3fs'%(time.time()-tic)
+		tic = time.time()
 		# read 'INT16','INT8','UINT8'
 		tmp_vars = variables.filter(\
 				value_class__in=('INT16','INT8','UINT8',)\
@@ -147,6 +212,8 @@ class RecordedDataValueManager(models.Manager):
 				tmp_time_max = max(tmp_time,tmp_time_max)
 				tmp_time_min = min(tmp_time,tmp_time_min)
 				values[item[0]].append([tmp_time,item[2]]) # time, value
+		print '%1.3fs'%(time.time()-tic)
+		tic = time.time()
 		# read 'BOOL','BOOLEAN'
 		tmp_vars = variables.filter(\
 				value_class__in=('BOOL','BOOLEAN',)\
@@ -163,27 +230,57 @@ class RecordedDataValueManager(models.Manager):
 				tmp_time_max = max(tmp_time,tmp_time_max)
 				tmp_time_min = min(tmp_time,tmp_time_min)
 				values[item[0]].append([tmp_time,item[2]]) # time, value
-			
+		'''
+		# print '%1.3fs'%(time.time()-tic)
+		# tic = time.time()
 		# check if for all variables the first and last value is present
+		update_first_value_list = []
 		for key, item in values.iteritems():
 			if item[-1][0] < tmp_time_max:
 				# append last value
 				item.append([tmp_time_max,item[-1][1]])
 			if query_first_value and item[0][0] > tmp_time_min:
-				# prepend first value
-				# item.insert(tmp_time_min,)
-				value = super(RecordedDataValueManager, self).get_queryset().filter(\
-					id__range=(time_min-(3600*1000*2097152),time_min),\
-					variable_id = key).order_by('pk').last()
-				if not value is None:
-					item.insert(0,[tmp_time_min,value.value()])
+				update_first_value_list.append(key)
+				
+		if len(update_first_value_list) > 0:
+			tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(\
+						id__range=(time_min-(3610*1000*2097152),time_min),\
+						variable_id__in = update_first_value_list\
+						).values_list('variable_id','pk','value_float64',\
+							'value_int64','value_int32','value_int16',\
+							'value_boolean'))
+		
+			
+			first_values = {}
+			for item in tmp:
+				if not first_values.has_key(item[0]):
+					first_values[item[0]] = [(item[1]-item[0])/(2097152.0*f_time_scale),0]
+	
+				if first_values[item[0]][0] >= (item[1]-item[0])/(2097152.0*f_time_scale):
+					if   item[2] is not None: # float64
+						first_values[item[0]][1] = item[2] # time, value
+					elif item[3] is not None: # int64
+						first_values[item[0]][1] = item[3] # time, value
+					elif item[4] is not None: # int32
+						first_values[item[0]][1] = item[4] # time, value
+					elif item[5] is not None: # int16
+						first_values[item[0]][1] = item[5] # time, value
+					elif item[6] is not None: # boolean
+						first_values[item[0]][1] = item[6] # time, value
+					
+			
+			for key in update_first_value_list:
+				if first_values.has_key(key):
+					values[key].insert(0,[tmp_time_min,first_values[key][1]])
+		#print '%1.3fs'%(time.time()-tic)
+		#tic = time.time()
 		# change the key in the output dict 
 		if key_is_variable_name:
 			for item in variables:
 				if values.has_key(item.pk):
 					values[item.name] = values.pop(item.pk)
-		
-				
+		#print '%1.3fs'%((time.time()-tic))
+			
 		return values
 #
 ## Models
@@ -323,9 +420,9 @@ class Variable(models.Model):
 		elif self.value is None:
 			# value could not be queried
 			self.store_value = False
-		elif abs(self.prev_value - self.value) < self.cov_increment:
+		elif abs(self.prev_value - self.value) <= self.cov_increment:
 			if self.timestamp_old is not None:
-				if (self.timestamp.timestamp - self.timestamp_old.timestamp) >= (60*60):
+				if (self.timestamp - self.timestamp_old) >= (60*60):
 					# store Value if old Value is older then 1 hour
 					self.store_value = True
 					self.timestamp_old = self.timestamp

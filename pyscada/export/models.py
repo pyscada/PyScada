@@ -25,18 +25,28 @@ class ScheduledExportTask(models.Model):
 
 class ExportTask(models.Model):
     id 				= models.AutoField(primary_key=True)
-    label			= models.CharField(max_length=400, default='')
-    backgroundtask	= models.ForeignKey(BackgroundTask,null=True, on_delete=models.SET_NULL)
+    label			= models.CharField(max_length=400, default='None',blank=True)
+    backgroundtask	= models.ForeignKey(BackgroundTask,null=True,blank=True, on_delete=models.SET_NULL)
     variables		= models.ManyToManyField(Variable)
     mean_value_period = models.PositiveSmallIntegerField(default=0,help_text='in Seconds (0 = no mean value)')
     file_format_choises = (('hdf5','Hierarchical Data Format Version 5'),('mat','Matlab® mat v7.3 compatible file'),('CSV_EXCEL','Microsoft® Excel® compatible csv file'))
     file_format     = models.CharField(max_length=400, default='hdf5',choices=file_format_choises)
-    time_min        = models.FloatField(default=None, null=True,blank=True)
-    time_max        = models.FloatField(default=None, null=True,blank=True)
-    user	 		= models.ForeignKey(User,null=True, on_delete=models.SET_NULL)
-    start 			= models.FloatField(default=0)
-    fineshed		= models.FloatField(default=0,blank=True)
-    done			= models.BooleanField(default=False,blank=True)
-    failed			= models.BooleanField(default=False,blank=True)
+    filename_suffix = models.CharField(max_length=400, default='',blank=True)
+    time_min        = models.FloatField(default=None, null=True)
+    time_max        = models.FloatField(default=None, null=True)
+    user	 		= models.ForeignKey(User,null=True,blank=True, on_delete=models.SET_NULL)
+    start 			= models.FloatField(default=0,blank=True)  # time wenn task should be started
+    fineshed		= models.FloatField(default=0,blank=True)  # time wenn task has been finished
+    done			= models.BooleanField(default=False,blank=True) # label task has been done
+    busy            = models.BooleanField(default=False,blank=True) # label task is in operation done
+    failed			= models.BooleanField(default=False,blank=True) # label task has failed
     def __unicode__(self):
         return unicode(self.label)
+
+
+'''
+class ExportFile(models.Model):
+    id 			= models.AutoField(primary_key=True)
+    exporttask	= models.ForeignKey(ExportTask,null=True, on_delete=models.SET_NULL)
+    filename    = models.FilePathField()
+''' 

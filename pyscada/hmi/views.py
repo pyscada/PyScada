@@ -302,7 +302,7 @@ def get_cache_data(request):
 		time_in_ms = True,\
 		key_is_variable_name = True,\
 		variable_id__in = active_variables)
-		
+	
 	data["timestamp"] = time.time()*1000 # TODO max_time from data
 	data["server_time"] = time.time()*1000
 	jdata = json.dumps(data,indent=2)

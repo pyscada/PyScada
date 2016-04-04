@@ -7,7 +7,7 @@ try:
 except ImportError:
     driver_ok = False
     
-    
+
 from time import time
 
 class Device:
@@ -18,7 +18,7 @@ class Device:
                 continue
             self.variables.append(var)
             
-    def request_data(self,timestamp):
+    def request_data(self):
         '''
         (0,'cpu_percent'),
         (1,'virtual_memory_total'),
@@ -119,7 +119,7 @@ class Device:
             else:
                 value = 0
             # update variable
-            if item.update_value(value,timestamp):
+            if item.update_value(value,time()):
                 output.append(item.create_recorded_data_element())
             
             

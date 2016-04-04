@@ -13,6 +13,7 @@ except ImportError:
     driver_ok = False
     
 from math import isnan, isinf
+from time import time
 
 class InputRegisterBlock:
     def __init__(self):
@@ -322,7 +323,7 @@ class Device:
         """
         self.slave.close()
     
-    def request_data(self,timestamp):
+    def request_data(self):
         """
     
         """
@@ -343,7 +344,7 @@ class Device:
             
             if result is not None:
                 for variable_id in register_block.variable_id:
-                    if self.variables[variable_id].update_value(result[variable_id],timestamp):
+                    if self.variables[variable_id].update_value(result[variable_id],time()):
                         output.append(self.variables[variable_id].create_recorded_data_element())
                     if not self.variables[variable_id].accessible:
                         log.info(("variable with id: %d is now accessible")%(variable_id))
@@ -354,7 +355,7 @@ class Device:
                     if self.variables[variable_id].accessible:
                         log.error(("variable with id: %d is not accessible")%(variable_id))
                         self.variables[variable_id].accessible = False
-                        self.variables[variable_id].update_value(None,timestamp)
+                        self.variables[variable_id].update_value(None,time())
         # reset device not accessible status 
         if self._device_not_accessible:
             log.info(("device with id: %d is now accessible")%(self._device_inst.pk))

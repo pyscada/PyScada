@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.6.23
+version 0.6.24
 
 Copyright (c) 2013-2016 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.6.23"
+var version = "0.6.24"
 var NotificationCount = 0
 var UpdateStatusCount = 0;
 var PyScadaPlots = [];
@@ -106,35 +106,43 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                         $.each(PyScadaPlots,function(plot_id){
                             var variable_names = PyScadaPlots[plot_id].getVariableNames();
                             $.each(variable_names, function(key, val) {
-                                PyScadaPlots[plot_id].addData(server_time,data_last_timestamp,Number.NaN);
+                                PyScadaPlots[plot_id].addData(val,server_time,Number.NaN);
                                 updateDataValues(val,Number.NaN);
                             });
+                            
+                            var self = this, doBind = function() {
+                                PyScadaPlots[plot_id].update();
+                            };
+                            $.browserQueue.add(doBind, this);
                         });
-                        update_charts = true;
                     }else{
                         clearDataOutOfDateError();
+                        $.each(PyScadaPlots,function(plot_id){
+                            var variable_names = PyScadaPlots[plot_id].getVariableNames();
+                            $.each(variable_names, function(key, val) {
+                                if(val in data){
+                                    // use data
+                                    PyScadaPlots[plot_id].AppendData(val,data[val]);
+                                }else{
+                                    // use last value
+                                    PyScadaPlots[plot_id].UpdateData(val,data_last_timestamp)
+                                }
+                            });
+                            var self = this, doBind = function() {
+                                PyScadaPlots[plot_id].update();
+                            };
+                            $.browserQueue.add(doBind, this);
+                        });
                         $.each(data, function(key, val) {
                         //append data to data array
                             if (typeof(val)==="object"){
-                                $.each(PyScadaPlots,function(plot_id){
-                                    PyScadaPlots[plot_id].AppendData(key,val);
-                                });
                                 val = val.pop();
                                 if (typeof(val[1])==="number" | typeof(val[1])==="boolean"){
                                     updateDataValues(key,val[1]);
                                 }else{
                                     updateDataValues(key,Number.NaN);
                                 }
-                                update_charts = true;
                             }
-                        });
-                    }
-                    if (update_charts){
-                        $.each(PyScadaPlots,function(plot_id){
-                            var self = this, doBind = function() {
-                                PyScadaPlots[plot_id].update();
-                            };
-                            $.browserQueue.add(doBind, this);
                         });
                     }
                     setTimeout('fetchData()', refresh_rate);
@@ -400,6 +408,7 @@ function PyScadaPlot(id){
     plot.AppendData			= AppendData;
     plot.PreppendData       = PreppendData;
     plot.addData 			= addData;
+    plot.UpdateData         = UpdateData;
     plot.update 			= update;
     plot.prepare 			= prepare;
     plot.getBufferSize		= function () { return BufferSize};
@@ -533,7 +542,19 @@ function PyScadaPlot(id){
             data[key] = value.concat(data[key]);
         }
     }
-    
+    function UpdateData(key,timestamp){
+        if (typeof(data[key])==="object"){
+            if (data[key].length >= 1){
+                if (typeof(data[key][data[key].length-1][1])==="number"){
+                    data[key].push([timestamp,data[key][data[key].length-1][1]]);
+                    if (data[key].length > BufferSize){
+                        // if buffer is full drop the first element
+                        data[key].splice(-data[key].length,data[key].length-BufferSize);
+                    }
+                }
+            }
+        }
+    }
     function update(){
         if(!prepared ){
             if($(chart_container_id).is(":visible")){

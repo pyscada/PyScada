@@ -1,11 +1,9 @@
 from pyscada.models import Device, DeviceWriteTask
-from pyscada.models import RecordedTime
 
 from pyscada.modbus.device import Device as ModbusDevice
 from pyscada import log
 from django.conf import settings
 
-from time import time
 
 class Handler:
     def __init__(self):
@@ -25,7 +23,7 @@ class Handler:
                 self._devices[item.pk] = ModbusDevice(item)
 
 
-    def run(self,timestamp=None):
+    def run(self):
         """
             request data
         """
@@ -34,11 +32,9 @@ class Handler:
         self._do_write_task()
 
         ## data acquisition
-        if timestamp is None:
-            timestamp = time()
         data = []
         for idx in self._devices:
-            data += self._devices[idx].request_data(timestamp)
+            data += self._devices[idx].request_data()
         
         return data
     

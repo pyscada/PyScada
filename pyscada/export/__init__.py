@@ -33,19 +33,28 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
     '''
     read all data
     '''
-    if kwargs.has_key('task_identifier'):
-        if BackgroundTask.objects.filter(identifier = kwargs['task_identifier'],failed=0):
-            return
-        else:
-            tp = BackgroundTask(start=time(),label='pyscada.export.export_measurement_data_%s'%kwargs['task_identifier'],message='init',timestamp=time(),pid=str(os.getpid()),identifier = kwargs['task_identifier'])
+    if  kwargs.has_key('backgroundtask_id'):
+        tp = BackgroundTask.objects.get(id= kwargs['backgroundtask_id'])
+        tp.message='init'
+        tp.timestamp=time()
+        tp.pid=str(os.getpid())
+        tp.save()
     else:
-        tp = BackgroundTask(start=time(),label='pyscada.export.export_measurement_data_to_file',message='init',timestamp=time(),pid=str(os.getpid()))
+        if kwargs.has_key('task_identifier'):
+            if BackgroundTask.objects.filter(identifier = kwargs['task_identifier'],failed=0):
+                return
+            else:
+                tp = BackgroundTask(start=time(),label='pyscada.export.export_measurement_data_%s'%kwargs['task_identifier'],message='init',timestamp=time(),pid=str(os.getpid()),identifier = kwargs['task_identifier'])
+        else:
+            tp = BackgroundTask(start=time(),label='pyscada.export.export_measurement_data_to_file',message='init',timestamp=time(),pid=str(os.getpid()))
+        
+        tp.save()
     
-    tp.save()
     
     # add default time_min
     if time_max is None:
-        time_max = time() # now 
+        time_max = time() # now
+    #TODO convert datestrings
     if time_min is None:
         time_min = time()-24*60*60 # last 24 hours
     
@@ -92,6 +101,8 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
             xml_filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr_from + '_' + cdstr_to + '.xml')
     else: # generate xml file name from filename
         xml_filename    = filename.split('.')[0] + '.xml'
+    
+    # todo add ExportFile  object
     
     # 
     if active_vars is None:
@@ -155,7 +166,9 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
         var_slice = active_vars[var_idx:var_idx+10]
         data = RecordedData.objects.get_values_in_time_range(\
             variable_id__in=list(var_slice.values_list('pk',flat=True)),\
-            time_min=time_min,time_max=time_max,query_first_value=True)
+            time_min=time_min,\
+            time_max=time_max,\
+            query_first_value=True)
             
         for var in var_slice:
             tp.timestamp = time()
@@ -177,20 +190,25 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
                 for i in xrange(len(timevalues)):
                     tmp = 0.0
                     tmp_i = 0.0
+                    if ii >= len(data[var.pk]):
+                        break
                     if data[var.pk][ii][0] < timevalues[i]:
                         while data[var.pk][ii][0] < timevalues[i]:
                             ii += 1
+                            if ii >= len(data[var.pk]):
+                                break
                     if data[var.pk][ii][0] >= timevalues[i] and data[var.pk][ii][0] < timevalues[i]+mean_value_period:
                         while data[var.pk][ii][0] >= timevalues[i] and data[var.pk][ii][0] < timevalues[i]+mean_value_period:
                             # use
                             tmp +=  data[var.pk][ii][1]
                             tmp_i += 1
                             ii += 1
+                            if ii >= len(data[var.pk]):
+                                break
                         out_data[i] = tmp/tmp_i
                     else:
                         out_data[i] = data[var.pk][ii][1]
-                    print '%1.2f = %1.2f'%(data[var.pk][ii][0],timevalues[i])
-                # write dummy data
+                # write data
                 bf.write_data(var.name,_cast_value(out_data,value_class),\
                 id = var.pk,\
                 description=var.description,\
@@ -209,7 +227,7 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
     tp.progress = tp.max
     tp.done = 1
     tp.save()
-
+    
         
         
 def export_measurement_data_to_file(time_id_min=None,filename=None,time_id_max=None,active_vars=None,file_extension=None,**kwargs):

@@ -694,14 +694,13 @@ def daq_daemon_run(label):
 				task.fineshed=time.time()
 				task.save()
 				log.error('device id not valid %d '%(task.variable.device_id),task.user)
-		# add a new timestamp
-		timestamp = time.time()
+
 		# start the tasks
 		data = [[]]
 		for item in devices.itervalues():
 			try:
 				# do actions
-				tmp_data = item.request_data(timestamp) # query data
+				tmp_data = item.request_data() # query data
 				if  isinstance(tmp_data,list):
 					if len(tmp_data) > 0:
 						if len(data[-1])+len(tmp_data) < 998 :

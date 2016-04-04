@@ -36,7 +36,7 @@ setup(
         'h5py>=2.2.1',
         'psutil>=2.1.1',
         'pillow',
-        'python-daemon'
+        'python-daemon>=2.0.0'
     ],
     packages=find_packages(exclude=["project", "project.*"]),
     include_package_data=True,

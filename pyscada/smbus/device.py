@@ -28,7 +28,7 @@ class Device:
         self.i2c = smbus.SMBus(int(self.device.smbusdevice.port))
         
     
-    def request_data(self,timestamp):
+    def request_data(self):
         '''
         
         '''
@@ -45,7 +45,7 @@ class Device:
                 value = None
             # update variable
             if value is not None:
-                if item.update_value(value,timestamp):
+                if item.update_value(value,time()):
                     output.append(item.create_recorded_data_element())
 
         return output

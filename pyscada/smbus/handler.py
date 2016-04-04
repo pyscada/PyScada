@@ -16,16 +16,14 @@ class Handler:
         self._devices   = {}
         self._prepare_devices()
 
-    def run(self,timestamp=None):
+    def run(self):
         """
             request data
         """
         ## data acquisition
-        if timestamp is None:
-            timestamp = time()
         data = []
         for idx in self._devices:
-            data += self._devices[idx].request_data(timestamp)
+            data += self._devices[idx].request_data()
         
         return data
     
