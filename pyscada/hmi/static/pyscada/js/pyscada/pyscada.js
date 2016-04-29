@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.6.24
+version 0.7.0
 
 Copyright (c) 2013-2016 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.6.24"
+var version = "0.7.0"
 var NotificationCount = 0
 var UpdateStatusCount = 0;
 var PyScadaPlots = [];
@@ -29,6 +29,7 @@ var refresh_rate = 2000;
 var cache_timeout = 15000; // in milliseconds
 var RootUrl = window.location.protocol+"//"+window.location.host + "/";
 var VariableKeys = [];
+var InitVariableKeys = [];
 
 // the code
 var debug = 0;
@@ -85,6 +86,18 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                             plot_instance.PreppendData(key,val);
                             update_charts = 1;
                         }
+                    });
+                    // update all values
+                    $.each(data, function(key, val) {
+                        //append data to data array
+						if (typeof(val)==="object"){
+							val = val.pop();
+							if (typeof(val[1])==="number" | typeof(val[1])==="boolean"){
+								updateDataValues(key,val[1]);
+							}else{
+								updateDataValues(key,Number.NaN);
+							}
+						}
                     });
                     init_chart_data_fetch_pending_count--;
                 }else{
@@ -145,7 +158,7 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                             }
                         });
                     }
-                    setTimeout('fetchData()', refresh_rate);
+                    setTimeout(function() {fetchData();}, refresh_rate);
                 }
                 UpdateStatusCount = UpdateStatusCount -1;
                 hideUpdateStatus();
@@ -167,7 +180,7 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                     UpdateStatusCount = UpdateStatusCount -1;
                     hideUpdateStatus();
                     if (auto_update_active) {
-                        setTimeout('fetchData()', 500);
+                        setTimeout(function() {fetchData();}, 500);
                     }
                     $.each(PyScadaPlots,function(plot_id){
                         var keys = PyScadaPlots[plot_id].getKeys();
@@ -789,5 +802,12 @@ $( document ).ready(function() {
             VariableKeys.push(val)
         }
     });
-    setTimeout('fetchData()', 10000);
+    $.each($('.variable-config.init-group'),function(key,val){
+        val = parseInt($(val).data('key'));
+        if (InitVariableKeys.indexOf(val)==-1){
+            InitVariableKeys.push(val)
+        }
+    });
+    setTimeout(function() {fetchData()}, 10000);
+    setTimeout(function() {fetchData(InitVariableKeys,0,1);}, 15000);
 });

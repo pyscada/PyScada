@@ -67,6 +67,7 @@ class SlidingPanelMenuAdmin(admin.ModelAdmin):
 class HMIVariableAdmin(admin.ModelAdmin):
     search_fields = ['hmi_variable__name',]
     list_display = ('name','short_name','chart_line_color','chart_line_thickness',)
+    raw_id_fields = ('hmi_variable',)
     def name(self, instance):
         return instance.hmi_variable.name
 

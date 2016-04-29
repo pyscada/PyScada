@@ -40,9 +40,9 @@ class Command(BaseCommand):
     def init_context(self,daemon_name):
         context = daemon.DaemonContext(
             working_directory=settings.BASE_DIR,
-            pidfile=daemon.pidfile.PIDLockFile('%s%s.pid' % (settings.PID_ROOT , daemon_name)),
+            pidfile=daemon.pidfile.PIDLockFile('/tmp/pyscada_daemon_%s.pid'% daemon_name),
             )
-        context.stdout = open('%s/%s.log'%(settings.PID_ROOT,daemon_name), "a+")
+        context.stdout = open('%s/%s.log'%(settings.BASE_DIR,daemon_name), "a+")
         context.signal_map = {
             signal.SIGTERM: self.program_cleanup,
             signal.SIGHUP: self.program_cleanup,

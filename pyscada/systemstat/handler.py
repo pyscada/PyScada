@@ -10,10 +10,8 @@ from django.conf import settings
 
 class Handler:
     def __init__(self):
-        if settings.PYSCADA_SYSTEMSTAT.has_key('polling_interval'):
-            self.dt_set = float(settings.PYSCADA_SYSTEMSTAT['polling_interval'])
-        else:
-            self.dt_set = 5 # default value is 5 seconds
+        
+        self.dt_set = 5 # default value is 5 seconds
         self._devices   = {}
         self._prepare_devices()
 

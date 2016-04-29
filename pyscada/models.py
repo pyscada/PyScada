@@ -797,10 +797,7 @@ class Mail(models.Model):
 	def send_mail(self):
 		# TODO check email limit
 		# blocked_recipient = [] # list of blocked mail recipoients
-		# if settings.PYSCADA.has_key('mail_count_limit'):
-		# 	mail_count_limit = float(settings.PYSCADA['mail_count_limit'])
-		# else:
-		# 	mail_count_limit = 200 # send max 200 Mails per 24h per user
+		# mail_count_limit = 200 # send max 200 Mails per 24h per user
 		# 	
 		# for recipient in mail.mail_recipients.exclude(to_email__in=blocked_recipient):
 		# 	if recipient.mail_set.filter(timestamp__gt=time()-(60*60*24)).count() > self.mail_count_limit:

@@ -9,7 +9,7 @@
             <div style="width: {{ process_flow_diagram.background_image.width }}px; position:relative;top:0; left:0; ">
                 <div style=" top:0px; left:0;position:absolute;" ><img src="{{ process_flow_diagram.background_image.url }}" alt="process flow diagram"></div>
                 {% for item in process_flow_diagram.process_flow_diagram_items.all %}
-                    <div class="hidden variable-config" data-name="{{ item.variable.name }}" data-key="{{ item.variable.id }}"></div>
+                    <div class="hidden variable-config init-group" data-name="{{ item.variable.name }}" data-key="{{ item.variable.id }}"></div>
                     {% if item.type == 0 %}<!-- label blue -->
                         <div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
                             <div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-green var-{{ item.variable.name }}">{{ item.label }}</div></div></br>

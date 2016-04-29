@@ -7,10 +7,7 @@ from django.conf import settings
 
 class Handler:
     def __init__(self):
-        if settings.PYSCADA_MODBUS.has_key('polling_interval'):
-            self.dt_set = float(settings.PYSCADA_MODBUS['polling_interval'])
-        else:
-            self.dt_set = 5 # default value is 5 seconds
+        self.dt_set = 5 # default value is 5 seconds
         self._devices   = {} # init device dict
         self._prepare_devices()
 

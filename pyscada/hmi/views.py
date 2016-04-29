@@ -32,6 +32,7 @@ from django.views.decorators.csrf import requires_csrf_token
 import time
 import json
 
+
 def index(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
@@ -284,7 +285,7 @@ def get_cache_data(request):
 	# 		data[var[0]] = [[var[2]*1000,var[1]]]
 	timestamp = time.time()
 	if request.POST.has_key('timestamp'):
-		# load data from future is not supported
+		# query data from future is not supported
 		if float(request.POST['timestamp']) >= timestamp-120*60:
 			timestamp = min(float(request.POST['timestamp'])/1000.0,timestamp) 
 	
@@ -305,7 +306,7 @@ def get_cache_data(request):
 	
 	data["timestamp"] = time.time()*1000 # TODO max_time from data
 	data["server_time"] = time.time()*1000
-	jdata = json.dumps(data,indent=2)
+	jdata = json.dumps(data)
 	return HttpResponse(jdata, content_type='application/json')
 
 def logout_view(request):

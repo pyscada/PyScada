@@ -15,11 +15,8 @@ class Handler:
         '''
         
         '''
-        if settings.PYSCADA_DAQ_MODUL_NAME_.has_key('polling_interval'):
-            self.dt_set = float(settings.PYSCADA_DAQ_MODUL_NAME_['polling_interval'])
-        else:
-            self.dt_set = 5 # default value is 5 seconds
         
+        self.dt_set = 5 # default value is 5 seconds
         self._devices   = {}    # init device dict
         self._prepare_devices() # 
 
