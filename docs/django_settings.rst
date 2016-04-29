@@ -92,7 +92,7 @@ Set the static file and media dir as followes.
 	MEDIA_ROOT = '/var/www/pyscada/http/media/'
 
 
-Add all PyScada specific settings, keep in mind to set the file right source file encoding in the settings.py file header (see also https://www.python.org/dev/peps/pep-0263/).
+Add all PyScada specific settings, keep in mind to set the file right file encoding in the `settings.py` file header (see also https://www.python.org/dev/peps/pep-0263/).
 
 ::
 
@@ -100,13 +100,12 @@ Add all PyScada specific settings, keep in mind to set the file right source fil
 	# -*- coding: <encoding name> -*-
 
 
+Append to the end of the `settings.py`:
+
 ::
 
 	# PyScada settings
 	# https://github.com/trombastic/PyScada
-
-	# folder were the daemon pid files are stored
-	PID_ROOT = BASE_DIR + '/run/'
 
 	# email settings
 	DEFAULT_FROM_EMAIL = 'example@host.com'
@@ -116,14 +115,9 @@ Add all PyScada specific settings, keep in mind to set the file right source fil
 	EMAIL_USE_TLS = True
 	EMAIL_USE_SSL = False
 	EMAIL_HOST_PASSWORD = 'password'
-	EMAIL_SUBJECT_PREFIX = 'PREFIX' # Mail subject will be "PREFIX subjecttext"
+	EMAIL_PREFIX = 'PREFIX' # Mail subject will be "PREFIX subjecttext"
 	
-	# global 
-	PYSCADA = {
-			'mail_count_limit': 20, # number of mails per emailadress per day
-	}
-	# meta informations
-	#
+	# meta informations about the plant site 
 	PYSCADA_META = {
 		'name':'A SHORT NAME',
 		'description':'A SHORT DESCRIPTION',
@@ -134,21 +128,4 @@ Add all PyScada specific settings, keep in mind to set the file right source fil
 	PYSCADA_EXPORT = {
 		'file_prefix':'PREFIX_',
 		'output_folder':'~/measurement_data_dumps',
-	}
-
-	# parameters for the Modbus and Systemstat Device
-	# 	polling_interval 	how often the modbus device requests data
-	#						from devices and write to the cache
-	#
-	#	recording_intervall how often the data is written to the database
-
-
-	PYSCADA_MODBUS = {
-		'polling_interval':5,
-		'recording_interval':5,
-	}
-
-	PYSCADA_SYSTEMSTAT = {
-		'polling_interval':5,
-		'recording_interval':5,
 	}

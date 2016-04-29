@@ -41,8 +41,8 @@ Debian 7
 ::
 
 	sudo apt-get update
-	sudo apt-get upgrade
-	sudo apt-get install mysql-server python-mysqldb python-pip libhdf5-7 libhdf5-dev python-dev nginx gunicorn
+	sudo apt-get -y upgrade
+	sudo apt-get -y install mysql-server python-mysqldb python-pip libhdf5-7 libhdf5-dev python-dev nginx gunicorn
 	sudo pip install cython
 	sudo pip install numpy
 	sudo pip install h5py
@@ -55,15 +55,22 @@ Debian 8
 
 ::
 
-	sudo apt-get update
-	sudo apt-get upgrade
-	sudo apt-get install mysql-server python-mysqldb python-pip libhdf5-8 libhdf5-dev python-dev nginx gunicorn
-	sudo pip install cython
-	sudo pip install numpy
+	sudo -i
+	apt-get update
+	apt-get -y upgrade
+	apt-get -y install mysql-server python-mysqldb python-pip libhdf5-8 libhdf5-dev python-dev nginx gunicorn
+	pip install cython
+	pip install numpy
+	
 	# for 64bit 
-	sudo HDF5_DIR=/usr/lib/x86_64-linux-gnu/hdf5/serial/ sudo pip install h5py
-	# for 32 bit 
-	sudo pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
+	export HDF5_DIR=/usr/lib/x86_64-linux-gnu/hdf5/serial/ 
+	# for 32 bit
+	export HDF5_DIR=/usr/lib/x86_32-linux-gnu/hdf5/serial/ 
+	# for ARM (RasperyPi)
+	export HDF5_DIR=/usr/lib/arm-linux-gnueabihf/hdf5/serial/
+	
+	pip install h5py
+	pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
 
 
 
@@ -87,13 +94,15 @@ Raspberry Pi (RASPBIAN, Jessie)
 
 ::
 
-	sudo apt-get update
-	sudo apt-get upgrade
-	sudo apt-get install python-pip libhdf5-dev python-dev nginx gunicorn
-	sudo pip install cython
-	sudo pip install numpy
-	sudo HDF5_DIR=/usr/lib/arm-linux-gnueabihf/hdf5/serial/ sudo pip install h5py
-	sudo pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
+	sudo -i
+	apt-get update
+	apt-get -y upgrade
+	apt-get -y install python-pip libhdf5-dev python-dev nginx gunicorn
+	pip install cython
+	pip install numpy
+	export HDF5_DIR=/usr/lib/arm-linux-gnueabihf/hdf5/serial/ 
+	pip install h5py
+	pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
 
 
 Windows 
@@ -135,6 +144,7 @@ Create a new Django Project
 	# Linux/OSX
 	cd /var/www/pyscada/ 
 	sudo -u pyscada django-admin.py startproject PyScadaServer
+	
 	# Windows
 	cd C:/Users/_YOUR_USERNAME_/www 
 	python django-admin.py startproject PyScadaServer
