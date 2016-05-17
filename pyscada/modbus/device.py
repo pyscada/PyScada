@@ -345,7 +345,9 @@ class Device:
             if result is not None:
                 for variable_id in register_block.variable_id:
                     if self.variables[variable_id].update_value(result[variable_id],time()):
-                        output.append(self.variables[variable_id].create_recorded_data_element())
+			redorded_data_element = self.variables[variable_id].create_recorded_data_element()
+			if redorded_data_element is not None:
+                            output.append(redorded_data_element)
                     if not self.variables[variable_id].accessible:
                         log.info(("variable with id: %d is now accessible")%(variable_id))
                         self.variables[variable_id].accessible = True

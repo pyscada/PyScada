@@ -29,9 +29,6 @@ from struct import *
 import threading
 
 
-def scale_input(Input,scaling):
-		return (float(Input)/float(2**scaling.bit))*(scaling.max_value-scaling.min_value)+scaling.min_value
-
 def decode_float(value):
 	"""
 	this is a function that convert two UINT values to float value according to the IEEE 7?? specification
@@ -95,7 +92,7 @@ def encode_value(value,variable_class):
 
 def get_bits_by_class(variable_class):
 	"""
-	`BOOLEAN`								1	1/16 WORD
+	`BOOLEAN`							1	1/16 WORD
 	`UINT8` `BYTE`						8	1/2 WORD
 	`INT8`								8	1/2 WORD
 	`UNT16` `WORD`						16	1 WORD
@@ -597,7 +594,9 @@ def daemon_run(label,handlerClass):
 			log.notice("reinit of %s daemon done"%label)
 		try:
 			# do actions
-			add_recorded_data_to_database(mh.run()) # query data and write to database
+			data = mh.run() # query data and write to database
+			if data:
+				RecordedData.objects.bulk_create(data)
 			err_count = 0
 		except:
 			var = traceback.format_exc()
@@ -744,14 +743,3 @@ def daq_daemon_run(label):
 		var = traceback.format_exc()
 		log.error("exeption while shootdown of %s:%s %s" % (label,os.linesep, var))
 	log.notice("stopped %s execution"%label)
-
-def add_recorded_data_to_database(data):
-	'''
-	takes a list of "RecordData" elements and write them to the Database
-	'''
-		
-	rde = []
-	if data:
-		RecordedData.objects.bulk_create(data)
-
-			

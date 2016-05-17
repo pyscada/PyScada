@@ -591,13 +591,26 @@ class RecordedDataCache(models.Model):
 
 
 class Log(models.Model):
-	id 				= models.AutoField(primary_key=True)
+	#id 				= models.AutoField(primary_key=True)
+	id				= models.BigIntegerField(primary_key=True)
 	level			= models.IntegerField(default=0, verbose_name="level")
 	timestamp 		= models.FloatField()
 	message_short	= models.CharField(max_length=400, default='', verbose_name="short message")
 	message 		= models.TextField(default='', verbose_name="message")
 	user	 		= models.ForeignKey(User,null=True, on_delete=models.SET_NULL)
-
+	def __init__(self, *args, **kwargs):
+		if kwargs.has_key('timestamp'):
+			timestamp = kwargs['timestamp']
+		else:
+			timestamp = time.time()
+			kwargs['timestamp'] = timestamp
+		if not kwargs.has_key('id'):
+			if kwargs.has_key('level'):
+				kwargs['id'] = int(int(int(timestamp*1000)*2097152)+kwargs['level'])
+			else:
+				kwargs['id'] = int(int(int(timestamp*1000)*2097152)+0)
+		super(Log, self).__init__(*args, **kwargs)
+	
 	def __unicode__(self):
 		return unicode(self.message)
 

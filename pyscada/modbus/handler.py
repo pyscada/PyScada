@@ -4,6 +4,7 @@ from pyscada.modbus.device import Device as ModbusDevice
 from pyscada import log
 from django.conf import settings
 
+from time import time
 
 class Handler:
     def __init__(self):

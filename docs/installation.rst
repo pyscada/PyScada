@@ -46,7 +46,7 @@ Debian 7
 	sudo pip install cython
 	sudo pip install numpy
 	sudo pip install h5py
-	sudo pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
+	sudo pip install git+https://github.com/trombastic/PyScada.git@dev/0.7.x
 
 
 Debian 8
@@ -70,7 +70,7 @@ Debian 8
 	export HDF5_DIR=/usr/lib/arm-linux-gnueabihf/hdf5/serial/
 	
 	pip install h5py
-	pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
+	pip install git+https://github.com/trombastic/PyScada.git@dev/0.7.x
 
 
 
@@ -85,7 +85,7 @@ Fedora 22/23
 	sudo pip install cython
 	sudo pip install numpy
 	sudo pip install h5py
-	sudo pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
+	sudo pip install git+https://github.com/trombastic/PyScada.git@dev/0.7.x
 	sudo pip install gunicorn
 	sudo pip install MySQL-python
 
@@ -102,7 +102,7 @@ Raspberry Pi (RASPBIAN, Jessie)
 	pip install numpy
 	export HDF5_DIR=/usr/lib/arm-linux-gnueabihf/hdf5/serial/ 
 	pip install h5py
-	pip install git+https://github.com/trombastic/PyScada.git@dev/0.6.x
+	pip install git+https://github.com/trombastic/PyScada.git@dev/0.7.x
 
 
 Windows 
@@ -163,11 +163,17 @@ Initialize Database And Copy Static Files
 	cd /var/www/pyscada/PyScadaServer # linux
 	sudo -u pyscada python manage.py migrate
 	sudo -u pyscada python manage.py collectstatic
+	# load fixures with default configuration
+	sudo -u pyscada python manage.py loaddata color
+	sudo -u pyscada python manage.py loaddata units
 	# Windows
 	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer 
 	python manage.py migrate
 	python manage.py collectstatic
-
+	# load fixures with default configuration
+	python manage.py loaddata color
+	python manage.py loaddata units
+	
 
 Add a Admin User To Your Django Project
 ---------------------------------------
@@ -255,12 +261,12 @@ Download the sample Unit-Files for systemd.
 
 ::
 
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/pyscada_daq.service -O /lib/systemd/system/pyscada_daq.service
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/pyscada_event.service -O /lib/systemd/system/pyscada_event.service
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/pyscada_mail.service -O /lib/systemd/system/pyscada_mail.service
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/pyscada_export.service -O /lib/systemd/system/pyscada_export.service
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/gunicorn.socket -O /lib/systemd/system/gunicorn.socket
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/systemd/gunicorn.service -O /lib/systemd/system/gunicorn.service
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/systemd/pyscada_daq.service -O /lib/systemd/system/pyscada_daq.service
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/systemd/pyscada_event.service -O /lib/systemd/system/pyscada_event.service
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/systemd/pyscada_mail.service -O /lib/systemd/system/pyscada_mail.service
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/systemd/pyscada_export.service -O /lib/systemd/system/pyscada_export.service
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/systemd/gunicorn.socket -O /lib/systemd/system/gunicorn.socket
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/systemd/gunicorn.service -O /lib/systemd/system/gunicorn.service
 	# enable the services
 	sudo systemctl enable gunicorn
 	sudo systemctl enable pyscada_daq
@@ -295,7 +301,7 @@ Using pyscada background daemons in Windows is currently not supported, to start
 	python manage.py PyScadaWindowsDaemonHandler daemon_name
 
 
-It is also posible to register the modbus daemon as an windows service, to do this download the from registratioen skript from https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/windows/register_windows_service_modbus.py and copy it to the project root folder.
+It is also posible to register the modbus daemon as an windows service, to do this download the registratioen skript from https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/windows/register_windows_service_modbus.py and copy it to the project root folder.
 
 ::
 	

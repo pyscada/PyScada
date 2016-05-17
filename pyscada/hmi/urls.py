@@ -3,7 +3,7 @@ from django.conf.urls import patterns, include, url
 
 urlpatterns = [
     # Public pages
-    url(r'^$', 'pyscada.hmi.views.index'),
+    url(r'^$', 'pyscada.hmi.views.index',name="view-overview"),
     url(r'^accounts/logout/$', 'pyscada.hmi.views.logout_view'),
     url(r'^accounts/login/$', 'django.contrib.auth.views.login',{'template_name': 'login.html'}),
     url(r'^accounts/password_change/$', 'django.contrib.auth.views.password_change',{'template_name': 'password_change.html'},name='password_change'),

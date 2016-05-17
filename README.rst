@@ -38,7 +38,7 @@ Dependencies
 Installation
 ------------
 
-Detailed installation instruction can be found at: https://pyscada.rtfd.org .
+Detailed installation instruction can be found at: https://pyscada.rtfd.io .
 
 
 Contribute

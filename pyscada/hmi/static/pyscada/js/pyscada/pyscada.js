@@ -1,14 +1,15 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0
+version 0.7.0b2
 
 Copyright (c) 2013-2016 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.7.0"
+var version = "0.7.0b2"
 var NotificationCount = 0
 var UpdateStatusCount = 0;
+var InitStatusCount = 0;
 var PyScadaPlots = [];
 var DataOutOfDate = false; 
 var DataOutOfDateAlertId = '';
@@ -37,12 +38,23 @@ var DataFetchingProcessCount = 0;
 
 function showUpdateStatus(){
     $("#AutoUpdateStatus").show();
-    UpdateStatusCount = UpdateStatusCount + 1;
+    UpdateStatusCount++;
 }
 function hideUpdateStatus(){
-    UpdateStatusCount = UpdateStatusCount -1;
+    UpdateStatusCount--;
     if (UpdateStatusCount <= 0){
         $("#AutoUpdateStatus").hide();
+        UpdateStatusCount = 0;
+    }
+}
+function showInitStatus(){
+    $("#loadingAnimation").show();
+    InitStatusCount = InitStatusCount + 1;
+}
+function hideInitStatus(){
+    InitStatusCount = InitStatusCount -1;
+    if (InitStatusCount <= 0){
+        $("#loadingAnimation").hide();
     }
 }
 function raiseDataOutOfDateError(){
@@ -62,8 +74,11 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
     variable_keys = typeof variable_keys !== 'undefined' ? variable_keys : VariableKeys;
     first_timestamp = typeof first_timestamp !== 'undefined' ? first_timestamp : data_first_timestamp;
     init = typeof variable_keys !== 'undefined' ? init : 0; // ((first_timestamp == 0) ? 1:0)
-
+    
     if (auto_update_active) {
+        if (init){
+            showInitStatus();
+        }
         showUpdateStatus();		
         $.ajax({
             url: RootUrl+'json/cache_data/',
@@ -90,14 +105,14 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                     // update all values
                     $.each(data, function(key, val) {
                         //append data to data array
-						if (typeof(val)==="object"){
-							val = val.pop();
-							if (typeof(val[1])==="number" | typeof(val[1])==="boolean"){
-								updateDataValues(key,val[1]);
-							}else{
-								updateDataValues(key,Number.NaN);
-							}
-						}
+                        if (typeof(val)==="object"){
+                            val = val.pop();
+                            if (typeof(val[1])==="number" | typeof(val[1])==="boolean"){
+                                updateDataValues(key,val[1]);
+                            }else{
+                                updateDataValues(key,Number.NaN);
+                            }
+                        }
                     });
                     init_chart_data_fetch_pending_count--;
                 }else{
@@ -160,14 +175,16 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                     }
                     setTimeout(function() {fetchData();}, refresh_rate);
                 }
-                UpdateStatusCount = UpdateStatusCount -1;
-                hideUpdateStatus();
+
+                
                 
                 $("#AutoUpdateButton").removeClass("btn-warning");
                 $("#AutoUpdateButton").addClass("btn-success");
                 if (JsonErrorCount > 0) {
                     JsonErrorCount = JsonErrorCount - 1;
                 }
+                if (init){ hideInitStatus(); }
+                hideUpdateStatus();
             }).fail(function(x, t, m) {
                 if(JsonErrorCount % 5 == 0)
                     addNotification(t, 3);
@@ -177,8 +194,6 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                     auto_update_active = false;
                     addNotification("error limit reached", 3);
                 } else {
-                    UpdateStatusCount = UpdateStatusCount -1;
-                    hideUpdateStatus();
                     if (auto_update_active) {
                         setTimeout(function() {fetchData();}, 500);
                     }
@@ -191,7 +206,9 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                 }
                 if (init){
                     init_chart_data_fetch_pending_count--;
+                    hideInitStatus();
                 }
+                hideUpdateStatus();
                 $("#AutoUpdateButton").removeClass("btn-success");
                 $("#AutoUpdateButton").addClass("btn-warning");
                 $("#AutoUpdateStatus").hide();
@@ -210,15 +227,16 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
 
 function updateLog() {
     if (log_fetch_pending_count){return false;}
-    showUpdateStatus();
     log_fetch_pending_count = true;
-if(log_last_timestamp === 0){
+    if(log_last_timestamp === 0){
         if(server_time > 0){
                 log_last_timestamp = server_time; 
         }else{
+            log_fetch_pending_count = false;
             return false;	
         }
     }
+    showUpdateStatus();
     $.ajax({
         url: RootUrl+'json/log_data/',
         type: 'post',
@@ -236,9 +254,11 @@ if(log_last_timestamp === 0){
                     }
                 });
             hideUpdateStatus();
+            log_fetch_pending_count = false;
         },
         error: function(x, t, m) {
             hideUpdateStatus();
+            log_fetch_pending_count = false;
         }
     });
 }

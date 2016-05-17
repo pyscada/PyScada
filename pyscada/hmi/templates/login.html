@@ -19,3 +19,10 @@
 </div>
 </div>
 {% endblock %}
+{% block script_bottom %}
+        $( document ).ready(function() {
+            // Handler for .ready() called.
+            $("#loadingAnimation").hide();
+            $("#AutoUpdateStatus").hide();
+        });
+{% endblock %}

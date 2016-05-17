@@ -1,0 +1,5 @@
+0.7.0b2
+ - fixed modbus daemon
+ - fixed modbus device
+ - updated Docs
+  

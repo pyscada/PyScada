@@ -40,7 +40,8 @@ def index(request):
 	view_list = View.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).distinct()
 	c = {
 		'user': request.user,
-		'view_list':view_list
+		'view_list':view_list,
+		'version_string':core_version
 	}
 	return TemplateResponse(request, 'view_overview.html', c) # HttpResponse(t.render(c))
 
@@ -151,12 +152,12 @@ def log_data(request):
 	if request.POST.has_key('timestamp'):
 		timestamp = float(request.POST['timestamp'])
 	else:
-		timestamp = time.time()-(300) # get log of last 5 minutes
+		timestamp = (time.time()-(300))*1000 # get log of last 5 minutes
 
-	data = Log.objects.filter(level__gte=6,timestamp__gt=float(timestamp)).order_by('-timestamp')
+	data = Log.objects.filter(level__gte=6,id__gt=int(int(timestamp)*2097152)+2097151).order_by('-timestamp')
 	odata = []
 	for item in data:
-		odata.append({"timestamp":item.timestamp,"level":item.level,"message":item.message,"username":item.user.username if item.user else "None"})
+		odata.append({"timestamp":item.timestamp*1000,"level":item.level,"message":item.message,"username":item.user.username if item.user else "None"})
 	jdata = json.dumps(odata,indent=2)
 
 	return HttpResponse(jdata, content_type='application/json')
@@ -198,91 +199,6 @@ def get_cache_data(request):
 		active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('custom_html_panels__variables',flat=True))
 		active_variables = list(set(active_variables))
 	
-		
-	# if init:
-	# 	timestamp = time.time()
-	# 	if request.POST.has_key('timestamp'):
-	# 		# load data from future is not supported
-	# 		timestamp = min(float(request.POST['timestamp'])/1000.0,timestamp) 
-	# 	
-	# 	first_timestamp = timestamp-120*60 # maximum is 120 minutes back
-	# 	if request.POST.has_key('first_timestamp'):
-	# 		first_timestamp = max(float(request.POST['first_timestamp'])/1000.0,first_timestamp) # prevent from loading more then 120 Minutes of Data
-	# 	
-	# 	if first_timestamp >= timestamp:
-	# 		data["error"] = "fist timestamp is greater or equel then last timestemp"
-	# 		jdata = json.dumps(data,indent=2)
-	# 		return HttpResponse(jdata, content_type='application/json')
-	# 	
-	# 	if connection.vendor == 'sqlite':
-	# 		# on sqlite limit querys to less then 999 elements
-	# 		rto = list(reversed(RecordedTime.objects.filter(timestamp__gte=float(first_timestamp),timestamp__lt=float(timestamp)).order_by('-id')[:998].values_list('pk',flat=True)))
-	# 	else:
-	# 		rto = list(RecordedTime.objects.filter(timestamp__gte=float(first_timestamp),timestamp__lt=float(timestamp)).values_list('pk',flat=True))
-	# 
-	# 	if rto:
-	# 		t_min_pk = rto[0]
-	# 		rto_ids     = rto
-	# 		t_min_ts = RecordedTime.objects.get(pk=t_min_pk).timestamp
-	# 	else:
-	# 		data["error"] = "no rto value"
-	# 		jdata = json.dumps(data,indent=2)
-	# 		return HttpResponse(jdata, content_type='application/json')
-
-##  		for var in Variable.objects.filter(value_class__in = ('FLOAT32','SINGLE','FLOAT','FLOAT64','REAL',), pk__in = active_variables) | Variable.objects.filter(scaling__isnull = False ,pk__in = active_variables):
-	# 		var_id = var.pk
-	# 		rto = RecordedDataFloat.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
-	# 		if rto:
-	# 			data[var.name] = [(t_min_ts,rto.value)]
-	# 			data[var.name].extend(list(RecordedDataFloat.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value')))
-	# 		else:
-	# 			data[var.name] = list(RecordedDataFloat.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value'))
-	# 
-	# 	for var in Variable.objects.filter(value_class__in = ('INT32','UINT32','INT16','INT','WORD','UINT','UINT16',),pk__in = active_variables,scaling__isnull = True):
-	# 		var_id = var.pk
-	# 		rto = RecordedDataInt.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
-	# 		if rto:
-	# 			data[var.name] = [(t_min_ts,rto.value)]
-	# 			data[var.name].extend(list(RecordedDataInt.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value')))
-	# 		else:
-	# 			data[var.name] = list(RecordedDataInt.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value'))
-	# 
-	# 
-	# 	for var in Variable.objects.filter(value_class__in = ('BOOL','BOOLEAN',), pk__in = active_variables):
-	# 		var_id = var.pk
-	# 		rto = RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__lt=t_min_pk).last()
-	# 		if rto:
-	# 			data[var.name] = [(t_min_ts,rto.value)]
-	# 			data[var.name].extend(list(RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value')))
-	# 		else:
-	# 			data[var.name] = list(RecordedDataBoolean.objects.filter(variable_id=var_id,time_id__in=rto_ids).values_list('time__timestamp','value'))
-	# 			
-	# 	for key in data:
-	# 		for idx,item in enumerate(data[key]):
-	# 			data[key][idx] = (item[0]*1000,item[1])
-	# 	if RecordedDataCache.objects.last():
-	# 		data["timestamp"] = RecordedDataCache.objects.last().last_update_ms()
-	# 		data["server_time"] = time.time()*1000
-	# 	else:
-	# 		data["error"] = "no RecordedDataCache.objects.last() value"
-	# 		jdata = json.dumps(data,indent=2)
-	# 		return HttpResponse(jdata, content_type='application/json')
-	# else: # cache Data
-	# 	
-	# 	data = {}
-	# 	if RecordedDataCache.objects.first():
-	# 		data["timestamp"] = RecordedDataCache.objects.last().time.timestamp_ms()
-	# 		data["server_time"] = time.time()*1000			
-	# 	else:
-	# 		data["error"] = "no RecordedDataCache.objects.last() value"
-	# 		jdata = json.dumps(data,indent=2)
-	# 		return HttpResponse(jdata, content_type='application/json')
-	# 	
-	# 	# read data from cache
-	# 	raw_data = list(RecordedDataCache.objects.filter(variable_id__in=active_variables).values_list('variable__name','value','time__timestamp'))
-	# 
-	# 	for var in raw_data:
-	# 		data[var[0]] = [[var[2]*1000,var[1]]]
 	timestamp = time.time()
 	if request.POST.has_key('timestamp'):
 		# query data from future is not supported
@@ -317,17 +233,3 @@ def logout_view(request):
 
 def user_profile_change(request):
 	return redirect('/accounts/login/?next=/')
-
-def dataaquisition_daemon_start(request):
-	if not request.user.is_authenticated():
-		return redirect('/accounts/login/?next=%s' % request.path)
-
-	call_command('PyScadaDaemon start')
-	return HttpResponse(status=200)
-
-def dataaquisition_daemon_stop(request):
-	if not request.user.is_authenticated():
-		return redirect('/accounts/login/?next=%s' % request.path)
-
-	call_command('PyScadaDaemon stop')
-	return HttpResponse(status=200)
