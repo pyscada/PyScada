@@ -2,4 +2,6 @@
  - fixed modbus daemon
  - fixed modbus device
  - updated Docs
-  
+ - readded log notifications in HMI
+ - added loading animation for data prefetch in HMI
+ - changed id in Log model to timestame + id schema
