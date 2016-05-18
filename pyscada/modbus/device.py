@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from pyscada import log
-from pyscada.modbus.utils import encode_value
-#from pyscada.modbus.utils import get_bits_by_class
-from pyscada.modbus.utils import decode_value
+
 try:
     from pymodbus.client.sync import ModbusTcpClient
     from pymodbus.client.sync import ModbusSerialClient
@@ -11,7 +9,7 @@ try:
     driver_ok = True
 except ImportError:
     driver_ok = False
-    
+
 from math import isnan, isinf
 from time import time
 
@@ -19,31 +17,31 @@ class InputRegisterBlock:
     def __init__(self):
         self.variable_address   = [] #
         self.variable_length    = [] # in bytes
-        self.value_class     = [] #
+        self.decode_value        = [] #
         self.variable_id        = [] #
 
-    def insert_item(self,variable_id,variable_address,value_class,variable_length):
+    def insert_item(self,variable_id,variable_address,decode_value,variable_length):
         if not self.variable_address:
             self.variable_address.append(variable_address)
             self.variable_length.append(variable_length)
-            self.value_class.append(value_class)
+            self.decode_value.append(decode_value)
             self.variable_id.append(variable_id)
         elif max(self.variable_address) < variable_address:
             self.variable_address.append(variable_address)
             self.variable_length.append(variable_length)
-            self.value_class.append(value_class)
+            self.decode_value.append(decode_value)
             self.variable_id.append(variable_id)
         elif min(self.variable_address) > variable_address:
             self.variable_address.insert(0,variable_address)
             self.variable_length.insert(0,variable_length)
-            self.value_class.insert(0,value_class)
+            self.decode_value.insert(0,decode_value)
             self.variable_id.insert(0,variable_id)
         else:
             i = self.find_gap(self.variable_address,variable_address)
             if (i is not None):
                 self.variable_address.insert(i,variable_address)
                 self.variable_length.insert(i,variable_length)
-                self.value_class.insert(i,value_class)
+                self.decode_value.insert(i,decode_value)
                 self.variable_id.insert(i,variable_id)
 
 
@@ -69,7 +67,7 @@ class InputRegisterBlock:
             tmp = []
             for i in range(self.variable_length[idx]/16):
                 tmp.append(result.registers.pop(0))
-            out[self.variable_id[idx]] = decode_value(tmp,self.value_class[idx])
+            out[self.variable_id[idx]] = self.decode_value[idx](tmp)
             if isnan(out[self.variable_id[idx]]) or isinf(out[self.variable_id[idx]]):
                     out[self.variable_id[idx]] = None
         return out
@@ -187,7 +185,7 @@ class Device:
         self._parity                = device.modbusdevice.parity
         self._baudrate              = device.modbusdevice.baudrate
         self._timeout               = device.modbusdevice.timeout
-        self._device_not_accessible = False
+        self._device_not_accessible = 0
         # stopbits
         if self._stopbits == 0:
             self._stopbits = Defaults.Stopbits
@@ -210,7 +208,6 @@ class Device:
         self.trans_discrete_inputs  = []
         self.variables  = {}
         self._variable_config   = self._prepare_variable_config(device)
-        self._not_accessible_variable = []
         self.data = []
 
         
@@ -231,7 +228,7 @@ class Device:
             #     record_value=var.record,scaling = var.scaling)
             
             # add some attr to the var model 
-            var.add_attr(accessible=True)
+            var.add_attr(accessible=1)
             # add the var to the list of 
             self.variables[var.pk] = var
             
@@ -241,9 +238,9 @@ class Device:
             elif FC == 2: # discrete inputs
                 self.trans_discrete_inputs.append([var.modbusvariable.address,var.pk,FC])
             elif FC == 3: # holding registers
-                self.trans_holding_registers.append([var.modbusvariable.address,var.value_class,var.get_bits_by_class(),var.pk,FC])
+                self.trans_holding_registers.append([var.modbusvariable.address,var.decode_value,var.get_bits_by_class(),var.pk,FC])
             elif FC == 4: # input registers
-                self.trans_input_registers.append([var.modbusvariable.address,var.value_class,var.get_bits_by_class(),var.pk,FC])
+                self.trans_input_registers.append([var.modbusvariable.address,var.decode_value,var.get_bits_by_class(),var.pk,FC])
             else:
                 continue
 
@@ -330,9 +327,9 @@ class Device:
         if not driver_ok:
             return None
         if not self._connect():
-            if not self._device_not_accessible:
+            if self._device_not_accessible == -1: # 
                 log.error("device with id: %d is not accessible"%(self._device_inst.pk))
-            self._device_not_accessible = True
+            self._device_not_accessible -= 1
             return []
         output = []
         for register_block in self._variable_config:
@@ -345,23 +342,25 @@ class Device:
             if result is not None:
                 for variable_id in register_block.variable_id:
                     if self.variables[variable_id].update_value(result[variable_id],time()):
-			redorded_data_element = self.variables[variable_id].create_recorded_data_element()
-			if redorded_data_element is not None:
+                        redorded_data_element = self.variables[variable_id].create_recorded_data_element()
+                        if redorded_data_element is not None:
                             output.append(redorded_data_element)
-                    if not self.variables[variable_id].accessible:
+                    if self.variables[variable_id].accessible < 1:
                         log.info(("variable with id: %d is now accessible")%(variable_id))
-                        self.variables[variable_id].accessible = True
+                        self.variables[variable_id].accessible = 1
                 
             else:
                 for variable_id in register_block.variable_id:
-                    if self.variables[variable_id].accessible:
+                    if self.variables[variable_id].accessible == -1:
                         log.error(("variable with id: %d is not accessible")%(variable_id))
-                        self.variables[variable_id].accessible = False
                         self.variables[variable_id].update_value(None,time())
+                    self.variables[variable_id].accessible -= 1
+        
         # reset device not accessible status 
-        if self._device_not_accessible:
+        if self._device_not_accessible <= -1:
             log.info(("device with id: %d is now accessible")%(self._device_inst.pk))
-            self._device_not_accessible = False
+        if self._device_not_accessible < 1:
+            self._device_not_accessible = 1
         
         self._disconnect()
         return output
@@ -383,7 +382,7 @@ class Device:
                     self.slave.write_register(self.variables[variable_id].modbusvariable.address,int(value),unit=self._unit_id)
                 else:
                     # encode it first
-                    self.slave.write_registers(self.variables[variable_id].modbusvariable.address,list(encode_value(value,self.variables[variable_id].value_class)),unit=self._unit_id)
+                    self.slave.write_registers(self.variables[variable_id].modbusvariable.address,list(self.variables[variable_id].encode_value(value)),unit=self._unit_id)
                 self._disconnect()
                 return True
             else:
@@ -399,6 +398,6 @@ class Device:
             else:
                 log.error('Modbus Address %d out of range'%self.variables[variable_id].modbusvariable.address)
         else:
-            log.error('wrong function type %d'%self.variables[variable_id].modbusvariable.function_code_read)
+            log.error('wrong type of function code %d'%self.variables[variable_id].modbusvariable.function_code_read)
             return False
 

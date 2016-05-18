@@ -37,8 +37,8 @@ class SystemStatVariable(models.Model):
         return unicode(self.system_stat_variable.name)
         
 @receiver(post_save, sender=SystemStatVariable)
-def _reinit_systemstat_daemon(sender, **kwargs):
+def _reinit_daq_daemons(sender, **kwargs):
     """
-    update the systemstat daemons configuration wenn changes be applied in the model
+    update the daq daemon configuration wenn changes be applied in the models
     """
-    BackgroundTask.objects.filter(label='pyscada.systemstat.daemon',done=0,failed=0).update(message='reinit',timestamp = time())
+    BackgroundTask.objects.filter(label='pyscada.daq.daemon',done=0,failed=0).update(message='reinit',timestamp = time())

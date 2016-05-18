@@ -18,16 +18,16 @@
                     <td>
                         <span class="hidden" id="chart-legend-checkbox-status-{{widget.pk}}-{{chart.pk}}-{{var.name}}" >1</span>
                         <input type="checkbox" checked="checked" id="chart-legend-checkbox-{{widget.pk}}-{{ chart.pk }}-{{ var.name }}">
-                        <div class="hidden variable-config" data-name="{{var.name}}" data-key="{{var.pk}}" data-color="{{ var.hmivariable.chart_line_color_code }}"></div>
+                        <div class="hidden variable-config" data-name="{{var.name}}" data-key="{{var.pk}}" data-color="{{ var.chart_line_color_code }}"></div>
                     </td>
                     <td class="legendColorBox">
                         <div style="border:1px solid #ccc;padding:1px">
-                            <div style="width:4px;height:0;border:5px solid {{ var.hmivariable.chart_line_color_code }};overflow:hidden">
+                            <div style="width:4px;height:0;border:5px solid {{ var.chart_line_color_code }};overflow:hidden">
                             </div>
                         </div>
                     </td>
                     <td class="legendLabel">
-                        {{ var.hmivariable.name }}
+                        {{ var.hmi_name }}
                     </td>
                     <td class="legendValue type-numeric var-{{ var.name }}"></td>
                     <td class="legendUnit">{{ var.unit.unit }}</td>

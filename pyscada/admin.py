@@ -6,7 +6,6 @@ from pyscada.models import Unit
 from pyscada.models import DeviceWriteTask
 from pyscada.models import Log
 from pyscada.models import BackgroundTask
-from pyscada.models import RecordedDataCache
 from pyscada.models import Event
 from pyscada.models import RecordedEvent
 from pyscada.models import Mail
@@ -121,24 +120,6 @@ class LogAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
-class RecordedDataCacheAdmin(admin.ModelAdmin):
-    list_display = ('id','last_change','name','value','unit','last_update',)
-    list_display_links = ('name',)
-    list_filter = ('variable__device','variable__unit')
-    search_fields = ['variable__name',]
-    readonly_fields = ('last_change','last_update','time',)
-    def name(self,instance):
-        return instance.variable.name
-    def  unit(self,instance):
-        return instance.variable.unit.unit
-    def last_change(self,instance):
-        return datetime.datetime.fromtimestamp(int(instance.last_change.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
-    def last_update(self,instance):
-        return datetime.datetime.fromtimestamp(int(instance.time.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
-    def has_add_permission(self, request):
-        return False
-    def has_delete_permission(self, request, obj=None):
-        return False
 
 
 class BackgroundTaskAdmin(admin.ModelAdmin):
@@ -187,4 +168,3 @@ admin.site.register(Mail,MailAdmin)
 admin.site.register(DeviceWriteTask,DeviceWriteTaskAdmin)
 admin.site.register(Log,LogAdmin)
 admin.site.register(BackgroundTask,BackgroundTaskAdmin)
-admin.site.register(RecordedDataCache,RecordedDataCacheAdmin)

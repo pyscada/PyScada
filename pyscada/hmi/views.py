@@ -100,27 +100,6 @@ def view(request,link_title):
 					continue
 				has_chart = True
 				widgets.append(widget)
-			if widget.chart_set: # chart set
-				if widget.chart_set.chart_2:
-					chart_2_ok = widget.chart_set.chart_2.pk in visible_chart_list
-				else:
-					chart_2_ok = False
-				if widget.chart_set.chart_1:
-					chart_1_ok = widget.chart_set.chart_1.pk in visible_chart_list
-				else:
-					chart_1_ok = False
-				if chart_1_ok and chart_2_ok:
-					widgets.append(widget)
-				elif chart_1_ok:
-					widget.chart = widget.chart_set.chart_1
-					has_chart = True
-					widgets.append(widget)
-				elif chart_2_ok:
-					widget.chart = widget.chart_set.chart_2
-					has_chart = True
-					widgets.append(widget)
-				else:
-					continue
 			elif widget.control_panel:
 				widgets.append(widget)
 			elif widget.process_flow_diagram:

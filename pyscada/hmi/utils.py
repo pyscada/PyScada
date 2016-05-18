@@ -4,7 +4,6 @@ from pyscada.hmi.models import Chart
 from pyscada.hmi.models import Page
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import ControlPanel
-from pyscada.hmi.models import ChartSet
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import SlidingPanelMenu
 #from pyscada.hmi.models import GroupDisplayPermisions
@@ -46,22 +45,7 @@ def update_HMI(json_data):
             po.save()
         po.save()
     
-    # ChartSet
-    for chart_set in data['ChartSet']:
-        if chart_set['chart_1'] < 1:
-            chart_set['chart_1'] = None
-        if chart_set['chart_2'] < 1:
-            chart_set['chart_2'] = None
-        cso,created  = ChartSet.objects.get_or_create(id = chart_set['id'], defaults={'distribution':chart_set['distribution'],'chart_1_id':chart_set['chart_1'],'chart_2_id':chart_set['chart_2']})
-        if created:
-            log.info(("created ChartSet: %s") %(chart_set['id']))
-        else:
-            log.info(("updated ChartSet: %s") %(chart_set['id']))
-            cso.distribution = chart_set['distribution']
-            cso.chart_1_id = chart_set['chart_1']
-            cso.chart_2_id = chart_set['chart_2']
-            cso.save()
-        cso.save()
+
     # ControlItem
     for item in data['ControlItem']:
         cio,created  = ControlItem.objects.get_or_create(id = item['id'], defaults={'label':item['label'],'position':item['position'],'type':item['type'],'variable_id':item['variable']})
@@ -79,9 +63,9 @@ def update_HMI(json_data):
     for item in data['ControlPanel']:
         cpo,created  = ControlPanel.objects.get_or_create(id = item['id'], defaults={'title':item['title']})
         if created:
-            log.info(("created ControlPanel: %s") %(chart_set['id']))
+            log.info(("created ControlPanel: %s") %(item['id']))
         else:
-            log.info(("updated ControlPanel: %s") %(chart_set['id']))
+            log.info(("updated ControlPanel: %s") %(item['id']))
             cpo.title = item['title']
             cpo.save()
             cpo.items.clear()
@@ -89,8 +73,6 @@ def update_HMI(json_data):
         cpo.save()
     # Widget
     for widget in data['Widget']:
-        if widget['chart_set'] > 0:
-            wo,created  = Widget.objects.get_or_create(id = widget['id'], defaults={'title':widget['title'],'page_id':widget['page'],'col':widget['col'],'row':widget['row'],'size':widget['size'],'chart_set_id':widget['chart_set']})
         if widget['control_panel'] > 0:
             wo,created  = Widget.objects.get_or_create(id = widget['id'], defaults={'title':widget['title'],'page_id':widget['page'],'col':widget['col'],'row':widget['row'],'size':widget['size'],'control_panel_id':widget['control_panel']})
 
@@ -103,8 +85,6 @@ def update_HMI(json_data):
             wo.col = widget['col']
             wo.row = widget['row']
             wo.size = widget['size']
-            if widget['chart_set'] > 0:
-                wo.chart_set_id = widget['chart_set']
             if widget['control_panel'] > 0:
                 wo.control_panel_id = widget['control_panel']
             wo.save()

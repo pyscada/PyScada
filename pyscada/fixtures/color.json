@@ -6,7 +6,7 @@
         "name": "auto",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 1
 },
 {
@@ -16,7 +16,7 @@
         "name": "",
         "G": 194
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 2
 },
 {
@@ -26,7 +26,7 @@
         "name": "",
         "G": 216
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 3
 },
 {
@@ -36,7 +36,7 @@
         "name": "",
         "G": 75
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 4
 },
 {
@@ -46,7 +46,7 @@
         "name": "",
         "G": 167
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 5
 },
 {
@@ -56,7 +56,7 @@
         "name": "",
         "G": 64
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 6
 },
 {
@@ -66,7 +66,7 @@
         "name": "",
         "G": 155
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 7
 },
 {
@@ -76,7 +76,7 @@
         "name": "",
         "G": 172
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 8
 },
 {
@@ -86,7 +86,7 @@
         "name": "",
         "G": 60
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 9
 },
 {
@@ -96,7 +96,7 @@
         "name": "",
         "G": 133
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 10
 },
 {
@@ -106,7 +106,7 @@
         "name": "",
         "G": 51
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 11
 },
 {
@@ -116,7 +116,7 @@
         "name": "",
         "G": 232
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 12
 },
 {
@@ -126,7 +126,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 13
 },
 {
@@ -136,7 +136,7 @@
         "name": "",
         "G": 90
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 14
 },
 {
@@ -146,7 +146,7 @@
         "name": "",
         "G": 200
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 15
 },
 {
@@ -156,7 +156,7 @@
         "name": "",
         "G": 76
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 16
 },
 {
@@ -166,7 +166,7 @@
         "name": "",
         "G": 116
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 17
 },
 {
@@ -176,7 +176,7 @@
         "name": "",
         "G": 129
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 18
 },
 {
@@ -186,7 +186,7 @@
         "name": "",
         "G": 45
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 19
 },
 {
@@ -196,7 +196,7 @@
         "name": "",
         "G": 100
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 20
 },
 {
@@ -206,7 +206,7 @@
         "name": "",
         "G": 38
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 21
 },
 {
@@ -216,7 +216,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 22
 },
 {
@@ -226,7 +226,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 23
 },
 {
@@ -236,7 +236,7 @@
         "name": "",
         "G": 105
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 24
 },
 {
@@ -246,7 +246,7 @@
         "name": "",
         "G": 233
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 25
 },
 {
@@ -256,7 +256,7 @@
         "name": "",
         "G": 89
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 26
 },
 {
@@ -266,7 +266,7 @@
         "name": "",
         "G": 77
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 27
 },
 {
@@ -276,7 +276,7 @@
         "name": "",
         "G": 86
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 28
 },
 {
@@ -286,7 +286,7 @@
         "name": "",
         "G": 29
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 29
 },
 {
@@ -296,7 +296,7 @@
         "name": "",
         "G": 66
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 30
 },
 {
@@ -306,7 +306,7 @@
         "name": "",
         "G": 25
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 31
 },
 {
@@ -316,7 +316,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 32
 },
 {
@@ -326,7 +326,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 33
 },
 {
@@ -336,7 +336,7 @@
         "name": "",
         "G": 120
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 34
 },
 {
@@ -346,7 +346,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 35
 },
 {
@@ -356,7 +356,7 @@
         "name": "",
         "G": 102
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 36
 },
 {
@@ -366,7 +366,7 @@
         "name": "",
         "G": 194
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 37
 },
 {
@@ -376,7 +376,7 @@
         "name": "",
         "G": 216
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 38
 },
 {
@@ -386,7 +386,7 @@
         "name": "",
         "G": 75
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 39
 },
 {
@@ -396,7 +396,7 @@
         "name": "",
         "G": 167
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 40
 },
 {
@@ -406,7 +406,7 @@
         "name": "",
         "G": 64
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 41
 },
 {
@@ -416,7 +416,7 @@
         "name": "",
         "G": 155
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 42
 },
 {
@@ -426,7 +426,7 @@
         "name": "",
         "G": 172
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 43
 },
 {
@@ -436,7 +436,7 @@
         "name": "",
         "G": 60
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 44
 },
 {
@@ -446,7 +446,7 @@
         "name": "",
         "G": 133
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 45
 },
 {
@@ -456,7 +456,7 @@
         "name": "",
         "G": 51
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 46
 },
 {
@@ -466,7 +466,7 @@
         "name": "",
         "G": 232
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 47
 },
 {
@@ -476,7 +476,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 48
 },
 {
@@ -486,7 +486,7 @@
         "name": "",
         "G": 90
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 49
 },
 {
@@ -496,7 +496,7 @@
         "name": "",
         "G": 200
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 50
 },
 {
@@ -506,7 +506,7 @@
         "name": "",
         "G": 76
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 51
 },
 {
@@ -516,7 +516,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 52
 },
 {
@@ -526,7 +526,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 53
 },
 {
@@ -536,7 +536,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 54
 },
 {
@@ -546,7 +546,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 55
 },
 {
@@ -556,7 +556,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 56
 },
 {
@@ -566,7 +566,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 57
 },
 {
@@ -576,7 +576,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 58
 },
 {
@@ -586,7 +586,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 59
 },
 {
@@ -596,7 +596,7 @@
         "name": "",
         "G": 16
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 60
 },
 {
@@ -606,7 +606,7 @@
         "name": "",
         "G": 32
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 61
 },
 {
@@ -616,7 +616,7 @@
         "name": "",
         "G": 48
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 62
 },
 {
@@ -626,7 +626,7 @@
         "name": "",
         "G": 64
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 63
 },
 {
@@ -636,7 +636,7 @@
         "name": "",
         "G": 80
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 64
 },
 {
@@ -646,7 +646,7 @@
         "name": "",
         "G": 96
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 65
 },
 {
@@ -656,7 +656,7 @@
         "name": "",
         "G": 112
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 66
 },
 {
@@ -666,7 +666,7 @@
         "name": "",
         "G": 128
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 67
 },
 {
@@ -676,7 +676,7 @@
         "name": "",
         "G": 143
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 68
 },
 {
@@ -686,7 +686,7 @@
         "name": "",
         "G": 159
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 69
 },
 {
@@ -696,7 +696,7 @@
         "name": "",
         "G": 175
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 70
 },
 {
@@ -706,7 +706,7 @@
         "name": "",
         "G": 191
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 71
 },
 {
@@ -716,7 +716,7 @@
         "name": "",
         "G": 207
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 72
 },
 {
@@ -726,7 +726,7 @@
         "name": "",
         "G": 223
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 73
 },
 {
@@ -736,7 +736,7 @@
         "name": "",
         "G": 239
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 74
 },
 {
@@ -746,7 +746,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 75
 },
 {
@@ -756,7 +756,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 76
 },
 {
@@ -766,7 +766,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 77
 },
 {
@@ -776,7 +776,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 78
 },
 {
@@ -786,7 +786,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 79
 },
 {
@@ -796,7 +796,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 80
 },
 {
@@ -806,7 +806,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 81
 },
 {
@@ -816,7 +816,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 82
 },
 {
@@ -826,7 +826,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 83
 },
 {
@@ -836,7 +836,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 84
 },
 {
@@ -846,7 +846,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 85
 },
 {
@@ -856,7 +856,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 86
 },
 {
@@ -866,7 +866,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 87
 },
 {
@@ -876,7 +876,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 88
 },
 {
@@ -886,7 +886,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 89
 },
 {
@@ -896,7 +896,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 90
 },
 {
@@ -906,7 +906,7 @@
         "name": "",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 91
 },
 {
@@ -916,7 +916,7 @@
         "name": "",
         "G": 239
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 92
 },
 {
@@ -926,7 +926,7 @@
         "name": "",
         "G": 223
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 93
 },
 {
@@ -936,7 +936,7 @@
         "name": "",
         "G": 207
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 94
 },
 {
@@ -946,7 +946,7 @@
         "name": "",
         "G": 191
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 95
 },
 {
@@ -956,7 +956,7 @@
         "name": "",
         "G": 175
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 96
 },
 {
@@ -966,7 +966,7 @@
         "name": "",
         "G": 159
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 97
 },
 {
@@ -976,7 +976,7 @@
         "name": "",
         "G": 143
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 98
 },
 {
@@ -986,7 +986,7 @@
         "name": "",
         "G": 128
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 99
 },
 {
@@ -996,7 +996,7 @@
         "name": "",
         "G": 112
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 100
 },
 {
@@ -1006,7 +1006,7 @@
         "name": "",
         "G": 96
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 101
 },
 {
@@ -1016,7 +1016,7 @@
         "name": "",
         "G": 80
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 102
 },
 {
@@ -1026,7 +1026,7 @@
         "name": "",
         "G": 64
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 103
 },
 {
@@ -1036,7 +1036,7 @@
         "name": "",
         "G": 48
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 104
 },
 {
@@ -1046,7 +1046,7 @@
         "name": "",
         "G": 32
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 105
 },
 {
@@ -1056,7 +1056,7 @@
         "name": "",
         "G": 16
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 106
 },
 {
@@ -1066,7 +1066,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 107
 },
 {
@@ -1076,7 +1076,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 108
 },
 {
@@ -1086,7 +1086,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 109
 },
 {
@@ -1096,7 +1096,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 110
 },
 {
@@ -1106,7 +1106,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 111
 },
 {
@@ -1116,7 +1116,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 112
 },
 {
@@ -1126,7 +1126,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 113
 },
 {
@@ -1136,7 +1136,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 114
 },
 {
@@ -1146,7 +1146,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 115
 },
 {
@@ -1156,7 +1156,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 116
 },
 {
@@ -1166,7 +1166,7 @@
         "name": "",
         "G": 128
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 117
 },
 {
@@ -1176,7 +1176,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 118
 },
 {
@@ -1186,7 +1186,7 @@
         "name": "",
         "G": 191
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 119
 },
 {
@@ -1196,7 +1196,7 @@
         "name": "",
         "G": 0
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 120
 },
 {
@@ -1206,7 +1206,7 @@
         "name": "",
         "G": 191
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 121
 },
 {
@@ -1216,7 +1216,7 @@
         "name": "",
         "G": 64
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 122
 },
 {
@@ -1226,7 +1226,7 @@
         "name": "pink",
         "G": 101
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 123
 },
 {
@@ -1236,7 +1236,7 @@
         "name": "hell gelb",
         "G": 255
     },
-    "model": "hmi.color",
+    "model": "pyscada.color",
     "pk": 124
 }
 ]

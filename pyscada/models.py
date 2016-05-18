@@ -12,7 +12,7 @@ from django.dispatch import receiver
 from django.core.mail import send_mail
 import time
 import datetime
-
+from struct import *
 
 #
 ## Manager
@@ -140,97 +140,6 @@ class RecordedDataValueManager(models.Manager):
 		#	print '%1.3fs'%(time.time()-tic)
 		#	tic = time.time()
 		
-		'''
-		# read float32, 64 values
-		tmp_vars = variables.filter(\
-				value_class__in=('FLOAT','FLOAT64','DOUBLE','FLOAT32','SINGLE','REAL',)\
-				).values_list('id',flat=True)
-		
-		if tmp_vars:
-			tmp = super(RecordedDataValueManager, self).get_queryset().filter(\
-				id__range=(time_min,time_max),\
-				variable_id__in=tmp_vars\
-				).values_list('variable_id','pk','value_float64')
-			for item in tmp:
-				if not values.has_key(item[0]):
-					values[item[0]] = []
-				tmp_time = (item[1]-item[0])/(2097152.0*f_time_scale)
-				tmp_time_max = max(tmp_time,tmp_time_max)
-				tmp_time_min = min(tmp_time,tmp_time_min)
-				values[item[0]].append([tmp_time,item[2]]) # time, value
-		print '%1.3fs'%(time.time()-tic)
-		tic = time.time()
-		# read 'INT64','UINT32','DWORD'
-		tmp_vars = variables.filter(\
-				value_class__in=('INT64','UINT32','DWORD',)\
-				).values_list('id',flat=True)
-		if tmp_vars:
-			tmp = super(RecordedDataValueManager, self).get_queryset().filter(\
-				id__range=(time_min,time_max),\
-				variable_id__in=tmp_vars\
-				).values_list('variable_id','pk','value_int64')
-			for item in tmp:
-				if not values.has_key(item[0]):
-					values[item[0]] = []
-				tmp_time = (item[1]-item[0])/(2097152.0*f_time_scale)
-				tmp_time_max = max(tmp_time,tmp_time_max)
-				tmp_time_min = min(tmp_time,tmp_time_min)
-				values[item[0]].append([tmp_time,item[2]]) # time, value
-		print '%1.3fs'%(time.time()-tic)
-		tic = time.time()
-		# read 'WORD','UINT','UINT16','INT32'
-		tmp_vars = variables.filter(\
-				value_class__in=('WORD','UINT','UINT16','INT32',)\
-				).values_list('id',flat=True)
-		if tmp_vars:
-			tmp = super(RecordedDataValueManager, self).get_queryset().filter(\
-				id__range=(time_min,time_max),\
-				variable_id__in=tmp_vars\
-				).values_list('variable_id','pk','value_int32')
-			for item in tmp:
-				if not values.has_key(item[0]):
-					values[item[0]] = []
-				tmp_time = (item[1]-item[0])/(2097152.0*f_time_scale)
-				tmp_time_max = max(tmp_time,tmp_time_max)
-				tmp_time_min = min(tmp_time,tmp_time_min)
-				values[item[0]].append([tmp_time,item[2]]) # time, value
-		print '%1.3fs'%(time.time()-tic)
-		tic = time.time()
-		# read 'INT16','INT8','UINT8'
-		tmp_vars = variables.filter(\
-				value_class__in=('INT16','INT8','UINT8',)\
-				).values_list('id',flat=True)
-		if tmp_vars:
-			tmp = super(RecordedDataValueManager, self).get_queryset().filter(\
-				id__range=(time_min,time_max),\
-				variable_id__in=tmp_vars\
-				).values_list('variable_id','pk','value_int16')
-			for item in tmp:
-				if not values.has_key(item[0]):
-					values[item[0]] = []
-				tmp_time = (item[1]-item[0])/(2097152.0*f_time_scale)
-				tmp_time_max = max(tmp_time,tmp_time_max)
-				tmp_time_min = min(tmp_time,tmp_time_min)
-				values[item[0]].append([tmp_time,item[2]]) # time, value
-		print '%1.3fs'%(time.time()-tic)
-		tic = time.time()
-		# read 'BOOL','BOOLEAN'
-		tmp_vars = variables.filter(\
-				value_class__in=('BOOL','BOOLEAN',)\
-				).values_list('id',flat=True)
-		if tmp_vars:
-			tmp = super(RecordedDataValueManager, self).get_queryset().filter(\
-				id__range=(time_min,time_max),\
-				variable_id__in=tmp_vars\
-				).values_list('variable_id','pk','value_boolean')
-			for item in tmp:
-				if not values.has_key(item[0]):
-					values[item[0]] = []
-				tmp_time = (item[1]-item[0])/(2097152.0*f_time_scale)
-				tmp_time_max = max(tmp_time,tmp_time_max)
-				tmp_time_min = min(tmp_time,tmp_time_min)
-				values[item[0]].append([tmp_time,item[2]]) # time, value
-		'''
 		# print '%1.3fs'%(time.time()-tic)
 		# tic = time.time()
 		# check if for all variables the first and last value is present
@@ -285,6 +194,16 @@ class RecordedDataValueManager(models.Manager):
 #
 ## Models
 #
+class Color(models.Model):
+	id 		= models.AutoField(primary_key=True)
+	name 	= models.SlugField(max_length=80, verbose_name="variable name")
+	R 		= models.PositiveSmallIntegerField(default=0)
+	G 		= models.PositiveSmallIntegerField(default=0)
+	B 		= models.PositiveSmallIntegerField(default=0)
+	def __unicode__(self):
+		return unicode('rgb('+str(self.R)+', '+str(self.G)+', '+str(self.B)+', '+')')
+	def color_code(self):
+		return unicode('#%02x%02x%02x' % (self.R, self.G, self.B))
 
 class Device(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -293,6 +212,13 @@ class Device(models.Model):
 	device_type		= models.CharField(default='generic',choices=device_type_choises,max_length=400)
 	description 	= models.TextField(default='', verbose_name="Description",null=True)
 	active			= models.BooleanField(default=True)
+	byte_order_choices = (
+						('1-0-3-2','1-0-3-2'),
+						('0-1-2-3','0-1-2-3'),
+						('2-3-0-1','2-3-0-1'),
+						('3-2-1-0','3-2-1-0'),
+						)
+	byte_order      = models.CharField(max_length=15, default='1-0-3-2', choices=byte_order_choices)
 	def __unicode__(self):
 		return unicode(self.short_name)
 
@@ -345,25 +271,74 @@ class Variable(models.Model):
 	active			= models.BooleanField(default=True)
 	unit 			= models.ForeignKey(Unit,on_delete=models.SET(1))
 	writeable		= models.BooleanField(default=False)
-	value_class_choices = (('FLOAT32','REAL'),
-						('FLOAT32','SINGLE'),
+	value_class_choices = (('FLOAT32','REAL (FLOAT32)'),
+						('FLOAT32','SINGLE (FLOAT32)'),
 						('FLOAT32','FLOAT32'),
-						('FLOAT64','LREAL'),
-						('FLOAT64','FLOAT'),
+						('UNIXTIMEF32','UNIXTIMEF32'),
+						('FLOAT64','LREAL (FLOAT64)'),
+						('FLOAT64','FLOAT  (FLOAT64)'),
+						('FLOAT64','DOUBLE (FLOAT64)'),
 						('FLOAT64','FLOAT64'),
+						('UNIXTIMEF64','UNIXTIMEF64'),
+						('INT64','INT64'),
+						('UINT64','UINT64'),
+						('UNIXTIMEI64','UNIXTIMEI64'),
+						('UNIXTIMEI32','UNIXTIMEI32'),
 						('INT32','INT32'),
+						('UINT32','DWORD (UINT32)'),
 						('UINT32','UINT32'),
-						('INT16','INT'),
+						('INT16','INT (INT16)'),
 						('INT16','INT16'),
-						('UINT16','WORD'),
-						('UINT16','UINT'),
+						('UINT16','WORD (UINT16)'),
+						('UINT16','UINT (UINT16)'),
 						('UINT16','UINT16'),
-						('BOOLEAN','BOOL'),
+						('BOOLEAN','BOOL (BOOLEAN)'),
 						('BOOLEAN','BOOLEAN'),
 						)
 	scaling			= models.ForeignKey(Scaling,null=True,blank=True, on_delete=models.SET_NULL)
 	value_class		= models.CharField(max_length=15, default='FLOAT64', verbose_name="value_class",choices=value_class_choices)
 	cov_increment   = models.FloatField(default=0,blank=True)
+	byte_order_choices = (('default','default (specified by device byte order)',),
+						('1-0-3-2','1-0-3-2'),
+						('0-1-2-3','0-1-2-3'),
+						('2-3-0-1','2-3-0-1'),
+						('3-2-1-0','3-2-1-0'),
+						)
+	short_name			= models.CharField(default='',max_length=80, verbose_name="variable short name")
+	chart_line_color 	= models.ForeignKey(Color,null=True,default=None,blank=True)
+	chart_line_thickness_choices = ((3,'3Px'),)
+	chart_line_thickness = models.PositiveSmallIntegerField(default=3,choices=chart_line_thickness_choices)
+	
+	def hmi_name(self):
+		if self.short_name and self.short_name != '-' and self.short_name != '':
+			return self.short_name
+		else:
+			return self.name
+	
+	def chart_line_color_code(self):
+		if self.chart_line_color and self.chart_line_color.id != 1:
+			return self.chart_line_color.color_code()
+		else:
+			c = 51
+			id = self.pk+1
+			c = c%id
+			while c >= 51:
+				id = id-c
+				c = c%id
+			return Color.objects.get(id=id).color_code()
+	
+	'''
+	M: Mantissia
+	E: Exponent
+	S: Sign
+			uint 0            uint 1 
+			byte 0   byte 1   byte 2   byte 3
+	1-0-3-2 MMMMMMMM MMMMMMMM SEEEEEEE EMMMMMMM
+	0-1-2-3 MMMMMMMM MMMMMMMM EMMMMMMM SEEEEEEE
+	2-3-0-1 EMMMMMMM SEEEEEEE MMMMMMMM MMMMMMMM
+	3-2-1-0 SEEEEEEE EMMMMMMM MMMMMMMM MMMMMMMM
+	'''
+	byte_order      = models.CharField(max_length=15, default='default', choices=byte_order_choices)
 	# for RecodedVariable
 	value           	= None
 	prev_value 			= None
@@ -388,9 +363,9 @@ class Variable(models.Model):
 		`FLOAT32` `REAL` `SINGLE` 			32	2 WORD
 		`FLOAT64` `LREAL` `FLOAT` `DOUBLE`	64	4 WORD
 		"""
-		if 	self.value_class.upper() in ['FLOAT64','DOUBLE','FLOAT','LREAL'] :
+		if 	self.value_class.upper() in ['FLOAT64','DOUBLE','FLOAT','LREAL','UNIXTIMEI64','UNIXTIMEF64'] :
 			return 64
-		if 	self.value_class.upper() in ['FLOAT32','SINGLE','INT32','UINT32','DWORD','BCD32','BCD24','REAL'] :
+		if 	self.value_class.upper() in ['FLOAT32','SINGLE','INT32','UINT32','DWORD','BCD32','BCD24','REAL','UNIXTIMEI32','UNIXTIMEF32'] :
 			return 32
 		if self.value_class.upper() in ['INT16','INT','WORD','UINT','UINT16','BCD16']:
 			return 16
@@ -432,6 +407,111 @@ class Variable(models.Model):
 			self.timestamp_old = self.timestamp
 		self.prev_value = self.value
 		return self.store_value
+	
+	def decode_value(self,value):
+		if 	self.value_class.upper() in ['FLOAT32','SINGLE','REAL','UNIXTIMEF32']:
+			target_format = 'f'
+			source_format = '2H'
+		elif self.value_class.upper() in ['UINT32','DWORD','UNIXTIMEI32']:
+			target_format = 'I'
+			source_format = '2H'
+		elif self.value_class.upper() in ['INT32']:
+			target_format = 'i'
+			source_format = '2H'
+		elif 	self.value_class.upper() in ['FLOAT64','DOUBLE','FLOAT','LREAL','UNIXTIMEF64']:
+			target_format = 'd'
+			source_format = '4H'
+		elif self.value_class.upper() in ['UINT64']:
+			target_format = 'Q'
+			source_format = '4H'
+		elif self.value_class.upper() in ['INT64','UNIXTIMEI64']:
+			target_format = 'q'
+			source_format = '4H'
+		
+		elif 	self.value_class.upper() in ['BCD32','BCD24','BCD16']:
+			target_format = 'f'
+			source_format = '2H'
+			return value[0]
+		else:
+			return value[0]
+		# 
+		if self.byte_order == 'default':
+			byte_order = self.device.byte_order
+		else:
+			byte_order = self.byte_order
+		#
+		if source_format == '2H':
+			if byte_order == '1-0-3-2':
+				return unpack(target_format,pack(source_format,value[0],value[1]))[0]
+			if byte_order == '3-2-1-0':
+				return unpack(target_format,pack(source_format,value[1],value[0]))[0]
+			if byte_order == '0-1-2-3':
+				return unpack(target_format,pack(source_format,unpack('>H',pack('<H',value[0])),unpack('>H',pack('<H',value[1]))))[0]
+			if byte_order == '2-3-0-1':
+				return unpack(target_format,pack(source_format,unpack('>H',pack('<H',value[1])),unpack('>H',pack('<H',value[0]))))[0]	
+		else:
+			if byte_order == '1-0-3-2':
+				return unpack(target_format,pack(source_format,value[0],value[1],value[2],value[3]))[0]
+			if byte_order == '3-2-1-0':
+				return unpack(target_format,pack(source_format,value[3],value[2],value[1],value[0]))[0]
+			if byte_order == '0-1-2-3':
+				return unpack(target_format,pack(source_format,unpack('>H',pack('<H',value[0])),unpack('>H',pack('<H',value[1])),unpack('>H',pack('<H',value[2])),unpack('>H',pack('<H',value[3]))))[0]
+			if byte_order == '2-3-0-1':
+				return unpack(target_format,pack(source_format,unpack('>H',pack('<H',value[3])),unpack('>H',pack('<H',value[2])),unpack('>H',pack('<H',value[1])),unpack('>H',pack('<H',value[0]))))[0]	
+	
+	def encode_value(self,value):
+		if 	self.value_class.upper() in ['FLOAT32','SINGLE','REAL','UNIXTIMEF32']:
+			source_format = 'f'
+			target_format = '2H'
+		elif self.value_class.upper() in ['UINT32','DWORD','UNIXTIMEI32']:
+			source_format = 'I'
+			target_format = '2H'
+		elif self.value_class.upper() in ['INT32']:
+			source_format = 'i'
+			target_format = '2H'
+		
+		elif 	self.value_class.upper() in ['FLOAT64','DOUBLE','FLOAT','LREAL','UNIXTIMEF64']:
+			source_format = 'd'
+			target_format = '4H'
+		elif self.value_class.upper() in ['UINT64']:
+			source_format = 'Q'
+			target_format = '4H'
+		elif self.value_class.upper() in ['INT64','UNIXTIMEI64']:
+			source_format = 'q'
+			target_format = '4H'
+		
+		elif 	self.value_class.upper() in ['BCD32','BCD24','BCD16']:
+			source_format = 'f'
+			target_format = '2H'
+			return value[0]
+		else:
+			return value[0]
+		output = unpack(target_format,pack(source_format,value))
+		# 
+		if self.byte_order == 'default':
+			byte_order = self.device.byte_order
+		else:
+			byte_order = self.byte_order
+		if source_format == '2H':
+			if byte_order == '1-0-3-2':
+				return output
+			if byte_order == '3-2-1-0':
+				return [output[1],output[0]]
+			if byte_order == '0-1-2-3':
+				return [unpack('>H',pack('<H',output[0])),unpack('>H',pack('<H',output[1]))]
+			if byte_order == '2-3-0-1':
+				return [unpack('>H',pack('<H',output[1])),unpack('>H',pack('<H',output[0]))]
+		else:
+			if byte_order == '1-0-3-2':
+				return output
+			if byte_order == '3-2-1-0':
+				return [output[3],output[2],output[1],output[0]]
+			if byte_order == '0-1-2-3':	
+				return [unpack('>H',pack('<H',output[0])),unpack('>H',pack('<H',output[1])),unpack('>H',pack('<H',output[2])),unpack('>H',pack('<H',output[3]))]
+			if byte_order == '2-3-0-1':
+				return [unpack('>H',pack('<H',output[3])),unpack('>H',pack('<H',output[2])),unpack('>H',pack('<H',output[1])),unpack('>H',pack('<H',output[0]))]
+		
+	
 	
 	def create_recorded_data_element(self):
 		'''
@@ -540,54 +620,6 @@ class RecordedData(models.Model):
 			return self.value_boolean
 		else:
 			return None
-
-
-class RecordedTime(models.Model):
-	id 				= models.AutoField(primary_key=True)
-	timestamp 		= models.FloatField()
-	def __unicode__(self):
-		return unicode(datetime.datetime.fromtimestamp(int(self.timestamp)).strftime('%Y-%m-%d %H:%M:%S'))
-	def timestamp_ms(self):
-		return self.timestamp * 1000
-
-class RecordedDataFloat(models.Model):
-	id          = models.AutoField(primary_key=True)
-	value	    = models.FloatField()
-	variable		= models.ForeignKey('Variable')
-	time		= models.ForeignKey('RecordedTime')
-	def __unicode__(self):
-		return unicode(self.value)
-
-class RecordedDataInt(models.Model):
-	id          = models.AutoField(primary_key=True)
-	value       = models.BigIntegerField()
-	variable    = models.ForeignKey('Variable')
-	time        = models.ForeignKey('RecordedTime')
-	objects     = RecordedDataValueManager()
-	def __unicode__(self):
-		return unicode(self.value)
-
-class RecordedDataBoolean(models.Model):
-	id          = models.AutoField(primary_key=True)
-	value       = models.NullBooleanField()
-	variable    = models.ForeignKey('Variable')
-	time        = models.ForeignKey('RecordedTime')
-	def __unicode__(self):
-		return unicode(self.value)
-
-
-class RecordedDataCache(models.Model):
-	value	    = models.FloatField()
-	variable	= models.OneToOneField('Variable')
-	time		= models.ForeignKey('RecordedTime')
-	last_change	= models.ForeignKey('RecordedTime',related_name="last_change")
-	version		= models.PositiveIntegerField(default=0,null=True,blank=True)
-	def __unicode__(self):
-		return unicode(self.value)
-	def last_update_ms(self):
-		return self.time.timestamp * 1000
-	def last_change_ms(self):
-		return self.last_change * 1000
 
 
 class Log(models.Model):
@@ -715,7 +747,8 @@ class Event(models.Model):
 		else:
 			prev_value = False
 		# get the actual value
-		actual_value = RecordedDataCache.objects.filter(variable=self.variable).last()
+		#actual_value = RecordedDataCache.objects.filter(variable=self.variable).last() # TODO change to RecordedData 
+		actual_value = RecordedData.objects.last_element(variable=self.variable)
 		if not actual_value:
 			return False
 		timestamp = actual_value.time
@@ -724,7 +757,8 @@ class Event(models.Model):
 		if self.variable_limit:
 			# item has a variable limit
 			# get the limit value
-			limit_value = RecordedDataCache.objects.filter(variable=self.variable_limit)
+			#limit_value = RecordedDataCache.objects.filter(variable=self.variable_limit) # TODO change to RecordedData
+			limit_value = RecordedData.objects.last_element(variable=self.variable_limit)
 			if not limit_value:
 				return False
 			if timestamp < limit_value.last().time:
@@ -829,4 +863,12 @@ class Mail(models.Model):
 			self.timestamp  = time.time()
 			self.save()
 			return False
-		
+
+
+@receiver(post_save, sender=Variable)
+@receiver(post_save, sender=Device)
+def _reinit_daq_daemons(sender, **kwargs):
+	"""
+	update the daq daemon configuration wenn changes be applied in the models
+	"""
+	bt = BackgroundTask.objects.filter(label='pyscada.daq.daemon',done=0,failed=0).update(message='reinit',timestamp = time.time())

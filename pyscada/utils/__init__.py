@@ -6,13 +6,10 @@ from pyscada.models import Variable
 from pyscada.models import Unit
 from pyscada.models import DeviceWriteTask
 from pyscada.models import BackgroundTask
-from pyscada.models import RecordedTime
-from pyscada.models import RecordedDataBoolean, RecordedDataFloat, RecordedDataInt, RecordedDataCache
 from pyscada.models import RecordedData
 from pyscada.modbus.models import ModbusVariable
 from pyscada.modbus.models import ModbusDevice
-from pyscada.hmi.models import Color
-from pyscada.hmi.models import HMIVariable
+from pyscada.models import Color
 from pyscada.hmi.models import Chart
 from pyscada.hmi.models import Page
 from pyscada.hmi.models import Widget
@@ -22,18 +19,10 @@ from django.conf import settings
 
 import os
 import json
-import codecs
 import time, datetime
 import traceback
 from struct import *
-import threading
 
-
-def decode_float(value):
-	"""
-	this is a function that convert two UINT values to float value according to the IEEE 7?? specification
-	"""
-	return unpack('f',pack('2H',value[0],value[1]))[0]
 
 def decode_bcd(values):
 	"""
@@ -61,60 +50,6 @@ def decode_bcd(values):
 		print decNum
 	return decNum
 
-def decode_bits(value):
-	tmp = [1 if digit=='1' else 0 for digit in bin(value)[2:]]
-	while len(tmp)<16:
-		tmp.insert(0,0)
-	tmp.reverse()
-	return tmp
-
-def decode_value(value,variable_class):
-	if 	variable_class.upper() in ['FLOAT32','SINGLE','FLOAT','REAL']:
-		return decode_float(value)
-	if 	variable_class.upper() in ['BCD32','BCD24','BCD16']:
-		return decode_bcd(values)
-	else:
-		return value[0]
-
-def encode_float(value):
-	"""
-	this is a function that convert float values to two UINT value according to the IEEE 7?? specification
-	"""
-	return unpack('2H',pack('f',float(value)))
-
-def encode_value(value,variable_class):
-	if 	variable_class.upper() in ['FLOAT32','SINGLE','FLOAT','REAL']:
-		return encode_float(value)
-	if 	variable_class.upper() in ['BCD32','BCD24','BCD16']:
-		return encode_bcd(values)
-	else:
-		return value[0]
-
-def get_bits_by_class(variable_class):
-	"""
-	`BOOLEAN`							1	1/16 WORD
-	`UINT8` `BYTE`						8	1/2 WORD
-	`INT8`								8	1/2 WORD
-	`UNT16` `WORD`						16	1 WORD
-	`INT16`	`INT`						16	1 WORD
-	`UINT32` `DWORD`					32	2 WORD
-	`INT32`								32	2 WORD
-	`FLOAT32` `REAL` `SINGLE` 			32	2 WORD
-	`FLOAT64` `LREAL` `FLOAT` `DOUBLE`	64	4 WORD
-	"""
-	if 	variable_class.upper() in ['FLOAT64','DOUBLE','FLOAT','LREAL'] :
-		return 64
-	if 	variable_class.upper() in ['FLOAT32','SINGLE','INT32','UINT32','DWORD','BCD32','BCD24','REAL'] :
-		return 32
-	if variable_class.upper() in ['INT16','INT','WORD','UINT','UINT16','BCD16']:
-		return 16
-	if variable_class.upper() in ['INT8','UINT8','BYTE','BCD8']:
-		return 8
-	if variable_class.upper() in ['BOOL','BOOLEAN']:
-		return 1
-	else:
-		return 16
-
 def update_variable_set(json_data):
 	#json_data = file(json_file)
 	#data = json.loads(json_data.read().decode("utf-8-sig"))
@@ -129,7 +64,18 @@ def update_variable_set(json_data):
 		uc, ucc = Unit.objects.get_or_create(unit = entry['unit'].replace(' ',''))
 		# variable exist
 		obj, created = Variable.objects.get_or_create(id=entry['id'],
-		defaults={'id':entry['id'],'name':entry['variable_name'].replace(' ',''),'description': entry['description'],'device':cc,'active':bool(entry['active']),'writeable':bool(entry['writeable']),'unit':uc,'value_class':entry["value_class"].replace(' ','')})
+		defaults={\
+			'id':entry['id'],\
+			'name':entry['variable_name'].replace(' ',''),\
+			'description': entry['description'],\
+			'device':cc,\
+			'active':bool(entry['active']),\
+			'writeable':bool(entry['writeable']),\
+			'unit':uc,\
+			'value_class':entry["value_class"].replace(' ',''),\
+			'chart_line_color_id':entry["color_id"],\
+			'short_name': entry["short_name"]\
+			})
 
 		if created:
 			log.info(("created variable: %s") %(entry['variable_name']))
@@ -143,15 +89,10 @@ def update_variable_set(json_data):
 			obj.writeable = bool(entry['writeable'])
 			obj.unit = uc
 			obj.value_class = entry["value_class"].replace(' ','')
+			obj.chart_line_color_id = entry["color_id"]
+			obj.short_name = entry["short_name"]
 			obj.save()
-
-		if hasattr(obj,'hmivariable'):
-			obj.hmivariable.chart_line_color_id = entry["color_id"]
-			obj.hmivariable.short_name = entry["short_name"]
-			obj.hmivariable.save()
-		else:
-			HMIVariable(hmi_variable=obj,short_name=entry["short_name"],chart_line_color_id=entry["color_id"]).save()
-
+		
 		if hasattr(obj,'modbusvariable'):
 			obj.modbusvariable.address 				= entry["modbus_ip.address"]
 			obj.modbusvariable.function_code_read 	= entry["modbus_ip.function_code_read"]
@@ -259,13 +200,12 @@ def export_xml_config_file(filename=None):
 			obj.appendChild(field_('modbus.address','uint16',item.modbusvariable.address))
 			# modbus.function_code_read
 			obj.appendChild(field_('modbus.function_code_read','uint8',item.modbusvariable.function_code_read))
-		if hasattr(item,'hmivariable'):
-			# hmi.chart_line_color_id
-			obj.appendChild(field_('hmi.chart_line_color_id','uint16',item.hmivariable.chart_line_color_id))
-			# hmi.short_name
-			obj.appendChild(field_('hmi.short_name','string',item.hmivariable.short_name))
-			# hmi.chart_line_thickness
-			obj.appendChild(field_('hmi.chart_line_thickness','uint8',item.hmivariable.chart_line_thickness))
+		# hmi.chart_line_color_id
+		obj.appendChild(field_('hmi.chart_line_color_id','uint16',item.chart_line_color_id))
+		# hmi.short_name
+		obj.appendChild(field_('hmi.short_name','string',item.short_name))
+		# hmi.chart_line_thickness
+		obj.appendChild(field_('hmi.chart_line_thickness','uint8',item.chart_line_thickness))
 
 		# hdf.dims
 		obj.appendChild(field_('hdf.dims','uint16',1))
@@ -453,7 +393,18 @@ def import_xml_config_file(filename):
 	# Variable (object)
 	for entry in _Variables:
 		vc, created = Variable.objects.get_or_create(pk=entry['id'],
-		defaults={'id':entry['id'],'name':entry['name'],'description': entry['description'],'device_id':entry['device_id'],'active':entry['active'],'writeable':entry['writeable'],'record':entry['record'],'unit_id':entry['unit_id'],'value_class':validate_value_class(entry["value_class"])})
+		defaults={\
+			'id':entry['id'],\
+			'name':entry['name'],\
+			'description': entry['description'],\
+			'device_id':entry['device_id'],\
+			'active':entry['active'],\
+			'writeable':entry['writeable'],\
+			'record':entry['record'],\
+			'unit_id':entry['unit_id'],\
+			'value_class':validate_value_class(entry["value_class"]) # TODO UNIXTIME ??
+			\
+			})
 
 		if created:
 			log.info(("created variable: %s") %(entry['name']))
@@ -470,18 +421,15 @@ def import_xml_config_file(filename):
 			vc.value_class = validate_value_class(entry["value_class"])
 			vc.save()
 
-		if hasattr(vc,'hmivariable'):
-			if entry.has_key("hmi.chart_line_color_id"):
-				vc.hmivariable.chart_line_color_id = entry["hmi.chart_line_color_id"]
-			if entry.has_key("hmi.short_name"):
-				vc.hmivariable.short_name = entry["hmi.short_name"]
-			if entry.has_key("hmi.chart_line_thickness"):
-				vc.hmivariable.chart_line_thickness = entry["hmi.chart_line_thickness"]
-			vc.hmivariable.save()
-		else:
-			if entry.has_key("hmi.chart_line_color_id") and entry.has_key("hmi.short_name") and entry.has_key("hmi.chart_line_thickness"):
-				HMIVariable(hmi_variable=vc,short_name=entry["hmi.short_name"],chart_line_color_id=entry["hmi.chart_line_color_id"],chart_line_thickness = entry["hmi.chart_line_thickness"]).save()
-				
+		
+		if entry.has_key("hmi.chart_line_color_id"):
+			vc.chart_line_color_id = entry["hmi.chart_line_color_id"]
+		if entry.has_key("hmi.short_name"):
+			vc.short_name = entry["hmi.short_name"]
+		if entry.has_key("hmi.chart_line_thickness"):
+			vc.chart_line_thickness = entry["hmi.chart_line_thickness"]
+		vc.save()
+						
 		if hasattr(vc,'modbusvariable'):
 			if entry.has_key("modbus.address"):
 				vc.modbusvariable.address 				= entry["modbus.address"]
@@ -525,13 +473,17 @@ def import_xml_config_file(filename):
 
 
 def validate_value_class(class_str):
-	if 	class_str.upper() in ['FLOAT64','DOUBLE','FLOAT','LREAL']:
+	if 	class_str.upper() in ['FLOAT64','DOUBLE','FLOAT','LREAL','UNIXTIMEF64']:
 		return 'FLOAT64'
-	if 	class_str.upper() in ['FLOAT32','SINGLE','REAL']:
+	if 	class_str.upper() in ['FLOAT32','SINGLE','REAL','UNIXTIMEF32']:
 		return 'FLOAT32'
+	if class_str.upper() in ['UINT64']:
+		return 'UINT64'
+	if class_str.upper() in ['INT64','UNIXTIMEI64']:
+		return 'INT64'	
 	if 	class_str.upper() in ['INT32']:
 		return 'INT32'
-	if class_str.upper() in ['UINT32','DWORD']:
+	if class_str.upper() in ['UINT32','DWORD','UNIXTIMEI32']:
 		return 'UINT32'
 	if class_str.upper() in ['INT16','INT']:
 		return 'INT16'
@@ -547,7 +499,7 @@ def validate_value_class(class_str):
 		return 'FLOAT64'
 
 def _cast(value,class_str):
-	if 	class_str.upper() in ['FLOAT64','DOUBLE','FLOAT','LREAL','FLOAT32','SINGLE','REAL']:
+	if 	class_str.upper() in ['FLOAT64','DOUBLE','FLOAT','LREAL','FLOAT32','SINGLE','REAL','UNIXTIMEF32','UNIXTIMEF64']:
 		return float(value)
 	if 	class_str.upper() in ['INT32','UINT32','DWORD','INT16','INT','UINT','UINT16','WORD','INT8','UINT8','BYTE']:
 		return int(value)
@@ -644,15 +596,16 @@ def daq_daemon_run(label):
 	devices = {}
 	dt_set  = 2.5
 	# init daemons
-	for item in Device.objects.exclude(device_type='generic').filter(active=1):
-		try:
-			tmp_device = item.get_device_instance()
-			if tmp_device is not None:
-				devices[item.pk] = tmp_device
-		except:
-			var = traceback.format_exc()
-			log.error("exeption while initialisation of %s:%s %s" % (label,os.linesep, var))
-
+	def init_devices():
+		for item in Device.objects.exclude(device_type='generic').filter(active=1):
+			try:
+				tmp_device = item.get_device_instance()
+				if tmp_device is not None:
+					devices[item.pk] = tmp_device
+			except:
+				var = traceback.format_exc()
+				log.error("exeption while initialisation of %s:%s %s" % (label,os.linesep, var))
+	init_devices()
 	# register the task in Backgroudtask list
 	bt = BackgroundTask(start=time.time(),label=label,message='daemonized',timestamp=time.time(),pid = pid)
 	bt.save()
@@ -671,8 +624,7 @@ def daq_daemon_run(label):
 		t_start = time.time()
 		# handle reinit
 		if bt.message == 'reinit':
-			for item in devices.itervalues():
-				item.__init__()
+			init_devices()
 		# process write tasks
 		for task in DeviceWriteTask.objects.filter(done=False,start__lte=time.time(),failed=False):
 			if not task.variable.scaling is None:
@@ -694,7 +646,7 @@ def daq_daemon_run(label):
 				task.save()
 				log.error('device id not valid %d '%(task.variable.device_id),task.user)
 
-		# start the tasks
+		# start the read tasks
 		data = [[]]
 		for item in devices.itervalues():
 			try:

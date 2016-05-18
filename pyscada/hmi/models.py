@@ -5,40 +5,6 @@ from django.db import models
 from django.contrib.auth.models import Group
 import random
 
-class Color(models.Model):
-	id 		= models.AutoField(primary_key=True)
-	name 	= models.SlugField(max_length=80, verbose_name="variable name")
-	R 		= models.PositiveSmallIntegerField(default=0)
-	G 		= models.PositiveSmallIntegerField(default=0)
-	B 		= models.PositiveSmallIntegerField(default=0)
-	def __unicode__(self):
-		return unicode('rgb('+str(self.R)+', '+str(self.G)+', '+str(self.B)+', '+')')
-	def color_code(self):
-		return unicode('#%02x%02x%02x' % (self.R, self.G, self.B))	
-
-
-class HMIVariable(models.Model):
-	hmi_variable		= models.OneToOneField(Variable)
-	short_name			= models.CharField(default='',max_length=80, verbose_name="variable short name")
-	chart_line_color 	= models.ForeignKey(Color,null=True,default=None,blank=True)
-	chart_line_thickness_choices = ((3,'3Px'),)
-	chart_line_thickness = models.PositiveSmallIntegerField(default=3,choices=chart_line_thickness_choices)
-	def name(self):
-		if self.short_name and self.short_name != '-':
-			return self.short_name
-		else:
-			return self.hmi_variable.name
-	def chart_line_color_code(self):
-		if self.chart_line_color and self.chart_line_color.id != 1:
-			return self.chart_line_color.color_code()
-		else:
-			c = 51
-			id = self.pk+1
-			c = c%id
-			while c >= 51:
-				id = id-c
-				c = c%id
-			return Color.objects.get(id=id).color_code()
 
 class ControlItem(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -136,15 +102,6 @@ class SlidingPanelMenu(models.Model):
 	visable			= models.BooleanField(default=True)
 	def __unicode__(self):
 		return unicode(self.title)
-
-class ChartSet(models.Model):
-	size_choices	= ((0,'side by side (1/2)'),(1,'side by side (2/3|1/3)'),(2,'side by side (1/3|2/3)'),)
-	id 				= models.AutoField(primary_key=True)
-	distribution	= models.PositiveSmallIntegerField(default=0,choices=size_choices)
-	chart_1			= models.ForeignKey(Chart,blank=True,null=True,related_name="chart_1",verbose_name="left Chart")
-	chart_2			= models.ForeignKey(Chart,blank=True,null=True,related_name="chart_2",verbose_name="right Chart")
-	def __unicode__(self):
-		return unicode(str(self.id) + ': ' + (self.chart_1.title if self.chart_1 else 'None')  + ' | ' +  (self.chart_2.title if self.chart_2 else 'None') )
 		
 
 class Widget(models.Model):
@@ -158,7 +115,6 @@ class Widget(models.Model):
 	size_choices 	= ((4,'page width'),(3,'3/4 page width'),(2,'1/2 page width'),(1,'1/4 page width'))
 	size			= models.PositiveSmallIntegerField(default=4,choices=size_choices)
 	chart			= models.ForeignKey(Chart,blank=True,null=True,default=None)
-	chart_set		= models.ForeignKey(ChartSet,blank=True,null=True,default=None)
 	control_panel  = models.ForeignKey(ControlPanel,blank=True,null=True,default=None)
 	custom_html_panel = models.ForeignKey(CustomHTMLPanel,blank=True,null=True,default=None)
 	process_flow_diagram = models.ForeignKey(ProcessFlowDiagram	,blank=True,null=True,default=None)	

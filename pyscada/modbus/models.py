@@ -38,8 +38,8 @@ class ModbusVariable(models.Model):
 
 @receiver(post_save, sender=ModbusDevice)
 @receiver(post_save, sender=ModbusVariable)
-def _reinit_modbus_daemons(sender, **kwargs):
+def _reinit_daq_daemons(sender, **kwargs):
 	"""
-	update the modbus daemons configuration wenn changes be applied in the model
+	update the daq daemon configuration wenn changes be applied in the models
 	"""
-	BackgroundTask.objects.filter(label='pyscada.modbus.daemon',done=0,failed=0).update(message='reinit',timestamp = time())
+	BackgroundTask.objects.filter(label='pyscada.daq.daemon',done=0,failed=0).update(message='reinit',timestamp = time())

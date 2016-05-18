@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from pyscada.hmi.models import HMIVariable
 from pyscada.models import Variable
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Chart
@@ -8,7 +7,6 @@ from pyscada.hmi.models import Page
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import ControlPanel
 from pyscada.hmi.models import CustomHTMLPanel
-from pyscada.hmi.models import ChartSet
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
 from pyscada.hmi.models import ProcessFlowDiagram
@@ -64,17 +62,10 @@ class SlidingPanelMenuAdmin(admin.ModelAdmin):
         list_display = ('id',)
 
 
-class HMIVariableAdmin(admin.ModelAdmin):
-    search_fields = ['hmi_variable__name',]
-    list_display = ('name','short_name','chart_line_color','chart_line_thickness',)
-    raw_id_fields = ('hmi_variable',)
-    def name(self, instance):
-        return instance.hmi_variable.name
-
 class WidgetAdmin(admin.ModelAdmin):
     list_display_links = ('id',)
-    list_display = ('id','title','page','row','col','size','chart','chart_set','control_panel','custom_html_panel',)
-    list_editable = ('title','page','row','col','size','chart','chart_set','control_panel','custom_html_panel',)
+    list_display = ('id','title','page','row','col','size','chart','control_panel','custom_html_panel',)
+    list_editable = ('title','page','row','col','size','chart','control_panel','custom_html_panel',)
     list_filter = ('page',)
 
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
@@ -106,11 +97,9 @@ admin.site.register(Chart,ChartAdmin)
 admin.site.register(SlidingPanelMenu,SlidingPanelMenuAdmin)
 admin.site.register(Page,PageAdmin)
 admin.site.register(GroupDisplayPermission,GroupDisplayPermissionAdmin)
-admin.site.register(HMIVariable,HMIVariableAdmin)
 
 admin.site.register(ControlPanel,ControlPanelAdmin)
 admin.site.register(CustomHTMLPanel,CustomHTMLPanelAdmin)
-admin.site.register(ChartSet)
 admin.site.register(Widget,WidgetAdmin)
 admin.site.register(View,ViewAdmin)
 admin.site.register(ProcessFlowDiagram,ProcessFlowDiagramAdmin)

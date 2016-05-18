@@ -9,10 +9,10 @@ nginx configuration
 ::
         
         # debian
-        sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/nginx_sample.conf -O /etc/nginx/sites-available/pyscada.conf
+        sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/nginx_sample.conf -O /etc/nginx/sites-available/pyscada.conf
         sudo nano /etc/nginx/sites-available/pyscada.conf
         # Fedora
-        sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/nginx_sample.conf -O /etc/nginx/conf.d/pyscada.conf
+        sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/nginx_sample.conf -O /etc/nginx/conf.d/pyscada.conf
         sudo nano /etc/nginx/conf.d/pyscada.conf
 
 

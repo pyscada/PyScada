@@ -5,3 +5,14 @@
  - readded log notifications in HMI
  - added loading animation for data prefetch in HMI
  - changed id in Log model to timestame + id schema
+
+0.7.0b3
+ - removed separate handler files for daq
+ - removed seperate HMIVariable model
+ - added restart of daq when Variable or Device model are changed
+ - added support for different byte order of aquired data
+ - fixed support for U/INT64 and U/INT32 datatypes
+ - removed chart_set from hmi
+ - updated docs
+ - removed unused code
+ 

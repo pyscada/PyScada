@@ -87,19 +87,6 @@ values to the server the coresponding function code will be selected automaticly
 .. image:: pic/backend_modbus_save_device.png
 
 
-To use the Variable in the HMI a *Hmi variable* entry has to be added, to do so open 
-the *Hmi variable* table in the *PyScada HMI* section and click 
-*add hmi variable* in the upper right corner.
-
-*TODO* add picture
-
-Select the Variable to assign by clicking on the magnifier symbol or writing the 
-id of the Variable. Provide a *short_name* that will be used in the HMI or leave 
-the field blank to use the *name* of the *Variable*. Select the *color* and 
-*line thickness* for charts. (a default set of colors can be added by loading 
-the color.json fixture, *TODO* link to the commandline example)
-
-*TODO* add picture
 
 Add a new View
 --------------
