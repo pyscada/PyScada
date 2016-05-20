@@ -168,56 +168,79 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
             query_first_value=True)
             
         for var in var_slice:
+            # write backround task info
             tp.timestamp = time()
             tp.message = 'writing values for %s (%d) to file'%(var.name,var.pk)
             tp.save()
+            # check if variable is scalled 
             if var.scaling is None or var.value_class.upper() in ['BOOL','BOOLEAN']:
                 value_class = var.value_class
             else:
                 value_class = 'FLOAT64'
+            # read unit 
             if hasattr(var.unit,'udunit'):
                 udunit = var.unit.udunit
             else:
                 udunit = 'None'
-            if data.has_key(var.pk):
-                # data[var.pk][::][time,value]
-                out_data = [0]*len(timevalues)
-                ii = 0
-                # calulate mean values
-                for i in xrange(len(timevalues)):
-                    tmp = 0.0
-                    tmp_i = 0.0
-                    if ii >= len(data[var.pk]):
-                        break
-                    if data[var.pk][ii][0] < timevalues[i]:
-                        while data[var.pk][ii][0] < timevalues[i]:
-                            ii += 1
-                            if ii >= len(data[var.pk]):
-                                break
-                    if data[var.pk][ii][0] >= timevalues[i] and data[var.pk][ii][0] < timevalues[i]+mean_value_period:
-                        while data[var.pk][ii][0] >= timevalues[i] and data[var.pk][ii][0] < timevalues[i]+mean_value_period:
-                            # use
-                            tmp +=  data[var.pk][ii][1]
-                            tmp_i += 1
-                            ii += 1
-                            if ii >= len(data[var.pk]):
-                                break
-                        out_data[i] = tmp/tmp_i
-                    else:
-                        out_data[i] = data[var.pk][ii][1]
-                # write data
-                bf.write_data(var.name,_cast_value(out_data,validate_value_class(value_class)),\
-                id = var.pk,\
-                description=var.description,\
-                value_class = validate_value_class(value_class),\
-                unit = udunit)
-            else:
+            
+            if not data.has_key(var.pk):
                 # write dummy data
                 bf.write_data(var.name,_cast_value([0]*len(timevalues),validate_value_class(value_class)),\
                 id = var.pk,\
                 description=var.description,\
                 value_class = validate_value_class(value_class),\
                 unit = udunit)
+                continue
+            
+            # data[var.pk][::][time,value]
+            out_data = [0]*len(timevalues) # init output data
+            # i                            # time data index
+            ii = 0                         # source data index
+            # calulate mean values
+            for i in xrange(len(timevalues)): # iter over time values
+                    
+                if ii >= len(data[var.pk]):
+                    # if more data in data source break
+                    if i > 0:
+                        out_data[i] = out_data[i-1]
+                        continue
+                # init mean value vars
+                tmp = 0.0    #  sum 
+                tmp_i = 0.0  #  count
+                
+                if data[var.pk][ii][0] < timevalues[i]: 
+                    # skip elements that are befor current time step
+                    while data[var.pk][ii][0] < timevalues[i]:
+                        ii += 1
+                        if ii >= len(data[var.pk]):
+                            break # break while
+                if ii >= len(data[var.pk]):
+                    if i > 0:
+                        out_data[i] = out_data[i-1]
+                # calc mean value
+                if data[var.pk][ii][0] >= timevalues[i] and data[var.pk][ii][0] < timevalues[i]+mean_value_period:
+                    # there is data in time range
+                    while data[var.pk][ii][0] >= timevalues[i] and data[var.pk][ii][0] < timevalues[i]+mean_value_period:
+                        # calulate mean value
+                        tmp +=  data[var.pk][ii][1]
+                        tmp_i += 1
+                        ii += 1
+                        if ii >= len(data[var.pk]):
+                            break # break while
+                    out_data[i] = tmp/tmp_i
+                else:
+                    # there is no data in time range, keep last value
+                    if i > 0:
+                        out_data[i] = out_data[i-1]
+            
+            # write data
+            bf.write_data(var.name,_cast_value(out_data,validate_value_class(value_class)),\
+            id = var.pk,\
+            description=var.description,\
+            value_class = validate_value_class(value_class),\
+            unit = udunit)
+
+                
     bf.close_file()
     tp.timestamp = time()
     tp.message = 'done'
