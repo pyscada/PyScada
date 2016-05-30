@@ -212,11 +212,12 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
                     # skip elements that are befor current time step
                     while data[var.pk][ii][0] < timevalues[i]:
                         ii += 1
-                        if ii >= len(data[var.pk]):
+                        if ii >= len(data[var.pk])-1:
                             break # break while
-                if ii >= len(data[var.pk]):
+                if ii >= len(data[var.pk])-1:
                     if i > 0:
                         out_data[i] = out_data[i-1]
+                        continue
                 # calc mean value
                 if data[var.pk][ii][0] >= timevalues[i] and data[var.pk][ii][0] < timevalues[i]+mean_value_period:
                     # there is data in time range
@@ -225,7 +226,7 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
                         tmp +=  data[var.pk][ii][1]
                         tmp_i += 1
                         ii += 1
-                        if ii >= len(data[var.pk]):
+                        if ii >= len(data[var.pk])-1:
                             break # break while
                     out_data[i] = tmp/tmp_i
                 else:

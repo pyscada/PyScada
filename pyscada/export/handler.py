@@ -78,30 +78,33 @@ class Handler:
                 if job.export_period == 1: # daily
                     start_time      = '%s %02d:00:00'%((today - timedelta(1)).strftime('%d-%b-%Y'),job.day_time) # "%d-%b-%Y %H:%M:%S"
                     start_time      = mktime(datetime.strptime(start_time, "%d-%b-%Y %H:%M:%S").timetuple())
-                    filename_suffix = 'daily_export_%d'%job.pk
+                    filename_suffix = 'daily_export_%d_%s'%(job.pk,job.label)
                     add_task = True
                 elif job.export_period == 2 and time.gmtime().tm_yday%2 == 0: # on even days (2,4,...)
                     start_time      = '%s %02d:00:00'%((today - timedelta(2)).strftime('%d-%b-%Y'),job.day_time) # "%d-%b-%Y %H:%M:%S"
                     start_time      = mktime(datetime.strptime(start_time, "%d-%b-%Y %H:%M:%S").timetuple())
-                    filename_suffix = 'two_day_export_%d'%job.pk
+                    filename_suffix = 'two_day_export_%d_%s'%(job.pk,job.label)
                     add_task = True
                 elif job.export_period == 7 and time.gmtime().tm_wday == 0: # on every monday
                     start_time      = '%s %02d:00:00'%((today - timedelta(7)).strftime('%d-%b-%Y'),job.day_time) # "%d-%b-%Y %H:%M:%S"
                     start_time      = mktime(datetime.strptime(start_time, "%d-%b-%Y %H:%M:%S").timetuple())
-                    filename_suffix = 'weekly_export_%d'%job.pk
+                    filename_suffix = 'weekly_export_%d_%s'%(job.pk,job.label)
                     add_task = True
                 elif job.export_period == 14 and time.gmtime().tm_yday%14 == 0: # on every second monday
                     start_time      = '%s %02d:00:00'%((today - timedelta(14)).strftime('%d-%b-%Y'),job.day_time) # "%d-%b-%Y %H:%M:%S"
                     start_time      = mktime(datetime.strptime(start_time, "%d-%b-%Y %H:%M:%S").timetuple())
-                    filename_suffix ='two_week_export_%d'%job.pk   
+                    filename_suffix ='two_week_export_%d_%s'%(job.pk,job.label) 
                     add_task = True                 
                 elif job.export_period == 30 and time.gmtime().tm_yday%30 == 0: # on every 30 days
                     start_time      = '%s %02d:00:00'%((today - timedelta(30)).strftime('%d-%b-%Y'),job.day_time) # "%d-%b-%Y %H:%M:%S"
                     start_time      = mktime(datetime.strptime(start_time, "%d-%b-%Y %H:%M:%S").timetuple())
-                    filename_suffix = '30_day_export_%d'%job.pk
+                    filename_suffix = '30_day_export_%d_%s'%(job.pk,job.label)
                     add_task = True
-                
-                end_time    = '%s %02d:59:59'%(today.strftime('%d-%b-%Y'),23 - job.day_time) # "%d-%b-%Y %H:%M:%S"
+                    
+                if job.day_time == 0:
+                    end_time    = '%s %02d:59:59'%((today - timedelta(1)).strftime('%d-%b-%Y'),23) # "%d-%b-%Y %H:%M:%S"
+                else:
+                    end_time    = '%s %02d:59:59'%(today.strftime('%d-%b-%Y'),job.day_time-1) # "%d-%b-%Y %H:%M:%S"
                 end_time    = mktime(datetime.strptime(end_time, "%d-%b-%Y %H:%M:%S").timetuple())
                 # create ExportTask
                 if add_task:

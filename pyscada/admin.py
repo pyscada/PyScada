@@ -7,7 +7,7 @@ from pyscada.models import DeviceWriteTask
 from pyscada.models import Log
 from pyscada.models import BackgroundTask
 from pyscada.models import Event
-from pyscada.models import RecordedEvent
+from pyscada.models import RecordedEvent, RecordedData
 from pyscada.models import Mail
 from pyscada.utils import update_variable_set
 
@@ -42,6 +42,25 @@ class VariableImportAdmin(admin.ModelAdmin):
 class VariableConfigFileImport(Variable):
     class Meta:
         proxy = True
+        
+class VariableState(Variable):
+    class Meta:
+        proxy = True
+        
+class VariableStateAdmin(admin.ModelAdmin):
+    list_display = ('name','last_value')
+    list_display_links = ()
+    list_per_page = 10
+    actions = None
+    search_fields = ('name',)
+    def last_value(self, instance):
+        element = RecordedData.objects.last_element(variable_id=instance.pk)
+        if element:
+            return  datetime.datetime.fromtimestamp(\
+                element.time_value()).strftime('%Y-%m-%d %H:%M:%S')\
+                 + ' : ' + element.value().__str__() + ' ' + instance.unit.unit
+        else:
+            return ' - : NaN ' + instance.unit.unit
 
 class DeviceAdminFrom(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -168,3 +187,4 @@ admin.site.register(Mail,MailAdmin)
 admin.site.register(DeviceWriteTask,DeviceWriteTaskAdmin)
 admin.site.register(Log,LogAdmin)
 admin.site.register(BackgroundTask,BackgroundTaskAdmin)
+admin.site.register(VariableState,VariableStateAdmin)

@@ -15,4 +15,15 @@
  - removed chart_set from hmi
  - updated docs
  - removed unused code
- 
+
+0.7.0.b4
+ - fixed reinit loop in daq daemon
+ - added restart of daq when Scaling model has changed
+ - fixed hmi.widget save without a title
+ - fixed export.handler (wrong start and enddate)
+ - fixed export to file, check of arrayindex
+ - added backend table (VariableState) for current values in the database
+ - fixed crash of hmi admin when widget has no title
+ - added unixtime value in web hmi (experimental)
+ - fixed custom html panel variable not uptading in hmi
+ - added restart_daemon field in background task model 

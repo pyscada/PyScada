@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0b2
+version 0.7.0b4
 
 Copyright (c) 2013-2016 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.7.0b2"
+var version = "0.7.0b4"
 var NotificationCount = 0
 var UpdateStatusCount = 0;
 var InitStatusCount = 0;
@@ -356,6 +356,10 @@ function updateDataValues(key,val){
             }
             $(".type-numeric.var-" + key).html(r_val);
             $('input.var-'+ key).attr("placeholder",r_val);
+            // unixtime
+            var date = new Date(val*1000);
+            $(".type-numeric.unixtime_local_date_time.var-" + key).html(date.toLocaleString());
+            $(".type-numeric.hex_str_full.var-" + key).html(val.toString(16).toUpperCase());
         }
         
         // set value fields

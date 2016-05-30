@@ -183,6 +183,14 @@ class RecordedDataValueManager(models.Manager):
 					values[key].insert(0,[tmp_time_min,first_values[key][1]])
 		#print '%1.3fs'%(time.time()-tic)
 		#tic = time.time()
+		
+		'''
+		add a datapoint bevor the nexte change of state
+		'''
+		# if kwargs.has_key('add_fake_data'):
+		# 	for item in variables:
+		# 		if values.has_key(item.pk):
+		# 			for v 
 		# change the key in the output dict 
 		if key_is_variable_name:
 			for item in variables:
@@ -651,7 +659,7 @@ class BackgroundTask(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	start 			= models.FloatField(default=0)
 	timestamp 		= models.FloatField(default=0)
-	progress		= models.FloatField(default=0)
+	progress		    = models.FloatField(default=0)
 	load			= models.FloatField(default=0)
 	min 			= models.FloatField(default=0)
 	max				= models.FloatField(default=0)
@@ -659,6 +667,7 @@ class BackgroundTask(models.Model):
 	failed			= models.BooleanField(default=False,blank=True)
 	pid				= models.IntegerField(default=0)
 	stop_daemon		= models.BooleanField(default=False,blank=True)
+	restart_daemon  = models.BooleanField(default=False,blank=True)
 	label			= models.CharField(max_length=400, default='')
 	message			= models.CharField(max_length=400, default='')
 	identifier      = models.CharField(max_length=400, default='',blank=True)
@@ -867,8 +876,9 @@ class Mail(models.Model):
 
 @receiver(post_save, sender=Variable)
 @receiver(post_save, sender=Device)
+@receiver(post_save, sender=Scaling)
 def _reinit_daq_daemons(sender, **kwargs):
 	"""
 	update the daq daemon configuration wenn changes be applied in the models
 	"""
-	bt = BackgroundTask.objects.filter(label='pyscada.daq.daemon',done=0,failed=0).update(message='reinit',timestamp = time.time())
+	bt = BackgroundTask.objects.filter(label='pyscada.daq.daemon',done=0,failed=0).update(message='reinit',restart_daemon=True,timestamp = time.time())

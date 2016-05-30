@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #__import__('pkg_resources').declare_namespace('pyscada')
 
-__version__ = '0.7.0b3'
+__version__ = '0.7.0b4'
 __author__  = 'Martin Schröder'
 
 default_app_config = 'pyscada.apps.PyScadaConfig'

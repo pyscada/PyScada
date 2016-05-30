@@ -42,4 +42,4 @@ def _reinit_daq_daemons(sender, **kwargs):
 	"""
 	update the daq daemon configuration wenn changes be applied in the models
 	"""
-	BackgroundTask.objects.filter(label='pyscada.daq.daemon',done=0,failed=0).update(message='reinit',timestamp = time())
+	BackgroundTask.objects.filter(label='pyscada.daq.daemon',done=0,failed=0).update(message='reinit',restart_daemon=True,timestamp = time())

@@ -1,1 +1,9 @@
-<div class="widget-body" >{{ custom_html_panel.html|safe }}</div>
+<div class="widget-body" >
+<!--  -->
+{% for var in custom_html_panel.variables.all %}
+    {% if var.active and var.device.active %}
+        <div class="hidden variable-config init-group" data-name="{{var.name}}" data-key="{{var.pk}}" data-color="{{ var.chart_line_color_code }}"></div>
+    {% endif %}
+{% endfor %}     
+{{ custom_html_panel.html|safe }}
+</div>

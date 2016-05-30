@@ -605,6 +605,7 @@ def daq_daemon_run(label):
 			except:
 				var = traceback.format_exc()
 				log.error("exeption while initialisation of %s:%s %s" % (label,os.linesep, var))
+	
 	init_devices()
 	# register the task in Backgroudtask list
 	bt = BackgroundTask(start=time.time(),label=label,message='daemonized',timestamp=time.time(),pid = pid)
@@ -619,12 +620,23 @@ def daq_daemon_run(label):
 
 	log.notice("started %s"%label)
 	err_count = 0
+	reinit_count = 0
 	# main loop
 	while not bt.stop_daemon:
 		t_start = time.time()
 		# handle reinit
-		if bt.message == 'reinit':
+		if bt.restart_daemon:
+			reinit_count += 1
+		# wait aprox 5 min (300s) runs befor reinit to avoid frequent reinits
+		if bt.restart_daemon and reinit_count > 300.0/dt_set: 
 			init_devices()
+			bt = BackgroundTask.objects.get(pk=bt_id)
+			bt.timestamp = time.time()
+			bt.message = 'running...'
+			bt.restart_daemon = False
+			bt.save()
+			log.notice("reinit of %s daemon done"%label)
+			reinit_count = 0
 		# process write tasks
 		for task in DeviceWriteTask.objects.filter(done=False,start__lte=time.time(),failed=False):
 			if not task.variable.scaling is None:

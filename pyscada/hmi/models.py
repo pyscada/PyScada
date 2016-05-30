@@ -122,8 +122,11 @@ class Widget(models.Model):
 	class Meta:
 		ordering = ['row','col']
 	def __unicode__(self):
-		return unicode(str(self.id) + ': ' + self.page.title + ', ' + self.title)
-	
+		if self.title is not None and self.page:
+			return unicode(str(self.id) + ': ' + self.page.title + ', ' + self.title)
+		else:
+			return unicode(str(self.id) + ': ' + 'None, None')
+			
 	def css_class(self):
 		widget_size = "col-xs-12 col-sm-12 col-md-12 col-lg-12"
 		if self.size == 3:
