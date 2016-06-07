@@ -38,6 +38,16 @@ class Command(BaseCommand):
     
     
     def init_context(self,daemon_name):
+        # chek writepermission to the pid and log dir
+        if not os.access('/tmp/',os.W_OK):
+            self.stdout.write("pid path is not writeable")
+            sys.exit(0)
+        if os.access('/tmp/pyscada_daemon_%s.pid'% daemon_name,os.F_OK) and not os.access('/tmp/pyscada_daemon_%s.pid'% daemon_name,os.W_OK):
+            self.stdout.write("pid file is not writeable")
+            sys.exit(0)
+        if not os.access(settings.BASE_DIR,os.W_OK):
+            self.stdout.write("log path is not writeable")
+            sys.exit(0)
         context = daemon.DaemonContext(
             working_directory=settings.BASE_DIR,
             pidfile=daemon.pidfile.PIDLockFile('/tmp/pyscada_daemon_%s.pid'% daemon_name),

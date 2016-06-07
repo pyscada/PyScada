@@ -22,6 +22,7 @@ from datetime import datetime
 import os
 from time import time, localtime, strftime,mktime
 from numpy import float64,float32,int32,uint32,uint16,int16,uint8, nan,arange
+import numpy as np
 import math
 
 
@@ -86,6 +87,26 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
         # create output dir if not existing
         if not os.path.exists(backup_file_path ):
             os.mkdir(backup_file_path)
+            
+        # validate timevalues
+        db_time_min = RecordedData.objects.first()
+        if not db_time_min:
+            tp.timestamp = time()
+            tp.message = 'not data to export'
+            tp.failed = 1
+            tp.save()
+            return
+        time_min = max(db_time_min.time_value(),time_min)
+        
+        db_time_max = RecordedData.objects.last()
+        if not db_time_max:
+            tp.timestamp = time()
+            tp.message = 'not data to export'
+            tp.failed = 1
+            tp.save()
+            return
+        time_max = min(db_time_max.time_value(),time_max)
+        
         # filename  and suffix
         cdstr_from = datetime.fromtimestamp(time_min).strftime("%Y_%m_%d_%H%M")
         cdstr_to = datetime.fromtimestamp(time_max).strftime("%Y_%m_%d_%H%M")
@@ -193,7 +214,8 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
                 continue
             
             # data[var.pk][::][time,value]
-            out_data = [0]*len(timevalues) # init output data
+            #out_data = [0]*len(timevalues) # init output data
+            out_data = np.zeros(len(timevalues))
             # i                            # time data index
             ii = 0                         # source data index
             # calulate mean values
