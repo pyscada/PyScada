@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0b4
+version 0.7.0b5
 
 Copyright (c) 2013-2016 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.7.0b4"
+var version = "0.7.0b5"
 var NotificationCount = 0
 var UpdateStatusCount = 0;
 var InitStatusCount = 0;
@@ -56,6 +56,7 @@ function hideInitStatus(){
     if (InitStatusCount <= 0){
         $("#loadingAnimation").hide();
     }
+    init_chart_data_fetch_pending_count--;
 }
 function raiseDataOutOfDateError(){
     if (!DataOutOfDate){
@@ -83,18 +84,27 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
         $.ajax({
             url: RootUrl+'json/cache_data/',
             dataType: "json",
-            timeout: ((first_timestamp == 0) ? fetch_data_timeout*10 : fetch_data_timeout),
+            timeout: ((init == 1) ? fetch_data_timeout*10 : fetch_data_timeout),
             type: "POST",
             data:{ timestamp: init ? data_first_timestamp:data_last_timestamp, variables: variable_keys, first_timestamp:first_timestamp, init: init},
             dataType:"json"
             }).done(function(data) {
                 update_charts = true;
-                if (init){
+                if (typeof(data['timestamp'])==="number"){
                     timestamp = data['timestamp'];
                     delete data['timestamp'];
+                }else{
+                    timestamp = 0;
+                }
+                if (typeof(data['server_time'])==="number"){
                     server_time = data['server_time'];
                     delete data['server_time'];
-                    
+                    var date = new Date(server_time);
+                    $(".server_time").html(date.toLocaleString());
+                }else{
+                    server_time = 0;            
+                }
+                if (init){
                     $.each(data, function(key, val) {
                     //append data to data array
                         if (typeof(val)==="object" && typeof plot_instance !== 'undefined'){
@@ -116,11 +126,6 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                     });
                     init_chart_data_fetch_pending_count--;
                 }else{
-                    timestamp = data['timestamp'];
-                    delete data['timestamp'];
-                    server_time = data['server_time'];
-                    delete data['server_time'];
-                    
                     if (data_last_timestamp < timestamp){
                         data_last_timestamp = timestamp;
                     }
@@ -176,8 +181,6 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                     setTimeout(function() {fetchData();}, refresh_rate);
                 }
 
-                
-                
                 $("#AutoUpdateButton").removeClass("btn-warning");
                 $("#AutoUpdateButton").addClass("btn-success");
                 if (JsonErrorCount > 0) {
@@ -204,14 +207,10 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                         });
                     });
                 }
-                if (init){
-                    init_chart_data_fetch_pending_count--;
-                    hideInitStatus();
-                }
+                if (init){ hideInitStatus(); }
                 hideUpdateStatus();
                 $("#AutoUpdateButton").removeClass("btn-success");
                 $("#AutoUpdateButton").addClass("btn-warning");
-                $("#AutoUpdateStatus").hide();
                 }
         );
         updateLog();
@@ -359,6 +358,7 @@ function updateDataValues(key,val){
             // unixtime
             var date = new Date(val*1000);
             $(".type-numeric.unixtime_local_date_time.var-" + key).html(date.toLocaleString());
+            $(".type-numeric.unixtime_utc_date_time.var-" + key).html(date.toUTCString());
             $(".type-numeric.hex_str_full.var-" + key).html(val.toString(16).toUpperCase());
         }
         
@@ -553,41 +553,41 @@ function PyScadaPlot(id){
         }
         
     }
-    
+
+    function CheckBuffer(key){
+        if (data[key].length > BufferSize){
+            // if buffer is full drop the first element
+            data[key].splice(-data[key].length,data[key].length-BufferSize);
+        }
+    }
+
     function addData(key,time,val){
         if (typeof(data[key])==="object"){
             data[key].push([time, val]);
-            if (data[key].length > BufferSize){
-                // if buffer is full drop the oldest elements
-                data[key].splice(-data[key].length,data[key].length-BufferSize);
-            }
+            CheckBuffer(key);
         }
     }
     
     function AppendData(key,value){
         if (typeof(data[key])==="object"){
             data[key] = data[key].concat(value);
-            if (data[key].length > BufferSize){
-                // if buffer is full drop the first element
-                data[key].splice(-data[key].length,data[key].length-BufferSize);
-            }
+            CheckBuffer(key);
         }
     }
     
     function PreppendData(key,value){
         if (typeof(data[key])==="object"){
             data[key] = value.concat(data[key]);
+            CheckBuffer(key);
         }
     }
+
     function UpdateData(key,timestamp){
         if (typeof(data[key])==="object"){
             if (data[key].length >= 1){
-                if (typeof(data[key][data[key].length-1][1])==="number"){
-                    data[key].push([timestamp,data[key][data[key].length-1][1]]);
-                    if (data[key].length > BufferSize){
-                        // if buffer is full drop the first element
-                        data[key].splice(-data[key].length,data[key].length-BufferSize);
-                    }
+                if (typeof(data[key][data[key].length-1][1])==="number" | typeof(data[key][data[key].length-1][1])==="boolean"){
+                    data[key][data[key].length-1][0] = timestamp;
+                    CheckBuffer(key);
                 }
             }
         }
@@ -832,6 +832,6 @@ $( document ).ready(function() {
             InitVariableKeys.push(val)
         }
     });
-    setTimeout(function() {fetchData()}, 10000);
+    setTimeout(function() {fetchData()}, 5000);
     setTimeout(function() {fetchData(InitVariableKeys,0,1);}, 15000);
 });

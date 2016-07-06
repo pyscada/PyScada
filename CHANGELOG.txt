@@ -16,7 +16,7 @@
  - updated docs
  - removed unused code
 
-0.7.0.b4
+0.7.0b4
  - fixed reinit loop in daq daemon
  - added restart of daq when Scaling model has changed
  - fixed hmi.widget save without a title
@@ -28,3 +28,9 @@
  - fixed custom html panel variable not uptading in hmi
  - added restart_daemon field in background task model
  - added check of write permissions for pid and log file in DaemonHandler
+ 
+0.7.0b5
+ - added color chooser to VariableAdmin
+ - fixed display bool values in charts
+ - added servertime to footer of hmi
+ - new register handling structure in modbus device

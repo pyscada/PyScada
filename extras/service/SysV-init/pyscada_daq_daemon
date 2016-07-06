@@ -1,0 +1,51 @@
+#!/bin/bash
+ 
+### BEGIN INIT INFO
+# Provides:		 pyscada_daq_daemon
+# Required-Start:	 $all
+# Required-Stop:	 $all
+# Default-Start:	 2 3 4 5
+# Default-Stop:		 0 1 6
+# Short-Description: starts the pyscada daq daemon
+# Description:		 starts pyscada daq daemon
+### END INIT INFO
+
+RUN_AS='pyscada'
+
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+start () {
+	echo "Spawning pyscada daq daemon"
+	start-stop-daemon --start -c $RUN_AS -d /var/www/pyscada/PyScadaServer --exec manage.py -- daqdaemon start
+	return
+}
+
+
+stop () {
+	start-stop-daemon --start -c $RUN_AS -d /var/www/pyscada/PyScadaServer --exec manage.py -- daqdaemon stop
+	return
+}
+ 
+case "$1" in
+  start)
+		echo "Starting"
+		start
+		;;
+  stop)
+		echo "Stopping"
+		stop
+		;;
+  restart)
+		echo "Restarting"
+		stop
+		sleep 1
+		start
+		;;
+  *)
+		N=/etc/init.d/$NAME
+		echo "Usage: $N {start|stop|restart} " >&2
+		exit 1
+		;;
+esac
+ 
+exit 0

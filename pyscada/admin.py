@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from pyscada.models import Device
 from pyscada.models import Variable
-from pyscada.models import Scaling
+from pyscada.models import Scaling, Color
 from pyscada.models import Unit
 from pyscada.models import DeviceWriteTask
 from pyscada.models import Log
@@ -18,7 +18,7 @@ from django import forms
 
 import datetime
 
-class VariableAdminForm(forms.ModelForm):
+class VariableImportAdminForm(forms.ModelForm):
     json_configuration = forms.CharField(widget=forms.Textarea)
 
     class Meta:
@@ -27,7 +27,7 @@ class VariableAdminForm(forms.ModelForm):
 
 class VariableImportAdmin(admin.ModelAdmin):
     actions = None
-    form = VariableAdminForm
+    form = VariableImportAdminForm
     fields = ('json_configuration',)
     list_display = ('name','active')
 
@@ -65,7 +65,6 @@ class VariableStateAdmin(admin.ModelAdmin):
 class DeviceAdminFrom(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(DeviceAdminFrom, self).__init__(*args, **kwargs)
-        wtf = Variable.objects.all();
         w = self.fields['device_type'].widget
         # return a list of installed drivers for device classes
         device_type_choises = (('generic','no Device'),)
@@ -94,12 +93,33 @@ class DeviceAdmin(admin.ModelAdmin):
     list_display_links = ('short_name', 'description')
     form = DeviceAdminFrom
 
+class VarieblesAdminFrom(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(VarieblesAdminFrom, self).__init__(*args, **kwargs)
+        wtf = Color.objects.all();
+        w = self.fields['chart_line_color'].widget
+        color_choices = []
+        for choice in wtf:
+            color_choices.append((choice.id,choice.color_code()))
+        w.choices = color_choices
+        # override w.render_option method
+        def render_option_color(self,selected_choices, option_value, option_label):
+            html = self._render_option(selected_choices, option_value, option_label.upper())
+            font_color = hex(int('ffffff',16)-int(option_label[1::],16))[2::]
+            return html.replace('<option','<option style="background: %s; color: #%s"'%(option_label,font_color))
+        import types
+        from django.forms.widgets import Select
+        w.widget._render_option = w.widget.render_option # copy old method 
+        f = types.MethodType(render_option_color, w.widget,Select)
+        w.widget.render_option = f # add new method
+        
 class VarieblesAdmin(admin.ModelAdmin):
     list_display = ('id','name','description','device_name','value_class','active','writeable',)
     list_editable = ('active','writeable',)
     list_display_links = ('name',)
     list_filter = ('device__short_name', 'active','writeable')
     search_fields = ['name',]
+    form = VarieblesAdminFrom
     def device_name(self, instance):
         return instance.device.short_name
 

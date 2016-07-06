@@ -51,7 +51,7 @@ class RecordedDataValueManager(models.Manager):
 				id__range=(time_min,time_max),**kwargs).last()
 		
 			
-	def get_values_in_time_range(self,time_min=None,time_max=None,query_first_value=False,time_in_ms=False,key_is_variable_name=False,**kwargs):
+	def get_values_in_time_range(self,time_min=None,time_max=None,query_first_value=False,time_in_ms=False,key_is_variable_name=False,add_timetamp_field=False,**kwargs):
 		#tic = time.time()
 		if time_min is None:
 			time_min = 0
@@ -91,7 +91,10 @@ class RecordedDataValueManager(models.Manager):
 			var_filter = False
 		
 		tmp_time_max = 0           # get the most recent time value
-		tmp_time_min = time.time() # 
+		if time_in_ms:
+			tmp_time_min = time.time()*1000 #
+		else:
+			tmp_time_min = time.time() #
 		#print '%1.3fs'%(time.time()-tic)
 		#tic = time.time()
 		#for var in variables:
@@ -144,13 +147,21 @@ class RecordedDataValueManager(models.Manager):
 		# tic = time.time()
 		# check if for all variables the first and last value is present
 		update_first_value_list = []
+		timestamp_max = tmp_time_max
 		for key, item in values.iteritems():
 			if item[-1][0] < tmp_time_max:
-				# append last value
-				item.append([tmp_time_max,item[-1][1]])
+				if query_first_value:
+					# append last value
+					item.append([tmp_time_max,item[-1][1]])
+				else:
+					# if tmp_time_max - item[-1][0] > 5: #TODO
+					# update last value
+					item[-1][0] = tmp_time_max
+				
 			if query_first_value and item[0][0] > tmp_time_min:
 				update_first_value_list.append(key)
-				
+			
+
 		if len(update_first_value_list) > 0:
 			tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(\
 						id__range=(time_min-(3610*1000*2097152),time_min),\
@@ -197,7 +208,10 @@ class RecordedDataValueManager(models.Manager):
 				if values.has_key(item.pk):
 					values[item.name] = values.pop(item.pk)
 		#print '%1.3fs'%((time.time()-tic))
-			
+		if add_timetamp_field:
+			if timestamp_max == 0:
+				timestamp_max = time_min/2097152.0*f_time_scale
+			values['timestamp'] = timestamp_max
 		return values
 #
 ## Models
@@ -212,7 +226,9 @@ class Color(models.Model):
 		return unicode('rgb('+str(self.R)+', '+str(self.G)+', '+str(self.B)+', '+')')
 	def color_code(self):
 		return unicode('#%02x%02x%02x' % (self.R, self.G, self.B))
-
+	def color_rect_html(self):
+		return unicode('<div style="width:4px;height:0;border:5px solid #%02x%02x%02x;overflow:hidden"></div>'% (self.R, self.G, self.B))
+	
 class Device(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	short_name		= models.CharField(max_length=400, default='')
@@ -255,6 +271,8 @@ class Scaling(models.Model):
 	input_high		= models.FloatField()
 	output_low		= models.FloatField()
 	output_high		= models.FloatField()
+	limit_input     = models.BooleanField()
+	
 	def __unicode__(self):
 		if self.description:
 			return unicode(self.description)
@@ -262,10 +280,14 @@ class Scaling(models.Model):
 			return unicode(str(self.id) + '_[' + str(self.input_low) + ':' + \
 					str(self.input_high) + '] -> [' + str(self.output_low) + ':'\
 					+ str(self.output_low) + ']')
+	
 	def scale_value(self,input_value):
 		input_value = float(input_value)
+		if self.limit_input:
+			input_value = max(min(input_value,self.input_high),self.input_low)
 		norm_value = (input_value - self.input_low)/(self.input_high - self.input_low)
 		return norm_value * (self.output_high - self.output_low) + self.output_low
+	
 	def scale_output_value(self,input_value):
 		input_value = float(input_value)
 		norm_value = (input_value - self.output_low)/(self.output_high - self.output_low)
@@ -274,7 +296,7 @@ class Scaling(models.Model):
 class Variable(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	name 			= models.SlugField(max_length=80, verbose_name="variable name",unique=True)
-	description 	= models.TextField(default='', verbose_name="Description")
+	description 		= models.TextField(default='', verbose_name="Description")
 	device			= models.ForeignKey(Device)
 	active			= models.BooleanField(default=True)
 	unit 			= models.ForeignKey(Unit,on_delete=models.SET(1))
@@ -312,7 +334,7 @@ class Variable(models.Model):
 						('2-3-0-1','2-3-0-1'),
 						('3-2-1-0','3-2-1-0'),
 						)
-	short_name			= models.CharField(default='',max_length=80, verbose_name="variable short name")
+	short_name			= models.CharField(default='',max_length=80, verbose_name="variable short name",blank=True)
 	chart_line_color 	= models.ForeignKey(Color,null=True,default=None,blank=True)
 	chart_line_thickness_choices = ((3,'3Px'),)
 	chart_line_thickness = models.PositiveSmallIntegerField(default=3,choices=chart_line_thickness_choices)
@@ -349,9 +371,11 @@ class Variable(models.Model):
 	byte_order      = models.CharField(max_length=15, default='default', choices=byte_order_choices)
 	# for RecodedVariable
 	value           	= None
-	prev_value 			= None
+	prev_value 		= None
 	store_value 		= False		
-	
+	timestamp_old   = None
+	timestamp       = None
+
 	def __unicode__(self):
 		return unicode(self.name)
 	
@@ -404,11 +428,15 @@ class Variable(models.Model):
 			# value could not be queried
 			self.store_value = False
 		elif abs(self.prev_value - self.value) <= self.cov_increment:
-			if self.timestamp_old is not None:
-				if (self.timestamp - self.timestamp_old) >= (60*60):
+			if self.timestamp_old is None:
+				self.store_value = True
+				self.timestamp_old = self.timestamp
+			else:
+				if (self.timestamp - self.timestamp_old) >= (3600):
 					# store Value if old Value is older then 1 hour
 					self.store_value = True
 					self.timestamp_old = self.timestamp
+				
 		else:                               
 			# value has changed
 			self.store_value = True
@@ -532,11 +560,11 @@ class Variable(models.Model):
 
 class DeviceWriteTask(models.Model):
 	id 				= models.AutoField(primary_key=True)
-	variable	 	= models.ForeignKey('Variable')
+	variable	 		= models.ForeignKey('Variable')
 	value			= models.FloatField()
 	user	 		= models.ForeignKey(User,null=True, on_delete=models.SET_NULL)
-	start 			= models.FloatField(default=0)
-	fineshed		= models.FloatField(default=0,blank=True)
+	start 			= models.FloatField(default=0) #TODO DateTimeField
+	fineshed			= models.FloatField(default=0,blank=True) #TODO DateTimeField
 	done			= models.BooleanField(default=False,blank=True)
 	failed			= models.BooleanField(default=False,blank=True)
 
@@ -634,7 +662,7 @@ class Log(models.Model):
 	#id 				= models.AutoField(primary_key=True)
 	id				= models.BigIntegerField(primary_key=True)
 	level			= models.IntegerField(default=0, verbose_name="level")
-	timestamp 		= models.FloatField()
+	timestamp 		= models.FloatField()#TODO DateTimeField
 	message_short	= models.CharField(max_length=400, default='', verbose_name="short message")
 	message 		= models.TextField(default='', verbose_name="message")
 	user	 		= models.ForeignKey(User,null=True, on_delete=models.SET_NULL)
@@ -657,8 +685,8 @@ class Log(models.Model):
 
 class BackgroundTask(models.Model):
 	id 				= models.AutoField(primary_key=True)
-	start 			= models.FloatField(default=0)
-	timestamp 		= models.FloatField(default=0)
+	start 			= models.FloatField(default=0)#TODO DateTimeField
+	timestamp 		= models.FloatField(default=0)#TODO DateTimeField
 	progress		    = models.FloatField(default=0)
 	load			= models.FloatField(default=0)
 	min 			= models.FloatField(default=0)
@@ -681,7 +709,7 @@ class BackgroundTask(models.Model):
 class Event(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	label			= models.CharField(max_length=400, default='')
-	variable    	= models.ForeignKey(Variable)
+	variable    		= models.ForeignKey(Variable)
 	level_choises	= 	(
 							(0,'informative'),
 							(1,'ok'),
@@ -837,8 +865,8 @@ class Event(models.Model):
 class RecordedEvent(models.Model):
 	id          = models.AutoField(primary_key=True)
 	event		= models.ForeignKey(Event)
-	time_begin  = models.FloatField(default=0)
-	time_end	= models.FloatField(null=True,blank=True)
+	time_begin  = models.FloatField(default=0) #TODO DateTimeField
+	time_end	= models.FloatField(null=True,blank=True) #TODO DateTimeField
 	active		= models.BooleanField(default=False,blank=True)
 
 
@@ -847,7 +875,7 @@ class Mail(models.Model):
 	subject     = models.TextField(default='',blank=True)
 	message     = models.TextField(default='',blank=True)
 	to_email	= models.EmailField(max_length=254)
-	timestamp 	= models.FloatField(default=0,blank=True)
+	timestamp 	= models.FloatField(default=0,blank=True) #TODO DateTimeField
 	done		= models.BooleanField(default=False,blank=True)
 	send_fail_count = models.PositiveSmallIntegerField(default=0,blank=True)
 	def send_mail(self):

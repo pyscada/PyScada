@@ -197,9 +197,10 @@ def get_cache_data(request):
 		query_first_value = init,\
 		time_in_ms = True,\
 		key_is_variable_name = True,\
+		add_timetamp_field = True,\
 		variable_id__in = active_variables)
-	
-	data["timestamp"] = time.time()*1000 # TODO max_time from data
+
+	#data["timestamp"] = time.time()*1000 # TODO max_time from data
 	data["server_time"] = time.time()*1000
 	jdata = json.dumps(data)
 	return HttpResponse(jdata, content_type='application/json')

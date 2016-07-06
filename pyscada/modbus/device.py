@@ -12,162 +12,114 @@ except ImportError:
 
 from math import isnan, isinf
 from time import time
+import traceback
 
-class InputRegisterBlock:
+def find_gap(self,L,value):
+    """
+    try to find a address gap in the list of modbus registers
+    """
+    for index in range(len(L)):
+        if L[index] == value:
+            return None
+        if L[index] > value:
+            return index
+
+
+def _default_decoder(value):
+    return value[0]
+    
+
+class RegisterBlock:
     def __init__(self):
-        self.variable_address   = [] #
-        self.variable_length    = [] # in bytes
-        self.decode_value        = [] #
-        self.variable_id        = [] #
+        self.registers_data = {} # dict of modbus register addresses
+        self.registers = []
+        self.variables = {}
+        self.register_size = 16 # in bits
 
-    def insert_item(self,variable_id,variable_address,decode_value,variable_length):
-        if not self.variable_address:
-            self.variable_address.append(variable_address)
-            self.variable_length.append(variable_length)
-            self.decode_value.append(decode_value)
-            self.variable_id.append(variable_id)
-        elif max(self.variable_address) < variable_address:
-            self.variable_address.append(variable_address)
-            self.variable_length.append(variable_length)
-            self.decode_value.append(decode_value)
-            self.variable_id.append(variable_id)
-        elif min(self.variable_address) > variable_address:
-            self.variable_address.insert(0,variable_address)
-            self.variable_length.insert(0,variable_length)
-            self.decode_value.insert(0,decode_value)
-            self.variable_id.insert(0,variable_id)
-        else:
-            i = self.find_gap(self.variable_address,variable_address)
-            if (i is not None):
-                self.variable_address.insert(i,variable_address)
-                self.variable_length.insert(i,variable_length)
-                self.decode_value.insert(i,decode_value)
-                self.variable_id.insert(i,variable_id)
+    
+    def insert_item(self,variable_id,variable_address,decode_value=_default_decoder,variable_length=1):
+        self.variables[variable_id]= {
+                'decode_function':decode_value,\
+                'len':variable_length,\
+                'registers': []\
+            }
+        for idx in range(variable_length/self.register_size):
+            if not self.registers_data.has_key(variable_address+idx):
+                # register will not be queried add register 
+                self.registers_data[variable_address+idx] = None
+            
+            self.variables[variable_id]['registers'].append(variable_address+idx)
+        self.registers = self.registers_data.keys()
+        self.registers.sort()
 
-
+    def check(self):
+        '''
+        check the registerblock
+        '''
+        # todo do check for gaps
+        return True
+    
+    def _request_data(self,slave,unit,first_address,quantity):
+        return slave.read_input_registers(first_address,quantity,unit=unit)
+    
     def request_data(self,slave,unit=0x00):
-        quantity = sum(self.variable_length) # number of bits to read
-        first_address = min(self.variable_address)
+        quantity = max(self.registers)-min(self.registers)+1
+        first_address = min(self.registers)
         
         try:
-            result = slave.read_input_registers(first_address,quantity/16,unit=unit)
+            result = self._request_data(slave,unit,first_address,quantity)
         except:
             # something went wrong (ie. Server/Slave is not excessible)
+            # todo add log for some specific errors
+            #var = traceback.format_exc()
+            #log.error("exeption while request_data of %s" % (var))
             return None
-        if not hasattr(result, 'registers'):
-            return None
-
-        return self.decode_data(result)
-        
-    
-    def decode_data(self,result):
-        out = {}
-        #var_count = 0
-        for idx in range(len(self.variable_length)):
-            tmp = []
-            for i in range(self.variable_length[idx]/16):
-                tmp.append(result.registers.pop(0))
-            out[self.variable_id[idx]] = self.decode_value[idx](tmp)
-            if isnan(out[self.variable_id[idx]]) or isinf(out[self.variable_id[idx]]):
-                    out[self.variable_id[idx]] = None
-        return out
-    
-    def find_gap(self,L,value):
-        for index in range(len(L)):
-            if L[index] == value:
-                return None
-            if L[index] > value:
-                return index
-
-class HoldingRegisterBlock(InputRegisterBlock):
-    def request_data(self,slave,unit=0x00):
-        quantity = sum(self.variable_length) # number of bits to read
-        first_address = min(self.variable_address)
-        try:
-            result = slave.read_holding_registers(first_address,quantity/16,unit=unit)
-        except:
-            # something went wrong (ie. Server/Slave is not excessible) 
-            return None   
-        if not hasattr(result, 'registers'):
-            return None
-
-        return self.decode_data(result)
-
-class CoilBlock:
-    def __init__(self):
-        self.variable_id            = [] #
-        self.variable_address       = [] #
-    
-    def insert_item(self,variable_id,variable_address):
-        if not self.variable_address:
-            self.variable_address.append(variable_address)
-            self.variable_id.append(variable_id)
-        elif max(self.variable_address) < variable_address:
-            self.variable_address.append(variable_address)
-            self.variable_id.append(variable_id)
-        elif min(self.variable_address) > variable_address:
-            self.variable_address.insert(0,variable_address)
-            self.variable_id.insert(0,variable_id)
+        if hasattr(result, 'registers'):
+            return self.decode_data(result.registers)
+        elif hasattr(result, 'bits'):
+            return self.decode_data(result.bits)
         else:
-            i = self.find_gap(self.variable_address,variable_address)
-            if (i is not None):
-                self.variable_address.insert(i,variable_address)
-                self.variable_id.insert(i,variable_id)
+            return None
     
     
-    def request_data(self,slave,unit=0x00):
-        """
-        request data from the modbus slave/server
-        """
-        quantity = len(self.variable_address) # number of bits to read
-        first_address = min(self.variable_address)
-        try:
-            result = slave.read_coils(first_address,quantity,unit=unit)
-        except:
-            # something went wrong (ie. Server/Slave is not excessible) 
-            return None
-            
-            
-        if not hasattr(result, 'bits'):
-            return None
-            
-        return self.decode_data(result)
-        
-
     def decode_data(self,result):
-        """
-        map/decode input bits to output bit array
-        """
         out = {}
-        for idx in self.variable_id:
-            out[idx] = result.bits.pop(0)
+        # map result to the register
+        for idx in self.registers:
+            self.registers_data[idx] = result.pop(0)
+        for id in self.variables:
+            out[id] = self.variables[id]['decode_function']([self.registers_data[k] for k in self.variables[id]['registers']])
+            if type(out[id]) == 'float':
+                if isnan(out[id]) or isinf(out[id]):
+                    out[id] = None
         return out
-    
-    def find_gap(self,L,value):
-        """
-        try to find a address gap in the list of modbus registers
-        """
-        for index in range(len(L)):
-            if L[index] == value:
-                return None
-            if L[index] > value:
-                return index
 
-class DiscreteInputBlock(CoilBlock):
-    def request_data(self,slave,unit=0x00):
-        quantity = len(self.variable_address) # number of bits to read
-        first_address = min(self.variable_address)
-        
-        try:
-            result = slave.read_discrete_inputs(first_address,quantity,unit=unit)
-        except:
-            # something went wrong (ie. Server/Slave is not excessible) 
-            return None
-        
-        if not hasattr(result, 'bits'):
-            return None
-            
-        return self.decode_data(result)
+class InputRegisterBlock(RegisterBlock):
+    def _request_data(self,slave,unit,first_address,quantity):
+        return slave.read_input_registers(first_address,quantity,unit=unit)
+
+
+class HoldingRegisterBlock(RegisterBlock):
+    def _request_data(self,slave,unit,first_address,quantity):
+        return slave.read_holding_registers(first_address,quantity,unit=unit)
+
+
+class CoilBlock(RegisterBlock):
+    def __init__(self):
+        RegisterBlock.__init__(self)
+        self.register_size          = 1  # in bitss
+    
+    def _request_data(self,slave,unit,first_address,quantity):
+        return slave.read_coils(first_address,quantity,unit=unit)
+    
+
+class DiscreteInputBlock(RegisterBlock):
+    def __init__(self):
+        RegisterBlock.__init__(self)
+        self.register_size          = 1  # in bitss
+    
+    def _request_data(self,slave,unit,first_address,quantity):
+        return slave.read_discrete_inputs(first_address,quantity,unit=unit)
 
 
 class Device:
@@ -340,7 +292,7 @@ class Device:
                 result = register_block.request_data(self.slave,self._unit_id)
             
             if result is not None:
-                for variable_id in register_block.variable_id:
+                for variable_id in register_block.variables:
                     if self.variables[variable_id].update_value(result[variable_id],time()):
                         redorded_data_element = self.variables[variable_id].create_recorded_data_element()
                         if redorded_data_element is not None:
@@ -348,9 +300,8 @@ class Device:
                     if self.variables[variable_id].accessible < 1:
                         log.info(("variable with id: %d is now accessible")%(variable_id))
                         self.variables[variable_id].accessible = 1
-                
             else:
-                for variable_id in register_block.variable_id:
+                for variable_id in register_block.variables:
                     if self.variables[variable_id].accessible == -1:
                         log.error(("variable with id: %d is not accessible")%(variable_id))
                         self.variables[variable_id].update_value(None,time())
