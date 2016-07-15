@@ -34,3 +34,10 @@
  - fixed display bool values in charts
  - added servertime to footer of hmi
  - new register handling structure in modbus device
+
+0.7.0b6
+ - updated javascript libs
+    - jquery --> 1.12.4
+    - flot --> 0.8.3
+    - tablesorter --> 2.0.5b
+    - bootstrap --> 3.3.6

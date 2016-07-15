@@ -1,6 +1,6 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0b5
+version 0.7.0b6
 
 Copyright (c) 2013-2016 Martin Schröder
 Licensed under the GPL.
@@ -136,7 +136,7 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                     DataOutOfDate = (server_time - timestamp  > cache_timeout);
                     if (DataOutOfDate){
                         raiseDataOutOfDateError();
-                        $.each(PyScadaPlots,function(plot_id){
+                        /*$.each(PyScadaPlots,function(plot_id){
                             var variable_names = PyScadaPlots[plot_id].getVariableNames();
                             $.each(variable_names, function(key, val) {
                                 PyScadaPlots[plot_id].addData(val,server_time,Number.NaN);
@@ -148,6 +148,7 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                             };
                             $.browserQueue.add(doBind, this);
                         });
+                        */
                     }else{
                         clearDataOutOfDateError();
                         $.each(PyScadaPlots,function(plot_id){
@@ -177,6 +178,8 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                                 }
                             }
                         });
+                        // update all legend tables                        
+                        $('.legend table').trigger("update");
                     }
                     setTimeout(function() {fetchData();}, refresh_rate);
                 }
@@ -630,7 +633,6 @@ function PyScadaPlot(id){
             pOpt.xaxes[0].max = data_last_timestamp;
             flotPlot.setupGrid();
             flotPlot.draw();
-            $('.legend table').trigger("updateAll",["",function(table){}]);
         }
     }
 }
