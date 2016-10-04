@@ -30,6 +30,12 @@ class SystemStatVariable(models.Model):
         (15,'swap_memory_sout'),
         (17,'disk_usage_systemdisk_percent'),
         (18,'disk_usage_percent'),
+        (100, 'APCUPSD Online Status (True/False)'),
+        (101, 'APCUPSD Line Voltage'), # Volts
+        (102, 'APCUPSD Battery Voltage'), # Volts
+        (103, 'APCUPSD Battery Charge in %'), # %
+        (104, 'APCUPSD Battery Time Left in Minutes'), # Minutes
+        (105, 'APCUPSD Load in %'), # %
     )
     information	= models.PositiveSmallIntegerField(default=0,choices=information_choices)
     parameter   = models.CharField(default='',max_length=400,blank=True,null=True)

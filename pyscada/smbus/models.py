@@ -8,8 +8,8 @@ from time import time
 
 class SMbusDevice(models.Model):
     smbus_device 		= models.OneToOneField(Device)
-    device_type_choises = (('ups_pico','UPS PIco'),)
-    device_type         = models.CharField(max_length=400,choices=device_type_choises)                
+    device_type_choices = (('ups_pico','UPS PIco'),)
+    device_type         = models.CharField(max_length=400,choices=device_type_choices)                
     port				= models.CharField(default='1',max_length=400,)
     address_choices     = [(i,'0x%s/%d'%(hex(i),i)) for i in xrange(256)]
     address  			= models.PositiveSmallIntegerField(default=None,choices=address_choices,null=True)

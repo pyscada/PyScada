@@ -594,19 +594,20 @@ def daq_daemon_run(label):
 	
 	pid     = str(os.getpid())
 	devices = {}
-	dt_set  = 2.5
+	dt_set  = 5
 	# init daemons
-	def init_devices():
-		for item in Device.objects.exclude(device_type='generic').filter(active=1):
-			try:
-				tmp_device = item.get_device_instance()
-				if tmp_device is not None:
-					devices[item.pk] = tmp_device
-			except:
-				var = traceback.format_exc()
-				log.error("exeption while initialisation of %s:%s %s" % (label,os.linesep, var))
 	
-	init_devices()
+		
+	
+	for item in Device.objects.exclude(device_type='generic').filter(active=1):
+		try:
+			tmp_device = item.get_device_instance()
+			if tmp_device is not None:
+				devices[item.pk] = tmp_device
+				dt_set = min(dt_set,tmp_device.device.polling_interval)
+		except:
+			var = traceback.format_exc()
+			log.error("exeption while initialisation of %s:%s %s" % (label,os.linesep, var))
 	# register the task in Backgroudtask list
 	bt = BackgroundTask(start=time.time(),label=label,message='daemonized',timestamp=time.time(),pid = pid)
 	bt.save()
@@ -622,46 +623,61 @@ def daq_daemon_run(label):
 	err_count = 0
 	reinit_count = 0
 	# main loop
+	
+	
 	while not bt.stop_daemon:
-		t_start = time.time()
-		# handle reinit
-		if bt.restart_daemon:
-			reinit_count += 1
-		# wait aprox 5 min (300s) runs befor reinit to avoid frequent reinits
-		if bt.restart_daemon and reinit_count > 300.0/dt_set: 
-			init_devices()
-			bt = BackgroundTask.objects.get(pk=bt_id)
-			bt.timestamp = time.time()
-			bt.message = 'running...'
-			bt.restart_daemon = False
-			bt.save()
-			log.notice("reinit of %s daemon done"%label)
-			reinit_count = 0
-		# process write tasks
-		for task in DeviceWriteTask.objects.filter(done=False,start__lte=time.time(),failed=False):
-			if not task.variable.scaling is None:
-				task.value = task.variable.scaling.scale_output_value(task.value)
-			if devices.has_key(task.variable.device_id):
-				if devices[task.variable.device_id].write_data(task.variable.id,task.value): # do write task
-					task.done=True
-					task.fineshed=time.time()
-					task.save()
-					log.notice('changed variable %s (new value %1.6g %s)'%(task.variable.name,task.value,task.variable.unit.description),task.user)
+		try:
+			t_start = time.time()
+			# handle reinit
+			if bt.restart_daemon:
+				reinit_count += 1
+			# wait aprox 5 min (300s) runs befor reinit to avoid frequent reinits
+			if bt.restart_daemon and reinit_count > 300.0/dt_set: 
+				for item in Device.objects.exclude(device_type='generic').filter(active=1):
+					try:
+						tmp_device = item.get_device_instance()
+						if tmp_device is not None:
+							devices[item.pk] = tmp_device
+							dt_set = min(dt_set,tmp_device.device.polling_interval)
+					except:
+						var = traceback.format_exc()
+						log.error("exeption while initialisation of %s:%s %s" % (label,os.linesep, var))
+				
+				
+				
+				bt = BackgroundTask.objects.get(pk=bt_id)
+				bt.timestamp = time.time()
+				bt.message = 'running...'
+				bt.restart_daemon = False
+				bt.save()
+				log.notice("reinit of %s daemon done"%label)
+				reinit_count = 0
+			# process write tasks
+			for task in DeviceWriteTask.objects.filter(done=False,start__lte=time.time(),failed=False):
+				if not task.variable.scaling is None:
+					task.value = task.variable.scaling.scale_output_value(task.value)
+				if devices.has_key(task.variable.device_id):
+					if devices[task.variable.device_id].write_data(task.variable.id,task.value): # do write task
+						task.done=True
+						task.fineshed=time.time()
+						task.save()
+						log.notice('changed variable %s (new value %1.6g %s)'%(task.variable.name,task.value,task.variable.unit.description),task.user)
+					else:
+						task.failed = True
+						task.fineshed=time.time()
+						task.save()
+						log.error('change of variable %s failed'%(task.variable.name),task.user)
 				else:
 					task.failed = True
 					task.fineshed=time.time()
 					task.save()
-					log.error('change of variable %s failed'%(task.variable.name),task.user)
-			else:
-				task.failed = True
-				task.fineshed=time.time()
-				task.save()
-				log.error('device id not valid %d '%(task.variable.device_id),task.user)
-
-		# start the read tasks
-		data = [[]]
-		for item in devices.itervalues():
-			try:
+					log.error('device id not valid %d '%(task.variable.device_id),task.user)
+	
+			# start the read tasks
+			data = [[]]
+			
+			for item in devices.itervalues():
+				# todo check for polling interval
 				# do actions
 				tmp_data = item.request_data() # query data
 				if  isinstance(tmp_data,list):
@@ -672,29 +688,31 @@ def daq_daemon_run(label):
 						else:
 							# add to next write job
 							data.append(tmp_data)
-				err_count = 0
-			except:
-				var = traceback.format_exc()
-				err_count +=1
-				# write log only
-				if err_count <= 3 or err_count == 10 or err_count%100 == 0:
-					log.debug("occ: %d, exeption in %s daemon%s%s %s" % (err_count,label,os.linesep,os.linesep,var),-1)
-				# do actions
-		
-		# write data to the database
-		for item in data:
-			RecordedData.objects.bulk_create(item)
-		# update BackgroudtaskTask
-		bt = BackgroundTask.objects.get(pk=bt_id)
-		bt.timestamp = time.time()
-		if dt_set>0:
-			bt.load= max(min((time.time()-t_start)/dt_set,1),0)
-		else:
-			bt.load= 1
-		bt.save()
-		dt = dt_set -(time.time()-t_start)
-		if dt>0:
-			time.sleep(dt)
+
+			# write data to the database
+			for item in data:
+				RecordedData.objects.bulk_create(item)
+			# update BackgroudtaskTask
+			bt = BackgroundTask.objects.get(pk=bt_id)
+			bt.timestamp = time.time()
+			if dt_set>0:
+				bt.load= max(min((time.time()-t_start)/dt_set,1),0)
+			else:
+				bt.load= 1
+			bt.save()
+			dt = dt_set -(time.time()-t_start)
+			if dt>0:
+				time.sleep(dt)
+			err_count = 0
+		except:
+			var = traceback.format_exc()
+			err_count +=1
+			# write log only
+			if err_count <= 3 or err_count%10 == 0:
+				log.debug("occ: %d, exeption in %s daemon%s%s %s" % (err_count,label,os.linesep,os.linesep,var),-1)
+			if err_count > 100:
+				break
+					
 	## will be called after stop signal
 	try:
 		bt = BackgroundTask.objects.get(pk=bt_id)

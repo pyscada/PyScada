@@ -89,7 +89,7 @@ class RegisterBlock:
             self.registers_data[idx] = result.pop(0)
         for id in self.variables:
             out[id] = self.variables[id]['decode_function']([self.registers_data[k] for k in self.variables[id]['registers']])
-            if type(out[id]) == 'float':
+            if type(out[id]) is float:
                 if isnan(out[id]) or isinf(out[id]):
                     out[id] = None
         return out
@@ -127,7 +127,7 @@ class Device:
     Modbus device (Master) class
     """
     def __init__(self,device):
-        self._device_inst           = device
+        self.device                 = device
         self._address               = device.modbusdevice.ip_address
         self._unit_id               = device.modbusdevice.unit_id
         self._port                  = device.modbusdevice.port
@@ -280,7 +280,7 @@ class Device:
             return None
         if not self._connect():
             if self._device_not_accessible == -1: # 
-                log.error("device with id: %d is not accessible"%(self._device_inst.pk))
+                log.error("device with id: %d is not accessible"%(self.device.pk))
             self._device_not_accessible -= 1
             return []
         output = []
@@ -309,7 +309,7 @@ class Device:
         
         # reset device not accessible status 
         if self._device_not_accessible <= -1:
-            log.info(("device with id: %d is now accessible")%(self._device_inst.pk))
+            log.info(("device with id: %d is now accessible")%(self.device.pk))
         if self._device_not_accessible < 1:
             self._device_not_accessible = 1
         

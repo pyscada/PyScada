@@ -56,11 +56,12 @@ class RecordedDataValueManager(models.Manager):
 		if time_min is None:
 			time_min = 0
 		else:
-			time_min = time_min*2097152*1000
+			db_time_min = RecordedData.objects.first().timestamp
+			time_min = max(db_time_min,time_min)*2097152*1000
 		if time_max is None:
 			time_max = time.time()*2097152*1000+2097151
 		else:
-			time_max = time_max*2097152*1000+2097151
+			time_max = min(time_max,time.time())*2097152*1000+2097151
 		values = {}
 		var_filter = True
 		if kwargs.has_key('variable'):
@@ -149,22 +150,18 @@ class RecordedDataValueManager(models.Manager):
 		update_first_value_list = []
 		timestamp_max = tmp_time_max
 		for key, item in values.iteritems():
-			if item[-1][0] < tmp_time_max:
-				if query_first_value:
+			if item[-1][0] < time_max/(2097152.0*f_time_scale):
+				if (time_max/(2097152.0*f_time_scale)) - item[-1][0] < 3610:
 					# append last value
-					item.append([tmp_time_max,item[-1][1]])
-				else:
-					# if tmp_time_max - item[-1][0] > 5: #TODO
-					# update last value
-					item[-1][0] = tmp_time_max
+					item.append([time_max/(2097152.0*f_time_scale),item[-1][1]])
 				
-			if query_first_value and item[0][0] > tmp_time_min:
+			if query_first_value and item[0][0] > time_min/(2097152.0*f_time_scale): 
 				update_first_value_list.append(key)
 			
 
-		if len(update_first_value_list) > 0:
+		if len(update_first_value_list) > 0: #TODO add n times the recording intervall to the range
 			tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(\
-						id__range=(time_min-(3610*1000*2097152),time_min),\
+						id__range=(time_min-(3660*1000*2097152),time_min),\
 						variable_id__in = update_first_value_list\
 						).values_list('variable_id','pk','value_float64',\
 							'value_int64','value_int32','value_int16',\
@@ -191,7 +188,7 @@ class RecordedDataValueManager(models.Manager):
 			
 			for key in update_first_value_list:
 				if first_values.has_key(key):
-					values[key].insert(0,[tmp_time_min,first_values[key][1]])
+					values[key].insert(0,[time_min/(2097152.0*f_time_scale),first_values[key][1]])
 		#print '%1.3fs'%(time.time()-tic)
 		#tic = time.time()
 		
@@ -210,7 +207,7 @@ class RecordedDataValueManager(models.Manager):
 		#print '%1.3fs'%((time.time()-tic))
 		if add_timetamp_field:
 			if timestamp_max == 0:
-				timestamp_max = time_min/2097152.0*f_time_scale
+				timestamp_max = time_min/(2097152.0*f_time_scale)
 			values['timestamp'] = timestamp_max
 		return values
 #
@@ -232,8 +229,8 @@ class Color(models.Model):
 class Device(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	short_name		= models.CharField(max_length=400, default='')
-	device_type_choises = (('generic','no Protocol'),('systemstat','Local System Monitoring',),('modbus','Modbus Device',),('smbus','SMBus/I2C Device',))
-	device_type		= models.CharField(default='generic',choices=device_type_choises,max_length=400)
+	device_type_choices = (('generic','no Protocol'),('systemstat','Local System Monitoring',),('modbus','Modbus Device',),('smbus','SMBus/I2C Device',))
+	device_type		= models.CharField(default='generic',choices=device_type_choices,max_length=400)
 	description 	= models.TextField(default='', verbose_name="Description",null=True)
 	active			= models.BooleanField(default=True)
 	byte_order_choices = (
@@ -243,6 +240,23 @@ class Device(models.Model):
 						('3-2-1-0','3-2-1-0'),
 						)
 	byte_order      = models.CharField(max_length=15, default='1-0-3-2', choices=byte_order_choices)
+	polling_interval_choices = (
+								(1  , '1 Second'),
+								(2.5, '2.5 Seconds'),
+								(5  , '5 Seconds'),
+								(10 , '10 Seconds'),
+								(15 , '15 Seconds'),
+								(30 , '30 Seconds'),
+								(60 , '1 Minute'),
+								(150, '2.5 Mintues'),
+								(300, '5 Minutes'),
+								(360, '6 Minutes (10 times per Hour)'),
+								(600, '10 Minutes'),
+								(900, '15 Minutes'),
+								(1800, '30 Minutes'),
+								(3600,'1 Hour'),
+								)
+	polling_interval = models.FloatField(default= 2.5,choices=polling_interval_choices,blank=True)
 	def __unicode__(self):
 		return unicode(self.short_name)
 
@@ -432,7 +446,8 @@ class Variable(models.Model):
 				self.store_value = True
 				self.timestamp_old = self.timestamp
 			else:
-				if (self.timestamp - self.timestamp_old) >= (3600):
+				if (self.timestamp - self.timestamp_old) >= (3600): 
+					# store at least every hour one value
 					# store Value if old Value is older then 1 hour
 					self.store_value = True
 					self.timestamp_old = self.timestamp
@@ -710,31 +725,31 @@ class Event(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	label			= models.CharField(max_length=400, default='')
 	variable    		= models.ForeignKey(Variable)
-	level_choises	= 	(
+	level_choices	= 	(
 							(0,'informative'),
 							(1,'ok'),
 							(2,'warning'),
 							(3,'alert'),
 						)
-	level			= models.PositiveSmallIntegerField(default=0,choices=level_choises)
+	level			= models.PositiveSmallIntegerField(default=0,choices=level_choices)
 	fixed_limit		= models.FloatField(default=0,blank=True,null=True)
 	variable_limit  = models.ForeignKey(Variable,blank=True,null=True,default=None, on_delete=models.SET_NULL,related_name="variable_limit",help_text="you can choose either an fixed limit or an variable limit that is dependent on the current value of an variable, if you choose a value other then none for varieble limit the fixed limit would be ignored")
-	limit_type_choises = 	(
+	limit_type_choices = 	(
 								(0,'value is less than limit',),
 								(1,'value is less than or equal to the limit',),
 								(2,'value is greater than the limit'),
 								(3,'value is greater than or equal to the limit'),
 								(4,'value equals the limit'),
 							)
-	limit_type		= models.PositiveSmallIntegerField(default=0,choices=limit_type_choises)
+	limit_type		= models.PositiveSmallIntegerField(default=0,choices=limit_type_choices)
 	hysteresis      = models.FloatField(default=0,blank=True)
-	action_choises	= 	(
+	action_choices	= 	(
 							(0,'just record'),
 							(1,'record and send mail only wenn event occurs'),
 							(2,'record and send mail'),
 							(3,'record, send mail and change variable'),
 						)
-	action				= models.PositiveSmallIntegerField(default=0,choices=action_choises)
+	action				= models.PositiveSmallIntegerField(default=0,choices=action_choices)
 	mail_recipients		= models.ManyToManyField(User)
 	variable_to_change  = models.ForeignKey(Variable,blank=True,null=True,default=None, on_delete=models.SET_NULL,related_name="variable_to_change")
 	new_value			= models.FloatField(default=0,blank=True,null=True)

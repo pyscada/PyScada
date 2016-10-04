@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n staticfiles %}
 
-{% block title %}PyScada Control Center - {{ view_title }}{% endblock %}</title>
+{% block title %}{{ view_title }} - PyScada Control Center{% endblock %}
 {% block body_confic_data %} data-data-file="json/cache_data/" {% endblock %}
 {% block top_menu_left %}
     {% for page in page_list %}

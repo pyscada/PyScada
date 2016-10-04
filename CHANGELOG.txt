@@ -41,3 +41,11 @@
     - flot --> 0.8.3
     - tablesorter --> 2.0.5b
     - bootstrap --> 3.3.6
+ - changed Title in HMI views
+ - added pollinginterval field in device model
+ - fixed chart legend template
+ 
+ 0.7.0b7
+ - fixed data export (record starts with 0)
+ - fixed RecordedData manager
+ - added APC UPS status info's to systemstat device

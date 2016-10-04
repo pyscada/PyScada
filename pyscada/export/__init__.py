@@ -219,42 +219,47 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
             # i                            # time data index
             ii = 0                         # source data index
             # calulate mean values
+            if 
+                last_value = 
+            else:
+                last_value = None
+            max_ii = len(data[var.pk])-1
             for i in xrange(len(timevalues)): # iter over time values
-                    
-                if ii >= len(data[var.pk]):
-                    # if more data in data source break
-                    if i > 0:
-                        out_data[i] = out_data[i-1]
+
+                if ii >= max_ii+1:
+                    # if not more data in data source break
+                    if last_value is not None:
+                        out_data[i] = last_value
                         continue
                 # init mean value vars
                 tmp = 0.0    #  sum 
                 tmp_i = 0.0  #  count
                 
-                if data[var.pk][ii][0] < timevalues[i]: 
+                if data[var.pk][ii][0] < timevalues[i]:
                     # skip elements that are befor current time step
-                    while data[var.pk][ii][0] < timevalues[i]:
+                    while data[var.pk][ii][0] < timevalues[i] and ii < max_ii:
+                        last_value = data[var.pk][ii][1]
                         ii += 1
-                        if ii >= len(data[var.pk])-1:
-                            break # break while
-                if ii >= len(data[var.pk])-1:
-                    if i > 0:
-                        out_data[i] = out_data[i-1]
+                
+                if ii >= max_ii:
+                    if last_value is not None:
+                        out_data[i] = last_value
                         continue
                 # calc mean value
                 if data[var.pk][ii][0] >= timevalues[i] and data[var.pk][ii][0] < timevalues[i]+mean_value_period:
                     # there is data in time range
-                    while data[var.pk][ii][0] >= timevalues[i] and data[var.pk][ii][0] < timevalues[i]+mean_value_period:
+                    while data[var.pk][ii][0] >= timevalues[i] and data[var.pk][ii][0] < timevalues[i]+mean_value_period and ii < max_ii:
                         # calulate mean value
                         tmp +=  data[var.pk][ii][1]
+                        last_value = data[var.pk][ii][1]
                         tmp_i += 1
                         ii += 1
-                        if ii >= len(data[var.pk])-1:
-                            break # break while
+                    # calc and store mean value    
                     out_data[i] = tmp/tmp_i
                 else:
-                    # there is no data in time range, keep last value
-                    if i > 0:
-                        out_data[i] = out_data[i-1]
+                    # there is no data in time range, keep last value, not mean value
+                    if last_value is not None:
+                        out_data[i] = last_value
             
             # write data
             bf.write_data(var.name,_cast_value(out_data,validate_value_class(value_class)),\

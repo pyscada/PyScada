@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0b6
+version 0.7.0b7
 
 Copyright (c) 2013-2016 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.7.0b5"
+var version = "0.7.0b7"
 var NotificationCount = 0
 var UpdateStatusCount = 0;
 var InitStatusCount = 0;
@@ -26,7 +26,7 @@ var csrftoken = $.cookie('csrftoken');
 var fetch_data_timeout = 5000;
 var init_chart_data_fetch_pending_count = 0;
 var log_fetch_pending_count = false;
-var refresh_rate = 2000;
+var refresh_rate = 2500;
 var cache_timeout = 15000; // in milliseconds
 var RootUrl = window.location.protocol+"//"+window.location.host + "/";
 var VariableKeys = [];
@@ -587,9 +587,14 @@ function PyScadaPlot(id){
 
     function UpdateData(key,timestamp){
         if (typeof(data[key])==="object"){
-            if (data[key].length >= 1){
+            if (data[key].length >= 2){
                 if (typeof(data[key][data[key].length-1][1])==="number" | typeof(data[key][data[key].length-1][1])==="boolean"){
-                    data[key][data[key].length-1][0] = timestamp;
+					if (data[key][data[key].length-1][1] != data[key][data[key].length-2][1]){
+						// add a copy of the last value value
+						value = data[key][data[key].length-1]
+						data[key].push(value);
+					}
+					data[key][data[key].length-1][0] = timestamp;
                     CheckBuffer(key);
                 }
             }
