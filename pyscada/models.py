@@ -51,7 +51,7 @@ class RecordedDataValueManager(models.Manager):
 				id__range=(time_min,time_max),**kwargs).last()
 		
 			
-	def get_values_in_time_range(self,time_min=None,time_max=None,query_first_value=False,time_in_ms=False,key_is_variable_name=False,add_timetamp_field=False,**kwargs):
+	def get_values_in_time_range(self,time_min=None,time_max=None,query_first_value=False,time_in_ms=False,key_is_variable_name=False,add_timetamp_field=False,add_fake_data=False,**kwargs):
 		#tic = time.time()
 		if time_min is None:
 			time_min = 0
@@ -159,7 +159,7 @@ class RecordedDataValueManager(models.Manager):
 				update_first_value_list.append(key)
 			
 
-		if len(update_first_value_list) > 0: #TODO add n times the recording intervall to the range
+		if len(update_first_value_list) > 0: #TODO add n times the recording intervall to the range (3600 + n)
 			tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(\
 						id__range=(time_min-(3660*1000*2097152),time_min),\
 						variable_id__in = update_first_value_list\
@@ -170,10 +170,11 @@ class RecordedDataValueManager(models.Manager):
 			
 			first_values = {}
 			for item in tmp:
+				tmp_timestamp = (item[1]-item[0])/(2097152.0*f_time_scale)
 				if not first_values.has_key(item[0]):
-					first_values[item[0]] = [(item[1]-item[0])/(2097152.0*f_time_scale),0]
+					first_values[item[0]] = [tmp_timestamp,0]
 	
-				if first_values[item[0]][0] >= (item[1]-item[0])/(2097152.0*f_time_scale):
+				if tmp_timestamp >= first_values[item[0]][0]:
 					if   item[2] is not None: # float64
 						first_values[item[0]][1] = item[2] # time, value
 					elif item[3] is not None: # int64
@@ -193,18 +194,25 @@ class RecordedDataValueManager(models.Manager):
 		#tic = time.time()
 		
 		'''
-		add a datapoint bevor the nexte change of state
+		add a datapoint bevor the next change of state
 		'''
-		# if kwargs.has_key('add_fake_data'):
-		# 	for item in variables:
-		# 		if values.has_key(item.pk):
-		# 			for v 
-		# change the key in the output dict 
+		if add_fake_data:
+			for key in values:
+				i = 1
+				while i < len(values[key]):
+					if values[key][i][0] - values[key][i-1][0] > 5: # todo add device specific delta
+						values[key].insert(i,[values[key][i][0]-5,values[key][i-1][1]])
+					i += 1
+		'''
+		change output tupple key from pk to variable name
+		'''
 		if key_is_variable_name:
 			for item in variables:
 				if values.has_key(item.pk):
 					values[item.name] = values.pop(item.pk)
-		#print '%1.3fs'%((time.time()-tic))
+		'''
+		add the timstamp of the most recent value
+		'''
 		if add_timetamp_field:
 			if timestamp_max == 0:
 				timestamp_max = time_min/(2097152.0*f_time_scale)

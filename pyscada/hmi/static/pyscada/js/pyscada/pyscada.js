@@ -1,6 +1,6 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0b7
+version 0.7.0b8
 
 Copyright (c) 2013-2016 Martin Schröder
 Licensed under the GPL.
@@ -592,7 +592,7 @@ function PyScadaPlot(id){
 					if (data[key][data[key].length-1][1] != data[key][data[key].length-2][1]){
 						// add a copy of the last value value
 						value = data[key][data[key].length-1]
-						data[key].push(value);
+						data[key].push(value.slice(0));
 					}
 					data[key][data[key].length-1][0] = timestamp;
                     CheckBuffer(key);

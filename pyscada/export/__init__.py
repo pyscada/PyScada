@@ -219,10 +219,7 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
             # i                            # time data index
             ii = 0                         # source data index
             # calulate mean values
-            if 
-                last_value = 
-            else:
-                last_value = None
+            last_value = None
             max_ii = len(data[var.pk])-1
             for i in xrange(len(timevalues)): # iter over time values
 
