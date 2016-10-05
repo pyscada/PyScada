@@ -49,3 +49,10 @@
  - fixed data export (record starts with 0)
  - fixed RecordedData manager
  - added APC UPS status info's to systemstat device
+
+0.7.0b8
+ - added ability to add fake data to RecordedData manager
+ - fixed add fake data in hmi
+ - fixed query_first_value in RecordedData manager
+
+
