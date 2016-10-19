@@ -55,4 +55,7 @@
  - fixed add fake data in hmi
  - fixed query_first_value in RecordedData manager
 
+0.7.0b9
+ - updated to Django 1.10
+ - changed filter in Chart Model Admin
 

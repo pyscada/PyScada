@@ -1,20 +1,18 @@
 # -*- coding: utf-8 -*-
-from django.conf.urls import patterns, include, url
+from django.conf.urls import url, include
+from . import views
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     # Public pages
-    url(r'^$', 'pyscada.hmi.views.index',name="view-overview"),
-    url(r'^accounts/logout/$', 'pyscada.hmi.views.logout_view'),
-    url(r'^accounts/login/$', 'django.contrib.auth.views.login',{'template_name': 'login.html'}),
-    url(r'^accounts/password_change/$', 'django.contrib.auth.views.password_change',{'template_name': 'password_change.html'},name='password_change'),
-    url(r'^accounts/password_change_done/$', 'django.contrib.auth.views.password_change_done',{'template_name': 'password_change_done.html'},name='password_change_done'),
-    url(r'^accounts/user_profile_change/$','pyscada.hmi.views.user_profile_change'),
-    url(r'^json/cache_data/$', 'pyscada.hmi.views.get_cache_data'),
-    #url(r'^json/init_data/$', 'pyscada.hmi.views.data'),
-    url(r'^json/log_data/$', 'pyscada.hmi.views.log_data'),
-    #url(r'^json/config/$', 'pyscada.hmi.views.config'),
-    url(r'^form/log_entry/$', 'pyscada.hmi.views.form_log_entry'),
-    url(r'^form/write_task/$', 'pyscada.hmi.views.form_write_task'),
-    url(r'^view/(?P<link_title>\w+)/$', 'pyscada.hmi.views.view',name="main-view"),
+    url(r'^$', views.index ,name="view-overview"),
+    url(r'^accounts/logout/$', views.logout_view),
+    url(r'^accounts/login/$', auth_views.login,{'template_name': 'login.html'},name='login_view'),
+    url(r'^accounts/password_change/$', auth_views.password_change,{'template_name': 'password_change.html'},name='password_change'),
+    url(r'^accounts/password_change_done/$', auth_views.password_change_done,{'template_name': 'password_change_done.html'},name='password_change_done'),
+    url(r'^json/cache_data/$', views.get_cache_data),
+    url(r'^json/log_data/$', views.log_data),
+    url(r'^form/log_entry/$', views.form_log_entry),
+    url(r'^form/write_task/$',views.form_write_task),
+    url(r'^view/(?P<link_title>\w+)/$', views.view,name="main-view"),
 ]
-urlpatterns = patterns('', *urlpatterns)

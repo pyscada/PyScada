@@ -37,7 +37,7 @@ def index(request):
 	if not request.user.is_authenticated():
 		return redirect('/accounts/login/?next=%s' % request.path)
 
-	view_list = View.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).distinct()
+	view_list = View.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).distinct()
 	c = {
 		'user': request.user,
 		'view_list':view_list,
@@ -58,15 +58,15 @@ def view(request,link_title):
 	except:
 		return HttpResponse(status=404)
 
-	page_list = view.pages.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).distinct()
+	page_list = view.pages.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).distinct()
 
-	sliding_panel_list = view.sliding_panel_menus.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).distinct()
+	sliding_panel_list = view.sliding_panel_menus.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).distinct()
 
-	visible_widget_list = Widget.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator,page__in=page_list.iterator).values_list('pk',flat=True)
-	visible_custom_html_panel_list = CustomHTMLPanel.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).values_list('pk',flat=True)
-	visible_chart_list = Chart.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).values_list('pk',flat=True)
+	visible_widget_list = Widget.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator(),page__in=page_list.iterator()).values_list('pk',flat=True)
+	visible_custom_html_panel_list = CustomHTMLPanel.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk',flat=True)
+	visible_chart_list = Chart.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk',flat=True)
 
-	visible_control_element_list = GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items',flat=True)
+	visible_control_element_list = GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator()).values_list('control_items',flat=True)
 
 	panel_list   = sliding_panel_list.filter(position__in=(1,2,))
 	control_list = sliding_panel_list.filter(position=0)
@@ -76,7 +76,7 @@ def view(request,link_title):
 	widgets = []
 	widget_rows_html = ""
 	pages_html = ""
-	for page in view.pages.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator).distinct():
+	for page in view.pages.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).distinct():
 		current_row = 0
 		has_chart = False
 		widgets = []
@@ -173,9 +173,9 @@ def get_cache_data(request):
 	if request.POST.has_key('variables[]'):
 		active_variables = request.POST.getlist('variables[]')
 	else:
-		active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('charts__variables',flat=True))
-		active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('control_items__variable',flat=True))
-		active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator).values_list('custom_html_panels__variables',flat=True))
+		active_variables = list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator()).values_list('charts__variables',flat=True))
+		active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator()).values_list('control_items__variable',flat=True))
+		active_variables += list(GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator()).values_list('custom_html_panels__variables',flat=True))
 		active_variables = list(set(active_variables))
 	
 	timestamp = time.time()
@@ -200,7 +200,9 @@ def get_cache_data(request):
 		add_timetamp_field = True,\
 		add_fake_data = True,\
 		variable_id__in = active_variables)
-
+	if data is None:
+		jdata = json.dumps({'server_time':time.time()*1000})
+		return HttpResponse(jdata, content_type='application/json')
 	#data["timestamp"] = time.time()*1000 # TODO max_time from data
 	data["server_time"] = time.time()*1000
 	jdata = json.dumps(data)

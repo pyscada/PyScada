@@ -118,7 +118,7 @@ Open a Shell (cmd.exe) and install the folowing packages via pip.
 ::
 
 	pip install gunicorn
-	pip install django">=1.7,<1.8"
+	pip install django">=1.10,<1.11"
 	pip install numpy
 	pip install python-daemon
 	pip install pyscada

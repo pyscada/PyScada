@@ -34,7 +34,7 @@ class ChartAdmin(admin.ModelAdmin):
     filter_horizontal = ('variables',)
     List_display_link = ('title',)
     list_display = ('id','title',)
-    list_filter = ('widget__title','widget__page__title')
+    list_filter = ('widget__page__title','widget__title',)
     form = ChartForm
     def name(self, instance):
         return instance.variables.name

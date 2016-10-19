@@ -18,30 +18,30 @@ from django import forms
 
 import datetime
 
-class VariableImportAdminForm(forms.ModelForm):
-    json_configuration = forms.CharField(widget=forms.Textarea)
-
-    class Meta:
-        fields = []
-        model = Variable
-
-class VariableImportAdmin(admin.ModelAdmin):
-    actions = None
-    form = VariableImportAdminForm
-    fields = ('json_configuration',)
-    list_display = ('name','active')
-
-    def save_model(self, request, obj, form, change):
-        update_variable_set(form.cleaned_data['json_configuration'])
-
-    def __init__(self, *args, **kwargs):
-        super(VariableImportAdmin, self).__init__(*args, **kwargs)
-        self.list_display_links = (None, )
-
-
-class VariableConfigFileImport(Variable):
-    class Meta:
-        proxy = True
+# class VariableImportAdminForm(forms.ModelForm):
+#     json_configuration = forms.CharField(widget=forms.Textarea)
+# 
+#     class Meta:
+#         fields = []
+#         model = Variable
+# 
+# class VariableImportAdmin(admin.ModelAdmin):
+#     actions = None
+#     form = VariableImportAdminForm
+#     fields = ('json_configuration',)
+#     list_display = ('name','active')
+# 
+#     def save_model(self, request, obj, form, change):
+#         update_variable_set(form.cleaned_data['json_configuration'])
+# 
+#     def __init__(self, *args, **kwargs):
+#         super(VariableImportAdmin, self).__init__(*args, **kwargs)
+#         self.list_display_links = (None, )
+# 
+# 
+# class VariableConfigFileImport(Variable):
+#     class Meta:
+#         proxy = True
         
 class VariableState(Variable):
     class Meta:
@@ -199,7 +199,7 @@ class EventAdmin(admin.ModelAdmin):
 admin.site.register(Device,DeviceAdmin)
 admin.site.register(Variable,VarieblesAdmin)
 admin.site.register(Scaling)
-admin.site.register(VariableConfigFileImport,VariableImportAdmin)
+# admin.site.register(VariableConfigFileImport,VariableImportAdmin)
 admin.site.register(Unit)
 admin.site.register(Event,EventAdmin)
 admin.site.register(RecordedEvent,RecordedEventAdmin)

@@ -15,25 +15,24 @@ from time import time, sleep
 import traceback
 
 class Command(BaseCommand):
-    args = '{start | stop} '
-    help = 'Start a daemon for PyScada'
+    help = 'Start the daq daemon for PyScada'
     
+    def add_arguments(self, parser):
+        parser.add_argument('action', choices=['start','stop'], nargs='+', type=str)
+        
+        
     def handle(self, *args, **options):
-        if len(args)!=1:
-            self.stdout.write("usage: python manage.py daqdaemon {start | stop}\n", ending='')
-        else:
-            ## init
-            context = self.init_context()
-            
-            # on start
-            if 'start' == args[0]:
-                self.start(context)
-            # on stop
-            elif 'stop' == args[0]:
-                self.stop(context)
-            else:
-                self.stdout.write("Unknown arrgument\nusage: python manage.py daqdaemon {start | stop }\n", ending='')
-    
+        
+        ## init
+        context = self.init_context()
+        
+        # on start
+        if 'start' == options['action'][0]:
+            self.start(context)
+        # on stop
+        elif 'stop' == options['action'][0]:
+            self.stop(context)
+        
     
     def init_context(self):
         daemon_name = 'daq'

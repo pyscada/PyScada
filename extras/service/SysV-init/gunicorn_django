@@ -58,7 +58,7 @@ start () {
 stop () {
 	if [ -e $PID_FILE ]
 	then
-		kill -TERM $PID_FILE
+		kill -TERM $(<"$PID_FILE")
 		echo "stopped service"
 	else
 		echo "service not running"

@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0b8
+version 0.7.0b9
 
 Copyright (c) 2013-2016 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.7.0b7"
+var version = "0.7.0b9"
 var NotificationCount = 0
 var UpdateStatusCount = 0;
 var InitStatusCount = 0;
@@ -597,7 +597,12 @@ function PyScadaPlot(id){
 					data[key][data[key].length-1][0] = timestamp;
                     CheckBuffer(key);
                 }
-            }
+            }else if(data[key].length == 1){
+				// copy the 1. Value
+				value = data[key][0]
+				data[key].push(value.slice(0));
+				data[key][1][0] = timestamp;
+			}
         }
     }
     function update(){

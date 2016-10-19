@@ -15,27 +15,24 @@ from time import time, sleep
 import traceback
 
 class Command(BaseCommand):
-    args = 'daemon_name {start | stop} '
     help = 'Start a daemon for PyScada'
-    
+    def add_arguments(self, parser):
+        parser.add_argument('daemon', choices=['event','export','mail'], nargs='+', type=str)
+        parser.add_argument('action', choices=['start','stop'], nargs='+', type=str)
+        
     def handle(self, *args, **options):
-        if len(args)!=2:
-            self.stdout.write("usage: python manage.py PyScadaDaemonHandler daemonname {start | stop}\n", ending='')
-        else:
-            daemon_name = args[0]
-            ## init
-            context = self.init_context(daemon_name)
-            
-            # on start
-            if 'start' == args[1]:
-                self.start(context,daemon_name)
-    
-            # on stop
-            elif 'stop' == args[1]:
-                self.stop(context)
-            else:
-                self.stdout.write("Unknown command\nusage: python manage.py PyScadaDaemonHandler daemonname {start | stop }\n", ending='')
-    
+        
+        daemon_name = options['daemon'][0]
+        ## init
+        context = self.init_context(daemon_name)
+        
+        # on start
+        if 'start' == options['action'][0]:
+            self.start(context,daemon_name)
+        # on stop
+        elif 'stop' == options['action'][0]:
+            self.stop(context)
+        
     
     def init_context(self,daemon_name):
         # chek writepermission to the pid and log dir

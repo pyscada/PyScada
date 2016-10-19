@@ -16,7 +16,7 @@ Open the urls configuration file and add the nesseary rewrite rule to the django
 ::
 
 	...
-		url(r'^admin/', include(admin.site.urls)),
+		url(r'^admin/', admin.site.urls),
 		url(r'^', include('pyscada.hmi.urls')),
 	...
 

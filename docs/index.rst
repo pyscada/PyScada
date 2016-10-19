@@ -39,7 +39,7 @@ Dependencies
 
 - core/HMI
 	* python 2.7
-	* django>=1.7
+	* django>=1.10
 	* numpy>=1.6.0
 	* pillow
 	* python-daemon

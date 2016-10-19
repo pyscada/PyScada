@@ -56,7 +56,11 @@ class RecordedDataValueManager(models.Manager):
 		if time_min is None:
 			time_min = 0
 		else:
-			db_time_min = RecordedData.objects.first().timestamp
+			db_time_min = RecordedData.objects.first()
+			if db_time_min:
+				db_time_min = db_time_min.timestamp
+			else:
+				return None
 			time_min = max(db_time_min,time_min)*2097152*1000
 		if time_max is None:
 			time_max = time.time()*2097152*1000+2097151
@@ -430,6 +434,18 @@ class Variable(models.Model):
 		else:
 			return 16
 	
+	def query_prev_value(self):
+		'''
+		get the las value and timestamp from the database
+		'''
+		time_max = time.time()*2097152*1000+2097151
+		val = self.recordeddata_set.filter(id__range=(time_max-(3660*1000*2097152),time_max)).last()
+		if val:
+			self.prev_value = val.value()
+			self.timestamp_old = val.timestamp
+			return True
+		else:
+			return False
 	
 	def update_value(self,value = None,timestamp=None):
 		'''

@@ -30,7 +30,7 @@ setup(
     platforms=['OS Independent'],
     classifiers=CLASSIFIERS,
     install_requires=[
-        'django>=1.8,<1.9',
+        'django>=1.10,<1.11',
         'pymodbus>=1.2',
         'numpy>=1.6.0',
         'h5py>=2.2.1',

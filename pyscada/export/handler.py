@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from pyscada import log
 from pyscada.models import BackgroundTask
-from pyscada.export import export_recordeddata_to_file
+from pyscada.export.export import export_recordeddata_to_file
 from pyscada.export.models import ScheduledExportTask, ExportTask
 
 
