@@ -2,13 +2,13 @@ Installation
 ============
 
 
-The installation of PyScada 0.6.x on `Debian <https://www.debian.org/>`_ based Linux systems using `MySQL <https://www.mysql.de/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
+The installation of PyScada 0.7.x on `Debian 7/8 <https://www.debian.org/>`_ based Linux systems using `MySQL <https://www.mysql.de/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
 
-The installation of PyScada 0.6.x on `Fedora 22/23 <https://www.fedoraproject.org/>`_ based Linux systems using `MySQL <https://www.mysql.de/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
+The installation of PyScada 0.7.x on `Fedora 22/23 <https://www.fedoraproject.org/>`_ based Linux systems using `MySQL <https://www.mysql.de/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
 
-The installation of PyScada 0.6.x on `Raspbian <https://www.raspbian.org/>`_ Linux systems using `SQLite <https://www.sqlite.org/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
+The installation of PyScada 0.7.x on `Raspbian <https://www.raspbian.org/>`_ Linux systems using `SQLite <https://www.sqlite.org/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
 
-The installation of PyScada 0.6.x on `Microsoft Windows <https://www.microsoft.com/>`_ systems using `SQLite <https://www.sqlite.org/>`_  as Database and the the Django Development Server as HTTP/WSGI Server.
+The installation of PyScada 0.7.x on `Microsoft Windows <https://www.microsoft.com/>`_ systems using `SQLite <https://www.sqlite.org/>`_  as Database and the the Django Development Server as HTTP/WSGI Server.
 
 
 Add a new system-user for Pyscada (optional)
@@ -52,7 +52,6 @@ Debian 7
 Debian 8
 ^^^^^^^^
 
-
 ::
 
 	sudo -i
@@ -89,6 +88,7 @@ Fedora 22/23
 	sudo pip install gunicorn
 	sudo pip install MySQL-python
 
+
 Raspberry Pi (RASPBIAN, Jessie)
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -105,8 +105,8 @@ Raspberry Pi (RASPBIAN, Jessie)
 	pip install git+https://github.com/trombastic/PyScada.git@dev/0.7.x
 
 
-Windows 
-^^^^^^^
+Windows (experimental) 
+^^^^^^^^^^^^^^^^^^^^^^
 
  - Python 2.7 for Windows https://www.python.org/downloads/windows/
  - Microsoft Visual C++ Comiler for Python 2.7 https://www.microsoft.com/en-us/download/details.aspx?id=44266
@@ -163,13 +163,16 @@ Initialize Database And Copy Static Files
 	cd /var/www/pyscada/PyScadaServer # linux
 	sudo -u pyscada python manage.py migrate
 	sudo -u pyscada python manage.py collectstatic
+	
 	# load fixures with default configuration
 	sudo -u pyscada python manage.py loaddata color
 	sudo -u pyscada python manage.py loaddata units
+	
 	# Windows
 	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer 
 	python manage.py migrate
 	python manage.py collectstatic
+	
 	# load fixures with default configuration
 	python manage.py loaddata color
 	python manage.py loaddata units
@@ -201,10 +204,13 @@ To start the Dataaquasition daemon(s) and guinicorn, there are two example scrip
 
 ::
 
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/SysV-init/pyscada_daemon -O /etc/init.d/pyscada_daemon
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.6.x/extras/service/SysV-init/gunicorn_django -O /etc/init.d/gunicorn_django
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/SysV-init/pyscada_daemon -O /etc/init.d/pyscada_daemon
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/SysV-init/gunicorn_django -O /etc/init.d/gunicorn_django
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/SysV-init/gunicorn_django -O /etc/init.d/pyscada_daq_daemon
+
 	sudo chmod +x /etc/init.d/pyscada_daemon
 	sudo chmod +x /etc/init.d/gunicorn_django
+	sudo chmod +x /etc/init.d/pyscada_daq_daemon
 
 
 add a configuration file for every script.
@@ -251,6 +257,7 @@ Also fill in the path to your django project dir and replace the four spaces bet
 ::
 
 	sudo update-rc.d pyscada_daemon defaults
+	sudo update-rc.d pyscada_daq_daemon defaults
 	sudo update-rc.d gunicorn_django defaults
 
 
@@ -277,8 +284,8 @@ Download the sample Unit-Files for systemd.
 
 
 
-Start the Django Development Server on Windows (optional)
----------------------------------------------------------
+Start the Django Development Server on Windows (optional, experimental)
+-----------------------------------------------------------------------
 
 Open a Windows Command-line (cmd.exe) and start the Django Development Server.
 
@@ -289,8 +296,8 @@ Open a Windows Command-line (cmd.exe) and start the Django Development Server.
 	python manage.py runserver --insecure
 
 	
-Add/Start the PyScada Services on Windows (optional)
-----------------------------------------------------
+Add/Start the PyScada Services on Windows (optional, experimental)
+------------------------------------------------------------------
 
 
 Using pyscada background daemons in Windows is currently not supported, to start the daemons in foreground open a Windows Command-line (cmd.exe) for every daemon and start it with the following command.

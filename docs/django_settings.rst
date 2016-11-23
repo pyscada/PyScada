@@ -52,14 +52,16 @@ Add the PyScada and the subapps to the installed apps list.
 
 ::
 
-	INSTALLED_APPS = (
+	INSTALLED_APPS = [
 		...
 		'pyscada',
 		'pyscada.modbus',
+		'pyscada.phant',
+		'pyscada.visa',
 		'pyscada.hmi',
 		'pyscada.systemstat',
 		'pyscada.export'
-	)
+	]
 
 To use the MySQL Database, fill in the database, the user and password as selected in the *create Database section*.
 

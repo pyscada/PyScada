@@ -19,7 +19,7 @@ import math
 
 
 
-def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active_vars=None,file_extension=None,**kwargs):
+def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active_vars=None,file_extension=None,append_to_file=False,**kwargs):
     '''
     read all data
     '''
@@ -41,10 +41,17 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
         tp.save()
     
     
+    
+    if  type(time_max) in [str, unicode]:
+        # convert datestrings 
+        time_max = mktime(datetime.strptime(time_max, "%d-%b-%Y %H:%M:%S").timetuple())
+    if  type(time_min) in [str, unicode]:
+        # convert datestrings 
+        time_min = mktime(datetime.strptime(time_min, "%d-%b-%Y %H:%M:%S").timetuple())
+    
     # add default time_min
     if time_max is None:
         time_max = time() # now
-    #TODO convert datestrings
     if time_min is None:
         time_min = time()-24*60*60 # last 24 hours
     
@@ -103,14 +110,24 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
         cdstr_from = datetime.fromtimestamp(time_min).strftime("%Y_%m_%d_%H%M")
         cdstr_to = datetime.fromtimestamp(time_max).strftime("%Y_%m_%d_%H%M")
 
+    
         if kwargs.has_key('filename_suffix'):
-            filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr_from + '_' + cdstr_to + '_' + kwargs['filename_suffix'] + file_extension)
+            filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr_from + '_' + cdstr_to + '_' + kwargs['filename_suffix'])
             xml_filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr_from + '_' + cdstr_to + '_' + kwargs['filename_suffix'] + '.xml')
         else:
-            filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr_from + '_' + cdstr_to + file_extension)
+            filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr_from + '_' + cdstr_to)
             xml_filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr_from + '_' + cdstr_to + '.xml')
     else: # generate xml file name from filename
         xml_filename    = filename.split('.')[0] + '.xml'
+    
+    # check if file exists
+    if os.path.exists(filename + file_extension) and not append_to_file:
+        count = 0
+        while os.path.exists(filename + file_extension):
+            filename = filename + '_%03.0f'%count
+    
+    # append the extension 
+    filename = filename + file_extension
     
     # todo add ExportFile  object
     
@@ -130,6 +147,14 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
         mean_value_period = float(kwargs['mean_value_period'])
     else:
         mean_value_period = 5.0 # default is 5 seconds
+    
+    no_mean_value = False
+    
+    if mean_value_period == 0:
+        no_mean_value = True
+        mean_value_period = 5.0 # todo get from DB, default is 5 seconds 
+    
+    
     # calulate timevector
     
     timevalues = arange(math.ceil(time_min/mean_value_period)*mean_value_period,math.floor(time_max/mean_value_period)*mean_value_period,mean_value_period)
@@ -145,6 +170,7 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
     else:
         description = 'None'
         name = 'None'
+    
     if file_extension in ['.h5','.mat']:
         bf = mat_compatible_h5(filename,version = '1.1',description = description ,name = name, creation_date = strftime('%d-%b-%Y %H:%M:%S'))
     elif file_extension in ['.csv']:
@@ -239,12 +265,21 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
                     # there is data in time range
                     while data[var.pk][ii][0] >= timevalues[i] and data[var.pk][ii][0] < timevalues[i]+mean_value_period and ii < max_ii:
                         # calulate mean value
-                        tmp +=  data[var.pk][ii][1]
+                        if no_mean_value:
+                            tmp   =  data[var.pk][ii][1]
+                            tmp_i = 1
+                        else:
+                            tmp +=  data[var.pk][ii][1]
+                            tmp_i += 1
+                        
                         last_value = data[var.pk][ii][1]
-                        tmp_i += 1
                         ii += 1
-                    # calc and store mean value    
-                    out_data[i] = tmp/tmp_i
+                    # calc and store mean value
+                    if tmp_i > 0:
+                        out_data[i] = tmp/tmp_i
+                    else:
+                        out_data[i] = data[var.pk][ii][1]
+                        last_value = data[var.pk][ii][1]
                 else:
                     # there is no data in time range, keep last value, not mean value
                     if last_value is not None:

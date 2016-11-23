@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from pyscada.models import Device
-from django.conf import settings
+
 try:
     import psutil
     driver_ok = True

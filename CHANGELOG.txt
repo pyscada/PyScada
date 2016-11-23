@@ -59,3 +59,11 @@
  - updated to Django 1.10
  - changed filter in Chart Model Admin
 
+0.7.0b10
+ - added Visa and Phant Device support
+ - minor fixes in the Export of Data
+ 
+0.7.0b11
+ - fixed Export without mean values
+ - fixed managementcommand for Data Export
+ - added lock for Exports to prevent running of more then one export at a time

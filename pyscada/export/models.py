@@ -35,8 +35,8 @@ class ExportTask(models.Model):
     time_min        = models.FloatField(default=None, null=True) #TODO DateTimeField
     time_max        = models.FloatField(default=None, null=True) #TODO DateTimeField
     user	 		= models.ForeignKey(User,null=True,blank=True, on_delete=models.SET_NULL)
-    start 			= models.FloatField(default=0,blank=True)  #TODO DateTimeField # time wenn task should be started
-    fineshed		= models.FloatField(default=0,blank=True)  #TODO DateTimeField # time wenn task has been finished 
+    start 			= models.FloatField(default=0,blank=True)   #TODO DateTimeField # time wenn task should be started
+    fineshed		= models.FloatField(default=0,blank=True)       #TODO DateTimeField # time wenn task has been finished 
     done			= models.BooleanField(default=False,blank=True) # label task has been done
     busy            = models.BooleanField(default=False,blank=True) # label task is in operation done
     failed			= models.BooleanField(default=False,blank=True) # label task has failed

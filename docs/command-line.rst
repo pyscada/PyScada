@@ -8,14 +8,17 @@ SysV-init and upstart:
 
 ::
 
+	service pyscada_daq_daemon start
 	service pyscada_daemon start
+	service gunicorn_pyscada start
 
 
 systemd:
 
 ::
 
-	systemctl start pyscada_daemon_name.service
+
+	systemctl start "pyscada_*"
 
 
 Django manage command:
@@ -47,7 +50,7 @@ systemd:
 
 
 Get Installed PyScada Version
----------------------------
+-----------------------------
 
 ::
 
@@ -58,8 +61,8 @@ Get Installed PyScada Version
 	exit()
 
 
-Export Database Tables
-----------------------
+Export Recorded Data Tables
+---------------------------
 
 ::
 

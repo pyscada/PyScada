@@ -241,7 +241,13 @@ class Color(models.Model):
 class Device(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	short_name		= models.CharField(max_length=400, default='')
-	device_type_choices = (('generic','no Protocol'),('systemstat','Local System Monitoring',),('modbus','Modbus Device',),('smbus','SMBus/I2C Device',))
+	device_type_choices = (	('generic','no Protocol'),\
+							('systemstat','Local System Monitoring',),\
+							('modbus','Modbus Device',),\
+							('smbus','SMBus/I2C Device',),\
+							('phant','Phant Device',),\
+							('visa','VISA Device',),)
+							
 	device_type		= models.CharField(default='generic',choices=device_type_choices,max_length=400)
 	description 	= models.TextField(default='', verbose_name="Description",null=True)
 	active			= models.BooleanField(default=True)
@@ -253,32 +259,34 @@ class Device(models.Model):
 						)
 	byte_order      = models.CharField(max_length=15, default='1-0-3-2', choices=byte_order_choices)
 	polling_interval_choices = (
-								(1  , '1 Second'),
-								(2.5, '2.5 Seconds'),
-								(5  , '5 Seconds'),
-								(10 , '10 Seconds'),
-								(15 , '15 Seconds'),
-								(30 , '30 Seconds'),
-								(60 , '1 Minute'),
-								(150, '2.5 Mintues'),
-								(300, '5 Minutes'),
-								(360, '6 Minutes (10 times per Hour)'),
-								(600, '10 Minutes'),
-								(900, '15 Minutes'),
-								(1800, '30 Minutes'),
-								(3600,'1 Hour'),
+								(1.0  , '1 Second'),
+								(5.0  , '5 Seconds'),
+								(10.0 , '10 Seconds'),
+								(15.0 , '15 Seconds'),
+								(30.0 , '30 Seconds'),
+								(60.0 , '1 Minute'),
+								(150.0, '2.5 Mintues'),
+								(300.0, '5 Minutes'),
+								(360.0, '6 Minutes (10 times per Hour)'),
+								(600.0, '10 Minutes'),
+								(900.0, '15 Minutes'),
+								(1800.0, '30 Minutes'),
+								(3600.0, '1 Hour'),
 								)
-	polling_interval = models.FloatField(default= 2.5,choices=polling_interval_choices,blank=True)
+	polling_interval = models.FloatField(default= 5,choices=polling_interval_choices)
 	def __unicode__(self):
 		return unicode(self.short_name)
 
 	def get_device_instance(self):
 		from pyscada.modbus.device import Device as ModbusDevice
 		from pyscada.systemstat.device import Device as SystemStatDevice
+		from pyscada.visa.device import Device as VisaDevice
 		if self.device_type == 'systemstat':
 			return SystemStatDevice(self)
 		elif self.device_type == 'modbus' and hasattr(self,'modbusdevice'):
 			return ModbusDevice(self)
+		elif self.device_type == 'visa' and hasattr(self,'visadevice'):
+			return VisaDevice(self)
 
 class Unit(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -318,6 +326,25 @@ class Scaling(models.Model):
 		input_value = float(input_value)
 		norm_value = (input_value - self.output_low)/(self.output_high - self.output_low)
 		return norm_value * (self.input_high - self.input_low) + self.input_low
+
+class VariableProperty(models.Model):
+	id 				= models.AutoField(primary_key=True)
+	variable	 		= models.ForeignKey('Variable')
+	property_class_choices = (	(None,'other or no Class specified'),
+								('device','Device Property'),
+								('data_record','Recorded Data'),
+								('daemon','Daemon Property'),
+							)
+	property_class  = models.CharField(default=None,blank=True,null=True,max_length=255,choices=property_class_choices)
+	name            = models.CharField(default='',blank=True,max_length = 255)
+	value_boolean   = models.BooleanField(default=False,blank=True)  	# boolean
+	value_int16     = models.SmallIntegerField(null=True,blank=True) 	# int16, uint8, int8
+	value_int32     = models.IntegerField(null=True,blank=True)  		# uint8, int16, uint16, int32
+	value_int64     = models.BigIntegerField(null=True,blank=True) 		# uint32, int64
+	value_float64 	= models.FloatField(null=True,blank=True) 	 		# float64
+	value_string    = models.CharField(default='',blank=True,max_length = 255)
+	timestamp 		= models.DateTimeField(blank=True,null=True)
+
 
 class Variable(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -364,7 +391,6 @@ class Variable(models.Model):
 	chart_line_color 	= models.ForeignKey(Color,null=True,default=None,blank=True)
 	chart_line_thickness_choices = ((3,'3Px'),)
 	chart_line_thickness = models.PositiveSmallIntegerField(default=3,choices=chart_line_thickness_choices)
-	
 	def hmi_name(self):
 		if self.short_name and self.short_name != '-' and self.short_name != '':
 			return self.short_name

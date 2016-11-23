@@ -12,6 +12,8 @@ Features
 	* Modbus RTU
 	* Modbus ASCII
 	* Modbus Binary
+	* Phant http://phant.io/
+	* VISA https://pypi.python.org/pypi/PyVISA
 	* BACNet/IP (in development)
 	* Meter-Bus, MBus (in development)
 - very low Hardware requirements for the Server
@@ -22,7 +24,7 @@ Dependencies
 
 - core/HMI
 	* python 2.7
-	* django>=1.7
+	* django==1.10
 	* numpy>=1.6.0
 	* pillow
 	* python-daemon
@@ -32,13 +34,15 @@ Dependencies
 	* h5py>=2.1.1
 - SystemStatistics
 	* psutil
+- VISA
+    * PyVisa >= 1.8
 - BACNet/IP
 	* bacpypes
 
 Installation
 ------------
 
-Detailed installation instruction can be found at: https://pyscada.rtfd.io .
+Detailed installation instruction can be found at: http://pyscada.rtfd.io .
 
 
 Contribute

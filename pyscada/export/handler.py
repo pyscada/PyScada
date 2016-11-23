@@ -11,7 +11,7 @@ from django.conf import settings
 from time import time, gmtime,strftime, mktime
 from datetime import date,datetime, timedelta
 from threading import Timer
-import os
+import os, sys
 
 def _export_handler(job,today):
     
@@ -127,11 +127,54 @@ class Handler:
                     et.variables.add(*job.variables.all())
                 
                 
-        ## iter over all Export Tasks
-        wait_time = 1 # wait one second to start the job 
-        for job in ExportTask.objects.filter(done=False, busy=False, failed=False,start__lte=time()): # get all jobs
+        ## check runnging tasks and start the next Export Task
+        running_jobs = ExportTask.objects.filter(busy=True,failed=False)
+        if running_jobs:
+            for job in running_jobs:
+                if time() - job.start < 30:
+                    # only check Task wenn it is running longer then 30s
+                    continue
+
+                if job.backgroundtask is None:
+                    # if the job has no backgroundtask assosiated mark as failed
+                    job.failed = True
+                    job.save()
+                    continue
+                
+                if time() - job.backgroundtask.timestamp < 60:
+                    # if the backgroundtask has been updated in the past 60s wait
+                    continue
+                
+                if job.backgroundtask.pid == 0:
+                    # if the job has no valid pid mark as failed
+                    job.failed = True
+                    job.save()
+                    continue
+                
+                # check if process is alive
+                try:
+                    os.kill(job.backgroundtask.pid, 0)
+                except OSError:
+                    job.failed = True
+                    job.save()
+                    continue
+                
+                if time() - job.backgroundtask.timestamp > 60*20:
+                    # if there is not update in the last 20 minutes terminate
+                    # the process and mark as failed
+                    os.kill(pid, 15)
+                    job.failed = True
+                    job.save()
+                    continue
+                    
+        else:
+            # start the next Export Task
+            wait_time = 1 # wait one second to start the job
+            job = ExportTask.objects.filter(done=False, busy=False, failed=False,start__lte=time()).first() # get all jobs
             log.debug(' started Timer %d'%job.pk)
             Timer(wait_time,_export_handler,[job,today]).start()
+            if job.start == 0:
+                job.start = time()
             job.busy = True
             job.save()
         

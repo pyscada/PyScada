@@ -22,6 +22,15 @@ import json
 import time, datetime
 import traceback
 from struct import *
+import re
+
+def extract_numbers_from_str(value_str):
+	match = re.match(r"(([^0-9,^-]+)?)(?P<number>-?[0-9]+[.]?[0-9]+)", value_str, re.I)
+	if match:
+		match = match.groupdict()
+		return float(match['number'])
+	else:
+		return None
 
 
 def decode_bcd(values):
@@ -599,7 +608,7 @@ def daq_daemon_run(label):
 	
 		
 	
-	for item in Device.objects.exclude(device_type='generic').filter(active=1):
+	for item in Device.objects.exclude(device_type__in = ['generic','phant']).filter(active=1):
 		try:
 			tmp_device = item.get_device_instance()
 			if tmp_device is not None:

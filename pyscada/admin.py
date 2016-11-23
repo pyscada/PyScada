@@ -15,6 +15,7 @@ from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.admin import SimpleListFilter
 from django import forms
+from django.conf import settings
 
 import datetime
 
@@ -86,6 +87,15 @@ class DeviceAdminFrom(forms.ModelForm):
             device_type_choices += (('smbus','SMBus/I2C Device',),)
         except ImportError:
             pass
+        try:
+            import visa
+            device_type_choices += (('visa','VISA Device',),)
+        except ImportError:
+            pass
+        
+        if 'pyscada.phant' in settings.INSTALLED_APPS:
+            device_type_choices += (('phant','Phant Device',),)
+        
         w.choices = device_type_choices
 
 class DeviceAdmin(admin.ModelAdmin):
