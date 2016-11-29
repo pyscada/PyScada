@@ -206,7 +206,7 @@ To start the Dataaquasition daemon(s) and guinicorn, there are two example scrip
 
 	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/SysV-init/pyscada_daemon -O /etc/init.d/pyscada_daemon
 	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/SysV-init/gunicorn_django -O /etc/init.d/gunicorn_django
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/SysV-init/gunicorn_django -O /etc/init.d/pyscada_daq_daemon
+	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/SysV-init/pyscada_daq_daemon -O /etc/init.d/pyscada_daq_daemon
 
 	sudo chmod +x /etc/init.d/pyscada_daemon
 	sudo chmod +x /etc/init.d/gunicorn_django

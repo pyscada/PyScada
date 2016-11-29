@@ -3,16 +3,23 @@ from pyscada.models import Variable,BackgroundTask
 
 from django.db import models
 from django.contrib.auth.models import User
+
+import time
+from datetime import datetime
+from pytz import UTC
 #
 # Model
 #
+
+def datetime_now():
+    return datetime.now(UTC)
 
 class ScheduledExportTask(models.Model):
     id 				= models.AutoField(primary_key=True)
     label			= models.CharField(max_length=400, default='')
     variables		= models.ManyToManyField(Variable)
     day_time_choices = [(x,'%d:00'%x) for x in range(0,24)]
-    day_time        = models.PositiveSmallIntegerField(default=0,choices=day_time_choices,help_text='day time wenn the job will start be started')
+    day_time        = models.PositiveSmallIntegerField(default=0,choices=day_time_choices,help_text='day time wenn the job will be started in UTC')
     mean_value_period = models.PositiveSmallIntegerField(default=0,help_text='in Seconds (0 = no mean value)')
     active		    = models.BooleanField(default=False,blank=True,  help_text='to activate scheduled export')
     file_format_choices = (('hdf5','Hierarchical Data Format Version 5'),('mat','Matlab® mat v7.3 compatible file'),('CSV_EXCEL','Microsoft® Excel® compatible csv file'))
@@ -32,17 +39,25 @@ class ExportTask(models.Model):
     file_format_choices = (('hdf5','Hierarchical Data Format Version 5'),('mat','Matlab® mat v7.3 compatible file'),('CSV_EXCEL','Microsoft® Excel® compatible csv file'))
     file_format     = models.CharField(max_length=400, default='hdf5',choices=file_format_choices)
     filename_suffix = models.CharField(max_length=400, default='',blank=True)
-    time_min        = models.FloatField(default=None, null=True) #TODO DateTimeField
-    time_max        = models.FloatField(default=None, null=True) #TODO DateTimeField
-    user	 		= models.ForeignKey(User,null=True,blank=True, on_delete=models.SET_NULL)
-    start 			= models.FloatField(default=0,blank=True)   #TODO DateTimeField # time wenn task should be started
-    fineshed		= models.FloatField(default=0,blank=True)       #TODO DateTimeField # time wenn task has been finished 
+    datetime_min    = models.DateTimeField(default=None, null=True)
+    datetime_max    = models.DateTimeField(default=None, null=True)
+    user	 		    = models.ForeignKey(User,null=True,blank=True, on_delete=models.SET_NULL)
+    datetime_start  = models.DateTimeField(default=datetime_now)
+    datetime_fineshed = models.DateTimeField(null=True,blank=True)
     done			= models.BooleanField(default=False,blank=True) # label task has been done
     busy            = models.BooleanField(default=False,blank=True) # label task is in operation done
     failed			= models.BooleanField(default=False,blank=True) # label task has failed
     def __unicode__(self):
         return unicode(self.label)
-
+    
+    def time_min(self):
+        return time.mktime(self.datetime_min.timetuple())
+    def time_max(self):
+        return time.mktime(self.datetime_max.timetuple())
+    def start(self):
+        return time.mktime(self.datetime_start.timetuple())
+    def fineshed(self):
+        return time.mktime(self.datetime_fineshed.timetuple())
 
 '''
 class ExportFile(models.Model):

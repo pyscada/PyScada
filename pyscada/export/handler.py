@@ -10,6 +10,8 @@ from django.conf import settings
 
 from time import time, gmtime,strftime, mktime
 from datetime import date,datetime, timedelta
+from pytz import UTC
+
 from threading import Timer
 import os, sys
 
@@ -37,8 +39,8 @@ def _export_handler(job,today):
 
     
     export_recordeddata_to_file(\
-        job.time_min,\
-        job.time_max,\
+        job.time_min(),\
+        job.time_max(),\
         None,\
         job.variables.values_list('pk',flat=True),\
         file_ext,\
@@ -47,7 +49,7 @@ def _export_handler(job,today):
         mean_value_period = job.mean_value_period)
     job.done     = True
     job.busy     = False
-    job.fineshed = time()
+    job.datetime_fineshed = datetime.now(UTC)
     job.save()
 
     
@@ -108,19 +110,15 @@ class Handler:
                 end_time    = mktime(datetime.strptime(end_time, "%d-%b-%Y %H:%M:%S").timetuple())
                 # create ExportTask
                 if add_task:
-                    if job.mean_value_period == 0:
-                        mean_value_period = 5
-                    else:
-                        mean_value_period = job.mean_value_period
-                    
+
                     et = ExportTask(\
                         label = filename_suffix,\
-                        time_max = end_time,\
-                        time_min=start_time,\
+                        datetime_max = datetime.fromtimestamp(end_time,UTC),\
+                        datetime_min = datetime.fromtimestamp(start_time,UTC),\
                         filename_suffix = filename_suffix,\
-                        mean_value_period = mean_value_period,\
+                        mean_value_period = job.mean_value_period,\
                         file_format = job.file_format,\
-                        start = end_time+60\
+                        datetime_start = datetime.fromtimestamp(end_time+60,UTC)\
                         )
                     et.save()
                     
@@ -131,7 +129,7 @@ class Handler:
         running_jobs = ExportTask.objects.filter(busy=True,failed=False)
         if running_jobs:
             for job in running_jobs:
-                if time() - job.start < 30:
+                if time() - job.start() < 30:
                     # only check Task wenn it is running longer then 30s
                     continue
 
@@ -170,19 +168,24 @@ class Handler:
         else:
             # start the next Export Task
             wait_time = 1 # wait one second to start the job
-            job = ExportTask.objects.filter(done=False, busy=False, failed=False,start__lte=time()).first() # get all jobs
-            log.debug(' started Timer %d'%job.pk)
-            Timer(wait_time,_export_handler,[job,today]).start()
-            if job.start == 0:
-                job.start = time()
-            job.busy = True
-            job.save()
+            job = ExportTask.objects.filter(\
+                done=False,\
+                busy=False,\
+                failed=False,\
+                datetime_start__lte=datetime.now(UTC)).first() # get all jobs
+            if job:
+                log.debug(' started Timer %d'%job.pk)
+                Timer(wait_time,_export_handler,[job,today]).start()
+                if job.datetime_start == None:
+                    job.datetime_start = datetime.now(UTC)
+                job.busy = True
+                job.save()
         
         ## delete all done jobs older the 60 days
-        for job in ExportTask.objects.filter(done=True, busy=False, start__gte=time()+60*24*60*60):
+        for job in ExportTask.objects.filter(done=True, busy=False, datetime_start__gte=datetime.fromtimestamp(time()+60*24*60*60,UTC)):
             job.delete()
         ## delete all failed jobs older the 60 days
-        for job in ExportTask.objects.filter(failed=True, start__gte=time()+60*24*60*60):
+        for job in ExportTask.objects.filter(failed=True, datetime_start__gte=datetime.fromtimestamp(time()+60*24*60*60,UTC)):
             job.delete()
         return None # because we have no data to store
 

@@ -19,7 +19,7 @@ import math
 
 
 
-def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active_vars=None,file_extension=None,append_to_file=False,**kwargs):
+def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active_vars=None,file_extension=None,append_to_file=False,no_mean_value = False,mean_value_period = 5.0,**kwargs):
     '''
     read all data
     '''
@@ -143,21 +143,15 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
         else:
             active_vars = Variable.objects.filter(pk__in = active_vars, active = 1,device__active=1)
     
-    if kwargs.has_key('mean_value_period'):
-        mean_value_period = float(kwargs['mean_value_period'])
-    else:
-        mean_value_period = 5.0 # default is 5 seconds
-    
-    no_mean_value = False
-    
     if mean_value_period == 0:
         no_mean_value = True
         mean_value_period = 5.0 # todo get from DB, default is 5 seconds 
     
-    
     # calulate timevector
     
     timevalues = arange(math.ceil(time_min/mean_value_period)*mean_value_period,math.floor(time_max/mean_value_period)*mean_value_period,mean_value_period)
+    
+    # get Meta from Settings
     if hasattr(settings,'PYSCADA_META'):
         if settings.PYSCADA_META.has_key('description'):
             description = settings.PYSCADA_META['description']
@@ -192,7 +186,9 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
         description="global time vector",\
         value_class = validate_value_class('FLOAT64'),\
         unit = "Days since 0000-1-1 00:00:00")
+    
     tp.max = active_vars.count()
+    
     for var_idx in range(0,active_vars.count(),10):
         tp.timestamp = time()
         tp.message = 'reading values from database'
