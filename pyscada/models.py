@@ -853,8 +853,8 @@ class Event(models.Model):
 		actual_value = RecordedData.objects.last_element(variable=self.variable)
 		if not actual_value:
 			return False
-		timestamp = actual_value.time
-		actual_value = actual_value.value
+		timestamp = actual_value.time_value()
+		actual_value = actual_value.value()
 		# determin the limit type, variable or fixed
 		if self.variable_limit:
 			# item has a variable limit
@@ -863,10 +863,10 @@ class Event(models.Model):
 			limit_value = RecordedData.objects.last_element(variable=self.variable_limit)
 			if not limit_value:
 				return False
-			if timestamp < limit_value.last().time:
+			if timestamp < limit_value.last().time_value():
 				# wenn limit value has changed after the actual value take that time
-				timestamp = limit_value.last().time
-			limit_value = limit_value.last().value # get value
+				timestamp = limit_value.last().time_value()
+			limit_value = limit_value.last().value() # get value
 		else:
 			# item has a fixed limit
 			limit_value = self.fixed_limit

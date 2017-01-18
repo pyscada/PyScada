@@ -86,6 +86,34 @@ values to the server the coresponding function code will be selected automaticly
 
 .. image:: pic/backend_modbus_save_device.png
 
+short instructions for the HMI
+------------------------------
+
+
+In the Backend HMI Section (http://IP/admin/hmi/):
+1. Charts, add a new Chart
+2. Page, add a Page
+3. Widget, add a Widget, select under Page the page you added in 2. and under Chart the Chart from 1., a widget controls the position of every element on a Page.
+4. View, add a View and select the page from 2.
+5. GroupDisplayPermissions, add a new GroupDisplayPermission, (if nessesary add a new Group and add your User to that Group, select all items you created in 1. to 4.
+6. open http://IP/, you should see the new View, if the DAQ is running and there is Data already in the DB, you should see the last 2 Houers of Data and the curennt Data.
+
+```
++-View------------------------------------+
+|                                         |
+| +-Page--------------------------------+ |
+| |                                     | |
+| | +-Widget--------+ +-Widget--------+ | |
+| | |               | |               | | |
+| | | Row 1, Col 1  | | Row 1, Col 2  | | |
+| | | +-Chart-----+ | | +-Chart-----+ | | |
+| | | |           | | | |           | | | |
+| | | +-----------+ | | +---------- + | | |
+| | +---------------+ +---------------+ | |
+| +-------------------------------------+ |
++-----------------------------------------+
+```
+
 
 
 Add a new View

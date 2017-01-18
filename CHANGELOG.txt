@@ -67,3 +67,12 @@
  - fixed Export without mean values
  - fixed managementcommand for Data Export
  - added lock for Exports to prevent running of more then one export at a time
+
+0.7.0b12
+  - fixed export
+  - added datetime fields to Export 
+  - added pytz to the requirements
+  
+0.7.0b13
+  - fixed modbus write task
+  - fixed Event handling

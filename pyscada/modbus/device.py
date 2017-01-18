@@ -327,25 +327,31 @@ class Device:
             # write register
             if 0 <= self.variables[variable_id].modbusvariable.address <= 65535:
                 
-                self._connect()
-                if self.variables[variable_id].get_bits_by_class()/16 == 1:
-                    # just write the value to one register
-                    self.slave.write_register(self.variables[variable_id].modbusvariable.address,int(value),unit=self._unit_id)
+                if self._connect():
+                    if self.variables[variable_id].get_bits_by_class()/16 == 1:
+                        # just write the value to one register
+                        self.slave.write_register(self.variables[variable_id].modbusvariable.address,int(value),unit=self._unit_id)
+                    else:
+                        # encode it first
+                        self.slave.write_registers(self.variables[variable_id].modbusvariable.address,list(self.variables[variable_id].encode_value(value)),unit=self._unit_id)
+                    self._disconnect()
+                    return True
                 else:
-                    # encode it first
-                    self.slave.write_registers(self.variables[variable_id].modbusvariable.address,list(self.variables[variable_id].encode_value(value)),unit=self._unit_id)
-                self._disconnect()
-                return True
+                    log.info(("device with id: %d is now accessible")%(self.device.pk))
+                    return False
             else:
                 log.error('Modbus Address %d out of range'%self.variables[variable_id].modbusvariable.address)
                 return False
         elif self.variables[variable_id].modbusvariable.function_code_read == 1:
             # write coil
             if 0 <= self.variables[variable_id].modbusvariable.address <= 65535:
-                self._connect()
-                self.slave.write_coil(self.variables[variable_id].modbusvariable.address,bool(value),unit=self._unit_id)
-                self._disconnect()
-                return True
+                if self._connect():
+                    self.slave.write_coil(self.variables[variable_id].modbusvariable.address,bool(value),unit=self._unit_id)
+                    self._disconnect()
+                    return True
+                else:
+                    log.info(("device with id: %d is now accessible")%(self.device.pk))
+                    return False
             else:
                 log.error('Modbus Address %d out of range'%self.variables[variable_id].modbusvariable.address)
         else:
