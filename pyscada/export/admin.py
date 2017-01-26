@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from pyscada.admin import admin_site
+
 from pyscada.export.models import ScheduledExportTask, ExportTask
 from django import forms
 from django.contrib import admin
@@ -17,5 +19,5 @@ class ExportTaskAdmin(admin.ModelAdmin):
     list_display = ('id','label','datetime_start','datetime_fineshed',\
         'mean_value_period','file_format','done','busy','failed',)
     
-admin.site.register(ScheduledExportTask,ScheduledExportTaskAdmin)
-admin.site.register(ExportTask,ExportTaskAdmin)
+admin_site.register(ScheduledExportTask,ScheduledExportTaskAdmin)
+admin_site.register(ExportTask,ExportTaskAdmin)

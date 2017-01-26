@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from pyscada.admin import admin_site
+
 from pyscada.systemstat.models import SystemStatVariable
 
 from django.contrib import admin
@@ -13,4 +15,4 @@ class SystemStatVariableAdmin(admin.ModelAdmin):
     def value_class(self, instance):
         return instance.system_stat_variable.value_class
 
-admin.site.register(SystemStatVariable,SystemStatVariableAdmin)
+admin_site.register(SystemStatVariable,SystemStatVariableAdmin)

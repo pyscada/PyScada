@@ -510,6 +510,12 @@ class Variable(models.Model):
 		return self.store_value
 	
 	def decode_value(self,value):
+		# 
+		if self.byte_order == 'default':
+			byte_order = self.device.byte_order
+		else:
+			byte_order = self.byte_order
+		
 		if 	self.value_class.upper() in ['FLOAT32','SINGLE','REAL','UNIXTIMEF32']:
 			target_format = 'f'
 			source_format = '2H'
@@ -528,18 +534,20 @@ class Variable(models.Model):
 		elif self.value_class.upper() in ['INT64','UNIXTIMEI64']:
 			target_format = 'q'
 			source_format = '4H'
-		
-		elif 	self.value_class.upper() in ['BCD32','BCD24','BCD16']:
+		elif self.value_class.upper() in ['INT16','INT']:
+			if byte_order in ['1-0-3-2','3-2-1-0']:
+				# only convert to from uint to int
+				return unpack('h',pack('H',value[0]))[0]
+			else:
+				# swap bytes
+				return unpack('>h',pack('<H',value[0]))[0]
+		elif self.value_class.upper() in ['BCD32','BCD24','BCD16']:
 			target_format = 'f'
 			source_format = '2H'
 			return value[0]
 		else:
 			return value[0]
-		# 
-		if self.byte_order == 'default':
-			byte_order = self.device.byte_order
-		else:
-			byte_order = self.byte_order
+		
 		#
 		if source_format == '2H':
 			if byte_order == '1-0-3-2':
@@ -666,17 +674,27 @@ class RecordedData(models.Model):
 			kwargs['id'] = int(int(int(timestamp*1000)*2097152)+variable_id)
 		if kwargs.has_key('variable') and kwargs.has_key('value'):
 			if kwargs['variable'].value_class.upper() in ['FLOAT','FLOAT64','DOUBLE','FLOAT32','SINGLE','REAL']:
-				kwargs['value_float64'] = kwargs.pop('value')
+				kwargs['value_float64'] = float(kwargs.pop('value'))
 			elif kwargs['variable'].scaling and not kwargs['variable'].value_class.upper() in ['BOOL','BOOLEAN']:
-				kwargs['value_float64'] = kwargs.pop('value')
+				kwargs['value_float64'] = float(kwargs.pop('value'))
 			elif kwargs['variable'].value_class.upper() in ['INT64','UINT32','DWORD']:
-				kwargs['value_int64'] = kwargs.pop('value')
+				kwargs['value_int64'] = int(kwargs.pop('value'))
+				if kwargs['value_int64'].bit_length() > 64:
+					#todo throw exeption or do anything
+					pass
 			elif kwargs['variable'].value_class.upper() in ['WORD','UINT','UINT16','INT32']:
-				kwargs['value_int32'] = kwargs.pop('value')
+				kwargs['value_int32'] = int(kwargs.pop('value'))
+				if kwargs['value_int32'].bit_length() > 32:
+					#todo throw exeption or do anything
+					pass
 			elif kwargs['variable'].value_class.upper() in ['INT16','INT8','UINT8','INT']:
-				kwargs['value_int16'] = kwargs.pop('value')
+				kwargs['value_int16'] = int(kwargs.pop('value'))
+				if kwargs['value_int16'].bit_length() > 15:
+					#todo throw exeption or do anything
+					pass
+				
 			elif kwargs['variable'].value_class.upper() in ['BOOL','BOOLEAN']:
-				kwargs['value_boolean'] = kwargs.pop('value')
+				kwargs['value_boolean'] = bool(kwargs.pop('value'))
 				
 		# call the django model __init__
 		super(RecordedData, self).__init__(*args, **kwargs)

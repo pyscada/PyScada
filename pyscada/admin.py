@@ -16,8 +16,18 @@ from django.utils.translation import ugettext_lazy as _
 from django.contrib.admin import SimpleListFilter
 from django import forms
 from django.conf import settings
+from django.contrib.admin import AdminSite
 
 import datetime
+
+
+## Custom AdminSite
+
+class PyScadaAdminSite(AdminSite):
+    site_header = 'PyScada administration'
+
+## rest
+
 
 # class VariableImportAdminForm(forms.ModelForm):
 #     json_configuration = forms.CharField(widget=forms.Textarea)
@@ -50,6 +60,7 @@ class VariableState(Variable):
         
 class VariableStateAdmin(admin.ModelAdmin):
     list_display = ('name','last_value')
+    list_filter = ('device__short_name', 'active','unit__unit','value_class')
     list_display_links = ()
     list_per_page = 10
     actions = None
@@ -124,15 +135,17 @@ class VarieblesAdminFrom(forms.ModelForm):
         w.widget.render_option = f # add new method
         
 class VarieblesAdmin(admin.ModelAdmin):
-    list_display = ('id','name','description','device_name','value_class','active','writeable',)
+    list_display = ('id','name','description','unit','device_name','value_class','active','writeable',)
     list_editable = ('active','writeable',)
     list_display_links = ('name',)
-    list_filter = ('device__short_name', 'active','writeable')
+    list_filter = ('device__short_name', 'active','writeable','unit__unit','value_class')
     search_fields = ['name',]
     form = VarieblesAdminFrom
     def device_name(self, instance):
         return instance.device.short_name
-
+    def unit(self, instance):
+        return instance.unit.unit
+    
 
 class DeviceWriteTaskAdmin(admin.ModelAdmin):
     list_display = ('id','name','value','user_name','start_time','done','failed',)
@@ -205,16 +218,17 @@ class EventAdmin(admin.ModelAdmin):
     filter_horizontal = ('mail_recipients',)
 
     raw_id_fields = ('variable',)
-    
-admin.site.register(Device,DeviceAdmin)
-admin.site.register(Variable,VarieblesAdmin)
-admin.site.register(Scaling)
+
+admin_site = PyScadaAdminSite(name='pyscada_admin')
+admin_site.register(Device,DeviceAdmin)
+admin_site.register(Variable,VarieblesAdmin)
+admin_site.register(Scaling)
 # admin.site.register(VariableConfigFileImport,VariableImportAdmin)
-admin.site.register(Unit)
-admin.site.register(Event,EventAdmin)
-admin.site.register(RecordedEvent,RecordedEventAdmin)
-admin.site.register(Mail,MailAdmin)
-admin.site.register(DeviceWriteTask,DeviceWriteTaskAdmin)
-admin.site.register(Log,LogAdmin)
-admin.site.register(BackgroundTask,BackgroundTaskAdmin)
-admin.site.register(VariableState,VariableStateAdmin)
+admin_site.register(Unit)
+admin_site.register(Event,EventAdmin)
+admin_site.register(RecordedEvent,RecordedEventAdmin)
+admin_site.register(Mail,MailAdmin)
+admin_site.register(DeviceWriteTask,DeviceWriteTaskAdmin)
+admin_site.register(Log,LogAdmin)
+admin_site.register(BackgroundTask,BackgroundTaskAdmin)
+admin_site.register(VariableState,VariableStateAdmin)

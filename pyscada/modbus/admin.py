@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from pyscada.admin import admin_site
+
 from pyscada.modbus.models import ModbusDevice
 from pyscada.modbus.models import ModbusVariable
 
@@ -20,5 +22,5 @@ class ModbusVariableAdmin(admin.ModelAdmin):
     def value_class(self, instance):
         return instance.modbus_variable.value_class
 
-admin.site.register(ModbusDevice,ModbusDeviceAdmin)
-admin.site.register(ModbusVariable,ModbusVariableAdmin)
+admin_site.register(ModbusDevice,ModbusDeviceAdmin)
+admin_site.register(ModbusVariable,ModbusVariableAdmin)

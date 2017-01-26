@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from pyscada.admin import admin_site
+
 from pyscada.smbus.models import SMbusDevice
 from pyscada.smbus.models import SMbusVariable
 
@@ -20,5 +22,5 @@ class SMbusVariableAdmin(admin.ModelAdmin):
     def value_class(self, instance):
         return instance.smbus_variable.value_class
 
-admin.site.register(SMbusDevice,SMbusDeviceAdmin)
-admin.site.register(SMbusVariable,SMbusVariableAdmin)
+admin_site.register(SMbusDevice,SMbusDeviceAdmin)
+admin_site.register(SMbusVariable,SMbusVariableAdmin)

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from pyscada.admin import admin_site
+
 from pyscada.models import Variable
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Chart
@@ -92,15 +94,15 @@ class ProcessFlowDiagramItemAdmin(admin.ModelAdmin):
 class ProcessFlowDiagramAdmin(admin.ModelAdmin):
     filter_horizontal = ('process_flow_diagram_items',)
 
-admin.site.register(ControlItem,ControlItemAdmin)
-admin.site.register(Chart,ChartAdmin)
-admin.site.register(SlidingPanelMenu,SlidingPanelMenuAdmin)
-admin.site.register(Page,PageAdmin)
-admin.site.register(GroupDisplayPermission,GroupDisplayPermissionAdmin)
+admin_site.register(ControlItem,ControlItemAdmin)
+admin_site.register(Chart,ChartAdmin)
+admin_site.register(SlidingPanelMenu,SlidingPanelMenuAdmin)
+admin_site.register(Page,PageAdmin)
+admin_site.register(GroupDisplayPermission,GroupDisplayPermissionAdmin)
 
-admin.site.register(ControlPanel,ControlPanelAdmin)
-admin.site.register(CustomHTMLPanel,CustomHTMLPanelAdmin)
-admin.site.register(Widget,WidgetAdmin)
-admin.site.register(View,ViewAdmin)
-admin.site.register(ProcessFlowDiagram,ProcessFlowDiagramAdmin)
-admin.site.register(ProcessFlowDiagramItem,ProcessFlowDiagramItemAdmin)
+admin_site.register(ControlPanel,ControlPanelAdmin)
+admin_site.register(CustomHTMLPanel,CustomHTMLPanelAdmin)
+admin_site.register(Widget,WidgetAdmin)
+admin_site.register(View,ViewAdmin)
+admin_site.register(ProcessFlowDiagram,ProcessFlowDiagramAdmin)
+admin_site.register(ProcessFlowDiagramItem,ProcessFlowDiagramItemAdmin)

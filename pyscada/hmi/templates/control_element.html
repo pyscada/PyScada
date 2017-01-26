@@ -26,6 +26,6 @@
             </div>
         {% endif %}
     {% elif item.type == 6 %}<!-- display value -->
-        <div class="input-group control_label"><span class="type-label">{ item.label }}<span class="type-unit"><span class="type-numeric var-{{ item.variable.name }}">NaN</span> {{ item.variable.unit.unit }}</span></span></div>
+        <div class="input-group control_label"><span class="type-label">{{ item.label }}<span class="type-unit"><span class="type-numeric var-{{ item.variable.name }}">NaN</span> {{ item.variable.unit.unit }}</span></span></div>
     {% endif %}
 {% endif %}

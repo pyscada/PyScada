@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 from django.conf.urls import url, include
 from . import views
+from pyscada.admin import admin_site
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     # Public pages
     url(r'^$', views.index ,name="view-overview"),
+    url(r'^pyscada_admin/', admin_site.urls),
     url(r'^accounts/logout/$', views.logout_view),
     url(r'^accounts/login/$', auth_views.login,{'template_name': 'login.html'},name='login_view'),
     url(r'^accounts/password_change/$', auth_views.password_change,{'template_name': 'password_change.html'},name='password_change'),

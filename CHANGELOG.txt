@@ -76,3 +76,9 @@
 0.7.0b13
   - fixed modbus write task
   - fixed Event handling
+  
+0.7.0b14
+  - fixed handling of int16 values in RecordedData Model
+  - added custom admin interface
+  - added filter to variable state admin view
+  - added unit column to variable admin 
