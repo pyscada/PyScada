@@ -31,6 +31,7 @@ Features
 	* Modbus Binary
 	* Phant http://phant.io/
 	* VISA https://pypi.python.org/pypi/PyVISA
+	* 1-Wire (only RaspberryPi)
 	* BACNet/IP (in development)
 	* Meter-Bus, MBus (in development)
 - very low Hardware requirements for the Server

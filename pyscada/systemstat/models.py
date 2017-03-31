@@ -41,7 +41,8 @@ class SystemStatVariable(models.Model):
     parameter   = models.CharField(default='',max_length=400,blank=True,null=True)
     def __unicode__(self):
         return unicode(self.system_stat_variable.name)
-        
+
+                            
 @receiver(post_save, sender=SystemStatVariable)
 def _reinit_daq_daemons(sender, **kwargs):
     """

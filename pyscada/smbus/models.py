@@ -1,7 +1,10 @@
 from pyscada.models import Device
 from pyscada.models import Variable
 from pyscada.models import BackgroundTask
+
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 from time import time
 
@@ -20,6 +23,7 @@ class SMbusVariable(models.Model):
     smbus_variable 				= models.OneToOneField(Variable)
     information                 = models.CharField(default='None',max_length=400,)
 
+        
 @receiver(post_save, sender=SMbusVariable)
 @receiver(post_save, sender=SMbusDevice)
 def _reinit_daq_daemons(sender, **kwargs):

@@ -74,45 +74,9 @@ class VariableStateAdmin(admin.ModelAdmin):
         else:
             return ' - : NaN ' + instance.unit.unit
 
-class DeviceAdminFrom(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super(DeviceAdminFrom, self).__init__(*args, **kwargs)
-        w = self.fields['device_type'].widget
-        # return a list of installed drivers for device classes
-        device_type_choices = (('generic','no Device'),)
-        # Check if psutil is installed for the system statistics device module
-        try:
-            import psutil
-            device_type_choices += (('systemstat','Local System Monitoring',),)
-        except ImportError:
-            pass
-        # Check if pymodbus is installed for the modbus device module
-        try:
-            import pymodbus
-            device_type_choices += (('modbus','Modbus Device',),)
-        except ImportError:
-            pass
-        # Check if pymodbus is installed for the modbus device module
-        try:
-            import smbus
-            device_type_choices += (('smbus','SMBus/I2C Device',),)
-        except ImportError:
-            pass
-        try:
-            import visa
-            device_type_choices += (('visa','VISA Device',),)
-        except ImportError:
-            pass
-        
-        if 'pyscada.phant' in settings.INSTALLED_APPS:
-            device_type_choices += (('phant','Phant Device',),)
-        
-        w.choices = device_type_choices
-
 class DeviceAdmin(admin.ModelAdmin):
     list_display = ('id','short_name','description','active',)
     list_display_links = ('short_name', 'description')
-    form = DeviceAdminFrom
 
 class VarieblesAdminFrom(forms.ModelForm):
     def __init__(self, *args, **kwargs):

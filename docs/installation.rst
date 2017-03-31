@@ -26,9 +26,7 @@ Add a dedicated user for pyscada and add the home directory for `static`/`media`
 	chown -R pyscada:pyscada /home/pyscada
 	ln -s /var/www/pyscada/ ~/www_pyscada
 	cd ~/
-	#virtualenv -p /usr/bin/python2.7 venv
-	#source venv/bin/activate
-
+	
 
 
 Install Dependencies
@@ -228,12 +226,14 @@ Fill in the full path to the django project dir (were the manage.py is located).
 	#!/bin/sh
 	#/etc/default/pyscada_daemon
 	DAEMONS=(
-		'modbus	/var/www/pyscada/PyScadaServer/'
+		'export	/var/www/pyscada/PyScadaServer/'
+		'mail	/var/www/pyscada/PyScadaServer/'
+		'event	/var/www/pyscada/PyScadaServer/'
 	)
 	RUN_AS='pyscada'
 
 
-Edit the gunicorn init.d script.
+Edit configuratio for the gunicorn init.d script.
 
 ::
 
@@ -252,13 +252,23 @@ Also fill in the path to your django project dir and replace the four spaces bet
 	RUN_AS='pyscada'
 
 
-(optinal) install System-V style init script links
+(optinal) install System-V style init script links.
 
 ::
 
 	sudo update-rc.d pyscada_daemon defaults
 	sudo update-rc.d pyscada_daq_daemon defaults
 	sudo update-rc.d gunicorn_django defaults
+
+
+Start gunicorn and all PyScada services
+
+::
+
+	sudo service gunicorn_django start
+	sudo service pyscada_daemon
+	sudo service pyscada_daq_daemon
+
 
 
 Add Init.d Scripts for systemd (optional)
@@ -282,6 +292,15 @@ Download the sample Unit-Files for systemd.
 	sudo systemctl enable pyscada_export
 
 
+Start gunicorn and all PyScada services
+
+::
+
+	sudo systemctl start gunicorn
+	sudo systemctl start pyscada_daq
+	sudo systemctl start pyscada_event
+	sudo systemctl start pyscada_mail
+	sudo systemctl start pyscada_export
 
 
 Start the Django Development Server on Windows (optional, experimental)

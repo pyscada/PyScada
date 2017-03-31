@@ -123,8 +123,10 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
     # check if file exists
     if os.path.exists(filename + file_extension) and not append_to_file:
         count = 0
+        filename_old = filename
         while os.path.exists(filename + file_extension):
-            filename = filename + '_%03.0f'%count
+            filename = filename_old + '_%03.0f'%count
+            count += 1
     
     # append the extension 
     filename = filename + file_extension
@@ -170,7 +172,7 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
     elif file_extension in ['.csv']:
         bf = excel_compatible_csv(filename,version = '1.1',description = description ,name = name, creation_date = strftime('%d-%b-%Y %H:%M:%S'))
     # export config to an separate file to avoid attr > 64k
-    export_xml_config_file(xml_filename)
+    export_xml_config_file(xml_filename) # todo make optional
     
     
     # less then 24 

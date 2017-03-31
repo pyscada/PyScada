@@ -29,6 +29,7 @@ class ModbusDevice(models.Model):
 	def __unicode__(self):
 		return unicode(self.modbus_device.short_name)
 
+
 class ModbusVariable(models.Model):
 	modbus_variable 				= models.OneToOneField(Variable)
 	address  					= models.PositiveIntegerField()

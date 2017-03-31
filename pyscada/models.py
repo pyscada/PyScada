@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
-
-
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -238,17 +235,22 @@ class Color(models.Model):
 	def color_rect_html(self):
 		return unicode('<div style="width:4px;height:0;border:5px solid #%02x%02x%02x;overflow:hidden"></div>'% (self.R, self.G, self.B))
 	
+class DeviceProtocol(models.Model):
+	id 				= models.AutoField(primary_key=True)
+	protocol		= models.CharField(max_length=400, default='generic')
+	description     = models.TextField(default='', verbose_name="Description",null=True)
+	app_name        = models.CharField(max_length=400, default='pyscada.PROTOCOL')
+	device_class    = models.CharField(max_length=400, default='pyscada.PROTOCOL.device')
+	daq_daemon      = models.BooleanField()
+	single_thread   = models.BooleanField()
+	def __unicode__(self):
+		return unicode(self.protocol)
+		
+
 class Device(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	short_name		= models.CharField(max_length=400, default='')
-	device_type_choices = (	('generic','no Protocol'),\
-							('systemstat','Local System Monitoring',),\
-							('modbus','Modbus Device',),\
-							('smbus','SMBus/I2C Device',),\
-							('phant','Phant Device',),\
-							('visa','VISA Device',),)
-							
-	device_type		= models.CharField(default='generic',choices=device_type_choices,max_length=400)
+	protocol		= models.ForeignKey(DeviceProtocol,null=True)
 	description 	= models.TextField(default='', verbose_name="Description",null=True)
 	active			= models.BooleanField(default=True)
 	byte_order_choices = (
@@ -278,15 +280,12 @@ class Device(models.Model):
 		return unicode(self.short_name)
 
 	def get_device_instance(self):
-		from pyscada.modbus.device import Device as ModbusDevice
-		from pyscada.systemstat.device import Device as SystemStatDevice
-		from pyscada.visa.device import Device as VisaDevice
-		if self.device_type == 'systemstat':
-			return SystemStatDevice(self)
-		elif self.device_type == 'modbus' and hasattr(self,'modbusdevice'):
-			return ModbusDevice(self)
-		elif self.device_type == 'visa' and hasattr(self,'visadevice'):
-			return VisaDevice(self)
+		try:
+			mod = __import__(self.protocol.device_class, fromlist=['Device'])
+			DeviceClass = getattr(mod, 'Device')
+			return DeviceClass(self)
+		except:
+			return None
 
 class Unit(models.Model):
 	id 				= models.AutoField(primary_key=True)
@@ -993,3 +992,7 @@ def _reinit_daq_daemons(sender, **kwargs):
 	update the daq daemon configuration wenn changes be applied in the models
 	"""
 	bt = BackgroundTask.objects.filter(label='pyscada.daq.daemon',done=0,failed=0).update(message='reinit',restart_daemon=True,timestamp = time.time())
+	
+	
+	
+	

@@ -242,8 +242,8 @@ def export_xml_config_file(filename=None):
 		obj.appendChild(field_('name','string',item.short_name))
 		# description (string)
 		obj.appendChild(field_('description','string',item.description))
-		# device_type (string)
-		obj.appendChild(field_('device_type','string',item.device_type))
+		# protocol (string)
+		obj.appendChild(field_('protocol','string',item.protocol.protocol))
 		# active (boolean)
 		obj.appendChild(field_('active','boolean',item.active))
 		if hasattr(item,'modbusdevice'):
@@ -350,13 +350,13 @@ def import_xml_config_file(filename):
 	## update/import Devices ###################################################
 	for entry in _Devices:
 		# Device (object)
-		cc, created = Device.objects.get_or_create(pk = entry['id'],defaults={'id':entry['id'],'short_name':entry['name'],'description':entry['description'],'device_type':entry['device_type'],'active':entry['active']})
+		cc, created = Device.objects.get_or_create(pk = entry['id'],defaults={'id':entry['id'],'short_name':entry['name'],'description':entry['description'],'protocol':entry['protocol'],'active':entry['active']})
 		if created:
 			log.info(("created device: %s") %(entry['name']))
 		else:
 			cc.short_name = entry['name']
 			cc.description = entry['description']
-			cc.device_type = entry['device_type']
+			cc.protocol = entry['protocol']
 			cc.active       = entry['active']
 			cc.save()
 			log.info(("updated device: %s (%d)") %(entry['name'],entry['id']))
@@ -605,10 +605,7 @@ def daq_daemon_run(label):
 	devices = {}
 	dt_set  = 5
 	# init daemons
-	
-		
-	
-	for item in Device.objects.exclude(device_type__in = ['generic','phant']).filter(active=1):
+	for item in Device.objects.filter(protocol__daq_daemon=1, active=1):
 		try:
 			tmp_device = item.get_device_instance()
 			if tmp_device is not None:
@@ -642,7 +639,7 @@ def daq_daemon_run(label):
 				reinit_count += 1
 			# wait aprox 5 min (300s) runs befor reinit to avoid frequent reinits
 			if bt.restart_daemon and reinit_count > 300.0/dt_set: 
-				for item in Device.objects.exclude(device_type='generic').filter(active=1):
+				for item in Device.objects.filter(protocol__daq_daemon=1,active=1):
 					try:
 						tmp_device = item.get_device_instance()
 						if tmp_device is not None:

@@ -160,7 +160,7 @@ class Handler:
                 if time() - job.backgroundtask.timestamp > 60*20:
                     # if there is not update in the last 20 minutes terminate
                     # the process and mark as failed
-                    os.kill(pid, 15)
+                    os.kill(job.backgroundtask.pid, 15)
                     job.failed = True
                     job.save()
                     continue

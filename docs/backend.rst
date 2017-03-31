@@ -98,21 +98,24 @@ In the Backend HMI Section (http://IP/admin/hmi/):
 5. GroupDisplayPermissions, add a new GroupDisplayPermission, (if nessesary add a new Group and add your User to that Group, select all items you created in 1. to 4.
 6. open http://IP/, you should see the new View, if the DAQ is running and there is Data already in the DB, you should see the last 2 Houers of Data and the curennt Data.
 
-```
-+-View------------------------------------+
-|                                         |
-| +-Page--------------------------------+ |
-| |                                     | |
-| | +-Widget--------+ +-Widget--------+ | |
-| | |               | |               | | |
-| | | Row 1, Col 1  | | Row 1, Col 2  | | |
-| | | +-Chart-----+ | | +-Chart-----+ | | |
-| | | |           | | | |           | | | |
-| | | +-----------+ | | +---------- + | | |
-| | +---------------+ +---------------+ | |
-| +-------------------------------------+ |
-+-----------------------------------------+
-```
+
+::
+
+
+	+-View------------------------------------+
+	|                                         |
+	| +-Page--------------------------------+ |
+	| |                                     | |
+	| | +-Widget--------+ +-Widget--------+ | |
+	| | |               | |               | | |
+	| | | Row 1, Col 1  | | Row 1, Col 2  | | |
+	| | | +-Chart-----+ | | +-Chart-----+ | | |
+	| | | |           | | | |           | | | |
+	| | | +-----------+ | | +---------- + | | |
+	| | +---------------+ +---------------+ | |
+	| +-------------------------------------+ |
+	+-----------------------------------------+
+
 
 
 
