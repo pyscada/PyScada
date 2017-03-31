@@ -44,7 +44,7 @@ Debian 7
 	sudo pip install cython
 	sudo pip install numpy
 	sudo pip install h5py
-	sudo pip install git+https://github.com/trombastic/PyScada.git@dev/0.7.x
+	sudo pip install https://github.com/trombastic/PyScada/archive/dev/0.7.x.zip
 
 
 Debian 8
@@ -67,7 +67,7 @@ Debian 8
 	export HDF5_DIR=/usr/lib/arm-linux-gnueabihf/hdf5/serial/
 	
 	pip install h5py
-	pip install git+https://github.com/trombastic/PyScada.git@dev/0.7.x
+	pip install https://github.com/trombastic/PyScada/archive/dev/0.7.x.zip
 
 
 
@@ -82,7 +82,7 @@ Fedora 22/23
 	sudo pip install cython
 	sudo pip install numpy
 	sudo pip install h5py
-	sudo pip install git+https://github.com/trombastic/PyScada.git@dev/0.7.x
+	sudo pip install https://github.com/trombastic/PyScada/archive/dev/0.7.x.zip
 	sudo pip install gunicorn
 	sudo pip install MySQL-python
 
@@ -100,7 +100,7 @@ Raspberry Pi (RASPBIAN, Jessie)
 	pip install numpy
 	export HDF5_DIR=/usr/lib/arm-linux-gnueabihf/hdf5/serial/ 
 	pip install h5py
-	pip install git+https://github.com/trombastic/PyScada.git@dev/0.7.x
+	pip install https://github.com/trombastic/PyScada/archive/dev/0.7.x.zip
 
 
 Windows (experimental) 

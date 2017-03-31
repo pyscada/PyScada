@@ -1,7 +1,7 @@
 PyScada a open source SCADA system
 ==================================
 
-A Open Source SCADA System with HTML5 HMI, build using the Django framework. If you like to setup your own _SCADA_ system head over to the :doc:`installation` section.
+A Open Source SCADA System with HTML5 HMI, build using the Django framework. If you like to setup your own SCADA system head over to the http://pyscada.readthedocs.io/en/dev-0.7.x/installation.html section.
 
 Features
 --------
@@ -14,6 +14,7 @@ Features
 	* Modbus Binary
 	* Phant http://phant.io/
 	* VISA https://pypi.python.org/pypi/PyVISA
+	* 1-Wire (only experimental only RPi3)
 	* BACNet/IP (in development)
 	* Meter-Bus, MBus (in development)
 - very low Hardware requirements for the Server
