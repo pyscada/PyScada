@@ -3,8 +3,9 @@ from pyscada.models import Variable,BackgroundTask
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.conf import settings
 
-import time
+import time, os
 from datetime import datetime
 from pytz import UTC
 #
@@ -41,15 +42,17 @@ class ExportTask(models.Model):
     filename_suffix = models.CharField(max_length=400, default='',blank=True)
     datetime_min    = models.DateTimeField(default=None, null=True)
     datetime_max    = models.DateTimeField(default=None, null=True)
-    user	 		    = models.ForeignKey(User,null=True,blank=True, on_delete=models.SET_NULL)
+    user	 		= models.ForeignKey(User,null=True,blank=True, on_delete=models.SET_NULL)
     datetime_start  = models.DateTimeField(default=datetime_now)
     datetime_fineshed = models.DateTimeField(null=True,blank=True)
     done			= models.BooleanField(default=False,blank=True) # label task has been done
     busy            = models.BooleanField(default=False,blank=True) # label task is in operation done
     failed			= models.BooleanField(default=False,blank=True) # label task has failed
+    filename        = models.CharField(blank=True,null=True,max_length=1000)
+    
+    
     def __unicode__(self):
         return unicode(self.label)
-    
     def time_min(self):
         return time.mktime(self.datetime_min.timetuple())
     def time_max(self):
@@ -58,10 +61,13 @@ class ExportTask(models.Model):
         return time.mktime(self.datetime_start.timetuple())
     def fineshed(self):
         return time.mktime(self.datetime_fineshed.timetuple())
+    def downloadlink(self):
+        if not self.done:
+            return '<b>self.filename<b/>' 
+        backup_file_path = os.path.expanduser('~/measurement_data_dumps')
+        if hasattr(settings,'PYSCADA_EXPORT'):
+            if settings.PYSCADA_EXPORT.has_key('output_folder'):
+                backup_file_path = os.path.expanduser(settings.PYSCADA_EXPORT['output_folder'])
+        return '<a href="%s">%s</a>'%(self.filename.replace(backup_file_path,'/measurement'),self.filename.replace(backup_file_path,'/measurement'))
+    downloadlink.allow_tags = True
 
-'''
-class ExportFile(models.Model):
-    id 			= models.AutoField(primary_key=True)
-    exporttask	= models.ForeignKey(ExportTask,null=True, on_delete=models.SET_NULL)
-    filename    = models.FilePathField()
-''' 

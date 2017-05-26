@@ -16,8 +16,13 @@ Open the urls configuration file and add the nesseary rewrite rule to the django
 ::
 
 	...
-		url(r'^admin/', admin.site.urls),
-		url(r'^', include('pyscada.hmi.urls')),
+		from django.conf.urls import url, include
+		from django.contrib import admin
+		
+		urlpatterns = [
+			url(r'^admin/', admin.site.urls),
+			url(r'^', include('pyscada.hmi.urls')),
+		]
 	...
 
 	
@@ -60,7 +65,8 @@ Add the PyScada and the subapps to the installed apps list.
 		'pyscada.visa',
 		'pyscada.hmi',
 		'pyscada.systemstat',
-		'pyscada.export'
+		'pyscada.export',
+		'pyscada.onewire'
 	]
 
 To use the MySQL Database, fill in the database, the user and password as selected in the *create Database section*.

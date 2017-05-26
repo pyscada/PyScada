@@ -17,6 +17,8 @@ from django.contrib.admin import SimpleListFilter
 from django import forms
 from django.conf import settings
 from django.contrib.admin import AdminSite
+from django.contrib.auth.models import User, Group
+from django.contrib.auth.admin import UserAdmin, GroupAdmin
 
 import datetime
 
@@ -87,16 +89,15 @@ class VarieblesAdminFrom(forms.ModelForm):
         for choice in wtf:
             color_choices.append((choice.id,choice.color_code()))
         w.choices = color_choices
-        # override w.render_option method
-        def render_option_color(self,selected_choices, option_value, option_label):
-            html = self._render_option(selected_choices, option_value, option_label.upper())
-            font_color = hex(int('ffffff',16)-int(option_label[1::],16))[2::]
-            return html.replace('<option','<option style="background: %s; color: #%s"'%(option_label,font_color))
+        def create_option_color(self, name, value, label, selected, index, subindex=None, attrs=None):
+            font_color = hex(int('ffffff',16)-int(label[1::],16))[2::]
+            #attrs = self.build_attrs(attrs,{'style':'background: %s; color: #%s'%(label,font_color)})
+            self.option_inherits_attrs = True
+            return self._create_option(name, value, label, selected, index, subindex, attrs={'style':'background: %s; color: #%s'%(label,font_color)})
         import types
         from django.forms.widgets import Select
-        w.widget._render_option = w.widget.render_option # copy old method 
-        f = types.MethodType(render_option_color, w.widget,Select)
-        w.widget.render_option = f # add new method
+        w.widget._create_option = w.widget.create_option # copy old method 
+        w.widget.create_option = types.MethodType(create_option_color, w.widget,Select) # replace old with new
         
 class VarieblesAdmin(admin.ModelAdmin):
     list_display = ('id','name','description','unit','device_name','value_class','active','writeable',)
@@ -187,7 +188,6 @@ admin_site = PyScadaAdminSite(name='pyscada_admin')
 admin_site.register(Device,DeviceAdmin)
 admin_site.register(Variable,VarieblesAdmin)
 admin_site.register(Scaling)
-# admin.site.register(VariableConfigFileImport,VariableImportAdmin)
 admin_site.register(Unit)
 admin_site.register(Event,EventAdmin)
 admin_site.register(RecordedEvent,RecordedEventAdmin)
@@ -196,3 +196,5 @@ admin_site.register(DeviceWriteTask,DeviceWriteTaskAdmin)
 admin_site.register(Log,LogAdmin)
 admin_site.register(BackgroundTask,BackgroundTaskAdmin)
 admin_site.register(VariableState,VariableStateAdmin)
+admin_site.register(User,UserAdmin)
+admin_site.register(Group,GroupAdmin)

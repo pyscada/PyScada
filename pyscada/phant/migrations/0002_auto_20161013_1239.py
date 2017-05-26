@@ -9,7 +9,7 @@ import pyscada.phant.models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('phant', '0001_squashed_0002_auto_20161012_2017'),
+        ('phant', '0002_auto_20161012_2017'),
     ]
 
     operations = [

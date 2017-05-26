@@ -17,12 +17,14 @@ class OneWireVariable(models.Model):
     def __unicode__(self):
         return unicode(self.onewire_variable.name)
 
-# class OneWireDevice(models.Model):
-#     onewire_device = models.OneToOneField(Device)
-#     adapter_type   = models.CharField(default='',max_length=400)
-
-        
+class OneWireDevice(models.Model):
+    onewire_device = models.OneToOneField(Device)
+    adapter_type_choices = (('owserver','OWFS owserver'),('rpi_gpio4','RPi GPIO 4'),)
+    adapter_type   = models.CharField(default='',max_length=400,choices=adapter_type_choices)
+    config         = models.CharField(default='',max_length=400,blank=True,help_text='for OWFS owserver: hostname:port, default is localhost:4304')
+    
 @receiver(post_save, sender=OneWireVariable)
+@receiver(post_save, sender=OneWireDevice)
 def _reinit_daq_daemons(sender, **kwargs):
     """
     update the daq daemon configuration wenn changes be applied in the models

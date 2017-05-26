@@ -94,3 +94,9 @@
   - updated docs
   - some hmi changes
 
+0.7.0b18
+  - added OWFS support to onewire device
+  - updated to django 1.11
+  - added download link for export files to export job
+  - fixed daemon handler 
+  

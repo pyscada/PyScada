@@ -97,9 +97,10 @@ class Command(BaseCommand):
             # shudown the daemon process     
             bt.stop_daemon = 1
             bt.save()
+            bt_id = bt.pk
             wait_count = 0
             while (wait_count < 60):
-                bt = BackgroundTask.objects.filter(pid = pid).last()
+                bt = BackgroundTask.objects.filter(pk = bt_id).last()
                 if bt:
                     if bt.done:
                         return
@@ -107,7 +108,11 @@ class Command(BaseCommand):
                     return
                 wait_count += 1
                 sleep(1)
-                
+        
+        # update is_locked status
+        if context:
+            is_locked = context.pidfile.is_locked()
+        
         if is_locked:
             # kill the daemon process
             try:

@@ -116,7 +116,7 @@ Open a Shell (cmd.exe) and install the folowing packages via pip.
 ::
 
 	pip install gunicorn
-	pip install django">=1.10,<1.11"
+	pip install django">=1.11,<1.12"
 	pip install numpy
 	pip install python-daemon
 	pip install pyscada
@@ -141,11 +141,11 @@ Create a new Django Project
 	
 	# Linux/OSX
 	cd /var/www/pyscada/ 
-	sudo -u pyscada django-admin.py startproject PyScadaServer
+	sudo -u pyscada django-admin startproject PyScadaServer
 	
 	# Windows
 	cd C:/Users/_YOUR_USERNAME_/www 
-	python django-admin.py startproject PyScadaServer
+	python django-admin startproject PyScadaServer
 	
 
 

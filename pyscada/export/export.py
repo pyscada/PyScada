@@ -6,6 +6,7 @@ from pyscada.export.hdf5_file import mat_compatible_h5
 from pyscada.export.hdf5_file import unix_time_stamp_to_matlab_datenum
 from pyscada.export.csv_file import excel_compatible_csv
 from pyscada.export.csv_file import unix_time_stamp_to_excel_datenum
+from pyscada.export.models import ExportTask
 # Django
 from django.conf import settings
 
@@ -19,12 +20,12 @@ import math
 
 
 
-def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active_vars=None,file_extension=None,append_to_file=False,no_mean_value = False,mean_value_period = 5.0,**kwargs):
+def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active_vars=None,file_extension=None,append_to_file=False,no_mean_value = False,mean_value_period = 5.0,backgroundtask_id=None,export_task_id=None,**kwargs):
     '''
     read all data
     '''
-    if  kwargs.has_key('backgroundtask_id'):
-        tp = BackgroundTask.objects.get(id= kwargs['backgroundtask_id'])
+    if  backgroundtask_id is not None:
+        tp = BackgroundTask.objects.get(id= backgroundtask_id)
         tp.message='init'
         tp.timestamp=time()
         tp.pid=str(os.getpid())
@@ -68,6 +69,7 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
         tp.failed = 1
         tp.save()
         return
+    
     # 
     if filename is None: 
         if hasattr(settings,'PYSCADA_EXPORT'):
@@ -91,7 +93,7 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
         db_time_min = RecordedData.objects.first()
         if not db_time_min:
             tp.timestamp = time()
-            tp.message = 'not data to export'
+            tp.message = 'no data to export'
             tp.failed = 1
             tp.save()
             return
@@ -100,7 +102,7 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
         db_time_max = RecordedData.objects.last()
         if not db_time_max:
             tp.timestamp = time()
-            tp.message = 'not data to export'
+            tp.message = 'no data to export'
             tp.failed = 1
             tp.save()
             return
@@ -113,12 +115,10 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
     
         if kwargs.has_key('filename_suffix'):
             filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr_from + '_' + cdstr_to + '_' + kwargs['filename_suffix'])
-            xml_filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr_from + '_' + cdstr_to + '_' + kwargs['filename_suffix'] + '.xml')
         else:
             filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr_from + '_' + cdstr_to)
-            xml_filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr_from + '_' + cdstr_to + '.xml')
-    else: # generate xml file name from filename
-        xml_filename    = filename.split('.')[0] + '.xml'
+    
+        
     
     # check if file exists
     if os.path.exists(filename + file_extension) and not append_to_file:
@@ -130,8 +130,13 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
     
     # append the extension 
     filename = filename + file_extension
-    
-    # todo add ExportFile  object
+    xml_filename    = filename.split('.')[0] + '.xml'
+    # add Filename to ExportTask
+    if export_task_id is not None:
+        job = ExportTask.objects.filter(pk=export_task_id).first()
+        if job:
+            job.filename = filename
+            job.save()
     
     # 
     if active_vars is None:
@@ -172,7 +177,7 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
     elif file_extension in ['.csv']:
         bf = excel_compatible_csv(filename,version = '1.1',description = description ,name = name, creation_date = strftime('%d-%b-%Y %H:%M:%S'))
     # export config to an separate file to avoid attr > 64k
-    export_xml_config_file(xml_filename) # todo make optional
+    #export_xml_config_file(xml_filename) # todo make optional
     
     
     # less then 24 
@@ -226,7 +231,10 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
                 id = var.pk,\
                 description=var.description,\
                 value_class = validate_value_class(value_class),\
-                unit = udunit)
+                unit = udunit,\
+                color= var.chart_line_color_code(),\
+                short_name = var.short_name,\
+                chart_line_thickness = var.chart_line_thickness)
                 continue
             
             # data[var.pk][::][time,value]
@@ -285,10 +293,13 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
             
             # write data
             bf.write_data(var.name,_cast_value(out_data,validate_value_class(value_class)),\
-            id = var.pk,\
-            description=var.description,\
-            value_class = validate_value_class(value_class),\
-            unit = udunit)
+                id = var.pk,\
+                description=var.description,\
+                value_class = validate_value_class(value_class),\
+                unit = udunit,\
+                color= var.chart_line_color_code(),\
+                short_name = var.short_name,\
+                chart_line_thickness = var.chart_line_thickness)
 
                 
     bf.close_file()

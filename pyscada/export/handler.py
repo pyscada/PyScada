@@ -41,12 +41,15 @@ def _export_handler(job,today):
     export_recordeddata_to_file(\
         job.time_min(),\
         job.time_max(),\
-        None,\
-        job.variables.values_list('pk',flat=True),\
-        file_ext,\
+        filename=None,\
+        active_vars=job.variables.values_list('pk',flat=True),\
+        file_extension = file_ext,\
         filename_suffix=job.filename_suffix,\
         backgroundtask_id=bt.pk,\
-        mean_value_period = job.mean_value_period)
+        export_task_id = job.pk,\
+        mean_value_period = job.mean_value_period
+        )
+    job = ExportTask.objects.get(pk=job.pk)
     job.done     = True
     job.busy     = False
     job.datetime_fineshed = datetime.now(UTC)

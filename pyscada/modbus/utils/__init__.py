@@ -24,15 +24,12 @@ def decode_bcd(values):
 			binStrOut = binStr + binStrOut
 
 	decNum = 0
-	print binStrOut
 	for i in range(len(binStrOut)/4):
 		bcdNum = int(binStrOut[(i*4):(i+1)*4][::-1],2)
-		print binStrOut[(i*4):(i+1)*4][::-1]
 		if bcdNum>9:
 			decNum = -decNum
 		else:
 			decNum = decNum+(bcdNum*pow(10,i))
-		print decNum
 	return decNum
 
 def decode_bits(value):

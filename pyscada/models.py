@@ -97,7 +97,7 @@ class RecordedDataValueManager(models.Manager):
 			tmp_time_min = time.time()*1000 #
 		else:
 			tmp_time_min = time.time() #
-		#print '%1.3fs'%(time.time()-tic)
+		#print('%1.3fs'%(time.time()-tic))
 		#tic = time.time()
 		#for var in variables:
 		time_slice = 2097152*1000*60*max(60,min(24*60,-3*len(variable_ids)+1440))
@@ -117,7 +117,7 @@ class RecordedDataValueManager(models.Manager):
 					).values_list('variable_id','pk','value_float64',\
 					'value_int64','value_int32','value_int16','value_boolean'))
 	
-		#	print '%1.3fs'%(time.time()-tic)
+		#	print('%1.3fs'%(time.time()-tic))
 			for item in tmp:
 				if item[0] not in variable_ids:
 					continue
@@ -142,10 +142,10 @@ class RecordedDataValueManager(models.Manager):
 			del tmp
 			query_time_min = query_time_max + 1
 			query_time_max = query_time_min+time_slice
-		#	print '%1.3fs'%(time.time()-tic)
+		#	print('%1.3fs'%(time.time()-tic))
 		#	tic = time.time()
 		
-		# print '%1.3fs'%(time.time()-tic)
+		# print('%1.3fs'%(time.time()-tic))
 		# tic = time.time()
 		# check if for all variables the first and last value is present
 		update_first_value_list = []
@@ -191,7 +191,7 @@ class RecordedDataValueManager(models.Manager):
 			for key in update_first_value_list:
 				if first_values.has_key(key):
 					values[key].insert(0,[time_min/(2097152.0*f_time_scale),first_values[key][1]])
-		#print '%1.3fs'%(time.time()-tic)
+		#print('%1.3fs'%(time.time()-tic))
 		#tic = time.time()
 		
 		'''
@@ -769,7 +769,7 @@ class BackgroundTask(models.Model):
 	id 				= models.AutoField(primary_key=True)
 	start 			= models.FloatField(default=0)#TODO DateTimeField
 	timestamp 		= models.FloatField(default=0)#TODO DateTimeField
-	progress		    = models.FloatField(default=0)
+	progress		= models.FloatField(default=0)
 	load			= models.FloatField(default=0)
 	min 			= models.FloatField(default=0)
 	max				= models.FloatField(default=0)
@@ -783,7 +783,8 @@ class BackgroundTask(models.Model):
 	identifier      = models.CharField(max_length=400, default='',blank=True)
 
 	def __unicode__(self):
-		return unicode(self.timestamp)
+		return unicode(self.label + ': ' + self.message)
+	
 	def timestamp_ms(self):
 		return self.timestamp * 1000
 
