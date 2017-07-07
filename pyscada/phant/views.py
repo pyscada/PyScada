@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from pyscada import log
 from pyscada.models import RecordedData
 from pyscada.phant.models import PhantDevice
 from pyscada.utils import extract_numbers_from_str
@@ -11,11 +10,10 @@ from django.http import HttpResponse
 from time import time
 import json
 
+
 @csrf_exempt
-def input(request,public_key=None,json_response = False):
-    private_key = None
-    values = {}
-    
+def input(request, public_key=None, json_response=False):
+
     def do_response(success,message):
         if json_response:
             jdata = json.dumps({"success":success,"message":message},indent=2)
@@ -26,14 +24,14 @@ def input(request,public_key=None,json_response = False):
     if False:
         #read values and private key from jsonp
         return do_response(False,"not implemented")
-    elif request.POST.has_key('private_key'):
+    elif 'private_key' in request.POST:
         # stream is post
         private_key = request.POST.get('private_key')
         values = request.POST.dict()
-    elif request.META.has_key('HTTP_PHANT_PRIVATE_KEY'):
+    elif 'HTTP_PHANT_PRIVATE_KEY' in request.META:
         private_key = request.META['HTTP_PHANT_PRIVATE_KEY']
         values = request.POST.dict()
-    elif request.GET.has_key('private_key'):
+    elif 'private_key' in request.GET:
         # stream is get
         private_key = request.GET.get('private_key')
         values = request.GET.dict()
@@ -48,7 +46,7 @@ def input(request,public_key=None,json_response = False):
     # validate private key, validate values and write to RecordedData
     if not device.private_key == private_key:
         return do_response(False,'wrong private key')
-    # prepair the values for writing
+    # prepare the values for writing
     # todo what to do with the cov value
     output = []
     for item in device.phant_device.variable_set.filter(name__in=values.keys()):

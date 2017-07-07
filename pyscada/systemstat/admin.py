@@ -10,8 +10,10 @@ class SystemStatVariableAdmin(admin.ModelAdmin):
     search_fields = ['system_stat_variable__name',]
     list_display = ('name','value_class','information',)
     raw_id_fields = ('system_stat_variable',)
+
     def name(self, instance):
         return instance.system_stat_variable.name
+
     def value_class(self, instance):
         return instance.system_stat_variable.value_class
 

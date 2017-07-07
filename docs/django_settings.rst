@@ -78,7 +78,10 @@ To use the MySQL Database, fill in the database, the user and password as select
 			'ENGINE':   'django.db.backends.mysql',
 			'NAME':     'PyScada_db',
 			'USER':     'PyScada-user',
-			'PASSWORD': 'PyScada-user-password'
+			'PASSWORD': 'PyScada-user-password',
+			'OPTIONS': {
+				'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+			}
 		}
 	}
 

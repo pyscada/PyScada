@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from django.conf.urls import url, include
+from django.conf.urls import url
 from . import views
 from pyscada.admin import admin_site
 from django.contrib.auth import views as auth_views

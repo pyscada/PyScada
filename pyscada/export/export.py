@@ -31,7 +31,7 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
         tp.pid=str(os.getpid())
         tp.save()
     else:
-        if kwargs.has_key('task_identifier'):
+        if 'task_identifier' in kwargs:
             if BackgroundTask.objects.filter(identifier = kwargs['task_identifier'],failed=0):
                 return
             else:
@@ -73,7 +73,7 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
     # 
     if filename is None: 
         if hasattr(settings,'PYSCADA_EXPORT'):
-            if settings.PYSCADA_EXPORT.has_key('output_folder'):
+            if 'output_folder' in settings.PYSCADA_EXPORT:
                 backup_file_path = os.path.expanduser(settings.PYSCADA_EXPORT['output_folder'])
             else:
                 backup_file_path = os.path.expanduser('~/measurement_data_dumps')
@@ -83,7 +83,7 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
         # add filename prefix
         backup_file_name = 'measurement_data'
         if hasattr(settings,'PYSCADA_EXPORT'):
-            if settings.PYSCADA_EXPORT.has_key('file_prefix'):
+            if 'file_prefix' in settings.PYSCADA_EXPORT:
                 backup_file_name = settings.PYSCADA_EXPORT['file_prefix'] + backup_file_name
         # create output dir if not existing
         if not os.path.exists(backup_file_path ):
@@ -113,7 +113,7 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
         cdstr_to = datetime.fromtimestamp(time_max).strftime("%Y_%m_%d_%H%M")
 
     
-        if kwargs.has_key('filename_suffix'):
+        if 'filename_suffix' in kwargs:
             filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr_from + '_' + cdstr_to + '_' + kwargs['filename_suffix'])
         else:
             filename = os.path.join(backup_file_path,backup_file_name + '_' + cdstr_from + '_' + cdstr_to)
@@ -160,11 +160,11 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
     
     # get Meta from Settings
     if hasattr(settings,'PYSCADA_META'):
-        if settings.PYSCADA_META.has_key('description'):
+        if 'description' in settings.PYSCADA_META:
             description = settings.PYSCADA_META['description']
         else:
             description = 'None'
-        if settings.PYSCADA_META.has_key('name'):
+        if 'name' in settings.PYSCADA_META:
             name = settings.PYSCADA_META['name']
         else:
             name = 'None'
@@ -225,7 +225,7 @@ def export_recordeddata_to_file(time_min=None,time_max=None,filename=None,active
             else:
                 udunit = 'None'
             
-            if not data.has_key(var.pk):
+            if not var.pk in data:
                 # write dummy data
                 bf.write_data(var.name,_cast_value([0]*len(timevalues),validate_value_class(value_class)),\
                 id = var.pk,\

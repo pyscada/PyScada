@@ -37,10 +37,10 @@ class SystemStatVariable(models.Model):
         (104, 'APCUPSD Battery Time Left in Minutes'), # Minutes
         (105, 'APCUPSD Load in %'), # %
     )
-    information	= models.PositiveSmallIntegerField(default=0,choices=information_choices)
-    parameter   = models.CharField(default='',max_length=400,blank=True,null=True)
-    def __unicode__(self):
-        return unicode(self.system_stat_variable.name)
+    information = models.PositiveSmallIntegerField(default=0,choices=information_choices)
+    parameter = models.CharField(default='',max_length=400,blank=True,null=True)
+    def __str__(self):
+        return self.system_stat_variable.name
 
                             
 @receiver(post_save, sender=SystemStatVariable)
@@ -48,4 +48,6 @@ def _reinit_daq_daemons(sender, **kwargs):
     """
     update the daq daemon configuration wenn changes be applied in the models
     """
-    BackgroundTask.objects.filter(label='pyscada.daq.daemon',done=0,failed=0).update(message='reinit',restart_daemon=True,timestamp = time())
+    BackgroundTask.objects.filter(label='pyscada.daq.daemon',
+                                  done=0,
+                                  failed=0).update(message='reinit',restart_daemon=True,timestamp = time())

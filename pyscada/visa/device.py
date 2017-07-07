@@ -1,20 +1,6 @@
 # -*- coding: utf-8 -*-
-from pyscada.models import Device
-from django.conf import settings
-
 import sys
 
-# try:
-#     import usbtmc
-#     driver_usbtmc_ok = True
-# except ImportError:
-#     driver_usbtmc_ok = False
-# 
-# try:
-#     import vxi11
-#     driver_vxi11_ok = True
-# except ImportError:
-#     driver_vxi11_ok = False
 try:
     import visa
     driver_visa_ok = True
@@ -22,6 +8,7 @@ except ImportError:
     driver_visa_ok = False
 
 from time import time
+
 
 class Device:
     def __init__(self,device):
@@ -46,9 +33,9 @@ class Device:
             self._h.connect()
 
     def request_data(self):
-        '''
+        """
         request data from the instrument/device
-        '''
+        """
         output = []
         if not driver_visa_ok:
             return output

@@ -3,21 +3,21 @@ import os
 
 
 def unix_time_stamp_to_excel_datenum(timestamp):
-    '''
+    """
     convert from unix time (seconds since 01/01/1970) to Excel datenum (days since 01/01/1900)
-    '''
+    """
     return (timestamp / 86400.0) + 25569.0
 
-class excel_compatible_csv:
+class ExcelCompatibleCSV:
     def __init__(self,filename,**kwargs):
-        self.filename       = os.path.expanduser(filename)
-        self.data           = {}
-        self.header         = {}
-        self.data_rows       = 0
+        self.filename = os.path.expanduser(filename)
+        self.data = {}
+        self.header = {}
+        self.data_rows = 0
         self.header_is_writen = False
         self.dialect = 'excel' # default is excel
     def write_data(self,name,data,**kwargs):
-        if self.data.has_key(name):
+        if name in self.data:
             # append data
             self.data[name] += data
             self.data_rows = max(self.data_rows,len(self.data[name])) 
@@ -37,7 +37,7 @@ class excel_compatible_csv:
         for i in del_keys:
             self.data.pop(i,None)
             self.header.pop(i,None)
-        # contruct the write arrays
+        # construct the write arrays
         keys = self.data.keys()
         output = zip(*self.data.values())
         # truncate file on first write, otherwise append
@@ -49,9 +49,9 @@ class excel_compatible_csv:
                 self.header_is_writen = True
             writer.writerows(output)
         # reset internal data
-        self.data           = {}
-        self.data_rows      = 0
-        self.header         = {}
+        self.data = {}
+        self.data_rows = 0
+        self.header = {}
     
     def reopen(self):
         self.write_file()

@@ -4,7 +4,7 @@ from pyscada import log
 from pyscada.models import BackgroundTask
 from pyscada.utils import daq_daemon_run
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.conf import settings
 
 import daemon
@@ -12,15 +12,14 @@ import os,sys
 import signal
 import daemon.pidfile
 from time import time, sleep 
-import traceback
+
 
 class Command(BaseCommand):
     help = 'Start the daq daemon for PyScada'
     
     def add_arguments(self, parser):
         parser.add_argument('action', choices=['start','stop'], nargs='+', type=str)
-        
-        
+
     def handle(self, *args, **options):
         
         ## init
@@ -32,8 +31,7 @@ class Command(BaseCommand):
         # on stop
         elif 'stop' == options['action'][0]:
             self.stop(context)
-        
-    
+
     def init_context(self):
         daemon_name = 'daq'
         context = daemon.DaemonContext(
@@ -44,7 +42,7 @@ class Command(BaseCommand):
         context.signal_map = {
             signal.SIGTERM: self.program_cleanup,
             signal.SIGHUP: self.program_cleanup,
-            #signal.SIGUSR1: reload_program_config,
+            # signal.SIGUSR1: reload_program_config,
             }
             
         # check the process
@@ -63,7 +61,6 @@ class Command(BaseCommand):
             daq_daemon_run(label='pyscada.%s.daemon'% daemon_name)
         else:
             self.stdout.write("daq daemon is already runnging")  
-
 
     def stop(self,context=None):
         if context:
@@ -98,7 +95,7 @@ class Command(BaseCommand):
                 while 1:
                     os.kill(pid, 15)
                     sleep(0.1)
-            except OSError, err:
+            except OSError as err:
                 err = str(err)
                 if err.find("No such process") > 0:
                     bt = BackgroundTask.objects.filter(pid = pid).last()
@@ -110,9 +107,8 @@ class Command(BaseCommand):
                         bt.save()
         else:
             self.stdout.write("daq daemon is not running")
-        
-        
-    def program_cleanup(self,signum=None, frame=None):
+
+    def program_cleanup(self, signum=None, frame=None):
         bt = BackgroundTask.objects.filter(pid = str(os.getpid())).last()
         if bt:
             bt.pid = 0  

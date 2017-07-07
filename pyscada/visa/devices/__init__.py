@@ -38,7 +38,7 @@ class GenericDevice():
             resource_prefix = self._device.visadevice.resource_name.split('::')[0]
             extras = {}
             if hasattr(settings,'VISA_DEVICE_SETTINGS'):
-                if settings.VISA_DEVICE_SETTINGS.has_key(resource_prefix):
+                if resource_prefix in settings.VISA_DEVICE_SETTINGS:
                     extras = settings.VISA_DEVICE_SETTINGS[resource_prefix]
             
             self.inst = self.rm.open_resource(self._device.visadevice.resource_name,**extras)

@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import os,sys
+
 from pyscada.utils import export_xml_config_file
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
+
 
 class Command(BaseCommand):
     help = 'import config from xml file'

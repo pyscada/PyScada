@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
+
 def ups_pico(smbus_device,info):
-    '''
+    """
     query data via smbus (I2C) from a UPS Pico  device
-    '''
+    """
     if info == 'ad1':
         data = smbus_device.read_word_data(0x69, 0x05)
         data = format(data,"02x")

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from pyscada.models import Device
 
 try:
     import psutil
@@ -10,9 +9,10 @@ except ImportError:
 
 from time import time
 
+
 class Device:
     def __init__(self,device):
-        self.variables  = []
+        self.variables = []
         self.device = device
         for var in device.variable_set.filter(active=1):
             if not hasattr(var,'systemstatvariable'):
@@ -20,7 +20,7 @@ class Device:
             self.variables.append(var)
             
     def request_data(self):
-        '''
+        """
         (0,'cpu_percent'),
         (1,'virtual_memory_total'),
         (2,'virtual_memory_available'),
@@ -45,11 +45,11 @@ class Device:
         (102, 'BATTV'), # Volts
         (103, 'BCHARGE'), # %
         (104, 'TIMELEFT'), # Minutes
-        (105, 'LOADPCT'), # 
-        
-        
-        
-        '''
+        (105, 'LOADPCT'), #
+
+
+
+        """
         if not driver_ok:
             return None
         
@@ -155,27 +155,27 @@ class Device:
                     apcupsd_status_is_queried = True
                 if apcupsd_status is not None:
                     if item.systemstatvariable.information == 100:
-                        if apcupsd_status.has_key('STATUS'):
+                        if 'STATUS' in apcupsd_status:
                             value = apcupsd_status['STATUS']
                             timestamp = apcupsd_status['timestamp']
                     elif item.systemstatvariable.information == 101:
-                        if apcupsd_status.has_key('LINEV'):
+                        if 'LINEV' in apcupsd_status:
                             value = apcupsd_status['LINEV']
                             timestamp = apcupsd_status['timestamp']
                     elif item.systemstatvariable.information == 102:
-                        if apcupsd_status.has_key('BATTV'):
+                        if 'BATTV' in apcupsd_status:
                             value = apcupsd_status['BATTV']
                             timestamp = apcupsd_status['timestamp']
                     elif item.systemstatvariable.information == 103:
-                        if apcupsd_status.has_key('BCHARGE'):
+                        if 'BCHARGE' in apcupsd_status:
                             value = apcupsd_status['BCHARGE']
                             timestamp = apcupsd_status['timestamp']
                     elif item.systemstatvariable.information == 104:
-                        if apcupsd_status.has_key('TIMELEFT'):
+                        if 'TIMELEFT' in apcupsd_status:
                             value = apcupsd_status['TIMELEFT']
                             timestamp = apcupsd_status['timestamp']
                     elif item.systemstatvariable.information == 105:
-                        if apcupsd_status.has_key('LOADPCT'):
+                        if 'LOADPCT' in apcupsd_status:
                             value = apcupsd_status['LOADPCT']
                             timestamp = apcupsd_status['timestamp']
             else:
@@ -186,17 +186,18 @@ class Device:
             
             
         return output
-        
+
+
 def query_apsupsd_status():
-    '''
+    """
     (100, 'STATUS'), # True/False
     (101, 'LINEV'), # Volts
     (102, 'BATTV'), # Volts
     (103, 'BCHARGE'), # %
     (104, 'TIMELEFT'), # Minutes
     (105, 'LOADPCT'), # %
-    
-    '''
+
+    """
     import subprocess
     output = {}
     try:

@@ -1,37 +1,35 @@
 # -*- coding: utf-8 -*-
-from pyscada.models import Device
-from django.conf import settings
+
 try:
     import smbus
     driver_ok = True
 except ImportError:
     driver_ok = False
     
-    
+
 from time import time
+
 
 class Device:
     def __init__(self,device):
-        self.variables  = []
+        self.variables = []
         self.device = device
         self.i2c = None
         for var in device.variable_set.filter(active=1):
             if not hasattr(var,'smbusvariable'):
                 continue
             self.variables.append(var)
-        
-    
+
     def connect(self):
-        '''
-        
-        '''
+        """
+
+        """
         self.i2c = smbus.SMBus(int(self.device.smbusdevice.port))
-        
-    
+
     def request_data(self):
-        '''
+        """
         
-        '''
+        """
         if not driver_ok:
             return None
         self.connect()
