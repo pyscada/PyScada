@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from pyscada.admin import admin_site
 from pyscada.onewire.models import OneWireVariable, OneWireDevice
 
@@ -6,7 +8,7 @@ from django.contrib import admin
 
 
 class OneWireVariableAdmin(admin.ModelAdmin):
-    list_display = ('name','value_class','address','sensor_type')
+    list_display = ('name', 'value_class', 'address', 'sensor_type')
     raw_id_fields = ('onewire_variable',)
 
     def name(self, instance):
@@ -15,5 +17,6 @@ class OneWireVariableAdmin(admin.ModelAdmin):
     def value_class(self, instance):
         return instance.onewire_variable.value_class
 
-admin_site.register(OneWireVariable,OneWireVariableAdmin)
+
+admin_site.register(OneWireVariable, OneWireVariableAdmin)
 admin_site.register(OneWireDevice)

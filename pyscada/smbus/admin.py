@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from pyscada.admin import admin_site
 
 from pyscada.smbus.models import SMbusDevice
@@ -8,7 +10,7 @@ from django.contrib import admin
 
 
 class SMbusDeviceAdmin(admin.ModelAdmin):
-    list_display = ('device_name','description','port','address',)
+    list_display = ('device_name', 'description', 'port', 'address',)
 
     def device_name(self, instance):
         return instance.smbus_device.short_name
@@ -18,8 +20,8 @@ class SMbusDeviceAdmin(admin.ModelAdmin):
 
 
 class SMbusVariableAdmin(admin.ModelAdmin):
-    search_fields = ['smbus_variable__name',]
-    list_display = ('name','value_class','information',)
+    search_fields = ['smbus_variable__name', ]
+    list_display = ('name', 'value_class', 'information',)
     raw_id_fields = ('smbus_variable',)
 
     def name(self, instance):
@@ -28,5 +30,6 @@ class SMbusVariableAdmin(admin.ModelAdmin):
     def value_class(self, instance):
         return instance.smbus_variable.value_class
 
-admin_site.register(SMbusDevice,SMbusDeviceAdmin)
-admin_site.register(SMbusVariable,SMbusVariableAdmin)
+
+admin_site.register(SMbusDevice, SMbusDeviceAdmin)
+admin_site.register(SMbusVariable, SMbusVariableAdmin)

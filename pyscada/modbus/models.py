@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from pyscada.models import Device
 from pyscada.models import Variable
 from pyscada.models import BackgroundTask
@@ -6,10 +8,12 @@ from pyscada.models import BackgroundTask
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils.encoding import python_2_unicode_compatible
 
 from time import time
 
 
+@python_2_unicode_compatible
 class ModbusDevice(models.Model):
     modbus_device = models.OneToOneField(Device)
     protocol_choices = ((0, 'TCP'), (1, 'UDP'), (2, 'serial ASCII'), (3, 'serial RTU'), (4, 'serial Binary'),)
@@ -31,6 +35,7 @@ class ModbusDevice(models.Model):
         return self.modbus_device.short_name
 
 
+@python_2_unicode_compatible
 class ModbusVariable(models.Model):
     modbus_variable = models.OneToOneField(Variable)
     address = models.PositiveIntegerField()
@@ -39,6 +44,8 @@ class ModbusVariable(models.Model):
         (4, 'input registers (FC4)'))
     function_code_read = models.PositiveSmallIntegerField(default=0, choices=function_code_read_choices, help_text="")
 
+    def __str__(self):
+        return self.modbus_variable.short_name
 
 @receiver(post_save, sender=ModbusDevice)
 @receiver(post_save, sender=ModbusVariable)

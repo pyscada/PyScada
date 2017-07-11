@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from pyscada import log
 
 try:
@@ -15,14 +17,14 @@ from math import isnan, isinf
 from time import time
 
 
-def find_gap(self, L, value):
+def find_gap(l, value):
     """
     try to find a address gap in the list of modbus registers
     """
-    for index in range(len(L)):
-        if L[index] == value:
+    for index in range(len(l)):
+        if l[index] == value:
             return None
-        if L[index] > value:
+        if l[index] > value:
             return index
 
 
@@ -86,12 +88,12 @@ class RegisterBlock:
         # map result to the register
         for idx in self.registers:
             self.registers_data[idx] = result.pop(0)
-        for id in self.variables:
-            out[id] = self.variables[id]['decode_function'](
-                [self.registers_data[k] for k in self.variables[id]['registers']])
-            if type(out[id]) is float:
-                if isnan(out[id]) or isinf(out[id]):
-                    out[id] = None
+        for v_id in self.variables:
+            out[v_id] = self.variables[v_id]['decode_function'](
+                [self.registers_data[k] for k in self.variables[v_id]['registers']])
+            if type(out[v_id]) is float:
+                if isnan(out[v_id]) or isinf(out[v_id]):
+                    out[v_id] = None
         return out
 
 
@@ -169,8 +171,8 @@ class Device:
         for var in device.variable_set.filter(active=1):
             if not hasattr(var, 'modbusvariable'):
                 continue
-            FC = var.modbusvariable.function_code_read
-            if FC == 0:
+            f_c = var.modbusvariable.function_code_read
+            if f_c == 0:
                 continue
 
             # add some attr to the var model 
@@ -178,16 +180,16 @@ class Device:
             # add the var to the list of 
             self.variables[var.pk] = var
 
-            if FC == 1:  # coils
-                self.trans_coils.append([var.modbusvariable.address, var.pk, FC])
-            elif FC == 2:  # discrete inputs
-                self.trans_discrete_inputs.append([var.modbusvariable.address, var.pk, FC])
-            elif FC == 3:  # holding registers
+            if f_c == 1:  # coils
+                self.trans_coils.append([var.modbusvariable.address, var.pk, f_c])
+            elif f_c == 2:  # discrete inputs
+                self.trans_discrete_inputs.append([var.modbusvariable.address, var.pk, f_c])
+            elif f_c == 3:  # holding registers
                 self.trans_holding_registers.append(
-                    [var.modbusvariable.address, var.decode_value, var.get_bits_by_class(), var.pk, FC])
-            elif FC == 4:  # input registers
+                    [var.modbusvariable.address, var.decode_value, var.get_bits_by_class(), var.pk, f_c])
+            elif f_c == 4:  # input registers
                 self.trans_input_registers.append(
-                    [var.modbusvariable.address, var.decode_value, var.get_bits_by_class(), var.pk, FC])
+                    [var.modbusvariable.address, var.decode_value, var.get_bits_by_class(), var.pk, f_c])
             else:
                 continue
 
@@ -222,14 +224,14 @@ class Device:
         # coils
         old = -2
         for entry in self.trans_coils:
-            if (entry[0] != old + 1):
+            if entry[0] != old + 1:
                 out.append(CoilBlock())  # start new coil block
             out[-1].insert_item(entry[1], entry[0])
             old = entry[0]
         # discrete inputs
         old = -2
         for entry in self.trans_discrete_inputs:
-            if (entry[0] != old + 1):
+            if entry[0] != old + 1:
                 out.append(DiscreteInputBlock())  # start new coil block
             out[-1].insert_item(entry[1], entry[0])
             old = entry[0]
@@ -290,18 +292,18 @@ class Device:
                         if redorded_data_element is not None:
                             output.append(redorded_data_element)
                     if self.variables[variable_id].accessible < 1:
-                        log.info(("variable with id: %d is now accessible") % (variable_id))
+                        log.info("variable with id: %d is now accessible" % variable_id)
                         self.variables[variable_id].accessible = 1
             else:
                 for variable_id in register_block.variables:
                     if self.variables[variable_id].accessible == -1:
-                        log.error(("variable with id: %d is not accessible") % (variable_id))
+                        log.error("variable with id: %d is not accessible" % variable_id)
                         self.variables[variable_id].update_value(None, time())
                     self.variables[variable_id].accessible -= 1
 
         # reset device not accessible status 
         if self._device_not_accessible <= -1:
-            log.info(("device with id: %d is now accessible") % (self.device.pk))
+            log.info("device with id: %d is now accessible" % self.device.pk)
         if self._device_not_accessible < 1:
             self._device_not_accessible = 1
 

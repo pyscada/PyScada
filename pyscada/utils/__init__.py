@@ -1,26 +1,27 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from pyscada import log
-from pyscada.models import Device
-from pyscada.models import Variable
-from pyscada.models import Unit
-from pyscada.models import DeviceWriteTask
-from pyscada.models import BackgroundTask
-from pyscada.models import RecordedData
-from pyscada.modbus.models import ModbusVariable
-from pyscada.modbus.models import ModbusDevice
-from pyscada.models import Color
-from pyscada.hmi.models import Chart
-
-from django.contrib.auth.models import User
-from django.conf import settings
+from __future__ import unicode_literals
 
 import os
-import json
-import time, datetime
-import traceback
-from struct import *
 import re
+import time
+import traceback
+from datetime import datetime
+
+from django.conf import settings
+from pytz import UTC
+
+from pyscada import log
+from pyscada.hmi.models import Chart
+from pyscada.models import BackgroundTask
+from pyscada.models import Color
+from pyscada.models import Device
+from pyscada.models import DeviceWriteTask
+from pyscada.models import RecordedData
+from pyscada.models import Unit
+from pyscada.models import Variable
+
+from django.utils.six import integer_types
 
 
 def extract_numbers_from_str(value_str):
@@ -38,22 +39,22 @@ def decode_bcd(values):
     """
 
     bin_str_out = ''
-    if isinstance(values, (int, long)):
+    if isinstance(values, integer_types):
         bin_str_out = bin(values)[2:].zfill(16)
         bin_str_out = bin_str_out[::-1]
     else:
         for value in values:
-            binStr = bin(value)[2:].zfill(16)
-            binStr = binStr[::-1]
-            bin_str_out = binStr + bin_str_out
+            bin_str = bin(value)[2:].zfill(16)
+            bin_str = bin_str[::-1]
+            bin_str_out = bin_str + bin_str_out
 
     dec_num = 0
     for i in range(len(bin_str_out) / 4):
-        bcdNum = int(bin_str_out[(i * 4):(i + 1) * 4][::-1], 2)
-        if bcdNum > 9:
+        bcd_num = int(bin_str_out[(i * 4):(i + 1) * 4][::-1], 2)
+        if bcd_num > 9:
             dec_num = -dec_num
         else:
-            dec_num = dec_num + (bcdNum * pow(10, i))
+            dec_num = dec_num + (bcd_num * pow(10, i))
     return dec_num
 
 
@@ -65,21 +66,21 @@ def export_xml_config_file(filename=None):
     import sys
     # reload(sys)
     sys.setdefaultencoding('utf8')
-    Meta = {}
+    meta = {}
     if hasattr(settings, 'PYSCADA_META'):
         if 'description' in settings.PYSCADA_META:
-            Meta['description'] = settings.PYSCADA_META['description']
+            meta['description'] = settings.PYSCADA_META['description']
         else:
-            Meta['description'] = 'None'
+            meta['description'] = 'None'
         if 'name' in settings.PYSCADA_META:
-            Meta['name'] = settings.PYSCADA_META['name']
+            meta['name'] = settings.PYSCADA_META['name']
         else:
-            Meta['name'] = 'None'
+            meta['name'] = 'None'
     else:
-        Meta['description'] = 'None'
-        Meta['name'] = 'None'
+        meta['description'] = 'None'
+        meta['name'] = 'None'
 
-    Meta['version'] = '1.1'
+    meta['version'] = '1.1'
 
     def field_(name, type_, value=None):
         f = xml_doc.createElement('field')
@@ -104,15 +105,15 @@ def export_xml_config_file(filename=None):
     impl = getDOMImplementation()
     xml_doc = impl.createDocument(None, "objects", None)
     doc_node = xml_doc.documentElement
-    doc_node.setAttribute('version', Meta['version'])
+    doc_node.setAttribute('version', meta['version'])
     obj = xml_doc.createElement('object')
     obj.setAttribute('name', 'Meta')
     # creation_date (string)
     obj.appendChild(field_('creation_date', 'string', time.strftime('%d-%b-%Y %H:%M:%S')))
     # name (string)
-    obj.appendChild(field_('name', 'string', Meta['name']))
+    obj.appendChild(field_('name', 'string', meta['name']))
     # description (string)
-    obj.appendChild(field_('description', 'string', Meta['description']))
+    obj.appendChild(field_('description', 'string', meta['description']))
     doc_node.appendChild(obj)
 
     # Variable (object)
@@ -221,7 +222,7 @@ def export_xml_config_file(filename=None):
         # y_axis_max (float64)
         obj.appendChild(field_('y_axis_max', 'float64', item.y_axis_max))
         # variables (string)
-        variables_list = item.variables_list();
+        variables_list = item.variables_list()
         obj.appendChild(field_('variables', 'string', str(variables_list)))
         doc_node.appendChild(obj)
 
@@ -272,18 +273,18 @@ def _cast(value, class_str):
         return value
 
 
-## daemon
-def daemon_run(label, handlerClass):
+# daemon
+def daemon_run(label, handler_class):
     pid = str(os.getpid())
 
     # init daemon
 
     try:
-        mh = handlerClass()
+        mh = handler_class()
         dt_set = mh.dt_set
     except:
         var = traceback.format_exc()
-        log.error("exception while initialisation of %s:%s %s" % (label, os.linesep, var))
+        log.error("exeption while initialisation of %s:%s %s" % (label, os.linesep, var))
         raise
     # register the task in Backgroudtask list
     bt = BackgroundTask(start=time.time(), label=label, message='daemonized', timestamp=time.time(), pid=pid)
@@ -302,7 +303,7 @@ def daemon_run(label, handlerClass):
     while not bt.stop_daemon:
         t_start = time.time()
         if bt.message == 'reinit':
-            mh = handlerClass()
+            mh = handler_class()
             bt = BackgroundTask.objects.get(pk=bt_id)
             bt.timestamp = time.time()
             bt.message = 'running...'
@@ -319,10 +320,10 @@ def daemon_run(label, handlerClass):
             err_count += 1
             # write log only
             if err_count <= 3 or err_count == 10 or err_count % 100 == 0:
-                log.debug("occ: %d, exception in %s daemon%s%s %s" % (err_count, label, os.linesep, os.linesep, var), -1)
+                log.debug("occ: %d, exeption in %s daemon%s%s %s" % (err_count, label, os.linesep, os.linesep, var), -1)
 
             # do actions
-            mh = handlerClass()
+            mh = handler_class()
 
         # update BackgroudtaskTask
         bt = BackgroundTask.objects.get(pk=bt_id)
@@ -346,7 +347,7 @@ def daemon_run(label, handlerClass):
         bt.save()
     except:
         var = traceback.format_exc()
-        log.error("exception while shutdownn of %s:%s %s" % (label, os.linesep, var))
+        log.error("exeption while shootdown of %s:%s %s" % (label, os.linesep, var))
     log.notice("stopped %s execution" % label)
 
 
@@ -367,7 +368,7 @@ def daq_daemon_run(label):
                 dt_set = min(dt_set, tmp_device.device.polling_interval)
         except:
             var = traceback.format_exc()
-            log.error("exception while initialisation of %s:%s %s" % (label, os.linesep, var))
+            log.error("exeption while initialisation of %s:%s %s" % (label, os.linesep, var))
     # register the task in Backgroudtask list
     bt = BackgroundTask(start=time.time(), label=label, message='daemonized', timestamp=time.time(), pid=pid)
     bt.save()
@@ -400,7 +401,7 @@ def daq_daemon_run(label):
                             dt_set = min(dt_set, tmp_device.device.polling_interval)
                     except:
                         var = traceback.format_exc()
-                        log.error("exception while initialisation of %s:%s %s" % (label, os.linesep, var))
+                        log.error("exeption while initialisation of %s:%s %s" % (label, os.linesep, var))
 
                 bt = BackgroundTask.objects.get(pk=bt_id)
                 bt.timestamp = time.time()
@@ -413,7 +414,7 @@ def daq_daemon_run(label):
             for task in DeviceWriteTask.objects.filter(done=False, start__lte=time.time(), failed=False):
                 if not task.variable.scaling is None:
                     task.value = task.variable.scaling.scale_output_value(task.value)
-                if task.variable.device_id in devices:
+                if devices.has_key(task.variable.device_id):
                     if devices[task.variable.device_id].write_data(task.variable.id, task.value):  # do write task
                         task.done = True
                         task.fineshed = time.time()
@@ -424,12 +425,12 @@ def daq_daemon_run(label):
                         task.failed = True
                         task.fineshed = time.time()
                         task.save()
-                        log.error('change of variable %s failed' % (task.variable.name), task.user)
+                        log.error('change of variable %s failed' % task.variable.name, task.user)
                 else:
                     task.failed = True
                     task.fineshed = time.time()
                     task.save()
-                    log.error('device id not valid %d ' % (task.variable.device_id), task.user)
+                    log.error('device id not valid %d ' % task.variable.device_id, task.user)
 
             # start the read tasks
             data = [[]]
@@ -450,7 +451,7 @@ def daq_daemon_run(label):
             # write data to the database
             for item in data:
                 RecordedData.objects.bulk_create(item)
-            # update BackgroudTask
+            # update BackgroudtaskTask
             bt = BackgroundTask.objects.get(pk=bt_id)
             bt.timestamp = time.time()
             if dt_set > 0:
@@ -467,7 +468,7 @@ def daq_daemon_run(label):
             err_count += 1
             # write log only
             if err_count <= 3 or err_count % 10 == 0:
-                log.debug("occ: %d, exception in %s daemon%s%s %s" % (err_count, label, os.linesep, os.linesep, var), -1)
+                log.debug("occ: %d, exeption in %s daemon%s%s %s" % (err_count, label, os.linesep, os.linesep, var), -1)
             if err_count > 100:
                 break
 
@@ -481,5 +482,9 @@ def daq_daemon_run(label):
         bt.save()
     except:
         var = traceback.format_exc()
-        log.error("exception while shutdown of %s:%s %s" % (label, os.linesep, var))
+        log.error("exeption while shootdown of %s:%s %s" % (label, os.linesep, var))
     log.notice("stopped %s execution" % label)
+
+
+def datetime_now():
+    return datetime.now(UTC)

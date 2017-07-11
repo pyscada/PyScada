@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
 from django.db import models
 from django.contrib.auth.models import User
-from django.utils import timezone
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.core.mail import send_mail
+from django.utils.encoding import python_2_unicode_compatible
+
 import time
-import datetime
+import json
 from struct import *
 
 
@@ -138,7 +140,7 @@ class RecordedDataValueManager(models.Manager):
             query_time_min = query_time_max + 1
             query_time_max = query_time_min + time_slice
         # print('%1.3fs'%(time.time()-tic))
-        #	tic = time.time()
+        # tic = time.time()
 
         # print('%1.3fs'%(time.time()-tic))
         # tic = time.time()
@@ -214,8 +216,9 @@ class RecordedDataValueManager(models.Manager):
 
 
 #
-## Models
+# Models
 #
+@python_2_unicode_compatible
 class Color(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.SlugField(max_length=80, verbose_name="variable name")
@@ -234,6 +237,7 @@ class Color(models.Model):
             self.R, self.G, self.B)
 
 
+@python_2_unicode_compatible
 class DeviceProtocol(models.Model):
     id = models.AutoField(primary_key=True)
     protocol = models.CharField(max_length=400, default='generic')
@@ -247,6 +251,7 @@ class DeviceProtocol(models.Model):
         return self.protocol
 
 
+@python_2_unicode_compatible
 class Device(models.Model):
     id = models.AutoField(primary_key=True)
     short_name = models.CharField(max_length=400, default='')
@@ -283,12 +288,13 @@ class Device(models.Model):
     def get_device_instance(self):
         try:
             mod = __import__(self.protocol.device_class, fromlist=['Device'])
-            DeviceClass = getattr(mod, 'Device')
-            return DeviceClass(self)
+            device_class = getattr(mod, 'Device')
+            return device_class(self)
         except:
             return None
 
 
+@python_2_unicode_compatible
 class Unit(models.Model):
     id = models.AutoField(primary_key=True)
     unit = models.CharField(max_length=80, verbose_name="Unit")
@@ -302,6 +308,7 @@ class Unit(models.Model):
         managed = True
 
 
+@python_2_unicode_compatible
 class Scaling(models.Model):
     id = models.AutoField(primary_key=True)
     description = models.TextField(default='', verbose_name="Description", null=True, blank=True)
@@ -332,6 +339,7 @@ class Scaling(models.Model):
         return norm_value * (self.input_high - self.input_low) + self.input_low
 
 
+@python_2_unicode_compatible
 class VariableProperty(models.Model):
     id = models.AutoField(primary_key=True)
     variable = models.ForeignKey('Variable')
@@ -351,7 +359,11 @@ class VariableProperty(models.Model):
     value_string = models.CharField(default='', blank=True, max_length=255)
     timestamp = models.DateTimeField(blank=True, null=True)
 
+    def __str__(self):
+        return self.get_property_class_display() + ': ' + self.name
 
+
+@python_2_unicode_compatible
 class Variable(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.SlugField(max_length=80, verbose_name="variable name", unique=True)
@@ -410,24 +422,25 @@ class Variable(models.Model):
             return self.chart_line_color.color_code()
         else:
             c = 51
-            id = self.pk + 1
-            c = c % id
+            c_id = self.pk + 1
+            c = c % c_id
             while c >= 51:
-                id = id - c
-                c = c % id
-            return Color.objects.get(id=id).color_code()
+                c_id = c_id - c
+                c = c % c_id
+            return Color.objects.get(id=c_id).color_code()
 
     '''
-	M: Mantissia
-	E: Exponent
-	S: Sign
-			uint 0            uint 1 
-			byte 0   byte 1   byte 2   byte 3
-	1-0-3-2 MMMMMMMM MMMMMMMM SEEEEEEE EMMMMMMM
-	0-1-2-3 MMMMMMMM MMMMMMMM EMMMMMMM SEEEEEEE
-	2-3-0-1 EMMMMMMM SEEEEEEE MMMMMMMM MMMMMMMM
-	3-2-1-0 SEEEEEEE EMMMMMMM MMMMMMMM MMMMMMMM
-	'''
+    M: Mantissia
+    E: Exponent
+    S: Sign
+    uint 0            uint 1 
+    byte 0   byte 1   byte 2   byte 3
+    1-0-3-2 MMMMMMMM MMMMMMMM SEEEEEEE EMMMMMMM
+    0-1-2-3 MMMMMMMM MMMMMMMM EMMMMMMM SEEEEEEE
+    2-3-0-1 EMMMMMMM SEEEEEEE MMMMMMMM MMMMMMMM
+    3-2-1-0 SEEEEEEE EMMMMMMM MMMMMMMM MMMMMMMM
+    '''
+
     byte_order = models.CharField(max_length=15, default='default', choices=byte_order_choices)
     # for RecodedVariable
     value = None
@@ -505,7 +518,7 @@ class Variable(models.Model):
                 self.store_value = True
                 self.timestamp_old = self.timestamp
             else:
-                if (self.timestamp - self.timestamp_old) >= (3600):
+                if (self.timestamp - self.timestamp_old) >= 3600:
                     # store at least every hour one value
                     # store Value if old Value is older then 1 hour
                     self.store_value = True
@@ -643,26 +656,30 @@ class Variable(models.Model):
         """
         create a new element to write to archive table
         """
-        if self.store_value and not self.value is None:
+        if self.store_value and self.value is not None:
             return RecordedData(timestamp=self.timestamp, variable=self, value=self.value)
         else:
             return None
 
 
+@python_2_unicode_compatible
 class DeviceWriteTask(models.Model):
     id = models.AutoField(primary_key=True)
     variable = models.ForeignKey('Variable')
     value = models.FloatField()
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     start = models.FloatField(default=0)  # TODO DateTimeField
-    fineshed = models.FloatField(default=0, blank=True)  # TODO DateTimeField
+    finished = models.FloatField(default=0, blank=True)  # TODO DateTimeField
     done = models.BooleanField(default=False, blank=True)
     failed = models.BooleanField(default=False, blank=True)
 
+    def __str__(self):
+        return self.variable.short_name
 
+@python_2_unicode_compatible
 class RecordedData(models.Model):
-    # Big Int first 42 bis is used for unixtime in ms, unsigt because we only
-    # store time values that are later then 1970, rest 21 bits for the
+    # Big Int first 42 bits are used for the unixtime in ms, unsigned because we only
+    # store time values that are later then 1970, rest 21 bits are used for the
     # variable id to have a uniqe primary key
     # 63 bit 111111111111111111111111111111111111111111111111111111111111111
     # 42 bit 111111111111111111111111111111111111111111000000000000000000000
@@ -688,7 +705,7 @@ class RecordedData(models.Model):
             variable_id = kwargs['variable'].pk
         else:
             variable_id = None
-        if not variable_id is None and not 'id' in kwargs:
+        if variable_id is not None and 'id' not in kwargs:
             kwargs['id'] = int(int(int(timestamp * 1000) * 2097152) + variable_id)
         if 'variable' in kwargs and 'value' in kwargs:
             if kwargs['variable'].value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
@@ -726,8 +743,8 @@ class RecordedData(models.Model):
             timestamp = time.time()
         self.pk = int(int(int(timestamp * 1000) * 2097152) + self.variable.pk)
 
-    def __unicode__(self):
-        return unicode(self.value())
+    def __str__(self):
+        return self.value()
 
     def time_value(self):
         """
@@ -758,6 +775,7 @@ class RecordedData(models.Model):
             return None
 
 
+@python_2_unicode_compatible
 class Log(models.Model):
     # id 				= models.AutoField(primary_key=True)
     id = models.BigIntegerField(primary_key=True)
@@ -773,7 +791,7 @@ class Log(models.Model):
         else:
             timestamp = time.time()
             kwargs['timestamp'] = timestamp
-        if not 'id' in kwargs:
+        if 'id' not in kwargs:
             if 'level' in kwargs:
                 kwargs['id'] = int(int(int(timestamp * 1000) * 2097152) + kwargs['level'])
             else:
@@ -784,6 +802,7 @@ class Log(models.Model):
         return self.message
 
 
+@python_2_unicode_compatible
 class BackgroundTask(models.Model):
     id = models.AutoField(primary_key=True)
     start = models.FloatField(default=0)  # TODO DateTimeField
@@ -808,6 +827,48 @@ class BackgroundTask(models.Model):
         return self.timestamp * 1000
 
 
+@python_2_unicode_compatible
+class BackgroundProcess(models.Model):
+    id = models.AutoField(primary_key=True)
+    pid = models.IntegerField(default=0, blank=True)
+    label = models.CharField(max_length=400, default='')
+    message = models.CharField(max_length=400, default='')
+    enabled = models.BooleanField(default=False, blank=True)
+    done = models.BooleanField(default=False, blank=True)
+    failed = models.BooleanField(default=False, blank=True)
+    parent_process = models.ForeignKey('BackgroundProcess', null=True, on_delete=models.SET_NULL, blank=True)
+    process_class = models.CharField(max_length=400, blank=True, default='pyscada.utils.scheduler.Process',
+                                     help_text="from pyscada.utils.scheduler import Process")
+    process_class_kwargs = models.CharField(max_length=400, default='{}', blank=True,
+                                            help_text="""arguments in json format will be passed as kwargs while the init of the process instance, example: {"keywordA":"value1", "keywordB":7}""")
+    last_update = models.DateTimeField(null=True, blank=True)
+    running_since = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return self.label + ': ' + self.message
+
+    def get_process_instance(self):
+        # kwargs = dict(s.split("=") for s in self.process_class_kwargs.split())
+        try:
+            kwargs = json.loads(self.process_class_kwargs)
+        except:
+            kwargs = {}
+        #
+        kwargs['label'] = self.label
+        kwargs['process_id'] = self.pk
+        kwargs['parent_process_id'] = self.parent_process.pk
+
+        class_name = self.process_class.split('.')[-1]
+        class_path = self.process_class.replace('.' + class_name, '')
+        try:
+            mod = __import__(class_path, fromlist=[class_name.__str__()])
+            process_class = getattr(mod, class_name.__str__())
+            return process_class(**kwargs)
+        except:
+            return None
+
+
+@python_2_unicode_compatible
 class Event(models.Model):
     id = models.AutoField(primary_key=True)
     label = models.CharField(max_length=400, default='')
@@ -968,6 +1029,7 @@ class Event(models.Model):
                         Mail(None, subject, message, recipient.email, time.time()).save()
 
 
+@python_2_unicode_compatible
 class RecordedEvent(models.Model):
     id = models.AutoField(primary_key=True)
     event = models.ForeignKey(Event)
@@ -975,7 +1037,10 @@ class RecordedEvent(models.Model):
     time_end = models.FloatField(null=True, blank=True)  # TODO DateTimeField
     active = models.BooleanField(default=False, blank=True)
 
+    def __str__(self):
+        return self.event.label
 
+@python_2_unicode_compatible
 class Mail(models.Model):
     id = models.AutoField(primary_key=True)
     subject = models.TextField(default='', blank=True)
@@ -1008,6 +1073,8 @@ class Mail(models.Model):
             self.save()
             return False
 
+    def __str__(self):
+        return self.id
 
 @receiver(post_save, sender=Variable)
 @receiver(post_save, sender=Device)
@@ -1017,5 +1084,5 @@ def _reinit_daq_daemons(sender, **kwargs):
     update the daq daemon configuration wenn changes be applied in the models
     """
     BackgroundTask.objects.filter(label='pyscada.daq.daemon', done=0, failed=0).update(message='reinit',
-                                                                                            restart_daemon=True,
-                                                                                            timestamp=time.time())
+                                                                                       restart_daemon=True,
+                                                                                       timestamp=time.time())

@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0b9
+version 0.7.0b20
 
-Copyright (c) 2013-2016 Martin Schröder
+Copyright (c) 2013-2017 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.7.0b9"
+var version = "0.7.0b20"
 var NotificationCount = 0
 var UpdateStatusCount = 0;
 var InitStatusCount = 0;
@@ -31,6 +31,7 @@ var cache_timeout = 15000; // in milliseconds
 var RootUrl = window.location.protocol+"//"+window.location.host + "/";
 var VariableKeys = [];
 var InitVariableKeys = [];
+var LastVariableValue = [];
 
 // the code
 var debug = 0;
@@ -118,9 +119,11 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                         if (typeof(val)==="object"){
                             val = val.pop();
                             if (typeof(val[1])==="number" | typeof(val[1])==="boolean"){
-                                updateDataValues(key,val[1]);
+                                //updateDataValues(key,val[1]);
+                                LastVariableValue[key] = val[1];
                             }else{
-                                updateDataValues(key,Number.NaN);
+                                //updateDataValues(key,Number.NaN);
+                                LastVariableValue[key] = Number.NaN;
                             }
                         }
                     });
@@ -136,19 +139,6 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                     DataOutOfDate = (server_time - timestamp  > cache_timeout);
                     if (DataOutOfDate){
                         raiseDataOutOfDateError();
-                        /*$.each(PyScadaPlots,function(plot_id){
-                            var variable_names = PyScadaPlots[plot_id].getVariableNames();
-                            $.each(variable_names, function(key, val) {
-                                PyScadaPlots[plot_id].addData(val,server_time,Number.NaN);
-                                updateDataValues(val,Number.NaN);
-                            });
-                            
-                            var self = this, doBind = function() {
-                                PyScadaPlots[plot_id].update();
-                            };
-                            $.browserQueue.add(doBind, this);
-                        });
-                        */
                     }else{
                         clearDataOutOfDateError();
                         $.each(PyScadaPlots,function(plot_id){
@@ -172,18 +162,22 @@ function fetchData(variable_keys,first_timestamp,init,plot_instance) {
                             if (typeof(val)==="object"){
                                 val = val.pop();
                                 if (typeof(val[1])==="number" | typeof(val[1])==="boolean"){
-                                    updateDataValues(key,val[1]);
+                                    //updateDataValues(key,val[1]);
+                                    LastVariableValue[key] = val[1];
                                 }else{
-                                    updateDataValues(key,Number.NaN);
+                                    LastVariableValue[key] = Number.NaN;
+                                    //updateDataValues(key,Number.NaN);
                                 }
                             }
                         });
-                        // update all legend tables                        
-                        $('.legend table').trigger("update");
                     }
                     setTimeout(function() {fetchData();}, refresh_rate);
                 }
-
+                for (var key in LastVariableValue) {
+                    updateDataValues(key,LastVariableValue[key]);
+                }
+                // update all legend tables
+                $('.legend table').trigger("update");
                 $("#AutoUpdateButton").removeClass("btn-warning");
                 $("#AutoUpdateButton").addClass("btn-success");
                 if (JsonErrorCount > 0) {
@@ -489,7 +483,22 @@ function PyScadaPlot(id){
                 }
             });
         });
-        
+        //
+        $(legend_checkbox_id+'make_all_none').change(function() {
+                console.log(legend_checkbox_id + 'changed');
+                plot.update();
+                if ($(legend_checkbox_id+'make_all_none').is(':checked')){
+                    $.each(variables,function(key,val){
+                        $(legend_checkbox_status_id+key).html(1);
+                        $(legend_checkbox_id+key)[0].checked = true;
+                    });
+                }else{
+                    $.each(variables,function(key,val){
+                        $(legend_checkbox_status_id+key).html(0);
+                        $(legend_checkbox_id+key)[0].checked = false;
+                     });
+                }
+         });
         // expand the chart to the maximum width
         main_chart_area  = $(chart_container_id).closest('.main-chart-area');
         

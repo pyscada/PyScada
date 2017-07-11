@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from pyscada.models import Device
 from pyscada.models import Variable
 from pyscada.models import Scaling, Color
 from pyscada.models import Unit
 from pyscada.models import DeviceWriteTask
 from pyscada.models import Log
-from pyscada.models import BackgroundTask
+from pyscada.models import BackgroundTask, BackgroundProcess
 from pyscada.models import Event
 from pyscada.models import RecordedEvent, RecordedData
 from pyscada.models import Mail
@@ -56,7 +58,7 @@ class DeviceAdmin(admin.ModelAdmin):
 class VarieblesAdminFrom(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(VarieblesAdminFrom, self).__init__(*args, **kwargs)
-        wtf = Color.objects.all();
+        wtf = Color.objects.all()
         w = self.fields['chart_line_color'].widget
         color_choices = []
         for choice in wtf:
@@ -136,6 +138,13 @@ class LogAdmin(admin.ModelAdmin):
         return False
 
 
+class BackgroundProcessAdmin(admin.ModelAdmin):
+    list_display = ('id', 'label', 'message', 'last_update', 'running_since', 'enabled', 'done', 'failed')
+    list_filter = ('parent_process', 'enabled', 'done', 'failed')
+    list_display_links = ('id', 'label', 'message')
+    readonly_fields = ('message', 'last_update', 'running_since', 'done', 'failed')
+
+
 class BackgroundTaskAdmin(admin.ModelAdmin):
     list_display = ('id', 'label', 'message', 'load', 'last_update', 'running_since', 'done', 'failed')
     list_display_links = ('label',)
@@ -191,6 +200,7 @@ admin_site.register(Mail, MailAdmin)
 admin_site.register(DeviceWriteTask, DeviceWriteTaskAdmin)
 admin_site.register(Log, LogAdmin)
 admin_site.register(BackgroundTask, BackgroundTaskAdmin)
+admin_site.register(BackgroundProcess, BackgroundProcessAdmin)
 admin_site.register(VariableState, VariableStateAdmin)
 admin_site.register(User, UserAdmin)
 admin_site.register(Group, GroupAdmin)

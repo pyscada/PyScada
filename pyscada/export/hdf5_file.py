@@ -4,17 +4,19 @@ Created on Sat Nov 30 14:22:58 2013
 
 @author: Martin Schröder
 """
+from __future__ import unicode_literals
 import os
 import io
 import h5py
 import time
 
+from django.utils.six import text_type
 
 def unix_time_stamp_to_matlab_datenum(timestamp):
     """
     convert dtype to maltab class string
     """
-    return (timestamp/86400)+719529
+    return (timestamp / 86400) + 719529
 
 
 def dtype_to_matlab_class(dtype):
@@ -51,29 +53,32 @@ class MatCompatibleH5:
         """
         self.filename = os.path.expanduser(filename)
         self.filepath = []
-        self.CHUNCK = 4320 # 12V/Min * 60 Min/Hour * 6 Hours (1/4 Day)
+        self.CHUNCK = 4320  # 12V/Min * 60 Min/Hour * 6 Hours (1/4 Day)
         self.GZIP_LEVEL = 3
         if not os.path.exists(self.filename):
             self.create_file()
         else:
             self.open_file()
 
-        for key, value in kwargs.iteritems():
-            if isinstance(value,str): 
+        for key, value in kwargs.items():
+            if isinstance(value, bytes):
                 self._f.attrs[key] = value
+            elif isinstance(value, text_type):
+                self._f.attrs[key] = value.encode('utf-8').__str__()
             else:
                 self._f.attrs[key] = value.__str__()
         self.reopen()
 
     def create_file(self):
-        self._f = h5py.File(self.filename,'a',userblock_size=512)
+        self._f = h5py.File(self.filename, 'a', userblock_size=512)
         self._f.close()
-        userblock_data = 'MATLAB 7.3 MAT-file, Platform: PCWIN64, Created on: %s HDF5 schema 1.00 .'%time.strftime('%a %b %d %H:%M:%S %Y')
-        while len(userblock_data)< 116:
+        userblock_data = 'MATLAB 7.3 MAT-file, Platform: PCWIN64, Created on: %s HDF5 schema 1.00 .' % time.strftime(
+            '%a %b %d %H:%M:%S %Y')
+        while len(userblock_data) < 116:
             userblock_data += ' '
-        userblock_data += chr(0)*9
+        userblock_data += chr(0) * 9
         userblock_data += 'IM'
-        with io.open(self.filename,'rb+') as f:
+        with io.open(self.filename, 'rb+') as f:
             f.write(userblock_data)
         self.reopen()
 
@@ -86,7 +91,7 @@ class MatCompatibleH5:
         self.open_file()
 
     def open_file(self):
-        self._f = h5py.File(self.filename,'r+')
+        self._f = h5py.File(self.filename, 'r+')
         self._d = {}
         self._cd = {}
         for d in self._f.values():
@@ -102,8 +107,8 @@ class MatCompatibleH5:
         if name in self._d:
             return False
         self._d[name] = self._f.create_dataset(name,
-                                shape=(0,), dtype=dtype,maxshape=(None,),chunks=(self.CHUNCK,),
-                                compression='gzip',compression_opts=self.GZIP_LEVEL)
+                                               shape=(0,), dtype=dtype, maxshape=(None,), chunks=(self.CHUNCK,),
+                                               compression='gzip', compression_opts=self.GZIP_LEVEL)
         self._d[name].attrs['MATLAB_class'] = dtype_to_matlab_class(dtype)
         return self._d[name]
 
@@ -114,43 +119,48 @@ class MatCompatibleH5:
         if gname in self._d:
             return False
         self.create_group(gname)
-        self._cd[gname+"/values"] = self._d[gname].create_dataset("values",
-                                shape=(0,), dtype=dtype,maxshape=(None,),chunks=(self.CHUNCK,),
-                                compression='gzip',compression_opts=self.GZIP_LEVEL)
+        self._cd[gname + "/values"] = self._d[gname].create_dataset("values",
+                                                                    shape=(0,), dtype=dtype, maxshape=(None,),
+                                                                    chunks=(self.CHUNCK,),
+                                                                    compression='gzip',
+                                                                    compression_opts=self.GZIP_LEVEL)
 
-        self._cd[gname+"/time"] = self._d[gname].create_dataset("time",
-                                shape=(0,), dtype="f8",maxshape=(None,),chunks=(self.CHUNCK,),
-                                compression='gzip',compression_opts=self.GZIP_LEVEL)
-        self._cd[gname+"/time"].attrs['MATLAB_class'] = 'double'
-        self._cd[gname+"/values"].attrs['MATLAB_class'] = dtype_to_matlab_class(dtype)
+        self._cd[gname + "/time"] = self._d[gname].create_dataset("time",
+                                                                  shape=(0,), dtype="f8", maxshape=(None,),
+                                                                  chunks=(self.CHUNCK,),
+                                                                  compression='gzip', compression_opts=self.GZIP_LEVEL)
+        self._cd[gname + "/time"].attrs['MATLAB_class'] = 'double'
+        self._cd[gname + "/values"].attrs['MATLAB_class'] = dtype_to_matlab_class(dtype)
         return True
 
-    def write_data(self,name,data,**kwargs):
-        if self.create_dataset(name,data.dtype):
-            for key, value in kwargs.iteritems():
-                if isinstance(value,str): 
+    def write_data(self, name, data, **kwargs):
+        if self.create_dataset(name, data.dtype):
+            for key, value in kwargs.items():
+                if isinstance(value, bytes):
                     self._d[name].attrs[key] = value
+                elif isinstance(value, text_type):
+                    self._f.attrs[key] = value.encode('utf-8').__str__()
                 else:
                     self._d[name].attrs[key] = value.__str__()
 
         dl = self._d[name].len()
-        self._d[name].resize((dl+data.size,))
+        self._d[name].resize((dl + data.size,))
         self._d[name][dl::] = data
 
     def write_complex_data(self, gname, data, times):
-        self.create_complex_dataset(gname,data.dtype)
-        dl = self._cd[gname+"/values"].len()
-        self._cd[gname + "/values"].resize((dl+data.size,))
-        self._cd[gname+"/time"].resize((dl+data.size,))
-        self._cd[gname+"/values"][dl::] = data
-        self._cd[gname+"/time"][dl::] = times
+        self.create_complex_dataset(gname, data.dtype)
+        dl = self._cd[gname + "/values"].len()
+        self._cd[gname + "/values"].resize((dl + data.size,))
+        self._cd[gname + "/time"].resize((dl + data.size,))
+        self._cd[gname + "/values"][dl::] = data
+        self._cd[gname + "/time"][dl::] = times
 
     def batch_write(self, data_list):
         for name in data_list:
-            self.write_data(name,data_list[name])
+            self.write_data(name, data_list[name])
 
     def batch_complex_write(self, data_list):
         times = data_list.pop("time")
-        self.write_data("time",times)
+        self.write_data("time", times)
         for name in data_list:
-            self.write_complex_data(name,data_list[name],times)
+            self.write_complex_data(name, data_list[name], times)

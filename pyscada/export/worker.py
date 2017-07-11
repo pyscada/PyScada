@@ -1,67 +1,80 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 from __future__ import unicode_literals
-from pyscada import log
-from pyscada.models import BackgroundTask
+
 from pyscada.export.export import export_recordeddata_to_file
 from pyscada.export.models import ScheduledExportTask, ExportTask
+from pyscada.utils.scheduler import Process as BaseProcess
+from pyscada.models import BackgroundProcess
+from pyscada.utils import datetime_now
 
 from time import time, gmtime, mktime
 from datetime import date, datetime, timedelta
 from pytz import UTC
-
-from threading import Timer
-import os
+import json
 
 
-def _export_handler(job, today):
-    if job.file_format.upper() == 'HDF5':
-        file_ext = '.h5'
-    elif job.file_format.upper() == 'MAT':
-        file_ext = '.mat'
-    elif job.file_format.upper() == 'CSV_EXCEL':
-        file_ext = '.csv'
+class ExportProcess(BaseProcess):
+    def loop(self):
+        job = ExportTask.objects.get(pk=self.job_id)
+        if job.file_format.upper() == 'HDF5':
+            file_ext = '.h5'
+        elif job.file_format.upper() == 'MAT':
+            file_ext = '.mat'
+        elif job.file_format.upper() == 'CSV_EXCEL':
+            file_ext = '.csv'
 
-    task_identifier = today.strftime('%Y%m%d') + '-%d' % job.pk
-    bt = BackgroundTask(start=time(),
-                        label='pyscada.export.export_measurement_data_%s' % task_identifier,
-                        message='time waiting...',
-                        timestamp=time(),
-                        pid=str(os.getpid()),
-                        identifier=task_identifier)
-    bt.save()
+        bp = BackgroundProcess.objects.filter(
+            enabled=True,
+            done=False,
+            pid=self.pid,
+            parent_process__pk=self.parent_process_id).first()
 
-    job.busy = True
-    job.backgroundtask = bt
-    job.save()
+        if not bp:
+            return False
 
-    export_recordeddata_to_file(
-        job.time_min(),
-        job.time_max(),
-        filename=None,
-        active_vars=job.variables.values_list('pk', flat=True),
-        file_extension=file_ext,
-        filename_suffix=job.filename_suffix,
-        backgroundtask_id=bt.pk,
-        export_task_id=job.pk,
-        mean_value_period=job.mean_value_period
-    )
-    job = ExportTask.objects.get(pk=job.pk)
-    job.done = True
-    job.busy = False
-    job.datetime_fineshed = datetime.now(UTC)
-    job.save()
+        job.busy = True
+        job.backgroundprocess = bp
+        job.save()
+
+        export_recordeddata_to_file(
+            job.time_min(),
+            job.time_max(),
+            filename=None,
+            active_vars=job.variables.values_list('pk', flat=True),
+            file_extension=file_ext,
+            filename_suffix=job.filename_suffix,
+            backgroundprocess_id=bp.pk,
+            export_task_id=job.pk,
+            mean_value_period=job.mean_value_period
+        )
+        job = ExportTask.objects.get(pk=job.pk)
+        job.done = True
+        job.busy = False
+        job.datetime_finished = datetime.now(UTC)
+        job.save()
+        self.run = False
+        bp = BackgroundProcess.objects.filter(
+            enabled=True,
+            done=False,
+            pid=self.pid,
+            parent_process__pk=self.parent_process_id).first()
+        bp.done = True
+        bp.last_update = datetime_now()
+        bp.message = 'stopped'
+        bp.save()
 
 
-class Handler:
-    def __init__(self):
-        """
+class MasterProcess(BaseProcess):
+    """
+    handle all the registration of new export tasks
+    """
 
-        """
-        self.dt_set = 5  # default value is every 5 seconds
-        self._currend_day = gmtime().tm_yday
+    def init_process(self):
+        setattr(self,'_current_day',gmtime().tm_yday)
 
-    def run(self):
+    def loop(self):
         """
         this function will be called every self.dt_set seconds
             
@@ -72,8 +85,8 @@ class Handler:
         """
         today = date.today()
         # only start new jobs after change the day changed
-        if self._currend_day != gmtime().tm_yday:
-            self._currend_day = gmtime().tm_yday
+        if self._current_day != gmtime().tm_yday:
+            self._current_day = gmtime().tm_yday
             for job in ScheduledExportTask.objects.filter(active=1):  # get all active jobs
 
                 add_task = False
@@ -109,8 +122,8 @@ class Handler:
                     add_task = True
 
                 if job.day_time == 0:
-                    end_time = '%s %02d:59:59' % (
-                    (today - timedelta(1)).strftime('%d-%b-%Y'), 23)  # "%d-%b-%Y %H:%M:%S"
+                    end_time = '%s %02d:59:59' % ((today - timedelta(1)).strftime('%d-%b-%Y'),
+                                                  23)  # "%d-%b-%Y %H:%M:%S"
                 else:
                     end_time = '%s %02d:59:59' % (today.strftime('%d-%b-%Y'), job.day_time - 1)  # "%d-%b-%Y %H:%M:%S"
                 end_time = mktime(datetime.strptime(end_time, "%d-%b-%Y %H:%M:%S").timetuple())
@@ -129,57 +142,45 @@ class Handler:
 
                     et.variables.add(*job.variables.all())
 
-        # check runnging tasks and start the next Export Task
+        # check running tasks and start the next Export Task
         running_jobs = ExportTask.objects.filter(busy=True, failed=False)
         if running_jobs:
             for job in running_jobs:
                 if time() - job.start() < 30:
-                    # only check Task wenn it is running longer then 30s
+                    # only check Task when it is running longer then 30s
                     continue
 
-                if job.backgroundtask is None:
-                    # if the job has no backgroundtask assosiated mark as failed
+                if job.backgroundprocess is None:
+                    # if the job has no backgroundprocess assosiated mark as failed
                     job.failed = True
                     job.save()
                     continue
 
-                if time() - job.backgroundtask.timestamp < 60:
-                    # if the backgroundtask has been updated in the past 60s wait
+                if time() - job.backgroundprocess.last_update < 60:
+                    # if the Background Process has been updated in the past 60s wait
                     continue
 
-                if job.backgroundtask.pid == 0:
+                if job.backgroundprocess.pid == 0:
                     # if the job has no valid pid mark as failed
-                    job.failed = True
-                    job.save()
-                    continue
-
-                # check if process is alive
-                try:
-                    os.kill(job.backgroundtask.pid, 0)
-                except OSError:
-                    job.failed = True
-                    job.save()
-                    continue
-
-                if time() - job.backgroundtask.timestamp > 60 * 20:
-                    # if there is not update in the last 20 minutes terminate
-                    # the process and mark as failed
-                    os.kill(job.backgroundtask.pid, 15)
                     job.failed = True
                     job.save()
                     continue
 
         else:
             # start the next Export Task
-            wait_time = 1  # wait one second to start the job
             job = ExportTask.objects.filter(
                 done=False,
                 busy=False,
                 failed=False,
                 datetime_start__lte=datetime.now(UTC)).first()  # get all jobs
             if job:
-                log.debug(' started Timer %d' % job.pk)
-                Timer(wait_time, _export_handler, [job, today]).start()
+                bp = BackgroundProcess(label='pyscada.export.ExportProcess-%d'%job.pk,
+                                       message='waiting..',
+                                       enabled=True,
+                                       parent_process_id=self.parent_process_id,
+                                       process_class='pyscada.export.worker.ExportProcess',
+                                       process_class_kwargs=json.dumps({"job_id":job.pk}))
+                bp.save()
                 if job.datetime_start is None:
                     job.datetime_start = datetime.now(UTC)
                 job.busy = True

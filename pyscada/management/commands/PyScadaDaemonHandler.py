@@ -1,18 +1,22 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
+
+from __future__ import unicode_literals
+
+import os
+import signal
+import sys
+import traceback
+from time import time, sleep
+
+import daemon
+import daemon.pidfile
+from django.conf import settings
+from django.core.management.base import BaseCommand
+
 from pyscada import log
 from pyscada.models import BackgroundTask
 from pyscada.utils import daemon_run
-
-from django.core.management.base import BaseCommand
-from django.conf import settings
-
-import daemon
-import os, sys
-import signal
-import daemon.pidfile
-from time import time, sleep
-import traceback
 
 
 class Command(BaseCommand):
@@ -71,16 +75,17 @@ class Command(BaseCommand):
         if not context.pidfile.is_locked():
             try:
                 mod = __import__('pyscada.%s.handler' % daemon_name, fromlist=['Handler'])
-                handlerClass = getattr(mod, 'Handler')
+                handler_class = getattr(mod, 'Handler')
             except:
                 self.stdout.write("no such daemon")
                 var = traceback.format_exc()
                 log.error("exeption while initialisation of %s:%s %s" % (daemon_name, os.linesep, var))
+                return
 
             context.open()
             daemon_run(
                 label='pyscada.%s.daemon' % daemon_name,
-                handlerClass=handlerClass
+                handlerClass=handler_class
             )
         else:
             self.stdout.write("process is already runnging")
@@ -100,7 +105,7 @@ class Command(BaseCommand):
             bt.save()
             bt_id = bt.pk
             wait_count = 0
-            while (wait_count < 60):
+            while wait_count < 60:
                 bt = BackgroundTask.objects.filter(pk=bt_id).last()
                 if bt:
                     if bt.done:

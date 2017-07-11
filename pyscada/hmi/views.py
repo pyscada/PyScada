@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from pyscada import version as core_version
 from pyscada.models import RecordedData
 from pyscada.hmi.models import Chart
@@ -47,8 +49,9 @@ def view(request, link_title):
 
     try:
         v = View.objects.get(link_title=link_title)
-    except:
+    except View.DoesNotExist or View.MultipleObjectsReturned:
         return HttpResponse(status=404)
+
     if GroupDisplayPermission.objects.count() == 0:
         # no groups
         page_list = v.pages.all()
@@ -94,14 +97,14 @@ def view(request, link_title):
                 current_row = widget.row
                 has_chart = False
                 widgets = []
-            if not widget.pk in visible_widget_list:
+            if widget.pk not in visible_widget_list:
                 continue
             if not widget.visable:
                 continue
             if widget.chart:
                 if not widget.chart.visable():
                     continue
-                if not widget.chart.pk in visible_chart_list:
+                if widget.chart.pk not in visible_chart_list:
                     continue
                 has_chart = True
                 widgets.append(widget)
@@ -110,14 +113,16 @@ def view(request, link_title):
             elif widget.process_flow_diagram:
                 widgets.append(widget)
             elif widget.custom_html_panel:
-                if not widget.custom_html_panel.pk in visible_custom_html_panel_list:
+                if widget.custom_html_panel.pk not in visible_custom_html_panel_list:
                     continue
                 widgets.append(widget)
+
         widget_rows_html += widget_row_template.render({'row': current_row,
                                                         'has_chart': has_chart,
                                                         'widgets': widgets,
                                                         'visible_control_element_list': visible_control_element_list},
                                                        request)
+
         pages_html += page_template.render({'page': page, 'widget_rows_html': widget_rows_html}, request)
 
     c = {
@@ -127,7 +132,7 @@ def view(request, link_title):
         'control_list': control_list,
         'user': request.user,
         'visible_control_element_list': visible_control_element_list,
-        'view_title': view.title,
+        'view_title': v.title,
         'version_string': core_version
     }
 
@@ -141,7 +146,7 @@ def log_data(request):
     if 'timestamp' in request.POST:
         timestamp = float(request.POST['timestamp'])
     else:
-        timestamp = (time.time() - (300)) * 1000  # get log of last 5 minutes
+        timestamp = (time.time() - 300) * 1000  # get log of last 5 minutes
 
     data = Log.objects.filter(level__gte=6, id__gt=int(int(timestamp) * 2097152) + 2097151).order_by('-timestamp')
     odata = []
@@ -210,15 +215,14 @@ def get_cache_data(request):
     else:
         first_timestamp = timestamp
         last_timestamp = time.time()
-    data = {}
-    data = RecordedData.objects.get_values_in_time_range( \
-        time_min=first_timestamp, \
-        time_max=last_timestamp, \
-        query_first_value=init, \
-        time_in_ms=True, \
-        key_is_variable_name=True, \
-        add_timetamp_field=True, \
-        add_fake_data=True, \
+    data = RecordedData.objects.get_values_in_time_range(
+        time_min=first_timestamp,
+        time_max=last_timestamp,
+        query_first_value=init,
+        time_in_ms=True,
+        key_is_variable_name=True,
+        add_timetamp_field=True,
+        add_fake_data=True,
         variable_id__in=active_variables)
     if data is None:
         jdata = json.dumps({'server_time': time.time() * 1000})

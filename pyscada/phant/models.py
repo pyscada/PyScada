@@ -1,14 +1,25 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from pyscada.models import Device
 
 from django.db import models
-import string, random
+from django.utils.encoding import python_2_unicode_compatible
+
+import string
+import random
 
 
 def gen_random_key(n=20):
     return ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase) for _ in range(n))
-        
+
+
+@python_2_unicode_compatible
 class PhantDevice(models.Model):
     phant_device = models.OneToOneField(Device)
     public_key = models.SlugField(max_length=20, default=gen_random_key, unique=True)
     private_key = models.CharField(max_length=20, default=gen_random_key)
+
+    def __str__(self):
+        return self.phant_device.short_name
+

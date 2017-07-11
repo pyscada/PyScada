@@ -1,31 +1,25 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 
+from time import time
+driver_ok = True
 try:
-    # import psutil
-    import sys, os
-    driver_ok = True
-except ImportError:
-    driver_ok = False
-
-try:
-    # import psutil
     import pyownet
+
     driver_owserver_ok = True
 except ImportError:
     driver_owserver_ok = False
 
-from time import time
-
 
 class Device:
-    def __init__(self,device):
+    def __init__(self, device):
         self.variables = []
         self.device = device
         for var in device.variable_set.filter(active=1):
-            if not hasattr(var,'onewirevariable'):
+            if not hasattr(var, 'onewirevariable'):
                 continue
             self.variables.append(var)
-            
+
     def request_data(self):
         """
 
@@ -43,7 +37,7 @@ class Device:
             for line in w1_slaves_raw:
                 # extract 1-wire addresses
                 w1_slaves.append(line.split("\n")[0][3::])
-            
+
             output = []
             for item in self.variables:
                 timestamp = time()
@@ -57,7 +51,7 @@ class Device:
                         if filecontent.split('\n')[0].split('crc=')[1][3::] == 'YES':
                             value = float(filecontent.split('\n')[1].split('t=')[1]) / 1000
                 # update variable
-                if value is not None and item.update_value(value,timestamp):
+                if value is not None and item.update_value(value, timestamp):
                     output.append(item.create_recorded_data_element())
             return output
         # OWServer
@@ -68,31 +62,31 @@ class Device:
             port = 4304
             if self.device.onewiredevice.config != '':
                 hostname = self.device.onewiredevice.config.split(':')
-                if len(hostname)>1:
+                if len(hostname) > 1:
                     port = hostname[1]
                 hostname = hostname[0]
-            
+
             try:
-                owproxy = pyownet.protocol.proxy(host=hostname, port=port,flags=pyownet.protocol.FLG_UNCACHED)
+                owproxy = pyownet.protocol.proxy(host=hostname, port=port, flags=pyownet.protocol.FLG_UNCACHED)
             except:
                 return None
-            w1_slaves = [] 
+            w1_slaves = []
             for item in owproxy.dir():
                 w1_slaves.append(item.lower())
-            
+
             output = []
             for item in self.variables:
                 timestamp = time()
                 value = None
                 if item.onewirevariable.sensor_type in ['DS18B20']:
-                    if '/28.%s/'%item.onewirevariable.address.lower() in w1_slaves:
+                    if '/28.%s/' % item.onewirevariable.address.lower() in w1_slaves:
                         # read and convert temperature
                         try:
-                            value = float(owproxy.read('/28.%s/temperature'%item.onewirevariable.address))
+                            value = float(owproxy.read('/28.%s/temperature' % item.onewirevariable.address))
                         except:
                             value = None
-                        
+
                 # update variable
-                if value is not None and item.update_value(value,timestamp):
+                if value is not None and item.update_value(value, timestamp):
                     output.append(item.create_recorded_data_element())
             return output

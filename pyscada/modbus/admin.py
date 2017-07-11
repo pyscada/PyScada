@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from pyscada.admin import admin_site
 
 from pyscada.modbus.models import ModbusDevice
@@ -8,17 +10,18 @@ from django.contrib import admin
 
 
 class ModbusDeviceAdmin(admin.ModelAdmin):
-    list_display = ('device_name','description','protocol','ip_address','port',)
+    list_display = ('device_name', 'description', 'protocol', 'ip_address', 'port',)
 
     def device_name(self, instance):
         return instance.modbus_device.short_name
 
     def description(self, instance):
         return instance.modbus_device.description
-        
+
+
 class ModbusVariableAdmin(admin.ModelAdmin):
-    search_fields = ['modbus_variable__name',]
-    list_display = ('name','value_class','address',)
+    search_fields = ['modbus_variable__name', ]
+    list_display = ('name', 'value_class', 'address',)
     raw_id_fields = ('modbus_variable',)
 
     def name(self, instance):
@@ -27,5 +30,6 @@ class ModbusVariableAdmin(admin.ModelAdmin):
     def value_class(self, instance):
         return instance.modbus_variable.value_class
 
-admin_site.register(ModbusDevice,ModbusDeviceAdmin)
-admin_site.register(ModbusVariable,ModbusVariableAdmin)
+
+admin_site.register(ModbusDevice, ModbusDeviceAdmin)
+admin_site.register(ModbusVariable, ModbusVariableAdmin)

@@ -1,30 +1,33 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*- 
-from pyscada import log
-from pyscada.models import BackgroundTask
-from pyscada.utils import daq_daemon_run
+# -*- coding: utf-8 -*-
 
-from django.core.management.base import BaseCommand
-from django.conf import settings
+from __future__ import unicode_literals
+
+import os
+import signal
+import sys
+from time import time, sleep
 
 import daemon
-import os,sys
-import signal
 import daemon.pidfile
-from time import time, sleep 
+from django.conf import settings
+from django.core.management.base import BaseCommand
+
+from pyscada.models import BackgroundTask
+from pyscada.utils import daq_daemon_run
 
 
 class Command(BaseCommand):
     help = 'Start the daq daemon for PyScada'
-    
+
     def add_arguments(self, parser):
-        parser.add_argument('action', choices=['start','stop'], nargs='+', type=str)
+        parser.add_argument('action', choices=['start', 'stop'], nargs='+', type=str)
 
     def handle(self, *args, **options):
-        
-        ## init
+
+        # init
         context = self.init_context()
-        
+
         # on start
         if 'start' == options['action'][0]:
             self.start(context)
@@ -36,40 +39,40 @@ class Command(BaseCommand):
         daemon_name = 'daq'
         context = daemon.DaemonContext(
             working_directory=settings.BASE_DIR,
-            pidfile=daemon.pidfile.PIDLockFile('/tmp/pyscada_daemon_%s.pid'% daemon_name),
-            )
-        context.stdout = open('%s/%s.log'%(settings.BASE_DIR,daemon_name), "a+")
+            pidfile=daemon.pidfile.PIDLockFile('/tmp/pyscada_daemon_%s.pid' % daemon_name),
+        )
+        context.stdout = open('%s/%s.log' % (settings.BASE_DIR, daemon_name), "a+")
         context.signal_map = {
             signal.SIGTERM: self.program_cleanup,
             signal.SIGHUP: self.program_cleanup,
             # signal.SIGUSR1: reload_program_config,
-            }
-            
+        }
+
         # check the process
         if context.pidfile.is_locked():
             try:
                 os.kill(context.pidfile.read_pid(), 0)
             except OSError:
                 context.pidfile.break_lock()
-        
+
         return context
-    
-    def start(self,context):
+
+    def start(self, context):
         daemon_name = 'daq'
         if not context.pidfile.is_locked():
             context.open()
-            daq_daemon_run(label='pyscada.%s.daemon'% daemon_name)
+            daq_daemon_run(label='pyscada.%s.daemon' % daemon_name)
         else:
-            self.stdout.write("daq daemon is already runnging")  
+            self.stdout.write("daq daemon is already runnging")
 
-    def stop(self,context=None):
+    def stop(self, context=None):
         if context:
             pid = context.pidfile.read_pid()
             is_locked = context.pidfile.is_locked()
         else:
             is_locked = False
             pid = str(os.getpid())
-            
+
         bt = BackgroundTask.objects.filter(pid=pid).last()
         if bt:
             # shudown the daemon process     
@@ -77,8 +80,8 @@ class Command(BaseCommand):
             bt.save()
             bt_id = bt.pk
             wait_count = 0
-            while (wait_count < 60):
-                bt = BackgroundTask.objects.filter(pk = bt_id).last()
+            while wait_count < 60:
+                bt = BackgroundTask.objects.filter(pk=bt_id).last()
                 if bt:
                     if bt.done:
                         return
@@ -88,7 +91,7 @@ class Command(BaseCommand):
                 sleep(1)
         if context:
             is_locked = context.pidfile.is_locked()
-            
+
         if is_locked:
             # kill the daemon process
             try:
@@ -98,7 +101,7 @@ class Command(BaseCommand):
             except OSError as err:
                 err = str(err)
                 if err.find("No such process") > 0:
-                    bt = BackgroundTask.objects.filter(pid = pid).last()
+                    bt = BackgroundTask.objects.filter(pid=pid).last()
                     if bt:
                         bt.pid = 0
                         bt.done = True
@@ -109,12 +112,11 @@ class Command(BaseCommand):
             self.stdout.write("daq daemon is not running")
 
     def program_cleanup(self, signum=None, frame=None):
-        bt = BackgroundTask.objects.filter(pid = str(os.getpid())).last()
+        bt = BackgroundTask.objects.filter(pid=str(os.getpid())).last()
         if bt:
-            bt.pid = 0  
+            bt.pid = 0
             bt.timestamp = time()
             bt.failed = True
             bt.message = 'external kill'
             bt.save()
             sys.exit(0)
-    

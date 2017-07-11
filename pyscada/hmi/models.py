@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+
 from pyscada.models import Variable
 
 from django.db import models
 from django.contrib.auth.models import Group
+from django.utils.encoding import python_2_unicode_compatible
+from six import text_type
 
 
+@python_2_unicode_compatible
 class ControlItem(models.Model):
     id = models.AutoField(primary_key=True)
     label = models.CharField(max_length=400, default='')
@@ -25,12 +30,13 @@ class ControlItem(models.Model):
         ordering = ['position']
 
     def __str__(self):
-        return self.label + " (" + self.variable.name + ")"
+        return (self.label + " (" + self.variable.name + ")")
 
     def web_id(self):
         return self.id.__str__() + "-" + self.label.replace(' ', '_') + "-" + self.variable.name.replace(' ', '_')
 
 
+@python_2_unicode_compatible
 class Chart(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
@@ -42,7 +48,7 @@ class Chart(models.Model):
     variables = models.ManyToManyField(Variable)
 
     def __str__(self):
-        return str(self.id) + ': ' + self.title
+        return text_type(str(self.id) + ': ' + self.title)
 
     def visable(self):
         return True
@@ -51,6 +57,7 @@ class Chart(models.Model):
         return [item.pk for item in self.variables.exclude(pk__in=exclude_list)]
 
 
+@python_2_unicode_compatible
 class Page(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
@@ -64,15 +71,17 @@ class Page(models.Model):
         return self.link_title.replace(' ', '_')
 
 
+@python_2_unicode_compatible
 class ControlPanel(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
     items = models.ManyToManyField(ControlItem, blank=True)
 
     def __str__(self):
-        return str(self.id) + ': ' + self.title
+        return (str(self.id) + ': ' + self.title)
 
 
+@python_2_unicode_compatible
 class CustomHTMLPanel(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='', blank=True)
@@ -80,9 +89,10 @@ class CustomHTMLPanel(models.Model):
     variables = models.ManyToManyField(Variable)
 
     def __str__(self):
-        return str(self.id) + ': ' + self.title
+        return (str(self.id) + ': ' + self.title)
 
 
+@python_2_unicode_compatible
 class ProcessFlowDiagramItem(models.Model):
     id = models.AutoField(primary_key=True)
     label = models.CharField(max_length=400, default='', blank=True)
@@ -105,11 +115,12 @@ class ProcessFlowDiagramItem(models.Model):
 
     def __str__(self):
         if self.label:
-            return str(self.id) + ": " + self.label
+            return (str(self.id) + ": " + self.label)
         else:
-            return str(self.id) + ": " + self.variable.name
+            return (str(self.id) + ": " + self.variable.name)
 
 
+@python_2_unicode_compatible
 class ProcessFlowDiagram(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='', blank=True)
@@ -123,6 +134,7 @@ class ProcessFlowDiagram(models.Model):
             return str(self.id) + ": " + self.background_image.name
 
 
+@python_2_unicode_compatible
 class SlidingPanelMenu(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
@@ -135,6 +147,7 @@ class SlidingPanelMenu(models.Model):
         return self.title
 
 
+@python_2_unicode_compatible
 class Widget(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='', blank=True)
@@ -158,7 +171,7 @@ class Widget(models.Model):
 
     def __str__(self):
         if self.title is not None and self.page:
-            return str(self.id) + ': ' + self.page.title + ', ' + self.title
+            return (str(self.id) + ': ' + self.page.title + ', ' + self.title)
         else:
             return str(self.id) + ': ' + 'None, None'
 
@@ -173,6 +186,7 @@ class Widget(models.Model):
         return 'widget_row_' + str(self.row) + ' widget_col_' + str(self.col) + ' ' + widget_size
 
 
+@python_2_unicode_compatible
 class View(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
@@ -191,6 +205,7 @@ class View(models.Model):
         ordering = ['position']
 
 
+@python_2_unicode_compatible
 class GroupDisplayPermission(models.Model):
     hmi_group = models.OneToOneField(Group)
     pages = models.ManyToManyField(Page, blank=True)
