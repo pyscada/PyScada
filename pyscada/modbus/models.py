@@ -3,14 +3,14 @@ from __future__ import unicode_literals
 
 from pyscada.models import Device
 from pyscada.models import Variable
-from pyscada.models import BackgroundTask
 
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.encoding import python_2_unicode_compatible
+import logging
 
-from time import time
+logger = logging.getLogger(__name__)
 
 
 @python_2_unicode_compatible
@@ -19,7 +19,8 @@ class ModbusDevice(models.Model):
     protocol_choices = ((0, 'TCP'), (1, 'UDP'), (2, 'serial ASCII'), (3, 'serial RTU'), (4, 'serial Binary'),)
     protocol = models.PositiveSmallIntegerField(default=0, choices=protocol_choices)
     ip_address = models.GenericIPAddressField(default='127.0.0.1')
-    port = models.CharField(default='502', max_length=400,
+    port = models.CharField(default='502',
+                            max_length=400,
                             help_text="for TCP and UDP enter network port as number (def. 502, for serial ASCII and RTU enter serial port (/dev/pts/13))")
     unit_id = models.PositiveSmallIntegerField(default=0)
     timeout = models.PositiveSmallIntegerField(default=0, help_text="0 use default, else value in seconds")
@@ -47,12 +48,14 @@ class ModbusVariable(models.Model):
     def __str__(self):
         return self.modbus_variable.short_name
 
+
 @receiver(post_save, sender=ModbusDevice)
 @receiver(post_save, sender=ModbusVariable)
-def _reinit_daq_daemons(sender, **kwargs):
+def _reinit_daq_daemons(sender, instance, **kwargs):
     """
-    update the daq daemon configuration wenn changes be applied in the models
+    update the daq daemon configuration when changes be applied in the models
     """
-    BackgroundTask.objects.filter(label='pyscada.daq.daemon', done=0, failed=0).update(message='reinit',
-                                                                                       restart_daemon=True,
-                                                                                       timestamp=time())
+    if type(instance) is ModbusDevice:
+        post_save.send_robust(sender=Device, instance=instance.modbus_device)
+    elif type(instance) is ModbusVariable:
+        post_save.send_robust(sender=Variable, instance=instance.modbus_variable)

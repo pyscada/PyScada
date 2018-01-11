@@ -6,18 +6,19 @@ try:
     driver_ok = True
 except ImportError:
     driver_ok = False
-    
-
 from time import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Device:
-    def __init__(self,device):
+    def __init__(self, device):
         self.variables = []
         self.device = device
         self.i2c = None
         for var in device.variable_set.filter(active=1):
-            if not hasattr(var,'smbusvariable'):
+            if not hasattr(var, 'smbusvariable'):
                 continue
             self.variables.append(var)
 
@@ -38,13 +39,13 @@ class Device:
         for item in self.variables:
             if self.device.smbusdevice.device_type == 'ups_pico':
                 from pyscada.smbus.device_templates.ups_pico import ups_pico
-                value = ups_pico(self.i2c,item.smbusvariable.information)
+                value = ups_pico(self.i2c, item.smbusvariable.information)
                 
             else:
                 value = None
             # update variable
             if value is not None:
-                if item.update_value(value,time()):
+                if item.update_value(value, time()):
                     output.append(item.create_recorded_data_element())
 
         return output

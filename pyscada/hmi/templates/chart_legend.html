@@ -10,17 +10,18 @@
                     <th class="{sorter: 'digit'}">&nbsp;</th>
                     <th class="{sorter: 'text'}">&nbsp;</th>
                 </tr>
-            </thead>
-            <tbody>
                 <tr class="legendSeries">
                     <td>
                         <input type="checkbox" checked="checked" id="chart-legend-checkbox-{{widget.pk}}-{{ chart.pk }}-make_all_none">
                     </td>
-                    <td class="legendColorBox"></td>
-                    <td class="legendLabel">Mark All/None</td>
-                    <td class="legendValue type-numeric"></td>
-                    <td class="legendUnit"></td>
+                    <td></td>
+                    <td>Mark All/None</td>
+                    <td></td>
+                    <td></td>
                 </tr>
+            </thead>
+            <tbody>
+
             {% for var in chart.variables.all %}
                 {% if var.active and var.device.active %}
                 <tr class="legendSeries">

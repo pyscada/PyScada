@@ -1,22 +1,25 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-import os
-import time
-from datetime import datetime
+
+from pyscada.models import Variable, BackgroundProcess
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 
+import os
+import time
+from datetime import datetime
 from pytz import UTC
+import logging
 
-from pyscada.models import Variable, BackgroundTask, BackgroundProcess
-
+logger = logging.getLogger(__name__)
 
 #
 # Model
 #
+
 
 def datetime_now():
     return datetime.now(UTC)
@@ -51,7 +54,6 @@ class ScheduledExportTask(models.Model):
 class ExportTask(models.Model):
     id = models.AutoField(primary_key=True)
     label = models.CharField(max_length=400, default='None', blank=True)
-    backgroundtask = models.ForeignKey(BackgroundTask, null=True, blank=True, on_delete=models.SET_NULL)
     backgroundprocess = models.ForeignKey(BackgroundProcess, null=True, blank=True, on_delete=models.SET_NULL)
     variables = models.ManyToManyField(Variable)
     mean_value_period = models.PositiveSmallIntegerField(default=0, help_text='in Seconds (0 = no mean value)')
@@ -81,8 +83,8 @@ class ExportTask(models.Model):
     def start(self):
         return time.mktime(self.datetime_start.timetuple())
 
-    def fineshed(self):
-        return time.mktime(self.datetime_fineshed.timetuple())
+    def finished(self):
+        return time.mktime(self.datetime_finished.timetuple())
 
     def downloadlink(self):
         if not self.done:

@@ -36,12 +36,21 @@ Dependencies
 - SystemStatistics
 	* psutil
 - VISA
-    * PyVisa >= 1.8
+	* PyVisa >= 1.8
 - BACNet/IP
 	* bacpypes
 - 1-Wire
-    * OWFS
-    * PyOWNet
+	* OWFS
+	* PyOWNet
+
+
+What is Working and Known Issues
+--------------------------------
+
+
+Modbus
+
+- Modbus TCP
 
 Installation
 ------------

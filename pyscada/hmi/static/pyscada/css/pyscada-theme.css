@@ -306,12 +306,12 @@ html,body {
 table.tablesorter thead tr .header {
 	background-image: url(/static/pyscada/img/unsorted.gif);
 	background-repeat: no-repeat;
-	background-position: center right;
+	background-position: top right;
 	cursor:pointer;
 }
 
 .legend-sidebar table.tablesorter thead tr .header {
-	background-position: center center;
+	background-position: top center;
 }
 
 table.tablesorter thead tr .headerSortUp {

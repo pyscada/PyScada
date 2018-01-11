@@ -20,8 +20,8 @@
  - fixed reinit loop in daq daemon
  - added restart of daq when Scaling model has changed
  - fixed hmi.widget save without a title
- - fixed export.handler (wrong start and enddate)
- - fixed export to file, check of arrayindex, import of numpy
+ - fixed export.handler (wrong start and end date)
+ - fixed export to file, check of array index, import of numpy
  - added backend table (VariableState) for current values in the database
  - fixed crash of hmi admin when widget has no title
  - added unixtime value in web hmi (experimental)
@@ -87,7 +87,7 @@
   - added 1-Wire support (experimental)
 	
 0.7.0b16
-  - fixed handlin of dead tasks in data export
+  - fixed handling of dead tasks in data export
   
 0.7.0b17
   - added support for custom daq devices
@@ -100,3 +100,14 @@
   - added download link for export files to export job
   - fixed daemon handler 
   
+0.7.0b19, 0.7.0b20, 0.7.0b21
+  - changed daemon handling to support multitasking
+  - rearranged admin for Device and Variables
+  - updated the Docs
+
+0.7.0b22, 0.7.0b23, 0.7.0b24, 0.7.0b25
+  - added BackgroundProcess restart on model change
+  - fixed problem with id of ControlItems in HMI
+  - updated Docker files (not working yet)
+  - updated SysV-init service examples
+  - updated systemd service examples

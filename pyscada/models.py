@@ -9,14 +9,21 @@ from django.dispatch import receiver
 from django.core.mail import send_mail
 from django.utils.encoding import python_2_unicode_compatible
 
+import traceback
 import time
 import json
+import signal
+from os import kill
 from struct import *
+from os import getpid
+import logging
 
+logger = logging.getLogger(__name__)
 
 #
-## Manager
+# Manager
 #
+
 
 class RecordedDataValueManager(models.Manager):
     def filter_time(self, time_min=None, time_max=None, **kwargs):
@@ -86,7 +93,7 @@ class RecordedDataValueManager(models.Manager):
 
         variable_ids = variables.values_list('pk', flat=True)
         # only filter by variable wenn less the 70% of all variables are queried
-        if len(variable_ids) > Variable.objects.count() * 0.7:
+        if len(variable_ids) > float(Variable.objects.count()) * 0.7:
             var_filter = False
 
         tmp_time_max = 0  # get the most recent time value
@@ -577,11 +584,11 @@ class Variable(models.Model):
             if byte_order == '3-2-1-0':
                 return unpack(target_format, pack(source_format, value[1], value[0]))[0]
             if byte_order == '0-1-2-3':
-                return unpack(target_format, pack(source_format, unpack('>H', pack('<H', value[0])),
-                                                  unpack('>H', pack('<H', value[1]))))[0]
+                return unpack(target_format, pack(source_format, unpack('>H', pack('<H', value[0]))[0],
+                                                  unpack('>H', pack('<H', value[1]))[0]))[0]
             if byte_order == '2-3-0-1':
-                return unpack(target_format, pack(source_format, unpack('>H', pack('<H', value[1])),
-                                                  unpack('>H', pack('<H', value[0]))))[0]
+                return unpack(target_format, pack(source_format, unpack('>H', pack('<H', value[1]))[0],
+                                                  unpack('>H', pack('<H', value[0]))[0]))[0]
         else:
             if byte_order == '1-0-3-2':
                 return unpack(target_format, pack(source_format, value[0], value[1], value[2], value[3]))[0]
@@ -676,6 +683,7 @@ class DeviceWriteTask(models.Model):
     def __str__(self):
         return self.variable.short_name
 
+
 @python_2_unicode_compatible
 class RecordedData(models.Model):
     # Big Int first 42 bits are used for the unixtime in ms, unsigned because we only
@@ -744,7 +752,7 @@ class RecordedData(models.Model):
         self.pk = int(int(int(timestamp * 1000) * 2097152) + self.variable.pk)
 
     def __str__(self):
-        return self.value()
+        return str(self.value())
 
     def time_value(self):
         """
@@ -803,31 +811,6 @@ class Log(models.Model):
 
 
 @python_2_unicode_compatible
-class BackgroundTask(models.Model):
-    id = models.AutoField(primary_key=True)
-    start = models.FloatField(default=0)  # TODO DateTimeField
-    timestamp = models.FloatField(default=0)  # TODO DateTimeField
-    progress = models.FloatField(default=0)
-    load = models.FloatField(default=0)
-    min = models.FloatField(default=0)
-    max = models.FloatField(default=0)
-    done = models.BooleanField(default=False, blank=True)
-    failed = models.BooleanField(default=False, blank=True)
-    pid = models.IntegerField(default=0)
-    stop_daemon = models.BooleanField(default=False, blank=True)
-    restart_daemon = models.BooleanField(default=False, blank=True)
-    label = models.CharField(max_length=400, default='')
-    message = models.CharField(max_length=400, default='')
-    identifier = models.CharField(max_length=400, default='', blank=True)
-
-    def __str__(self):
-        return self.label + ': ' + self.message
-
-    def timestamp_ms(self):
-        return self.timestamp * 1000
-
-
-@python_2_unicode_compatible
 class BackgroundProcess(models.Model):
     id = models.AutoField(primary_key=True)
     pid = models.IntegerField(default=0, blank=True)
@@ -840,7 +823,9 @@ class BackgroundProcess(models.Model):
     process_class = models.CharField(max_length=400, blank=True, default='pyscada.utils.scheduler.Process',
                                      help_text="from pyscada.utils.scheduler import Process")
     process_class_kwargs = models.CharField(max_length=400, default='{}', blank=True,
-                                            help_text="""arguments in json format will be passed as kwargs while the init of the process instance, example: {"keywordA":"value1", "keywordB":7}""")
+                                            help_text='''arguments in json format will be passed as kwargs while the 
+                                            init of the process instance, example: 
+                                            {"keywordA":"value1", "keywordB":7}''')
     last_update = models.DateTimeField(null=True, blank=True)
     running_since = models.DateTimeField(null=True, blank=True)
 
@@ -865,8 +850,25 @@ class BackgroundProcess(models.Model):
             process_class = getattr(mod, class_name.__str__())
             return process_class(**kwargs)
         except:
+            logger.error('%s(%d), unhandled exception\n%s' % (self.label, getpid(), traceback.format_exc()))
             return None
 
+    def restart(self):
+        """
+        restarts the process and all its childs
+
+        :return:
+        """
+        if self.pid is not 0 and self.pid is not None:
+
+            try:
+                kill(self.pid, signal.SIGUSR1)
+                return True
+            except OSError as e:
+                # if e.errno == errno.ESRCH:
+                #
+                # else:
+                return False
 
 @python_2_unicode_compatible
 class Event(models.Model):
@@ -883,7 +885,9 @@ class Event(models.Model):
     fixed_limit = models.FloatField(default=0, blank=True, null=True)
     variable_limit = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
                                        related_name="variable_limit",
-                                       help_text="you can choose either an fixed limit or an variable limit that is dependent on the current value of an variable, if you choose a value other then none for varieble limit the fixed limit would be ignored")
+                                       help_text='''you can choose either an fixed limit or an variable limit that is
+                                        dependent on the current value of an variable, if you choose a value other then 
+                                        none for variable limit the fixed limit would be ignored''')
     limit_type_choices = (
         (0, 'value is less than limit',),
         (1, 'value is less than or equal to the limit',),
@@ -895,7 +899,7 @@ class Event(models.Model):
     hysteresis = models.FloatField(default=0, blank=True)
     action_choices = (
         (0, 'just record'),
-        (1, 'record and send mail only wenn event occurs'),
+        (1, 'record and send mail only when event occurs'),
         (2, 'record and send mail'),
         (3, 'record, send mail and change variable'),
     )
@@ -927,21 +931,21 @@ class Event(models.Model):
 
             if active:
                 if self.level == 0:  # infomation
-                    subject_str += " Infomation "
+                    subject_str += " Information "
                 elif self.level == 1:  # Ok
                     subject_str += " "
                 elif self.level == 2:  # warning
                     subject_str += " Warning! "
                 elif self.level == 3:  # alert
                     subject_str += " Alert! "
-                subject_str += self.variable.name + " has exceeded the limit"
+                subject_str += self.variable.name + " exceeded the limit"
             else:
-                subject_str += " Infomation "
+                subject_str += " Information "
                 subject_str += self.variable.name + " is back in limit"
-            message_str = "The Event " + self.label + " has been triggert\n"
+            message_str = "The Event " + self.label + " has been triggered\n"
             message_str += "Value of " + self.variable.name + " is " + actual_value.__str__() + " " + self.variable.unit.unit
             message_str += " Limit is " + limit_value.__str__() + " " + self.variable.unit.unit
-            return (subject_str, message_str,)
+            return subject_str, message_str
 
         #
         # get recorded event
@@ -1040,6 +1044,7 @@ class RecordedEvent(models.Model):
     def __str__(self):
         return self.event.label
 
+
 @python_2_unicode_compatible
 class Mail(models.Model):
     id = models.AutoField(primary_key=True)
@@ -1074,15 +1079,32 @@ class Mail(models.Model):
             return False
 
     def __str__(self):
-        return self.id
+        return self.id.__str__()
+
 
 @receiver(post_save, sender=Variable)
 @receiver(post_save, sender=Device)
 @receiver(post_save, sender=Scaling)
-def _reinit_daq_daemons(sender, **kwargs):
+def _reinit_daq_daemons(sender, instance, **kwargs):
     """
-    update the daq daemon configuration wenn changes be applied in the models
+    update the daq daemon configuration when changes be applied in the models
     """
-    BackgroundTask.objects.filter(label='pyscada.daq.daemon', done=0, failed=0).update(message='reinit',
-                                                                                       restart_daemon=True,
-                                                                                       timestamp=time.time())
+    if type(instance) is Device:
+        try:
+            bp = BackgroundProcess.objects.get(pk=instance.protocol_id)
+        except:
+            return False
+        bp.restart()
+    elif type(instance) is Variable:
+        try:
+            bp = BackgroundProcess.objects.get(pk=instance.device.protocol_id)
+        except:
+            return False
+        bp.restart()
+    elif type(instance) is Scaling:
+        for bp_pk in list(instance.variable_set.all().values_list('device__protocol_id').distinct()):
+            try:
+                bp = BackgroundProcess.objects.get(pk=bp_pk)
+                bp.restart()
+            except:
+                pass

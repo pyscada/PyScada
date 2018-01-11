@@ -1,6 +1,9 @@
 Installation
 ============
 
+This installation guide covers the installation of PyScada for `Debian 7/8 <https://www.debian.org/>`_ , `Raspbian <https://www.raspbian.org/>`_, `Fedora 22/23 <https://www.fedoraproject.org/>`_ based Linux systems using `MySQL <https://www.mysql.de/>`_ or `SQLite <https://www.sqlite.org/>`_ as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
+
+
 Dependencies
 ------------
 
@@ -13,7 +16,9 @@ Debian 7
 	sudo -i
 	apt-get update
 	apt-get -y upgrade
-	apt-get -y install mysql-server python-mysqldb python-pip libhdf5-7 libhdf5-dev python-dev nginx gunicorn
+	# if you use MySQL as Database system (recommend)
+	apt-get -y install mysql-server python-mysqldb
+	apt-get -y python-pip libhdf5-7 libhdf5-dev python-dev nginx gunicorn
 	pip install cython
 	pip install numpy
 	pip install h5py
@@ -27,7 +32,9 @@ Debian 8/ Raspeian
 	sudo -i
 	apt-get update
 	apt-get -y upgrade
-	apt-get -y install mysql-server python-mysqldb python-pip libhdf5-8 libhdf5-dev python-dev nginx gunicorn
+	# if you use MariaDB/MySQL as Database system (recommend)
+	apt-get -y install mariadb-server python-mysqldb
+	apt-get install -y python-pip libhdf5-100 libhdf5-dev python-dev nginx gunicorn
 	pip install cython
 	pip install numpy
 	
@@ -35,7 +42,7 @@ Debian 8/ Raspeian
 	export HDF5_DIR=/usr/lib/x86_64-linux-gnu/hdf5/serial/ 
 	# for 32 bit
 	export HDF5_DIR=/usr/lib/x86_32-linux-gnu/hdf5/serial/ 
-	# for ARM (RasperyPi)
+	# for ARM (Raspberry Pi)
 	export HDF5_DIR=/usr/lib/arm-linux-gnueabihf/hdf5/serial/
 	
 	pip install h5py
@@ -47,12 +54,17 @@ Fedora 22/23
 ::
 	
 	sudo -i
-	dnf install libjpeg-turbo-devel-1.4.1-2.fc23 nginx mysql-server mysql-devel
+	dnf install libjpeg-turbo-devel-1.4.1-2.fc23 nginx
+
+	# if you use MySQL as Database system (recommend)
+	dnf install mysql-server mysql-devel
+	pip install MySQL-python
+
 	pip install cython
 	pip install numpy
 	pip install h5py
 	pip install gunicorn
-	pip install MySQL-python
+
 
 
 
@@ -64,10 +76,10 @@ macOS
 
 
 ::
-	
-	brew install python
-	export PATH=$PATH:/usr/local/mysql/bin
-	pip install MySQL-python
+
+        brew install python
+        export PATH=$PATH:/usr/local/mysql/bin
+        pip install MySQL-python
 	
 
 all
@@ -78,14 +90,14 @@ all
 	
 	pip install https://github.com/trombastic/PyScada/archive/dev/0.7.x.zip
 
-	# for VISA
-	pip install pyvisa pyvisapy
-	# for 1-Wire
+	# for VISA Protocol
+	pip install pyvisa pyvisa-py
+	# for 1Wire Protocol
 	pip install pyownet
-	# for smbus 
-	pip install smbus
-	# systemstat
-	pip install psaux
+	# for smbus Protocol, install libffi-dev first!
+	pip install smbus-cffi
+	# systemstat (monitor system statistics)
+	pip install psutil
 	
 
 
@@ -123,10 +135,6 @@ macOS
 	mkdir -p /var/www/pyscada/http
 	chown -R pyscada:staff /var/www/pyscada/
 
-::
-	
-	
-	
 
 	
 Create a MySql Database
@@ -151,7 +159,7 @@ Create a new Django Project
 	
 
 
-see :doc:`django_settings` for all nessesary adjustments to the django settings.py and urls.py.
+see :doc:`django_settings` for all necessary adjustments to the django settings.py and urls.py.
 
 
 Initialize Database And Copy Static Files
@@ -164,11 +172,13 @@ Initialize Database And Copy Static Files
 	sudo -u pyscada python manage.py migrate
 	sudo -u pyscada python manage.py collectstatic
 	
-	# load fixures with default configuration
+	# load fixtures with default configuration for chart lin colors and units
 	sudo -u pyscada python manage.py loaddata color
 	sudo -u pyscada python manage.py loaddata units
 	
-	
+	# initialize the background service system of pyscada
+	sudo -u pyscada python manage.py pyscada_daemon init
+
 	
 
 Add a Admin User To Your Django Project
@@ -194,7 +204,20 @@ Setup the Webserver (nginx, gunicorn)
 	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/nginx_sample.conf -O /etc/nginx/conf.d/pyscada.conf
 
 
-after editing, enable the configuration and restart nginx, optionaly remove the default configuration
+after editing, enable the configuration and restart nginx, optionally remove the default configuration
+
+to use ssl (https, recommend)
+-----------------------------
+
+generate ssl certificates.
+
+
+::
+
+		# for Debian, Ubuntu, Raspian
+		sudo mkdir /etc/nginx/ssl
+		# the certificate will be valid for 5 Years,
+		sudo openssl req -x509 -nodes -days 1780 -newkey rsa:2048 -keyout /etc/nginx/ssl/pyscada_server.key -out /etc/nginx/ssl/pyscada_server.crt
 
 ::
 	
@@ -207,7 +230,7 @@ now it's time to [re]start nginx.
 ::
 
 	# systemd (Debian 8, Fedora, Ubuntu > XX.XX)
-	systemctl enable nginx.service # enable autostart on boot
+	sudo systemctl enable nginx.service # enable autostart on boot
 	sudo systemctl restart nginx
 
 	# SysV-Init (Debian 7, Ubuntu <= XX.XX, [Debian 8])
@@ -222,93 +245,26 @@ for Fedora you have to allow nginx to serve the static and media folder.
 	sudo chcon -Rt httpd_sys_content_t /var/www/pyscada/http/
 
 
+add gunicorn:
+
+::
+
+    # systemd
+    sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/systemd/gunicorn.socket -O /etc/systemd/system/gunicorn.socket
+    sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/systemd/gunicorn.service -O /etc/systemd/system/gunicorn.service
+
+    # enable the services for autostart
+    sudo systemctl enable gunicorn
+    sudo systemctl start gunicorn
+
 
 Start PyScada
 -------------
 
-
-
-
-
-
-Windows (experimantal)
-----------------------
-
-
- - Python 2.7 for Windows https://www.python.org/downloads/windows/
- - Microsoft Visual C++ Comiler for Python 2.7 https://www.microsoft.com/en-us/download/details.aspx?id=44266
- - h5py https://pypi.python.org/pypi/h5py/2.5.0
- - h5py for 64bit Windows http://www.lfd.uci.edu/~gohlke/pythonlibs/#h5py
-
-Open a Shell (cmd.exe) and install the folowing packages via pip.
-
 ::
 
-	pip install gunicorn
-	pip install django">=1.11,<1.12"
-	pip install numpy
-	pip install python-daemon
-	pip install pyscada
-	cd C:/Users/_YOUR_USERNAME_/
-	mkdir www
-	cd www
-	python django-admin startproject PyScadaServer
-	
+	cd /var/www/pyscada/PyScadaServer
+	# start the background daemon for daq, mail, events
+	sudo -u pyscada python manage.py pyscada_daemon start
 
-::
-	
-	python manage.py migrate
-	python manage.py collectstatic
-	
-	# load fixures with default configuration
-	python manage.py loaddata color
-	python manage.py loaddata units
-	
-	# create a admin user 
-	python manage.py createsuperuser
-
-
-
-Start the Django Development Server on Windows (optional, experimental)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Open a Windows Command-line (cmd.exe) and start the Django Development Server.
-
-::
-
-
-	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer # Windows
-	python manage.py runserver --insecure
-
-	
-Add/Start the PyScada Services on Windows (optional, experimental)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-Using pyscada background daemons in Windows is currently not supported, to start the daemons in foreground open a Windows Command-line (cmd.exe) for every daemon and start it with the following command.
-
-::
-
-	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer
-	python manage.py PyScadaWindowsDaemonHandler daemon_name
-
-
-It is also posible to register the modbus daemon as an windows service, to do this download the registratioen skript from https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/windows/register_windows_service_modbus.py and copy it to the project root folder.
-
-::
-	
-	
-	cd C:/Users/_YOUR_USERNAME_/www/PyScadaServer
-	python register_windows_service_modbus.py
-
-
-
-
-The installation of PyScada 0.7.x on `Debian 7/8 <https://www.debian.org/>`_ based Linux systems using `MySQL <https://www.mysql.de/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
-
-The installation of PyScada 0.7.x on `Fedora 22/23 <https://www.fedoraproject.org/>`_ based Linux systems using `MySQL <https://www.mysql.de/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
-
-The installation of PyScada 0.7.x on `Raspbian <https://www.raspbian.org/>`_ Linux systems using `SQLite <https://www.sqlite.org/>`_  as Database, `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
-
-The installation of PyScada 0.7.x on `Microsoft Windows <https://www.microsoft.com/>`_ systems using `SQLite <https://www.sqlite.org/>`_  as Database and the the Django Development Server as HTTP/WSGI Server.
 

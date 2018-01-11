@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada import log
-
 try:
     from pymodbus.client.sync import ModbusTcpClient
     from pymodbus.client.sync import ModbusSerialClient
@@ -15,6 +13,9 @@ except ImportError:
 
 from math import isnan, isinf
 from time import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def find_gap(l, value):
@@ -274,7 +275,7 @@ class Device:
             return None
         if not self._connect():
             if self._device_not_accessible == -1:  #
-                log.error("device with id: %d is not accessible" % self.device.pk)
+                logger.error("device with id: %d is not accessible" % self.device.pk)
             self._device_not_accessible -= 1
             return []
         output = []
@@ -292,18 +293,18 @@ class Device:
                         if redorded_data_element is not None:
                             output.append(redorded_data_element)
                     if self.variables[variable_id].accessible < 1:
-                        log.info("variable with id: %d is now accessible" % variable_id)
+                        logger.info("variable with id: %d is now accessible" % variable_id)
                         self.variables[variable_id].accessible = 1
             else:
                 for variable_id in register_block.variables:
                     if self.variables[variable_id].accessible == -1:
-                        log.error("variable with id: %d is not accessible" % variable_id)
+                        logger.error("variable with id: %d is not accessible" % variable_id)
                         self.variables[variable_id].update_value(None, time())
                     self.variables[variable_id].accessible -= 1
 
         # reset device not accessible status 
         if self._device_not_accessible <= -1:
-            log.info("device with id: %d is now accessible" % self.device.pk)
+            logger.info("device with id: %d is now accessible" % self.device.pk)
         if self._device_not_accessible < 1:
             self._device_not_accessible = 1
 
@@ -334,10 +335,10 @@ class Device:
                     self._disconnect()
                     return True
                 else:
-                    log.info("device with id: %d is now accessible" % self.device.pk)
+                    logger.info("device with id: %d is now accessible" % self.device.pk)
                     return False
             else:
-                log.error('Modbus Address %d out of range' % self.variables[variable_id].modbusvariable.address)
+                logger.error('Modbus Address %d out of range' % self.variables[variable_id].modbusvariable.address)
                 return False
         elif self.variables[variable_id].modbusvariable.function_code_read == 1:
             # write coil
@@ -348,10 +349,10 @@ class Device:
                     self._disconnect()
                     return True
                 else:
-                    log.info("device with id: %d is now accessible" % self.device.pk)
+                    logger.info("device with id: %d is now accessible" % self.device.pk)
                     return False
             else:
-                log.error('Modbus Address %d out of range' % self.variables[variable_id].modbusvariable.address)
+                logger.error('Modbus Address %d out of range' % self.variables[variable_id].modbusvariable.address)
         else:
-            log.error('wrong type of function code %d' % self.variables[variable_id].modbusvariable.function_code_read)
+            logger.error('wrong type of function code %d' % self.variables[variable_id].modbusvariable.function_code_read)
             return False

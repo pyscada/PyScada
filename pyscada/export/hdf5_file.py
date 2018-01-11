@@ -11,6 +11,10 @@ import h5py
 import time
 
 from django.utils.six import text_type
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def unix_time_stamp_to_matlab_datenum(timestamp):
     """

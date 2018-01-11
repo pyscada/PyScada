@@ -4,11 +4,9 @@ To start the Dataaquasition daemon(s) and guinicorn, there are two example scrip
 
 	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/SysV-init/pyscada_daemon -O /etc/init.d/pyscada_daemon
 	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/SysV-init/gunicorn_django -O /etc/init.d/gunicorn_django
-	sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/SysV-init/pyscada_daq_daemon -O /etc/init.d/pyscada_daq_daemon
 
 	sudo chmod +x /etc/init.d/pyscada_daemon
 	sudo chmod +x /etc/init.d/gunicorn_django
-	sudo chmod +x /etc/init.d/pyscada_daq_daemon
 
 
 add a configuration file for every script.
@@ -19,17 +17,13 @@ add a configuration file for every script.
 
 
 
-Fill in the full path to the django project dir (were the manage.py is located). Replace the four spaces between the daemon (modbus) and the path with a tab.
+Fill in the full path to the django project dir (were the manage.py is located).
 
 ::
 
 	#!/bin/sh
 	#/etc/default/pyscada_daemon
-	DAEMONS=(
-		'export	/var/www/pyscada/PyScadaServer/'
-		'mail	/var/www/pyscada/PyScadaServer/'
-		'event	/var/www/pyscada/PyScadaServer/'
-	)
+	DJANGODIR='/var/www/pyscada/PyScadaServer/'
 	RUN_AS='pyscada'
 
 
@@ -57,7 +51,6 @@ Also fill in the path to your django project dir and replace the four spaces bet
 ::
 
 	sudo update-rc.d pyscada_daemon defaults
-	sudo update-rc.d pyscada_daq_daemon defaults
 	sudo update-rc.d gunicorn_django defaults
 
 
@@ -67,4 +60,3 @@ Start gunicorn and all PyScada services
 
 	sudo service gunicorn_django start
 	sudo service pyscada_daemon
-	sudo service pyscada_daq_daemon

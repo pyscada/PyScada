@@ -2,34 +2,81 @@
 from __future__ import unicode_literals
 
 from pyscada.admin import admin_site
+from pyscada.admin import DeviceAdmin
+from pyscada.admin import VariableAdmin
+from pyscada.models import Variable
+from pyscada.models import Device, DeviceProtocol
 
+from pyscada.smbus import PROTOCOL_ID
 from pyscada.smbus.models import SMbusDevice
 from pyscada.smbus.models import SMbusVariable
 
 from django.contrib import admin
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-class SMbusDeviceAdmin(admin.ModelAdmin):
-    list_display = ('device_name', 'description', 'port', 'address',)
-
-    def device_name(self, instance):
-        return instance.smbus_device.short_name
-
-    def description(self, instance):
-        return instance.smbus_device.description
+class ExtendedSMBusDevice(Device):
+    class Meta:
+        proxy = True
+        verbose_name = 'SMBus Device'
+        verbose_name_plural = 'SMBus Devices'
 
 
-class SMbusVariableAdmin(admin.ModelAdmin):
-    search_fields = ['smbus_variable__name', ]
-    list_display = ('name', 'value_class', 'information',)
-    raw_id_fields = ('smbus_variable',)
+class SMbusDeviceAdminInline(admin.StackedInline):
+    model = SMbusDevice
 
+
+class SMbusDeviceAdmin(DeviceAdmin):
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'protocol':
+            kwargs['queryset'] = DeviceProtocol.objects.filter(pk=PROTOCOL_ID)
+            db_field.default = PROTOCOL_ID
+        return super(SMbusDeviceAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_queryset(self, request):
+        """Limit Pages to those that belong to the request's user."""
+        qs = super(SMbusDeviceAdmin, self).get_queryset(request)
+        return qs.filter(protocol_id=PROTOCOL_ID)
+
+    inlines = [
+        SMbusDeviceAdminInline
+    ]
+
+
+class ExtendedSMbusVariable(Variable):
+    class Meta:
+        proxy = True
+        verbose_name = 'SMBus Variable'
+        verbose_name_plural = 'SMBus Variables'
+
+
+class SMbusVariableAdminInline(admin.StackedInline):
+    model = SMbusVariable
+
+
+class SMbusVariableAdmin(VariableAdmin):
     def name(self, instance):
         return instance.smbus_variable.name
 
     def value_class(self, instance):
         return instance.smbus_variable.value_class
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'device':
+            kwargs['queryset'] = Device.objects.filter(protocol=PROTOCOL_ID)
+        return super(SMbusVariableAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
-admin_site.register(SMbusDevice, SMbusDeviceAdmin)
-admin_site.register(SMbusVariable, SMbusVariableAdmin)
+    def get_queryset(self, request):
+        """Limit Pages to those that belong to the request's user."""
+        qs = super(SMbusVariableAdmin, self).get_queryset(request)
+        return qs.filter(device__protocol_id=PROTOCOL_ID)
+
+    inlines = [
+        SMbusVariableAdminInline
+    ]
+
+admin_site.register(ExtendedSMBusDevice, SMbusDeviceAdmin)
+admin_site.register(ExtendedSMbusVariable, SMbusVariableAdmin)

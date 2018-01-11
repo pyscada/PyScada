@@ -1,6 +1,9 @@
 from __future__ import unicode_literals
 import csv
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def unix_time_stamp_to_excel_datenum(timestamp):

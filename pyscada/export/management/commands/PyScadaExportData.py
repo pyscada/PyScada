@@ -22,5 +22,3 @@ class Command(BaseCommand):
             export_recordeddata_to_file(options['start_time'],options['stop_time'])
         elif options['filename'] is not None:
             export_recordeddata_to_file(options['start_time'],options['stop_time'],os.path.abspath(options['filename']))
-        
-        

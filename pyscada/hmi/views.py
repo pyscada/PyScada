@@ -13,7 +13,6 @@ from pyscada.hmi.models import View
 from pyscada.models import Log
 from pyscada.models import DeviceWriteTask
 
-from pyscada import log
 from django.http import HttpResponse
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
@@ -22,6 +21,9 @@ from django.contrib.auth import logout
 from django.views.decorators.csrf import requires_csrf_token
 import time
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def index(request):
@@ -136,7 +138,7 @@ def view(request, link_title):
         'version_string': core_version
     }
 
-    log.webnotice('open hmi', request.user)
+    logger.info('open hmi', request.user)
     return TemplateResponse(request, 'view.html', c)
 
 
@@ -156,16 +158,6 @@ def log_data(request):
     jdata = json.dumps(odata, indent=2)
 
     return HttpResponse(jdata, content_type='application/json')
-
-
-def form_log_entry(request):
-    if not request.user.is_authenticated():
-        return redirect('/accounts/login/?next=%s' % request.path)
-    if 'message' in request.POST and 'level' in request.POST:
-        log.add(request.POST['message'], request.POST['level'], request.user)
-        return HttpResponse(status=200)
-    else:
-        return HttpResponse(status=404)
 
 
 def form_write_task(request):
@@ -234,7 +226,7 @@ def get_cache_data(request):
 
 
 def logout_view(request):
-    log.webnotice('logout', request.user)
+    logger.info('logout %s' % request.user)
     logout(request)
     # Redirect to a success page.
     return redirect('/accounts/login/?next=/')

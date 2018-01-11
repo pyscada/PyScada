@@ -3,12 +3,14 @@ from __future__ import unicode_literals
 
 try:
     import psutil
-
     driver_ok = True
 except ImportError:
     driver_ok = False
 
 from time import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Device:
@@ -151,6 +153,7 @@ class Device:
                     timestamp = time()
             elif 100 <= item.systemstatvariable.information <= 105:
                 # APCUPSD Status
+                apcupsd_status = None
                 if not apcupsd_status_is_queried:
                     apcupsd_status = query_apsupsd_status()
                     apcupsd_status_is_queried = True

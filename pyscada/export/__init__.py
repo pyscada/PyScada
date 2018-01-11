@@ -8,7 +8,8 @@ __author__ = pyscada.__author__
 
 default_app_config = 'pyscada.export.apps.PyScadaExportConfig'
 
-parent_process_list = [{'label': 'pyscada.export',
+parent_process_list = [{'pk': 99,
+                        'label': 'pyscada.export',
                         'process_class': 'pyscada.export.worker.MasterProcess',
                         'process_class_kwargs': '{"dt_set":30}',
                         'enabled': True}]

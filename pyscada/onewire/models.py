@@ -2,14 +2,14 @@
 from __future__ import unicode_literals
 
 from pyscada.models import Variable, Device
-from pyscada.models import BackgroundTask
 
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.encoding import python_2_unicode_compatible
+import logging
 
-from time import time
+logger = logging.getLogger(__name__)
 
 
 @python_2_unicode_compatible
@@ -37,9 +37,11 @@ class OneWireDevice(models.Model):
 
 @receiver(post_save, sender=OneWireVariable)
 @receiver(post_save, sender=OneWireDevice)
-def _reinit_daq_daemons(sender, **kwargs):
+def _reinit_daq_daemons(sender, instance, **kwargs):
     """
-    update the daq daemon configuration wenn changes be applied in the models
+    update the daq daemon configuration when changes be applied in the models
     """
-    BackgroundTask.objects.filter(label='pyscada.daq.daemon',
-                                  done=0, failed=0).update(message='reinit', restart_daemon=True, timestamp=time())
+    if type(instance) is OneWireDevice:
+        post_save.send_robust(sender=Device, instance=instance.modbus_device)
+    elif type(instance) is OneWireVariable:
+        post_save.send_robust(sender=Variable, instance=instance.modbus_variable)

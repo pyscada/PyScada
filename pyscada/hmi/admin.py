@@ -18,6 +18,9 @@ from pyscada.hmi.models import ProcessFlowDiagramItem
 
 from django.contrib import admin
 from django import forms
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ChartForm(forms.ModelForm):

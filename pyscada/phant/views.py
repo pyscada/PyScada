@@ -10,6 +10,9 @@ from django.http import HttpResponse
 
 from time import time
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @csrf_exempt

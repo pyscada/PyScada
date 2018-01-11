@@ -10,31 +10,20 @@
 # Description:		 starts pyscada daemon
 ### END INIT INFO
 
-# sample configfile for /etc/default/pyscada_daemon
-#####################################################
-# DAEMONS=(
-#	'NAME	DJANGODIR'
-#)
-# RUN_AS='www-data'
+if [ -f /etc/default/pyscada_daemon ] ; then
+	. /etc/default/pyscada_daemon
+else
+	# use default values
+	DJANGO_DIR=/var/www/pyscada/PyScadaServer/
+	RUN_AS='pyscada'
+fi
 
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
-if [ -f /etc/default/pyscada_daemon ] ; then
-	. /etc/default/pyscada_daemon
-fi
-
-
 
 start () {
-	for i in "${DAEMONS[@]}"
-	do
-		:
-		set -- "$i"
-		IFS="	"; declare -a data=($*)
-
-
-		echo "Spawning ${data[1]} ${data[0]} daemon"
-		start-stop-daemon --start -c $RUN_AS -d ${data[1]} --exec manage.py -- PyScadaDaemonHandler ${data[0]} start
+	echo "Spawning PyScada Daemon"
+	start-stop-daemon --start -c $RUN_AS -d $DJANGODIR --exec manage.py -- pyscada_daemon start
 
 	done
 	return
@@ -42,12 +31,8 @@ start () {
 
 
 stop () {
-	for i in "${DAEMONS[@]}"
-	do
-		:
-		set -- "$i"
-		IFS="	"; declare -a data=($*)
-	start-stop-daemon --start -c $RUN_AS -d ${data[1]} --exec manage.py -- PyScadaDaemonHandler ${data[0]} stop
+    echo "Stop PyScada Daemon"
+	start-stop-daemon --start -c $RUN_AS -d $DJANGODIR --exec manage.py -- pyscada_daemon stop
 	done
 	return
 }

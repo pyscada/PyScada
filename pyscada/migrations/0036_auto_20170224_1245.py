@@ -4,19 +4,22 @@ from __future__ import unicode_literals
 
 from django.db import migrations
 
+
 def forwards_func(apps, schema_editor):
     # We get the model from the versioned app registry;
     # if we directly import it, it'll be the wrong version
     DeviceProtocol = apps.get_model("pyscada", "DeviceProtocol")
     db_alias = schema_editor.connection.alias
     DeviceProtocol.objects.using(db_alias).bulk_create([
-        DeviceProtocol(protocol='generic',\
-                                    description='no Protocol',\
-                                    app_name='pyscada',\
-                                    device_class='None',\
-                                    daq_daemon=False,\
-                                    single_thread=False),
+        DeviceProtocol(pk=1,
+                       protocol='generic',
+                       description='no Protocol',
+                       app_name='pyscada',
+                       device_class='None',
+                       daq_daemon=False,
+                       single_thread=False),
     ])
+
 
 def reverse_func(apps, schema_editor):
     # forwards_func() creates two Country instances,
@@ -25,8 +28,8 @@ def reverse_func(apps, schema_editor):
     db_alias = schema_editor.connection.alias
     DeviceProtocol.objects.using(db_alias).filter(protocol="generic").delete()
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
         ('pyscada', '0035_auto_20170224_1215'),
     ]

@@ -13,10 +13,26 @@ from time import time, gmtime, mktime
 from datetime import date, datetime, timedelta
 from pytz import UTC
 import json
+from os import getpid
+import traceback
+import logging
+
+logger = logging.getLogger(__name__)
+
+try:
+    import h5py
+    logger.debug('%d, h5py import successful' % getpid())
+except:
+    logger.error('%d, unhandled exception\n%s' % (getpid(), traceback.format_exc()))
 
 
 class ExportProcess(BaseProcess):
+    def __init__(self, dt=5, **kwargs):
+        self.job_id = 0
+        super(ExportProcess, self).__init__(dt=dt, **kwargs)
+
     def loop(self):
+        # todo try catch or filter.last()
         job = ExportTask.objects.get(pk=self.job_id)
         if job.file_format.upper() == 'HDF5':
             file_ext = '.h5'
@@ -24,6 +40,8 @@ class ExportProcess(BaseProcess):
             file_ext = '.mat'
         elif job.file_format.upper() == 'CSV_EXCEL':
             file_ext = '.csv'
+        else:
+            return -1, None
 
         bp = BackgroundProcess.objects.filter(
             enabled=True,
@@ -32,7 +50,8 @@ class ExportProcess(BaseProcess):
             parent_process__pk=self.parent_process_id).first()
 
         if not bp:
-            return False
+            logger.debug('export job %d no BP found' % self.job_id)
+            return -1, None
 
         job.busy = True
         job.backgroundprocess = bp
@@ -54,25 +73,28 @@ class ExportProcess(BaseProcess):
         job.busy = False
         job.datetime_finished = datetime.now(UTC)
         job.save()
-        self.run = False
         bp = BackgroundProcess.objects.filter(
             enabled=True,
             done=False,
             pid=self.pid,
             parent_process__pk=self.parent_process_id).first()
-        bp.done = True
-        bp.last_update = datetime_now()
-        bp.message = 'stopped'
-        bp.save()
+
+        if bp:
+            bp.done = True
+            bp.last_update = datetime_now()
+            bp.message = 'stopped'
+            bp.save()
+
+        return 0, None
 
 
 class MasterProcess(BaseProcess):
     """
-    handle all the registration of new export tasks
+    handle the registration of new export tasks, and monitor running export tasks
     """
-
-    def init_process(self):
-        setattr(self,'_current_day',gmtime().tm_yday)
+    def __init__(self, dt=5, **kwargs):
+        super(MasterProcess, self).__init__(dt=dt, **kwargs)
+        self._current_day = gmtime().tm_yday
 
     def loop(self):
         """
@@ -156,7 +178,7 @@ class MasterProcess(BaseProcess):
                     job.save()
                     continue
 
-                if time() - job.backgroundprocess.last_update < 60:
+                if datetime_now() - timedelta(hours=1) > job.backgroundprocess.last_update:
                     # if the Background Process has been updated in the past 60s wait
                     continue
 
@@ -174,12 +196,12 @@ class MasterProcess(BaseProcess):
                 failed=False,
                 datetime_start__lte=datetime.now(UTC)).first()  # get all jobs
             if job:
-                bp = BackgroundProcess(label='pyscada.export.ExportProcess-%d'%job.pk,
+                bp = BackgroundProcess(label='pyscada.export.ExportProcess-%d' % job.pk,
                                        message='waiting..',
                                        enabled=True,
                                        parent_process_id=self.parent_process_id,
                                        process_class='pyscada.export.worker.ExportProcess',
-                                       process_class_kwargs=json.dumps({"job_id":job.pk}))
+                                       process_class_kwargs=json.dumps({"job_id": job.pk}))
                 bp.save()
                 if job.datetime_start is None:
                     job.datetime_start = datetime.now(UTC)
@@ -196,4 +218,5 @@ class MasterProcess(BaseProcess):
                                              datetime_start__gte=datetime.fromtimestamp(time() + 60 * 24 * 60 * 60,
                                                                                         UTC)):
             job.delete()
-        return None  # because we have no data to store
+
+        return 1, None  # because we have no data to store

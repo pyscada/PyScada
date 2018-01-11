@@ -10,6 +10,9 @@ except ImportError:
     driver_visa_ok = False
 
 from time import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Device:

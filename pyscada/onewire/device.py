@@ -5,10 +5,13 @@ from time import time
 driver_ok = True
 try:
     import pyownet
-
     driver_owserver_ok = True
 except ImportError:
     driver_owserver_ok = False
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Device:

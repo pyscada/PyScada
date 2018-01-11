@@ -2,21 +2,21 @@
 from __future__ import unicode_literals
 
 from pyscada.models import Variable, Device
-from pyscada.models import BackgroundTask
 
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.encoding import python_2_unicode_compatible
+import logging
 
-from time import time
+logger = logging.getLogger(__name__)
 
 
 @python_2_unicode_compatible
 class VISAVariable(models.Model):
     visa_variable = models.OneToOneField(Variable)
     variable_type_choices = ((0, 'configuration'), (1, 'acquisition'), (2, 'status'))
-    variable_type = models.SmallIntegerField(default=1, choices=variable_type_choices)
+    variable_type = models.SmallIntegerField(choices=variable_type_choices)
     device_property = models.CharField(default='present_value', max_length=255,
                                        help_text='name of the Property the variable be assigned to')
 
@@ -29,7 +29,12 @@ class VISADevice(models.Model):
     visa_device = models.OneToOneField(Device)
     resource_name = models.CharField(max_length=255,
                                      default='GPIB0::22::INSTR',
-                                     help_text=" 'Examles for:\nGPIB0::22::INSTR' for GPIB Instrument\n 'TCPIP::192.168.228.104::INSTR' for TCPIP/LXI Intruments\n 'USB0::0x1AB1::0x4CE::DS1ZA181806919::INSTR'\n 'ASRL/dev/ttyUSB0::INSTR'\n http://pyvisa.readthedocs.io/en/stable/names.html")
+                                     help_text=""" 'Examles for:\nGPIB0::22::INSTR' for GPIB Instrument\n
+                                      'TCPIP::192.168.228.104::INSTR' for TCPIP/LXI Intruments\n 
+                                      'USB0::0x1AB1::0x4CE::DS1ZA181806919::INSTR'\n 
+                                      'ASRL/dev/ttyUSB0::INSTR'\n 
+                                      http://pyvisa.readthedocs.io/en/stable/names.html""")
+
     instrument = models.ForeignKey('VISADeviceHandler')
 
     def __str__(self):
@@ -50,10 +55,14 @@ class VISADeviceHandler(models.Model):
 @receiver(post_save, sender=VISAVariable)
 @receiver(post_save, sender=VISADevice)
 @receiver(post_save, sender=VISADeviceHandler)
-def _reinit_daq_daemons(sender, **kwargs):
+def _reinit_daq_daemons(sender, instance, **kwargs):
     """
-    update the daq daemon configuration wenn changes be applied in the models
+    update the daq daemon configuration when changes be applied in the models
     """
-    BackgroundTask.objects.filter(label='pyscada.daq.daemon',
-                                  done=0,
-                                  failed=0).update(message='reinit', restart_daemon=True, timestamp=time())
+    if type(instance) is VISADevice:
+        post_save.send_robust(sender=Device, instance=instance.modbus_device)
+    elif type(instance) is VISAVariable:
+        post_save.send_robust(sender=Variable, instance=instance.modbus_variable)
+    elif type(instance) is VISADeviceHandler:
+        # todo
+        pass

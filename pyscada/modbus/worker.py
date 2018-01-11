@@ -6,14 +6,20 @@ from __future__ import unicode_literals
 from pyscada.utils.scheduler import Process as BaseDAQProcess
 from pyscada.models import BackgroundProcess
 from pyscada.modbus.models import ModbusDevice
-from pyscada import log
+# from pyscada import log
 
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Process(BaseDAQProcess):
+    def __init__(self, dt=5, **kwargs):
+        super(Process, self).__init__(dt=dt, **kwargs)
+        self.MODBUS_PROCESSES = []
+
     def init_process(self):
-        setattr(self,'MODBUS_PROCESSES',[])
 
         # clean up
         BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False).delete()
@@ -39,7 +45,7 @@ class Process(BaseDAQProcess):
                                    process_class_kwargs=json.dumps(
                                        {'device_ids': [i.modbus_device.pk for i in values]}))
             bp.save()
-            self.MODBUS_PROCESSES.append({'id':bp.id,
+            self.MODBUS_PROCESSES.append({'id': bp.id,
                                           'key': key,
                                           'device_ids': [i.modbus_device.pk for i in values],
                                           'failed': 0})
@@ -51,7 +57,7 @@ class Process(BaseDAQProcess):
         # check if all modbus processes are running
         for modbus_process in self.MODBUS_PROCESSES:
             try:
-                bp = BackgroundProcess.objects.get(pk=modbus_process['id'])
+                BackgroundProcess.objects.get(pk=modbus_process['id'])
             except BackgroundProcess.DoesNotExist or BackgroundProcess.MultipleObjectsReturned:
                 # Process is dead, spawn new instance
                 if modbus_process['failed'] < 3:
@@ -66,10 +72,9 @@ class Process(BaseDAQProcess):
                     modbus_process['id'] = bp.id
                     modbus_process['failed'] += 1
                 else:
-                    log.debug('process pyscada.modbus-%s failed more then 3 times' % modbus_process['key'])
-                    self.stdout.write("process pyscada.modbus-%s failed more then 3 times\n" % modbus_process['key'])
+                    logger.error('process pyscada.modbus-%s failed more then 3 times' % modbus_process['key'])
 
-
+        return 1, None
 
     def cleanup(self):
         # todo cleanup

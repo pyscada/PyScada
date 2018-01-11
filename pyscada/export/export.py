@@ -1,13 +1,14 @@
 # PyScada
 from __future__ import unicode_literals
 
-from pyscada.utils import validate_value_class, export_xml_config_file
-from pyscada.models import Variable, BackgroundTask, RecordedData
+from pyscada.utils import validate_value_class, datetime_now
+from pyscada.models import Variable, RecordedData, BackgroundProcess
 from pyscada.export.hdf5_file import MatCompatibleH5
 from pyscada.export.hdf5_file import unix_time_stamp_to_matlab_datenum
 from pyscada.export.csv_file import ExcelCompatibleCSV
 from pyscada.export.csv_file import unix_time_stamp_to_excel_datenum
 from pyscada.export.models import ExportTask
+
 # Django
 from django.conf import settings
 
@@ -18,34 +19,24 @@ from time import time, strftime, mktime
 from numpy import float64, float32, int32, uint16, int16, uint8, arange
 import numpy as np
 import math
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, active_vars=None, file_extension=None,
                                 append_to_file=False, no_mean_value=False, mean_value_period=5.0,
-                                backgroundtask_id=None, export_task_id=None, **kwargs):
+                                backgroundprocess_id=None, export_task_id=None, **kwargs):
     """
     read all data
     """
-    if backgroundtask_id is not None:
-        tp = BackgroundTask.objects.get(id=backgroundtask_id)
+    if backgroundprocess_id is not None:
+        tp = BackgroundProcess.objects.get(id=backgroundprocess_id)
         tp.message = 'init'
-        tp.timestamp = time()
-        tp.pid = str(os.getpid())
+        tp.last_update = datetime_now()
         tp.save()
     else:
-        if 'task_identifier' in kwargs:
-            if BackgroundTask.objects.filter(identifier=kwargs['task_identifier'], failed=0):
-                return
-            else:
-                tp = BackgroundTask(start=time(),
-                                    label='pyscada.export.export_measurement_data_%s' % kwargs['task_identifier'],
-                                    message='init', timestamp=time(), pid=str(os.getpid()),
-                                    identifier=kwargs['task_identifier'])
-        else:
-            tp = BackgroundTask(start=time(), label='pyscada.export.export_measurement_data_to_file', message='init',
-                                timestamp=time(), pid=str(os.getpid()))
-
-        tp.save()
+        tp = None
 
     if type(time_max) in [str, unicode]:
         # convert date strings
@@ -67,10 +58,11 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
         file_extension = '.' + filename.split('.')[-1]
     # validate file type
     if file_extension not in ['.h5', '.mat', '.csv']:
-        tp.timestamp = time()
-        tp.message = 'failed wrong file type'
-        tp.failed = 1
-        tp.save()
+        if tp is not None:
+            tp.last_update = datetime_now()
+            tp.message = 'failed wrong file type'
+            tp.failed = 1
+            tp.save()
         return
 
     # 
@@ -92,22 +84,24 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
         if not os.path.exists(backup_file_path):
             os.mkdir(backup_file_path)
 
-        # validate timevalues
+        # validate time values
         db_time_min = RecordedData.objects.first()
         if not db_time_min:
-            tp.timestamp = time()
-            tp.message = 'no data to export'
-            tp.failed = 1
-            tp.save()
+            if tp is not None:
+                tp.last_update = datetime_now()
+                tp.message = 'no data to export'
+                tp.failed = 1
+                tp.save()
             return
         time_min = max(db_time_min.time_value(), time_min)
 
         db_time_max = RecordedData.objects.last()
         if not db_time_max:
-            tp.timestamp = time()
-            tp.message = 'no data to export'
-            tp.failed = 1
-            tp.save()
+            if tp is not None:
+                tp.last_update = datetime_now()
+                tp.message = 'no data to export'
+                tp.failed = 1
+                tp.save()
             return
         time_max = min(db_time_max.time_value(), time_max)
 
@@ -132,7 +126,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
 
     # append the extension 
     filename = filename + file_extension
-    xml_filename = filename.split('.')[0] + '.xml'
+
     # add Filename to ExportTask
     if export_task_id is not None:
         job = ExportTask.objects.filter(pk=export_task_id).first()
@@ -178,33 +172,31 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
     if file_extension in ['.h5', '.mat']:
         bf = MatCompatibleH5(filename, version='1.1', description=description, name=name,
                              creation_date=strftime('%d-%b-%Y %H:%M:%S'))
+        out_timevalues = [unix_time_stamp_to_matlab_datenum(element) for element in timevalues]
     elif file_extension in ['.csv']:
         bf = ExcelCompatibleCSV(filename, version='1.1', description=description, name=name,
                                 creation_date=strftime('%d-%b-%Y %H:%M:%S'))
-    # export config to an separate file to avoid attr > 64k
-    # export_xml_config_file(xml_filename)  # todo make optional
+        out_timevalues = [unix_time_stamp_to_excel_datenum(element) for element in timevalues]
+    else:
+        return
 
     # less then 24
     # read everything
-
-    if file_extension in ['.h5', '.mat']:
-        out_timevalues = [unix_time_stamp_to_matlab_datenum(element) for element in timevalues]
-    elif file_extension in ['.csv']:
-        out_timevalues = [unix_time_stamp_to_excel_datenum(element) for element in timevalues]
-
     bf.write_data('time', float64(out_timevalues),
                   id=0,
                   description="global time vector",
                   value_class=validate_value_class('FLOAT64'),
-                  unit="Days since 0000-1-1 00:00:00")
-
-    tp.max = active_vars.count()
+                  unit="Days since 0000-1-1 00:00:00",
+                  color='#000000',
+                  short_name='time',
+                  chart_line_thickness=3
+                  )
 
     for var_idx in range(0, active_vars.count(), 10):
-        tp.timestamp = time()
-        tp.message = 'reading values from database'
-        tp.progress = var_idx
-        tp.save()
+        if tp is not None:
+            tp.last_update = datetime_now()
+            tp.message = 'reading values from database (%d)' % var_idx
+            tp.save()
         # query data
         var_slice = active_vars[var_idx:var_idx + 10]
         data = RecordedData.objects.get_values_in_time_range(
@@ -214,10 +206,11 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
             query_first_value=True)
 
         for var in var_slice:
-            # write backround task info
-            tp.timestamp = time()
-            tp.message = 'writing values for %s (%d) to file' % (var.name, var.pk)
-            tp.save()
+            # write background task info
+            if tp is not None:
+                tp.last_update = datetime_now()
+                tp.message = 'writing values for %s (%d) to file' % (var.name, var.pk)
+                tp.save()
             # check if variable is scalled 
             if var.scaling is None or var.value_class.upper() in ['BOOL', 'BOOLEAN']:
                 value_class = var.value_class
@@ -241,12 +234,10 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
                               chart_line_thickness=var.chart_line_thickness)
                 continue
 
-            # data[var.pk][::][time,value]
-            # out_data = [0]*len(timevalues) # init output data
             out_data = np.zeros(len(timevalues))
             # i                            # time data index
             ii = 0  # source data index
-            # calulate mean values
+            # calculate mean values
             last_value = None
             max_ii = len(data[var.pk]) - 1
             for i in range(len(timevalues)):  # iter over time values
@@ -306,11 +297,11 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
                           chart_line_thickness=var.chart_line_thickness)
 
     bf.close_file()
-    tp.timestamp = time()
-    tp.message = 'done'
-    tp.progress = tp.max
-    tp.done = 1
-    tp.save()
+    if tp is not None:
+        tp.last_update = datetime_now()
+        tp.message = 'done'
+        tp.done = True
+        tp.save()
 
 
 def _cast_value(value, _type):

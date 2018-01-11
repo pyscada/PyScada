@@ -8,9 +8,13 @@ from django.utils.encoding import python_2_unicode_compatible
 
 import string
 import random
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def gen_random_key(n=20):
+    # todo avoid collisions on public_key field
     return ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase) for _ in range(n))
 
 
@@ -22,4 +26,3 @@ class PhantDevice(models.Model):
 
     def __str__(self):
         return self.phant_device.short_name
-

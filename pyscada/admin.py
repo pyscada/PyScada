@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.models import Device
+from pyscada.models import Device, DeviceProtocol
 from pyscada.models import Variable
 from pyscada.models import Scaling, Color
 from pyscada.models import Unit
 from pyscada.models import DeviceWriteTask
 from pyscada.models import Log
-from pyscada.models import BackgroundTask, BackgroundProcess
+from pyscada.models import BackgroundProcess
 from pyscada.models import Event
 from pyscada.models import RecordedEvent, RecordedData
 from pyscada.models import Mail
@@ -17,14 +17,52 @@ from django import forms
 from django.contrib.admin import AdminSite
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
+from django.utils.translation import ugettext_lazy as _
 
 import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # Custom AdminSite
 
 class PyScadaAdminSite(AdminSite):
     site_header = 'PyScada Administration'
+
+
+# Custom Filters
+class BackgroundProcessFilter(admin.SimpleListFilter):
+    # Human-readable title which will be displayed in the
+    # right admin sidebar just above the filter options.
+    title = _('parent process filter')
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'parent_process'
+
+    def lookups(self, request, model_admin):
+        """
+        Returns a list of tuples. The first element in each
+        tuple is the coded value for the option that will
+        appear in the URL query. The second element is the
+        human-readable name for the option that will appear
+        in the right sidebar.
+        """
+        qs = model_admin.get_queryset(request)
+        qs.filter(id__range=(1, 99))
+        for item in qs:
+            dp = DeviceProtocol.objects.filter(pk=item.id).first()
+            if dp:
+                yield (dp.pk, dp.app_name)
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value
+        provided in the query string and retrievable via
+        `self.value()`.
+        """
+        if self.value() > 0:
+            return queryset.filter(parent_process_id=self.value())
 
 
 class VariableState(Variable):
@@ -55,9 +93,9 @@ class DeviceAdmin(admin.ModelAdmin):
     list_display_links = ('short_name', 'description')
 
 
-class VarieblesAdminFrom(forms.ModelForm):
+class VariableAdminFrom(forms.ModelForm):
     def __init__(self, *args, **kwargs):
-        super(VarieblesAdminFrom, self).__init__(*args, **kwargs)
+        super(VariableAdminFrom, self).__init__(*args, **kwargs)
         wtf = Color.objects.all()
         w = self.fields['chart_line_color'].widget
         color_choices = []
@@ -78,19 +116,22 @@ class VarieblesAdminFrom(forms.ModelForm):
         w.widget.create_option = types.MethodType(create_option_color, w.widget, Select)  # replace old with new
 
 
-class VarieblesAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'description', 'unit', 'device_name', 'value_class', 'active', 'writeable',)
-    list_editable = ('active', 'writeable',)
-    list_display_links = ('name',)
+class VariableAdmin(admin.ModelAdmin):
     list_filter = ('device__short_name', 'active', 'writeable', 'unit__unit', 'value_class')
     search_fields = ['name', ]
-    form = VarieblesAdminFrom
+    form = VariableAdminFrom
 
     def device_name(self, instance):
         return instance.device.short_name
 
     def unit(self, instance):
         return instance.unit.unit
+
+
+class CoreVariableAdmin(VariableAdmin):
+    list_display = ('id', 'name', 'description', 'unit', 'device_name', 'value_class', 'active', 'writeable',)
+    list_editable = ('active', 'writeable',)
+    list_display_links = ('name',)
 
 
 class DeviceWriteTaskAdmin(admin.ModelAdmin):
@@ -140,28 +181,9 @@ class LogAdmin(admin.ModelAdmin):
 
 class BackgroundProcessAdmin(admin.ModelAdmin):
     list_display = ('id', 'label', 'message', 'last_update', 'running_since', 'enabled', 'done', 'failed')
-    list_filter = ('parent_process', 'enabled', 'done', 'failed')
+    list_filter = (BackgroundProcessFilter, 'enabled', 'done', 'failed')
     list_display_links = ('id', 'label', 'message')
     readonly_fields = ('message', 'last_update', 'running_since', 'done', 'failed')
-
-
-class BackgroundTaskAdmin(admin.ModelAdmin):
-    list_display = ('id', 'label', 'message', 'load', 'last_update', 'running_since', 'done', 'failed')
-    list_display_links = ('label',)
-    list_filter = ('done', 'failed')
-    search_fields = ['variable', ]
-
-    def last_update(self, instance):
-        return datetime.datetime.fromtimestamp(int(instance.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
-
-    def running_since(self, instance):
-        return datetime.datetime.fromtimestamp(int(instance.start)).strftime('%Y-%m-%d %H:%M:%S')
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
 
 
 class RecordedEventAdmin(admin.ModelAdmin):
@@ -191,7 +213,7 @@ class EventAdmin(admin.ModelAdmin):
 
 admin_site = PyScadaAdminSite(name='pyscada_admin')
 admin_site.register(Device, DeviceAdmin)
-admin_site.register(Variable, VarieblesAdmin)
+admin_site.register(Variable, CoreVariableAdmin)
 admin_site.register(Scaling)
 admin_site.register(Unit)
 admin_site.register(Event, EventAdmin)
@@ -199,7 +221,6 @@ admin_site.register(RecordedEvent, RecordedEventAdmin)
 admin_site.register(Mail, MailAdmin)
 admin_site.register(DeviceWriteTask, DeviceWriteTaskAdmin)
 admin_site.register(Log, LogAdmin)
-admin_site.register(BackgroundTask, BackgroundTaskAdmin)
 admin_site.register(BackgroundProcess, BackgroundProcessAdmin)
 admin_site.register(VariableState, VariableStateAdmin)
 admin_site.register(User, UserAdmin)

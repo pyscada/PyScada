@@ -7,6 +7,9 @@ from django.db import models
 from django.contrib.auth.models import Group
 from django.utils.encoding import python_2_unicode_compatible
 from six import text_type
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @python_2_unicode_compatible
@@ -33,7 +36,7 @@ class ControlItem(models.Model):
         return (self.label + " (" + self.variable.name + ")")
 
     def web_id(self):
-        return self.id.__str__() + "-" + self.label.replace(' ', '_') + "-" + self.variable.name.replace(' ', '_')
+        return self.id.__str__() + "-" + self.variable.name.replace(' ', '_')
 
 
 @python_2_unicode_compatible
