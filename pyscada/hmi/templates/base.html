@@ -12,17 +12,13 @@
         <link href="{% static "pyscada/css/bootstrap.css" %}" rel="stylesheet"/>
         <!-- Bootstrap theme -->
         <link href="{% static "pyscada/css/bootstrap-theme.min.css" %}" rel="stylesheet"/>
+        <!-- Bootstrap theme -->
+        <link href="{% static "pyscada/css/jquery-ui/jquery-ui.min.css" %}" rel="stylesheet"/>
+        <!-- Bootstrap theme -->
+        <link href="{% static "pyscada/css/jquery-ui/jquery-ui.theme.min.css" %}" rel="stylesheet"/>
         <!-- Custom styles for this template -->    
         <link href="{% static "pyscada/css/pyscada-theme.css" %}" rel="stylesheet"/>
-        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
-        <!--[if lt IE 9]>
-        <script src="js/html5shiv.js"></script>
-        <script src="js/respond.min.js"></script>
-        <script type="text/javascript">
-            var html5 = { 'elements': 'abbr article aside audio bdi data datalist details figcaption figure footer header hgroup mark meter nav output progress section summary time video' };
-            </script>
-        <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-        <![endif]-->
+        <link rel="icon" href="{% static "pyscada/img/favicon.ico" %}" type="image/x-icon">
     </head>
     <body {% block body_confic_data %} {% endblock %}>
         <div id="wrap">
@@ -62,9 +58,9 @@
                         </ul>
                     </div><!--/.nav-collapse -->
                 </div>
-                <div id="notification_area"></div>
             </div>
             <div class="container" id="content">
+                {% block top_area %}{% endblock %}
                 <!-- loading animation -->
                 <div id="notification_area_2"></div>
                 <div id="loadingAnimation"> 
@@ -84,6 +80,7 @@
         ================================================== -->
         <!-- Placed at the end of the document so the pages load faster -->
         <script type="text/javascript" src="{% static "pyscada/js/jquery.min.js" %}"></script>
+        <script type="text/javascript" src="{% static "pyscada/js/jquery-ui/jquery-ui.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/jquery.cookie.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/bootstrap.min.js" %}"></script>
         {% block include_bootom %}{% endblock %}

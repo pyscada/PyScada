@@ -111,3 +111,11 @@
   - updated Docker files (not working yet)
   - updated SysV-init service examples
   - updated systemd service examples
+
+0.7.0b26
+  - fixed Jofra350 Admin
+  - fixed OperationalError in scheduler
+
+0.7.0b27, 0.7.0b28, 0.7.0b29, 0.7.0b30, 0.7.0b31
+  - major update to the javascript part of the HMI Client
+  - added time selection bar in HMI

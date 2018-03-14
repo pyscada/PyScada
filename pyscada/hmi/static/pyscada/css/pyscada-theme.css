@@ -331,7 +331,7 @@ table.tablesorter thead tr .header.sorter-false {
 	border: 1px solid #ddd;
 	padding:1px;
 	font-size: 11px;
-	line-height: 0.5em;
+	/*line-height: 0.5em;*/
 }
 .legendLabel {
 	padding-right:5px;

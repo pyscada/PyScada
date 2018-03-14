@@ -21,10 +21,10 @@ logger = logging.getLogger(__name__)
 
 try:
     import h5py
-    logger.debug('%d, h5py import successful' % getpid())
+    #logger.debug('%d, h5py import successful' % getpid())
 except:
-    logger.error('%d, unhandled exception\n%s' % (getpid(), traceback.format_exc()))
-
+    #logger.error('%d, unhandled exception\n%s' % (getpid(), traceback.format_exc()))
+    pass
 
 class ExportProcess(BaseProcess):
     def __init__(self, dt=5, **kwargs):
@@ -49,7 +49,7 @@ class ExportProcess(BaseProcess):
             pid=self.pid,
             parent_process__pk=self.parent_process_id).first()
 
-        if not bp:
+        if bp is None:
             logger.debug('export job %d no BP found' % self.job_id)
             return -1, None
 

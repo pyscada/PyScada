@@ -138,7 +138,7 @@ def view(request, link_title):
         'version_string': core_version
     }
 
-    logger.info('open hmi', request.user)
+    #logger.info('open hmi', request.user)
     return TemplateResponse(request, 'view.html', c)
 
 
@@ -195,34 +195,39 @@ def get_cache_data(request):
                 'custom_html_panels__variables', flat=True))
         active_variables = list(set(active_variables))
 
-    timestamp = time.time()
-    if 'timestamp' in request.POST:
-        # query data from future is not supported
-        if float(request.POST['timestamp']) >= timestamp - 120 * 60:
-            timestamp = min(float(request.POST['timestamp']) / 1000.0, timestamp)
+    timestamp_from = time.time()
+    if 'timestamp_from' in request.POST:
+        timestamp_from = float(request.POST['timestamp_from']) / 1000.0
 
-    if init:
-        first_timestamp = timestamp - 120 * 60
-        last_timestamp = timestamp
-    else:
-        first_timestamp = timestamp
-        last_timestamp = time.time()
+    timestamp_to = time.time()
+
+    if 'timestamp_to' in request.POST:
+        timestamp_to = min(timestamp_to,float(request.POST['timestamp_to']) / 1000.0)
+
+    if timestamp_to == 0:
+        timestamp_to = time.time()
+
+    if timestamp_from == 0:
+        timestamp_from == time.time()-60
+
+    if timestamp_to - timestamp_from > 120*60:
+        timestamp_from = timestamp_to -120*60
+
     data = RecordedData.objects.get_values_in_time_range(
-        time_min=first_timestamp,
-        time_max=last_timestamp,
+        time_min=timestamp_from,
+        time_max=timestamp_to,
         query_first_value=init,
         time_in_ms=True,
-        key_is_variable_name=True,
+        key_is_variable_name=False,
         add_timetamp_field=True,
-        add_fake_data=True,
-        variable_id__in=active_variables)
+        add_fake_data=False,
+        variable_id__in=active_variables,
+        add_latest_value=False)
+
     if data is None:
-        jdata = json.dumps({'server_time': time.time() * 1000})
-        return HttpResponse(jdata, content_type='application/json')
-    # data["timestamp"] = time.time()*1000 # TODO max_time from data
+        return HttpResponse(json.dumps({'server_time': time.time() * 1000}), content_type='application/json')
     data["server_time"] = time.time() * 1000
-    jdata = json.dumps(data)
-    return HttpResponse(jdata, content_type='application/json')
+    return HttpResponse(json.dumps(data), content_type='application/json')
 
 
 def logout_view(request):

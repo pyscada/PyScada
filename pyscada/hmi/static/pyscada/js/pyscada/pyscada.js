@@ -1,265 +1,343 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0b20
+version 0.7.0b31
 
-Copyright (c) 2013-2017 Martin Schröder
+Copyright (c) 2013-2018 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.7.0b20"
-var NotificationCount = 0
-var UpdateStatusCount = 0;
-var InitStatusCount = 0;
+var version = "0.7.0b31"
+var NOTIFICATION_COUNT = 0
+var UPDATE_STATUS_COUNT = 0;
+var INIT_STATUS_COUNT = 0;
 var PyScadaPlots = [];
-var DataOutOfDate = false; 
-var DataOutOfDateAlertId = '';
-var JsonErrorCount = 0;
-var auto_update_active = true;
-var log_last_timestamp = 0;
-var log_init = false;
-var data_last_timestamp = 0;
-var data_first_timestamp = 0;
-var server_time = 0;
-var log_frm = $('#page-log-form');
-var log_frm_mesg = $('#page-log-form-message')
-var csrftoken = $.cookie('csrftoken');
-var fetch_data_timeout = 5000;
-var init_chart_data_fetch_pending_count = 0;
-var log_fetch_pending_count = false;
-var refresh_rate = 2500;
-var cache_timeout = 15000; // in milliseconds
-var RootUrl = window.location.protocol+"//"+window.location.host + "/";
-var VariableKeys = [];
-var InitVariableKeys = [];
-var LastVariableValue = [];
-
+var DATA_OUT_OF_DATE = false;
+var DATA_OUT_OF_DATE_ALERT_ID = '';
+var JSON_ERROR_COUNT = 0;
+var AUTO_UPDATE_ACTIVE = true;
+var LOG_LAST_TIMESTAMP = 0;
+var DATA_TO_TIMESTAMP = Date.now();
+var DATA_FROM_TIMESTAMP = Date.now();
+var DATA_DISPLAY_FROM_TIMESTAMP = -1;
+var DATA_DISPLAY_TO_TIMESTAMP = -1;
+var DATA_DISPLAY_WINDOW = 20*60*1000;
+var DATA_BUFFER_SIZE = 300*60*1000; // size of the data buffer in ms
+var progressbar_resize_active = false;
+var SERVER_TIME = 0;
+var CSRFTOKEN = $.cookie('csrftoken');
+var FETCH_DATA_TIMEOUT = 5000;
+var LOG_FETCH_PENDING_COUNT = false;
+var REFRESH_RATE = 2500;
+var CACHE_TIMEOUT = 15000; // in milliseconds
+var ROOT_URL = window.location.protocol+"//"+window.location.host + "/";
+var VARIABLE_KEYS = [];
+var STATUS_VARIABLE_KEYS = {count:function(){var c = 0;for (key in this){c++;} return c-2;},keys:function(){var k = [];for (key in this){if (key !=="keys" && key !=="count"){k.push(key);}} return k;}};
+var CHART_VARIABLE_KEYS = {count:function(){var c = 0;for (key in this){c++;} return c-2;},keys:function(){var k = [];for (key in this){if (key !=="keys" && key !=="count"){k.push(key);}} return k;}};
+var DATA = {}; // holds the fetched data from the server
+var DATA_INIT_STATUS = 0; // status 0: nothing done, 1:
+var UPDATE_X_AXES_TIME_LINE_STATUS = false;
+var FETCH_DATA_PENDING = 0;
+var INIT_STATUS_VARIABLES_DONE = false;
+var INIT_CHART_VARIABLES_DONE = false;
+var INIT_CHART_VARIABLES_COUNT = 0;
 // the code
 var debug = 0;
 var DataFetchingProcessCount = 0;
 
-function showUpdateStatus(){
+function show_update_status(){
     $("#AutoUpdateStatus").show();
-    UpdateStatusCount++;
+    UPDATE_STATUS_COUNT++;
 }
-function hideUpdateStatus(){
-    UpdateStatusCount--;
-    if (UpdateStatusCount <= 0){
+function hide_update_status(){
+    UPDATE_STATUS_COUNT--;
+    if (UPDATE_STATUS_COUNT <= 0){
         $("#AutoUpdateStatus").hide();
-        UpdateStatusCount = 0;
+        UPDATE_STATUS_COUNT = 0;
     }
 }
-function showInitStatus(){
+function show_init_status(){
     $("#loadingAnimation").show();
-    InitStatusCount = InitStatusCount + 1;
+    INIT_STATUS_COUNT = INIT_STATUS_COUNT + 1;
 }
-function hideInitStatus(){
-    InitStatusCount = InitStatusCount -1;
-    if (InitStatusCount <= 0){
+function hide_init_status(){
+    INIT_STATUS_COUNT = INIT_STATUS_COUNT -1;
+    if (INIT_STATUS_COUNT <= 0){
         $("#loadingAnimation").hide();
     }
-    init_chart_data_fetch_pending_count--;
 }
-function raiseDataOutOfDateError(){
-    if (!DataOutOfDate){
-        DataOutOfDate = true;
-        DataOutOfDateAlertId = addNotification('displayed data is out of date!',4,false,false);
+function raise_data_out_of_date_error(){
+    if (!DATA_OUT_OF_DATE){
+        DATA_OUT_OF_DATE = true;
+        DATA_OUT_OF_DATE_ALERT_ID = add_notification('displayed data is out of date!',4,false,false);
     }
 }
-function clearDataOutOfDateError(){
-    if (DataOutOfDate){
-        DataOutOfDate = false;
-        $('#'+DataOutOfDateAlertId).alert("close");
+function clear_data_out_of_date_error(){
+    if (DATA_OUT_OF_DATE){
+        DATA_OUT_OF_DATE = false;
+        $('#'+DATA_OUT_OF_DATE_ALERT_ID).alert("close");
     }
 }
 
-function fetchData(variable_keys,first_timestamp,init,plot_instance) {
-    variable_keys = typeof variable_keys !== 'undefined' ? variable_keys : VariableKeys;
-    first_timestamp = typeof first_timestamp !== 'undefined' ? first_timestamp : data_first_timestamp;
-    init = typeof variable_keys !== 'undefined' ? init : 0; // ((first_timestamp == 0) ? 1:0)
-    
-    if (auto_update_active) {
-        if (init){
-            showInitStatus();
-        }
-        showUpdateStatus();		
-        $.ajax({
-            url: RootUrl+'json/cache_data/',
-            dataType: "json",
-            timeout: ((init == 1) ? fetch_data_timeout*10 : fetch_data_timeout),
-            type: "POST",
-            data:{ timestamp: init ? data_first_timestamp:data_last_timestamp, variables: variable_keys, first_timestamp:first_timestamp, init: init},
-            dataType:"json"
-            }).done(function(data) {
-                update_charts = true;
-                if (typeof(data['timestamp'])==="number"){
-                    timestamp = data['timestamp'];
-                    delete data['timestamp'];
-                }else{
-                    timestamp = 0;
+function check_buffer(key){
+    if ((DATA[key][0][0] < DATA_FROM_TIMESTAMP)){
+        stop_id = find_index_sub(DATA[key],DATA_FROM_TIMESTAMP,0);
+        DATA[key] = DATA[key].splice(stop_id);
+    }
+}
+function add_fetched_data(key,value){
+    if (typeof(value)==="object"){
+        if (value.length >0){
+            if (typeof(CHART_VARIABLE_KEYS[key]) === 'undefined'){
+                // no history needed
+                DATA[key] = [value.pop()];
+                if (DATA[key][0] < DATA_FROM_TIMESTAMP){
+                    DATA_FROM_TIMESTAMP = value[0][0];
+                    UPDATE_X_AXES_TIME_LINE_STATUS = true;
                 }
-                if (typeof(data['server_time'])==="number"){
-                    server_time = data['server_time'];
-                    delete data['server_time'];
-                    var date = new Date(server_time);
-                    $(".server_time").html(date.toLocaleString());
-                }else{
-                    server_time = 0;            
-                }
-                if (init){
-                    $.each(data, function(key, val) {
-                    //append data to data array
-                        if (typeof(val)==="object" && typeof plot_instance !== 'undefined'){
-                            plot_instance.PreppendData(key,val);
-                            update_charts = 1;
-                        }
-                    });
-                    // update all values
-                    $.each(data, function(key, val) {
-                        //append data to data array
-                        if (typeof(val)==="object"){
-                            val = val.pop();
-                            if (typeof(val[1])==="number" | typeof(val[1])==="boolean"){
-                                //updateDataValues(key,val[1]);
-                                LastVariableValue[key] = val[1];
-                            }else{
-                                //updateDataValues(key,Number.NaN);
-                                LastVariableValue[key] = Number.NaN;
-                            }
-                        }
-                    });
-                    init_chart_data_fetch_pending_count--;
-                }else{
-                    if (data_last_timestamp < timestamp){
-                        data_last_timestamp = timestamp;
-                    }
-                    if (data_first_timestamp == 0){
-                        data_first_timestamp = data_last_timestamp;
-                    }
-                    update_charts = data.length > 0;
-                    DataOutOfDate = (server_time - timestamp  > cache_timeout);
-                    if (DataOutOfDate){
-                        raiseDataOutOfDateError();
-                    }else{
-                        clearDataOutOfDateError();
-                        $.each(PyScadaPlots,function(plot_id){
-                            var variable_names = PyScadaPlots[plot_id].getVariableNames();
-                            $.each(variable_names, function(key, val) {
-                                if(val in data){
-                                    // use data
-                                    PyScadaPlots[plot_id].AppendData(val,data[val]);
-                                }else{
-                                    // use last value
-                                    PyScadaPlots[plot_id].UpdateData(val,data_last_timestamp)
-                                }
-                            });
-                            var self = this, doBind = function() {
-                                PyScadaPlots[plot_id].update();
-                            };
-                            $.browserQueue.add(doBind, this);
-                        });
-                        $.each(data, function(key, val) {
-                        //append data to data array
-                            if (typeof(val)==="object"){
-                                val = val.pop();
-                                if (typeof(val[1])==="number" | typeof(val[1])==="boolean"){
-                                    //updateDataValues(key,val[1]);
-                                    LastVariableValue[key] = val[1];
-                                }else{
-                                    LastVariableValue[key] = Number.NaN;
-                                    //updateDataValues(key,Number.NaN);
-                                }
-                            }
-                        });
-                    }
-                    setTimeout(function() {fetchData();}, refresh_rate);
-                }
-                for (var key in LastVariableValue) {
-                    updateDataValues(key,LastVariableValue[key]);
-                }
-                // update all legend tables
-                $('.legend table').trigger("update");
-                $("#AutoUpdateButton").removeClass("btn-warning");
-                $("#AutoUpdateButton").addClass("btn-success");
-                if (JsonErrorCount > 0) {
-                    JsonErrorCount = JsonErrorCount - 1;
-                }
-                if (init){ hideInitStatus(); }
-                hideUpdateStatus();
-            }).fail(function(x, t, m) {
-                if(JsonErrorCount % 5 == 0)
-                    addNotification(t, 3);
-
-                JsonErrorCount = JsonErrorCount + 1;
-                if (JsonErrorCount > 60) {
-                    auto_update_active = false;
-                    addNotification("error limit reached", 3);
+            }else {
+                if (typeof(DATA[key]) == "undefined"){
+                    DATA[key] = value;
+                } else if (value[0][0] >= DATA[key][DATA[key].length-1][0]){
+                    // append
+                    DATA[key] = DATA[key].concat(value);
+                } else if (value[value.length-1][0] <= DATA[key][0][0]){
+                    // prepend
+                    DATA[key] = value.concat(DATA[key]);
                 } else {
-                    if (auto_update_active) {
-                        setTimeout(function() {fetchData();}, 500);
-                    }
-                    $.each(PyScadaPlots,function(plot_id){
-                        var keys = PyScadaPlots[plot_id].getKeys();
-                        $.each(keys, function(key, val) {
-                            PyScadaPlots[plot_id].addData(val,data_last_timestamp,Number.NaN);
-                        });
-                    });
+                    DATA[key] = value;
                 }
-                if (init){ hideInitStatus(); }
-                hideUpdateStatus();
-                $("#AutoUpdateButton").removeClass("btn-success");
-                $("#AutoUpdateButton").addClass("btn-warning");
+                if (value[0][0] < DATA_FROM_TIMESTAMP){
+                    DATA_FROM_TIMESTAMP = value[0][0];
+                    UPDATE_X_AXES_TIME_LINE_STATUS = true;
                 }
-        );
-        updateLog();
-    }else{
-        $.each(PyScadaPlots,function(plot_id){
-            var keys = PyScadaPlots[plot_id].getKeys();
-            $.each(keys, function(key, val) {
-                PyScadaPlots[plot_id].addData(val,data_last_timestamp,Number.NaN);
-            });
-        });
+            }
+        }else{
+            console.log(key + ' : value.length==0')
+        }
     }
 }
 
-function updateLog() {
-    if (log_fetch_pending_count){return false;}
-    log_fetch_pending_count = true;
-    if(log_last_timestamp === 0){
-        if(server_time > 0){
-                log_last_timestamp = server_time; 
+
+function data_handler(){
+    // call the data handler periodically
+    if(!INIT_STATUS_VARIABLES_DONE || !INIT_CHART_VARIABLES_DONE){
+        // initialisation is active
+        setTimeout(function() {data_handler();}, REFRESH_RATE/2.0);
+    }else{
+        setTimeout(function() {data_handler();}, REFRESH_RATE);
+    }
+
+    if(AUTO_UPDATE_ACTIVE){
+        if(FETCH_DATA_PENDING<=0){
+        // fetch new data
+            data_handler_ajax(0,VARIABLE_KEYS,DATA_TO_TIMESTAMP);
+        }
+        // fetch historic data
+        if(FETCH_DATA_PENDING<=1){
+            if(!INIT_STATUS_VARIABLES_DONE){
+            // first load STATUS_VARIABLES
+                var var_count = 0;
+                var vars = [];
+                var timestamp = DATA_TO_TIMESTAMP;
+                for (var key in STATUS_VARIABLE_KEYS){
+                    if (typeof(CHART_VARIABLE_KEYS[key]) === 'undefined'){
+                        if(STATUS_VARIABLE_KEYS[key]<1){
+                            STATUS_VARIABLE_KEYS[key]++;
+                            var_count++;
+                            vars.push(key);
+                        }
+                    }
+                    if(var_count >= 5){break;}
+                }
+                if(var_count>0){
+                    data_handler_ajax(1,vars,timestamp);
+                }else{
+                    INIT_STATUS_VARIABLES_DONE = true;
+                }
+            }else if (!INIT_CHART_VARIABLES_DONE){
+                var var_count = 0;
+                var vars = [];
+                var timestamp = DATA_TO_TIMESTAMP;
+                for (var key in CHART_VARIABLE_KEYS){
+                   if(CHART_VARIABLE_KEYS[key]<=DATA_INIT_STATUS){
+                        CHART_VARIABLE_KEYS[key]++;
+                        var_count++;
+                        INIT_CHART_VARIABLES_COUNT++;
+                        vars.push(key);
+                        if (typeof(DATA[key]) === 'object'){timestamp = Math.min(timestamp,DATA[key][0][0])}
+                        if(var_count >= 10){break;}
+                   }
+                }
+                if(var_count>0){
+                    data_handler_ajax(1,vars,timestamp-120*60*1000,timestamp);
+                }else{
+                    INIT_CHART_VARIABLES_DONE = true;
+                }
+            }
+        }
+    }
+}
+
+function data_handler_ajax(init,variable_keys,timestamp_from,timestamp_to){
+    FETCH_DATA_PENDING++;
+    if(init){show_init_status();}
+    request_data = {timestamp_from:timestamp_from, variables: variable_keys, init: init};
+    if (typeof(timestamp_to !== 'undefined')){request_data['timestamp_to']=timestamp_to}
+    $.ajax({
+        url: ROOT_URL+'json/cache_data/',
+        dataType: "json",
+        timeout: ((init == 1) ? FETCH_DATA_TIMEOUT*5: FETCH_DATA_TIMEOUT),
+        type: "POST",
+        data:request_data,
+        dataType:"json"
+        }).done(data_handler_done).fail(data_handler_fail);
+}
+
+function data_handler_done(fetched_data){
+    update_charts = true;
+    if (typeof(fetched_data['timestamp'])==="number"){
+        timestamp = fetched_data['timestamp'];
+        delete fetched_data['timestamp'];
+    }else{
+        timestamp = 0;
+    }
+    if (typeof(fetched_data['server_time'])==="number"){
+        SERVER_TIME = fetched_data['server_time'];
+        delete fetched_data['server_time'];
+        var date = new Date(SERVER_TIME);
+        $(".server_time").html(date.toLocaleString());
+    }else{
+        SERVER_TIME = 0;
+    }
+    $.each(fetched_data, function(key, val) {
+        add_fetched_data(parseInt(key),val);
+    });
+    if (DATA_TO_TIMESTAMP < timestamp){
+        DATA_TO_TIMESTAMP = timestamp;
+        if ((DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP)> DATA_BUFFER_SIZE){
+            DATA_FROM_TIMESTAMP = DATA_TO_TIMESTAMP - DATA_BUFFER_SIZE;
+        }
+        if (DATA_DISPLAY_TO_TIMESTAMP < 0 && DATA_DISPLAY_FROM_TIMESTAMP < 0){
+            // both fixed
+            DATA_DISPLAY_WINDOW = DATA_FROM_TIMESTAMP - DATA_TO_TIMESTAMP;
+        }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
+            // to time is fixed
+            DATA_DISPLAY_FROM_TIMESTAMP = DATA_TO_TIMESTAMP - DATA_DISPLAY_WINDOW;
+        }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0 ){
+            // from time fixed
+            DATA_DISPLAY_TO_TIMESTAMP = DATA_FROM_TIMESTAMP + DATA_DISPLAY_WINDOW;
+        }
+        UPDATE_X_AXES_TIME_LINE_STATUS = true;
+
+    }
+    $.each(PyScadaPlots,function(plot_id){
+        var self = this, doBind = function() {
+            PyScadaPlots[plot_id].update();
+        };
+        $.browserQueue.add(doBind, this);
+    });
+    for (var key in VARIABLE_KEYS) {
+        key = VARIABLE_KEYS[key];
+        if (typeof(DATA[key]) == 'object'){
+            update_data_values(key,DATA[key][DATA[key].length-1][1]);
+        }
+    }
+    /*
+    DATA_OUT_OF_DATE = (SERVER_TIME - timestamp  > CACHE_TIMEOUT);
+    if (DATA_OUT_OF_DATE){
+        raise_data_out_of_date_error();
+    }else{
+        clear_data_out_of_date_error();
+     }
+     */
+    // todo
+    if (UPDATE_X_AXES_TIME_LINE_STATUS){
+        update_timeline();
+    }
+    // update all legend tables
+    $('.legend table').trigger("update");
+    $("#AutoUpdateButton").removeClass("btn-warning");
+    $("#AutoUpdateButton").addClass("btn-success");
+    if (JSON_ERROR_COUNT > 0) {
+        JSON_ERROR_COUNT = JSON_ERROR_COUNT - 1;
+    }
+    hide_update_status();
+    if(request_data.init===1){
+        hide_init_status();
+    }
+    FETCH_DATA_PENDING--;
+}
+
+function data_handler_fail(x, t, m) {
+    if(JSON_ERROR_COUNT % 5 == 0)
+        add_notification(t, 3);
+
+    JSON_ERROR_COUNT = JSON_ERROR_COUNT + 1;
+    if (JSON_ERROR_COUNT > 60) {
+        AUTO_UPDATE_ACTIVE = false;
+        add_notification("error limit reached", 3);
+    } else if(JSON_ERROR_COUNT > 3){
+        for (var key in VARIABLE_KEYS) {
+            key = VARIABLE_KEYS[key];
+            add_fetched_data(key, [[DATA_TO_TIMESTAMP,Number.NaN]]);
+        }
+    }
+    hide_update_status();
+    $("#AutoUpdateButton").removeClass("btn-success");
+    $("#AutoUpdateButton").addClass("btn-warning");
+    if(request_data.init===1){
+        for (key in request_data.variables){
+            key = request_data.variables[key];
+            if (typeof(CHART_VARIABLE_KEYS[key]) === 'number'){
+                CHART_VARIABLE_KEYS[key]--;
+            }else if (typeof(STATUS_VARIABLE_KEYS[key]) == 'number'){
+                STATUS_VARIABLE_KEYS[key]--;
+            }
+        }
+        hide_init_status();
+    }
+    FETCH_DATA_PENDING--;
+    }
+
+function update_log() {
+    if (LOG_FETCH_PENDING_COUNT){return false;}
+    LOG_FETCH_PENDING_COUNT = true;
+    if(LOG_LAST_TIMESTAMP === 0){
+        if(SERVER_TIME > 0){
+                LOG_LAST_TIMESTAMP = SERVER_TIME;
         }else{
-            log_fetch_pending_count = false;
+            LOG_FETCH_PENDING_COUNT = false;
             return false;	
         }
     }
-    showUpdateStatus();
+    show_update_status();
     $.ajax({
-        url: RootUrl+'json/log_data/',
+        url: ROOT_URL+'json/log_data/',
         type: 'post',
         dataType: "json",
         timeout: 29000,
-        data: {timestamp: log_last_timestamp},
+        data: {timestamp: LOG_LAST_TIMESTAMP},
         methode: 'post',
         success: function(data) {
             $.each(data,function(key,val){
                     if("timestamp" in data[key]){
-                        if (log_last_timestamp<data[key].timestamp){
-                            log_last_timestamp = data[key].timestamp;
+                        if (LOG_LAST_TIMESTAMP<data[key].timestamp){
+                            LOG_LAST_TIMESTAMP = data[key].timestamp;
                         }
-                        addNotification(data[key].message,+data[key].level);
+                        add_notification(data[key].message,+data[key].level);
                     }
                 });
-            hideUpdateStatus();
-            log_fetch_pending_count = false;
+            hide_update_status();
+            LOG_FETCH_PENDING_COUNT = false;
         },
         error: function(x, t, m) {
-            hideUpdateStatus();
-            log_fetch_pending_count = false;
+            hide_update_status();
+            LOG_FETCH_PENDING_COUNT = false;
         }
     });
 }
 
-function addNotification(message, level,timeout,clearable) {
+function add_notification(message, level,timeout,clearable) {
     timeout = typeof timeout !== 'undefined' ? timeout : 7000;
     clearable = typeof clearable !== 'undefined' ? clearable : true;
 
@@ -318,21 +396,21 @@ function addNotification(message, level,timeout,clearable) {
         message_pre = '<strong>Info</strong> ';
     }
     if(clearable){
-        $('#notification_area').append('<div id="notification_Nb' + NotificationCount + '" class="notification alert alert-' + level + ' alert-dismissable" style="position: fixed; top: ' + top + 'px; right: ' + right + 'px; "><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>'+message_pre+ new Date().toLocaleTimeString() + ': ' + message + '</div>');
+        $('#notification_area').append('<div id="notification_Nb' + NOTIFICATION_COUNT + '" class="notification alert alert-' + level + ' alert-dismissable" style="position: fixed; top: ' + top + 'px; right: ' + right + 'px; "><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>'+message_pre+ new Date().toLocaleTimeString() + ': ' + message + '</div>');
     }else{
-        $('#notification_area_2').append('<div id="notification_Nb' + NotificationCount + '" class="notification alert alert-' + level + '" >'+message_pre+ new Date().toLocaleTimeString() + ': ' + message + '</div>');
+        $('#notification_area_2').append('<div id="notification_Nb' + NOTIFICATION_COUNT + '" class="notification alert alert-' + level + '" >'+message_pre+ new Date().toLocaleTimeString() + ': ' + message + '</div>');
     }
     if (timeout){
-        setTimeout('$("#notification_Nb' + NotificationCount + '").alert("close");', 7000);
+        setTimeout('$("#notification_Nb' + NOTIFICATION_COUNT + '").alert("close");', 7000);
     }else{
-        id = 'notification_Nb' + NotificationCount;
-        NotificationCount = NotificationCount + 1;
+        id = 'notification_Nb' + NOTIFICATION_COUNT;
+        NOTIFICATION_COUNT = NOTIFICATION_COUNT + 1;
         return id;
     }
-    NotificationCount = NotificationCount + 1;
+    NOTIFICATION_COUNT = NOTIFICATION_COUNT + 1;
 }
 
-function updateDataValues(key,val){
+function update_data_values(key,val){
         if (typeof(val)==="number"){
             var r_val = Number(val);
             if(Math.abs(r_val) == 0 ){
@@ -395,6 +473,93 @@ function updateDataValues(key,val){
         }
 }
 
+function set_x_axes(){
+    if(!progressbar_resize_active){
+        $.each(PyScadaPlots,function(plot_id){
+            PyScadaPlots[plot_id].update();
+        });
+        // update the progressbar
+        update_timeline();
+    }
+}
+
+function update_timeline(){
+    if (DATA_DISPLAY_TO_TIMESTAMP < 0){
+        $('#timeline-time-to-label').html("");
+        min_to = 0;
+    }else{
+        var min_to = ((DATA_TO_TIMESTAMP - DATA_DISPLAY_TO_TIMESTAMP)/60/1000);
+        $('#timeline-time-to-label').html("-" + min_to.toPrecision(3) + "min");
+    }
+    var min_full = ((DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP)/60/1000);
+    if (DATA_DISPLAY_FROM_TIMESTAMP < 0 ){
+        var min_from = Math.min(min_full,((DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP)/60/1000));
+        $('#timeline-time-from-label').html("");
+    }else{
+        var min_from = Math.min(min_full,((DATA_TO_TIMESTAMP - DATA_DISPLAY_FROM_TIMESTAMP)/60/1000));
+        $('#timeline-time-from-label').html("-" + min_from.toPrecision(3) + "min");
+    }
+    if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
+        $('#timeline').css("width", "100%");
+        $('#timeline').css("left", "0px");
+    }else{
+        $('#timeline').css("width", (Math.min(100,(DATA_DISPLAY_WINDOW/60/1000/min_full * 100)).toString()) + "%");
+        $('#timeline').css("left",Math.max(0,Math.min((100-(min_from/min_full * 100)),100)).toString() + "%");
+    }
+    $('#timeline-time-left-label').html("-" + min_full.toPrecision(3) + "min");
+}
+
+function progressbarSetWindow( event, ui ) {
+    $.each(PyScadaPlots,function(plot_id){
+            PyScadaPlots[plot_id].update();
+    });
+
+    progressbar_resize_active = false;
+}
+function timeline_resize( event, ui ) {
+    var window_width = ui.size.width/($('#timeline-border').width()-10);
+    var window_left = ui.position.left/($('#timeline-border').width()-10);
+    var min_full = (DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP);
+
+    if (window_left < 0.02){
+        if ((window_width+window_left) < 0.98){
+            DATA_DISPLAY_TO_TIMESTAMP = DATA_FROM_TIMESTAMP + min_full * (window_width+window_left);
+            DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
+        }else{
+            DATA_DISPLAY_TO_TIMESTAMP = -1;
+            DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
+        }
+
+        DATA_DISPLAY_FROM_TIMESTAMP = -1;
+    }else{
+        DATA_DISPLAY_FROM_TIMESTAMP = DATA_FROM_TIMESTAMP + min_full * window_left;
+        if ((window_width+window_left) < 0.98){
+            DATA_DISPLAY_TO_TIMESTAMP = DATA_FROM_TIMESTAMP + min_full * (window_width+window_left);
+            DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP - DATA_DISPLAY_FROM_TIMESTAMP
+        }else{
+            DATA_DISPLAY_TO_TIMESTAMP = -1;
+            DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_DISPLAY_FROM_TIMESTAMP
+        }
+    }
+    update_timeline();
+}
+function timeline_drag( event, ui ) {
+    var window_left = ui.position.left/($('#timeline-border').width()-10);
+    var min_full = (DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP);
+
+    if (window_left < 0.02){
+        DATA_DISPLAY_FROM_TIMESTAMP = -1
+        DATA_DISPLAY_TO_TIMESTAMP = DATA_FROM_TIMESTAMP + DATA_DISPLAY_WINDOW
+    }else{
+        DATA_DISPLAY_FROM_TIMESTAMP = DATA_FROM_TIMESTAMP + min_full * window_left;
+        DATA_DISPLAY_TO_TIMESTAMP = DATA_DISPLAY_FROM_TIMESTAMP + DATA_DISPLAY_WINDOW;
+        if (DATA_DISPLAY_TO_TIMESTAMP >= DATA_TO_TIMESTAMP){
+            DATA_DISPLAY_TO_TIMESTAMP = -1;
+            DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_DISPLAY_FROM_TIMESTAMP;
+        }
+    }
+    update_timeline();
+}
 function PyScadaPlot(id){
     
     var options = {
@@ -422,13 +587,8 @@ function PyScadaPlot(id){
     series = [],		// just the active data series
     keys   = [],		// list of variable keys (ids)
     variable_names = [], // list of all variable names 
-    data = {},			// all the data
     flotPlot,			// handle to plot
-    BufferSize = 5760, 	// buffered points
-    WindowSize = 20, 	// displayed data window in minutes
-    prepared = false,	// 
-    InitDone = false,	// initial Data has loaded
-    InitRetry	= 0,	// number of retries to load initial data
+    prepared = false,	//
     legend_id = '#chart-legend-' + id,
     legend_table_id = '#chart-legend-table-' + id,
     chart_container_id = '#chart-container-'+id,
@@ -439,18 +599,10 @@ function PyScadaPlot(id){
     
     
     // public functions
-    plot.AppendData			= AppendData;
-    plot.PreppendData       = PreppendData;
-    plot.addData 			= addData;
-    plot.UpdateData         = UpdateData;
     plot.update 			= update;
     plot.prepare 			= prepare;
-    plot.getBufferSize		= function () { return BufferSize};
-    plot.setBufferSize		= setBufferSize;
-    plot.getData			= function () { return data };
     plot.getSeries 			= function () { return series };
     plot.getFlotObject		= function () { return flotPlot};
-    plot.setWindowSize		= function (size){ WindowSize = size; update(); };
     plot.getKeys			= function (){ return keys};
     plot.getVariableNames	= function (){ return variable_names};
 
@@ -461,8 +613,7 @@ function PyScadaPlot(id){
         val_inst = $(val);
         variable_name = val_inst.data('name');
         variable_key = val_inst.data('key');
-        data[variable_name] = [];
-        variables[variable_name] = {'color':val_inst.data('color'),'yaxis':1}
+        variables[variable_key] = {'color':val_inst.data('color'),'yaxis':1}
         keys.push(variable_key);
         variable_names.push(variable_name);
     });
@@ -485,7 +636,7 @@ function PyScadaPlot(id){
         });
         //
         $(legend_checkbox_id+'make_all_none').change(function() {
-                console.log(legend_checkbox_id + 'changed');
+                //console.log(legend_checkbox_id + 'changed');
                 plot.update();
                 if ($(legend_checkbox_id+'make_all_none').is(':checked')){
                     $.each(variables,function(key,val){
@@ -517,11 +668,21 @@ function PyScadaPlot(id){
         // bind 
         $(chart_container_id + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
             pOpt = flotPlot.getOptions();
-            pOpt.yaxes[0].min = ranges.yaxis.from;
-            pOpt.yaxes[0].max = ranges.yaxis.to;
-            flotPlot.setupGrid();
-            flotPlot.draw();
+
+            if ($("#activate_zoom_y").is(':checked')) {
+                pOpt.yaxes[0].min = ranges.yaxis.from;
+                pOpt.yaxes[0].max = ranges.yaxis.to;
+                flotPlot.setupGrid();
+                flotPlot.draw();
+            }
             flotPlot.clearSelection();
+			if ($("#activate_zoom_x").is(':checked')) {
+			    DATA_DISPLAY_TO_TIMESTAMP = ranges.xaxis.to;
+			    DATA_DISPLAY_FROM_TIMESTAMP = ranges.xaxis.from;
+			    DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP-DATA_DISPLAY_FROM_TIMESTAMP;
+			    set_x_axes();
+			}
+
         });
 
         // Since CSS transforms use the top-left corner of the label as the transform origin,
@@ -534,6 +695,8 @@ function PyScadaPlot(id){
         
         
         $(chart_container_id + " .btn.btn-default.chart-ResetSelection").click(function() {
+            DATA_DISPLAY_TO_TIMESTAMP = -1;
+            set_x_axes();
             pOpt = flotPlot.getOptions();
             pOpt.yaxes[0].min = $(chart_container_id).data('axes0Yaxis').min;
             pOpt.yaxes[0].max = $(chart_container_id).data('axes0Yaxis').max;
@@ -549,71 +712,15 @@ function PyScadaPlot(id){
             flotPlot.setupGrid();
             flotPlot.draw();
         });
-    }
-    
-    function setBufferSize(size){
-        if (size <= BufferSize){
-            BufferSize = size;
-            $.each(data,function(key){
-                if (data[key].length > BufferSize){
-                    // if buffer is full drop the oldest elements
-                    data[key].splice(-data[key].length,data[key].length-BufferSize);
-                }
-            });
-        }else{
-            BufferSize = size;	
-        }
-        
+        $(chart_container_id + " .btn.btn-default.chart-ZoomXToFit").click(function() {
+            DATA_DISPLAY_FROM_TIMESTAMP = -1;
+            DATA_DISPLAY_TO_TIMESTAMP = -1;
+            DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
+            set_x_axes();
+        });
     }
 
-    function CheckBuffer(key){
-        if (data[key].length > BufferSize){
-            // if buffer is full drop the first element
-            data[key].splice(-data[key].length,data[key].length-BufferSize);
-        }
-    }
 
-    function addData(key,time,val){
-        if (typeof(data[key])==="object"){
-            data[key].push([time, val]);
-            CheckBuffer(key);
-        }
-    }
-    
-    function AppendData(key,value){
-        if (typeof(data[key])==="object"){
-            data[key] = data[key].concat(value);
-            CheckBuffer(key);
-        }
-    }
-    
-    function PreppendData(key,value){
-        if (typeof(data[key])==="object"){
-            data[key] = value.concat(data[key]);
-            CheckBuffer(key);
-        }
-    }
-
-    function UpdateData(key,timestamp){
-        if (typeof(data[key])==="object"){
-            if (data[key].length >= 2){
-                if (typeof(data[key][data[key].length-1][1])==="number" | typeof(data[key][data[key].length-1][1])==="boolean"){
-					if (data[key][data[key].length-1][1] != data[key][data[key].length-2][1]){
-						// add a copy of the last value value
-						value = data[key][data[key].length-1]
-						data[key].push(value.slice(0));
-					}
-					data[key][data[key].length-1][0] = timestamp;
-                    CheckBuffer(key);
-                }
-            }else if(data[key].length == 1){
-				// copy the 1. Value
-				value = data[key][0]
-				data[key].push(value.slice(0));
-				data[key][1][0] = timestamp;
-			}
-        }
-    }
     function update(){
         if(!prepared ){
             if($(chart_container_id).is(":visible")){
@@ -624,45 +731,76 @@ function PyScadaPlot(id){
             }
         }
         if($(chart_container_id).is(":visible")){
-            if(!InitDone){
-            // try to load initial data
-                if (init_chart_data_fetch_pending_count < 1){
-                    init_chart_data_fetch_pending_count++;
-                    fetchData(keys,0,1,plot); // keys, from_time,init, id 
-                    InitDone = true;
-                }
-            }
             // only update if plot is visible
             // add the selected data series to the "series" variable
             series = [];
             start_id = 0;
-            $.each(data,function(key){
-                if($(legend_checkbox_id+key).is(':checked')){
-                    //if(start_id===-1){
-                        start_id = findIndexSub(data[key],data_last_timestamp - (WindowSize * 1000 * 60),0);
-                    //}
-                    series.push({"data":data[key].slice(start_id),"color":variables[key].color,"yaxis":variables[key].yaxis});
-                };
-            });
+            for (var key in keys){
+                key = keys[key];
+                if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object'){
+                    if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
+                        start_id = find_index_sub(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                        stop_id = find_index_sub(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
+                        chart_data = DATA[key].slice(start_id,stop_id);
+                    }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
+                        start_id = find_index_sub(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                        chart_data = DATA[key].slice(start_id);
+                    }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
+                        if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
+                        stop_id = find_index_sub(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
+                        chart_data = DATA[key].slice(0,stop_id);
+                    }else {
+                        chart_data = DATA[key].slice();
+                    }
+                    if (chart_data.length > 2){
+                        i = 1;
+                        while (i < chart_data.length) {
+                             if (chart_data[i][0] - chart_data[i - 1][0] > 1000.0 && chart_data[i][1] != chart_data[i - 1][1]){
+                                chart_data.splice(i,0, [chart_data[i][0], chart_data[i - 1][1]]);
+                                i += 2;
+                            }else{
+                                i += 1;
+                            }
+                        }
+                    }
+                    if (chart_data.length >= 1){
+                        if (DATA_DISPLAY_TO_TIMESTAMP < 0){
+                            chart_data.push([DATA_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
+                        }else{
+                            chart_data.push([DATA_DISPLAY_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
+                        }
+                    }
+
+                    series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis});
+                }
+            }
             // update flot plot
             flotPlot.setData(series);
             // update x window
             pOpt = flotPlot.getOptions();
-            pOpt.xaxes[0].min = data_last_timestamp - (WindowSize * 1000 * 60);
-            pOpt.xaxes[0].max = data_last_timestamp;
+
+            if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
+                pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
+                pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
+
+            }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
+                pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
+                pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
+            }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
+                pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
+                pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
+            }else{
+                pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
+                pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
+            }
+
             flotPlot.setupGrid();
             flotPlot.draw();
         }
     }
 }
 
-function setWindowSize(size){
-    $.each(PyScadaPlots,function(plot_id){
-        PyScadaPlots[plot_id].setWindowSize(size);
-    });
-}
-
-function findIndex(a,t){
+function find_index(a,t){
     var i = a.length; //or 10
     while(i--){
         if (a[i]<=t){
@@ -670,7 +808,7 @@ function findIndex(a,t){
         }
     }
 }
-function findIndexSub(a,t,d){
+function find_index_sub(a,t,d){
     var i = a.length; //or 10
     while(i--){
         if (a[i][d]<=t){
@@ -724,67 +862,30 @@ $.ajaxSetup({
     crossDomain: false, // obviates need for sameOrigin test
     beforeSend: function(xhr, settings) {
         if (!csrfSafeMethod(settings.type)) {
-            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            xhr.setRequestHeader("X-CSRFToken", CSRFTOKEN);
         }
     }
 });
 
 
-log_frm.submit(function () {
-    if (log_frm_mesg.val()== ""){
-        addNotification("can't add empty log entry",5);
-    }else{
-        $.ajax({
-            type: log_frm.attr('method'),
-            url: RootUrl+log_frm.attr('action'),
-            data: log_frm.serialize(),
-            success: function (data) {
-                log_frm_mesg.val("");
-                addNotification('new log entry successfuly added',9);
-                updateLog();
-            },
-            error: function(data) {
-                addNotification('new log entry adding failed',3);
-            }
-        });
-    }
-    return false;
-})
-
-
 //form/write_task/
-
-function addWriteTask(var_id,value){
-    $.ajax({
-            type: 'post',
-            url: RootUrl+'form/write_task/',
-            data: {var_id:var_id,value:value},
-            success: function (data) {
-                
-            },
-            error: function(data) {
-                addNotification('add new write task failed',3);
-            }
-        });
-    
-};
 
 $('button.write-task-set').click(function(){
         var_id = $(this).attr('var_id');
         id = $(this).attr('id');
         value = $("#"+id+"-value").val();
         if (value == "" ){
-            addNotification('please provide a value',3);
+            add_notification('please provide a value',3);
         }else{
             $.ajax({
                 type: 'post',
-                url: RootUrl+'form/write_task/',
+                url: ROOT_URL+'form/write_task/',
                 data: {var_id:var_id,value:value},
                 success: function (data) {
                     
                 },
                 error: function(data) {
-                    addNotification('add new write task failed',3);
+                    add_notification('add new write task failed',3);
                 }
             });
         };
@@ -797,31 +898,48 @@ $('button.write-task-btn').click(function(){
         if($(this).hasClass('btn-default')){
             $.ajax({
                 type: 'post',
-                url: RootUrl+'form/write_task/',
+                url: ROOT_URL+'form/write_task/',
                 data: {var_id:var_id,value:1},
                 success: function (data) {
                     $('#'+id).removeClass('btn-default')
                     $('#'+id).addClass('btn-success');
                 },
                 error: function(data) {
-                    addNotification('add new write task failed',3);
+                    add_notification('add new write task failed',3);
                 }
             });
         }else if ($(this).hasClass('btn-success')){
             $.ajax({
                 type: 'post',
-                url: RootUrl+'form/write_task/',
+                url: ROOT_URL+'form/write_task/',
                 data: {var_id:var_id,value:0},
                 success: function (data) {
                     $('#'+id).addClass('btn-default')
                     $('#'+id).removeClass('btn-success');
                 },
                 error: function(data) {
-                    addNotification('add new write task failed',3);
+                    add_notification('add new write task failed',3);
                 }
             });
         }
 });
+
+function set_chart_selection_mode(){
+    var mode = "xy";
+    if ($('#activate_zoom_x').is(':checked') && $('#activate_zoom_y').is(':checked')){
+        mode = "";
+    }else if($('#activate_zoom_y').is(':checked')){
+        mode = "y";
+     }else if($('#activate_zoom_x').is(':checked')){
+        mode = "x";
+     }
+     $.each(PyScadaPlots,function(plot_id){
+        if(typeof(PyScadaPlots[plot_id].getFlotObject()) !== 'undefined'){
+            PyScadaPlots[plot_id].getFlotObject().getOptions().selection.mode = mode;
+        }
+     });
+}
+
 
 
 // fix drop down problem
@@ -842,17 +960,46 @@ $( document ).ready(function() {
     });
     
     $.each($('.variable-config'),function(key,val){
-        val = parseInt($(val).data('key'));
-        if (VariableKeys.indexOf(val)==-1){
-            VariableKeys.push(val)
+        key = parseInt($(val).data('key'));
+        init_type = parseInt($(val).data('init-type'));
+        if (VARIABLE_KEYS.indexOf(key)==-1){
+            VARIABLE_KEYS.push(key)
+        }
+        if (typeof(STATUS_VARIABLE_KEYS[key]) == 'undefined' && init_type==0){
+            STATUS_VARIABLE_KEYS[key] = 0;
+        }
+        if (typeof(CHART_VARIABLE_KEYS[key]) == 'undefined' && init_type==1){
+            CHART_VARIABLE_KEYS[key] = 0;
         }
     });
-    $.each($('.variable-config.init-group'),function(key,val){
-        val = parseInt($(val).data('key'));
-        if (InitVariableKeys.indexOf(val)==-1){
-            InitVariableKeys.push(val)
-        }
+
+
+    $('#activate_zoom_x').change(function() {
+        set_chart_selection_mode();
     });
-    setTimeout(function() {fetchData()}, 5000);
-    setTimeout(function() {fetchData(InitVariableKeys,0,1);}, 15000);
+    $('#activate_zoom_y').change(function() {
+        set_chart_selection_mode();
+    });
+
+    setTimeout(function() {data_handler()}, 5000);
+    set_chart_selection_mode();
+    $( "#timeline" ).resizable({
+        handles: "e, w",
+        containment: "#timeline-border",
+        stop: progressbarSetWindow,
+        start: function( event, ui ) {progressbar_resize_active = true;},
+        resize: timeline_resize,
+        maxWidth: $('#timeline-border').width()-10
+    });
+    $('#timeline-border').bind('resize', function(){
+        $( "#timeline" ).resizable("option", "maxWidth",$('#timeline-border').width()-10);
+    });
+    $('#timeline').draggable({
+        axis: "x",
+        containment: "#timeline-border",
+        drag: timeline_drag,
+        start: function( event, ui ) {progressbar_resize_active = true;},
+        stop: function( event, ui ) {progressbar_resize_active = false;},
+    });
+
 });

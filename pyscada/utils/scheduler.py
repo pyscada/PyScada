@@ -36,12 +36,29 @@ from datetime import datetime
 
 from django import db
 from django.conf import settings
+from django.db import connection, connections
+
 
 from pyscada.models import BackgroundProcess, DeviceWriteTask, Device, RecordedData
 from pyscada.utils import datetime_now
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def check_db_connection():
+    '''
+    from: https://stackoverflow.com/questions/7835272/django-operationalerror-2006-mysql-server-has-gone-away
+    '''
+    # mysql is lazily connected to in django.
+    # connection.connection is None means
+    # you have not connected to mysql before
+    if connection.connection and not connection.is_usable():
+        # destroy the default mysql connection
+        # after this line, when you use ORM methods
+        # django will reconnect to the default mysql
+        logger.debug('deleted default connection')
+        del connections._connections.default
 
 
 class Scheduler(object):
@@ -181,7 +198,7 @@ class Scheduler(object):
         # os.dup2(se.fileno(), sys.stderr.fileno())
 
         # Write the PID file
-        atexit.register(self.delete_pid)
+        #atexit.register(self.delete_pid)
         self.write_pid()
         return True
 
@@ -223,8 +240,12 @@ class Scheduler(object):
         #  demonize
         if self.run_as_daemon:
             if not self.demonize():
+                self.delete_pid()
                 sys.exit(0)
-
+        # recreate the DB connection
+        if connection.connection is not None:
+            connection.connection.close()
+            connection.connection = None
         master_process = BackgroundProcess.objects.filter(parent_process__isnull=True,
                                                           label=self.label,
                                                           enabled=True).first()
@@ -248,6 +269,7 @@ class Scheduler(object):
         #signal.signal(signal.SIGCHLD, self.handle_chld)
         # start the main loop
         self.run()
+        self.delete_pid()
         sys.exit(0)
 
     def run(self):
@@ -269,6 +291,11 @@ class Scheduler(object):
             while True:
                 # handle signals
                 sig = self.SIG_QUEUE.pop(0) if len(self.SIG_QUEUE) else None
+
+                # check the DB connection
+                check_db_connection()
+
+                # update the P
                 BackgroundProcess.objects.filter(pk=self.process_id).update(
                     last_update=datetime_now(),
                     message='running..')
@@ -293,6 +320,7 @@ class Scheduler(object):
                 sleep(5)
         except StopIteration:
             self.stop()
+            self.delete_pid()
             sys.exit(0)
         except SystemExit:
             raise
@@ -313,7 +341,12 @@ class Scheduler(object):
             #
             if not process.enabled or not process.parent_process.enabled or process.done:
                 if process.pk in self.PROCESSES:
-                    self.kill_process(process.pk)
+                    timeout = time() + 60  # wait max 60 seconds
+                    while True:
+                        if process.pk not in self.PROCESSES or time() > timeout:
+                            break
+                        self.kill_process(process.pk)
+                        sleep(1)
                     continue
                 continue
 
@@ -442,9 +475,9 @@ class Scheduler(object):
                 try:
                     self.PROCESSES.pop(process_id)
                     logger.debug('%s: process id %d is terminated' % p.pid)
-                    return
+                    return True
                 except:
-                    return
+                    return False
         try:
             while True:
                 wpid, status = waitpid(p.pid, WNOHANG)
@@ -453,7 +486,7 @@ class Scheduler(object):
                     # self.stdout.write('%d,%d\n' % (wpid, status))
         except:
             pass
-
+        return False
 
     def kill_processes(self, sig=signal.SIGTERM):
         """
@@ -475,11 +508,12 @@ class Scheduler(object):
             # parent process
             process.pid = pid
             self.PROCESSES[process.process_id] = process
-            db.connections.close_all()
+            connections.close_all()
             return True
-
         # child process
         process.pid = getpid()
+        # connection.connection.close()
+        # connection.connection = None
         process.pre_init_process()
         process.init_process()
         process.run()
@@ -565,15 +599,19 @@ class Process(object):
 
     def run(self):
         BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=datetime_now(), message='running..')
-
+        exec_loop = True
         try:
             while True:
                 t_start = time()
                 # handle signals
                 sig = self.SIG_QUEUE.pop(0) if len(self.SIG_QUEUE) else None
+
+                # check the DB connection
+                check_db_connection()
+
                 # update progress
                 BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=datetime_now())
-                if sig is None:
+                if sig is None and exec_loop:
                     # run loop action
                     status, data = self.loop()
                     if data is not None:
@@ -585,12 +623,20 @@ class Process(object):
                     elif status == -1:
                         # some thing went wrong
                         # todo handle
-                        raise StopIteration
+                        # raise StopIteration
+                        BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=datetime_now(),
+                                                                                    failed=True)
+                        exec_loop = False
                     elif status == 0:
                         # loop is done exit
-                        raise StopIteration
+                        BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=datetime_now(),
+                                                                                    done=True)
+                        #raise StopIteration
+                        exec_loop = False
                     else:
                         pass
+                elif sig is None:
+                    continue
                 elif sig not in self.SIGNALS:
                     logger.debug('%s, unhandled signal %d' % (self.label, sig))
                     continue
@@ -769,3 +815,5 @@ class MultiDeviceDAQProcess(Process):
         mark the process as done
         """
         BackgroundProcess.objects.filter(pk=self.process_id).delete()
+
+
