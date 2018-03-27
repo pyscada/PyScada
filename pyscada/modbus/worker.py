@@ -8,8 +8,12 @@ from pyscada.models import BackgroundProcess
 from pyscada.modbus.models import ModbusDevice
 # from pyscada import log
 
+import errno
+from os import kill
+import traceback
 import json
 import logging
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +24,15 @@ class Process(BaseDAQProcess):
         self.MODBUS_PROCESSES = []
 
     def init_process(self):
+        for process in BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False):
+            try:
+                kill(process.pid, 0)
+            except OSError as e:
+                if e.errno == errno.ESRCH:
+                    process.delete()
+                    continue
+            logger.debug('process %d is alive' % process.pk)
+            process.stop()
 
         # clean up
         BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False).delete()
@@ -73,9 +86,21 @@ class Process(BaseDAQProcess):
                     modbus_process['failed'] += 1
                 else:
                     logger.error('process pyscada.modbus-%s failed more then 3 times' % modbus_process['key'])
+            except:
+                logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
 
         return 1, None
 
     def cleanup(self):
         # todo cleanup
         pass
+
+    def restart(self):
+        for modbus_process in self.MODBUS_PROCESSES:
+            try:
+                bp = BackgroundProcess.objects.get(pk=modbus_process['id'])
+                bp.restart()
+            except:
+                logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
+
+        return False

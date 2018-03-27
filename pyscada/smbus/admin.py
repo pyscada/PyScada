@@ -4,24 +4,16 @@ from __future__ import unicode_literals
 from pyscada.admin import admin_site
 from pyscada.admin import DeviceAdmin
 from pyscada.admin import VariableAdmin
-from pyscada.models import Variable
 from pyscada.models import Device, DeviceProtocol
 
 from pyscada.smbus import PROTOCOL_ID
 from pyscada.smbus.models import SMbusDevice
-from pyscada.smbus.models import SMbusVariable
+from pyscada.smbus.models import SMbusVariable, ExtendedSMBusDevice, ExtendedSMbusVariable
 
 from django.contrib import admin
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-class ExtendedSMBusDevice(Device):
-    class Meta:
-        proxy = True
-        verbose_name = 'SMBus Device'
-        verbose_name_plural = 'SMBus Devices'
 
 
 class SMbusDeviceAdminInline(admin.StackedInline):
@@ -44,13 +36,6 @@ class SMbusDeviceAdmin(DeviceAdmin):
     inlines = [
         SMbusDeviceAdminInline
     ]
-
-
-class ExtendedSMbusVariable(Variable):
-    class Meta:
-        proxy = True
-        verbose_name = 'SMBus Variable'
-        verbose_name_plural = 'SMBus Variables'
 
 
 class SMbusVariableAdminInline(admin.StackedInline):

@@ -16,8 +16,8 @@ var DATA_OUT_OF_DATE_ALERT_ID = '';
 var JSON_ERROR_COUNT = 0;
 var AUTO_UPDATE_ACTIVE = true;
 var LOG_LAST_TIMESTAMP = 0;
-var DATA_TO_TIMESTAMP = Date.now();
-var DATA_FROM_TIMESTAMP = Date.now();
+var DATA_TO_TIMESTAMP = 0;
+var DATA_FROM_TIMESTAMP = 0;
 var DATA_DISPLAY_FROM_TIMESTAMP = -1;
 var DATA_DISPLAY_TO_TIMESTAMP = -1;
 var DATA_DISPLAY_WINDOW = 20*60*1000;
@@ -80,7 +80,7 @@ function clear_data_out_of_date_error(){
 
 function check_buffer(key){
     if ((DATA[key][0][0] < DATA_FROM_TIMESTAMP)){
-        stop_id = find_index_sub(DATA[key],DATA_FROM_TIMESTAMP,0);
+        stop_id = find_index_sub_lte(DATA[key],DATA_FROM_TIMESTAMP,0);
         DATA[key] = DATA[key].splice(stop_id);
     }
 }
@@ -97,14 +97,43 @@ function add_fetched_data(key,value){
             }else {
                 if (typeof(DATA[key]) == "undefined"){
                     DATA[key] = value;
-                } else if (value[0][0] >= DATA[key][DATA[key].length-1][0]){
-                    // append
-                    DATA[key] = DATA[key].concat(value);
-                } else if (value[value.length-1][0] <= DATA[key][0][0]){
-                    // prepend
-                    DATA[key] = value.concat(DATA[key]);
                 } else {
-                    DATA[key] = value;
+                    var v_t_min = value[0][0];
+                    var v_t_max = value[value.length-1][0];
+                    var d_t_min = DATA[key][0][0];
+                    var d_t_max = DATA[key][DATA[key].length-1][0];
+
+                    if (v_t_min > d_t_max){
+                        // append, most likely
+                        DATA[key] = DATA[key].concat(value);
+                    } else if (v_t_min == d_t_max && value.length > 1){
+                        // append, drop first element of value
+                        DATA[key] = DATA[key].concat(value.slice(1));
+                    } else if (v_t_max < d_t_min){
+                        // prepend,
+                        DATA[key] = value.concat(DATA[key]);
+                    } else if (v_t_max == d_t_min){
+                        // prepend, drop last element of value
+                        DATA[key] = value.slice(0,value.length-1).concat(DATA[key]);
+                    } else if (v_t_max > d_t_min && v_t_min < d_t_min){
+                        // data and value overlapping, value has older elements then data, prepend
+                        stop_id = find_index_sub_lte(value,DATA[key][0][0],0);
+                        if (typeof(stop_id) === "number" ){
+                            DATA[key] = value.slice(0,stop_id).concat(DATA[key]);
+                        }else{
+                            console.log(key + ' : dropped data');
+                        }
+                    } else if (v_t_max > d_t_max && d_t_min < v_t_min){
+                        // data and value overlapping, data has older elements then value, append
+                        stop_id = find_index_sub_gte(value,DATA[key][DATA[key].length-1][0],0);
+                        if (typeof(stop_id) === "number" ){
+                            DATA[key] = DATA[key].concat(value.slice(stop_id));
+                        }else{
+                            console.log(key + ' : dropped data');
+                        }
+                    } else{
+                        console.log(key + ' : dropped data');
+                    }
                 }
                 if (value[0][0] < DATA_FROM_TIMESTAMP){
                     DATA_FROM_TIMESTAMP = value[0][0];
@@ -128,50 +157,60 @@ function data_handler(){
     }
 
     if(AUTO_UPDATE_ACTIVE){
-        if(FETCH_DATA_PENDING<=0){
-        // fetch new data
-            data_handler_ajax(0,VARIABLE_KEYS,DATA_TO_TIMESTAMP);
-        }
-        // fetch historic data
-        if(FETCH_DATA_PENDING<=1){
-            if(!INIT_STATUS_VARIABLES_DONE){
-            // first load STATUS_VARIABLES
-                var var_count = 0;
-                var vars = [];
-                var timestamp = DATA_TO_TIMESTAMP;
-                for (var key in STATUS_VARIABLE_KEYS){
-                    if (typeof(CHART_VARIABLE_KEYS[key]) === 'undefined'){
-                        if(STATUS_VARIABLE_KEYS[key]<1){
-                            STATUS_VARIABLE_KEYS[key]++;
-                            var_count++;
-                            vars.push(key);
+        if(DATA_TO_TIMESTAMP==0){
+            data_handler_ajax(0,[],Date.now());
+        }else{
+            if(FETCH_DATA_PENDING<=0){
+            // fetch new data
+                data_handler_ajax(0,VARIABLE_KEYS,DATA_TO_TIMESTAMP+1);
+            }
+            // fetch historic data
+            if(FETCH_DATA_PENDING<=1){
+                if(!INIT_STATUS_VARIABLES_DONE){
+                // first load STATUS_VARIABLES
+                    var var_count = 0;
+                    var vars = [];
+                    var timestamp = DATA_TO_TIMESTAMP;
+                    for (var key in STATUS_VARIABLE_KEYS){
+                        if (typeof(CHART_VARIABLE_KEYS[key]) === 'undefined'){
+                            if(STATUS_VARIABLE_KEYS[key]<1){
+                                STATUS_VARIABLE_KEYS[key]++;
+                                var_count++;
+                                vars.push(key);
+                            }
                         }
+                        if(var_count >= 5){break;}
                     }
-                    if(var_count >= 5){break;}
-                }
-                if(var_count>0){
-                    data_handler_ajax(1,vars,timestamp);
-                }else{
-                    INIT_STATUS_VARIABLES_DONE = true;
-                }
-            }else if (!INIT_CHART_VARIABLES_DONE){
-                var var_count = 0;
-                var vars = [];
-                var timestamp = DATA_TO_TIMESTAMP;
-                for (var key in CHART_VARIABLE_KEYS){
-                   if(CHART_VARIABLE_KEYS[key]<=DATA_INIT_STATUS){
-                        CHART_VARIABLE_KEYS[key]++;
-                        var_count++;
-                        INIT_CHART_VARIABLES_COUNT++;
-                        vars.push(key);
-                        if (typeof(DATA[key]) === 'object'){timestamp = Math.min(timestamp,DATA[key][0][0])}
-                        if(var_count >= 10){break;}
-                   }
-                }
-                if(var_count>0){
-                    data_handler_ajax(1,vars,timestamp-120*60*1000,timestamp);
-                }else{
-                    INIT_CHART_VARIABLES_DONE = true;
+                    if(var_count>0){
+                        data_handler_ajax(1,vars,timestamp);
+                    }else{
+                        INIT_STATUS_VARIABLES_DONE = true;
+                    }
+                }else if (!INIT_CHART_VARIABLES_DONE){
+                    var var_count = 0;
+                    var vars = [];
+                    var timestamp = DATA_FROM_TIMESTAMP;
+                    for (var key in CHART_VARIABLE_KEYS){
+                       if(CHART_VARIABLE_KEYS[key]<=DATA_INIT_STATUS){
+                            CHART_VARIABLE_KEYS[key]++;
+                            var_count++;
+                            INIT_CHART_VARIABLES_COUNT++;
+                            vars.push(key);
+                            if (typeof(DATA[key]) == 'object'){
+                                timestamp = Math.max(timestamp,DATA[key][0][0])
+                            }
+                            if(var_count >= 10){break;}
+                       }
+                    }
+                    if(var_count>0){
+                        if (timestamp === DATA_FROM_TIMESTAMP){
+                            timestamp = DATA_DISPLAY_TO_TIMESTAMP;
+                        }
+                        data_handler_ajax(1,vars,timestamp-120*60*1000,timestamp);
+                    }else{
+                        INIT_CHART_VARIABLES_DONE = true;
+                        $('#PlusTwoHoursButton').removeClass("disabled");
+                    }
                 }
             }
         }
@@ -209,48 +248,52 @@ function data_handler_done(fetched_data){
     }else{
         SERVER_TIME = 0;
     }
-    $.each(fetched_data, function(key, val) {
-        add_fetched_data(parseInt(key),val);
-    });
-    if (DATA_TO_TIMESTAMP < timestamp){
-        DATA_TO_TIMESTAMP = timestamp;
-        if ((DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP)> DATA_BUFFER_SIZE){
-            DATA_FROM_TIMESTAMP = DATA_TO_TIMESTAMP - DATA_BUFFER_SIZE;
-        }
-        if (DATA_DISPLAY_TO_TIMESTAMP < 0 && DATA_DISPLAY_FROM_TIMESTAMP < 0){
-            // both fixed
-            DATA_DISPLAY_WINDOW = DATA_FROM_TIMESTAMP - DATA_TO_TIMESTAMP;
-        }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
-            // to time is fixed
-            DATA_DISPLAY_FROM_TIMESTAMP = DATA_TO_TIMESTAMP - DATA_DISPLAY_WINDOW;
-        }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0 ){
-            // from time fixed
-            DATA_DISPLAY_TO_TIMESTAMP = DATA_FROM_TIMESTAMP + DATA_DISPLAY_WINDOW;
-        }
-        UPDATE_X_AXES_TIME_LINE_STATUS = true;
-
-    }
-    $.each(PyScadaPlots,function(plot_id){
-        var self = this, doBind = function() {
-            PyScadaPlots[plot_id].update();
-        };
-        $.browserQueue.add(doBind, this);
-    });
-    for (var key in VARIABLE_KEYS) {
-        key = VARIABLE_KEYS[key];
-        if (typeof(DATA[key]) == 'object'){
-            update_data_values(key,DATA[key][DATA[key].length-1][1]);
-        }
-    }
-    /*
-    DATA_OUT_OF_DATE = (SERVER_TIME - timestamp  > CACHE_TIMEOUT);
-    if (DATA_OUT_OF_DATE){
-        raise_data_out_of_date_error();
+    if(DATA_TO_TIMESTAMP==0){
+        DATA_TO_TIMESTAMP = DATA_FROM_TIMESTAMP = SERVER_TIME;
     }else{
-        clear_data_out_of_date_error();
-     }
-     */
-    // todo
+        $.each(fetched_data, function(key, val) {
+            add_fetched_data(parseInt(key),val);
+        });
+        if (DATA_TO_TIMESTAMP < timestamp){
+            DATA_TO_TIMESTAMP = timestamp;
+            if ((DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP)> DATA_BUFFER_SIZE){
+                DATA_FROM_TIMESTAMP = DATA_TO_TIMESTAMP - DATA_BUFFER_SIZE;
+            }
+            if (DATA_DISPLAY_TO_TIMESTAMP < 0 && DATA_DISPLAY_FROM_TIMESTAMP < 0){
+                // both fixed
+                DATA_DISPLAY_WINDOW = DATA_FROM_TIMESTAMP - DATA_TO_TIMESTAMP;
+            }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
+                // to time is fixed
+                DATA_DISPLAY_FROM_TIMESTAMP = DATA_TO_TIMESTAMP - DATA_DISPLAY_WINDOW;
+            }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0 ){
+                // from time fixed
+                DATA_DISPLAY_TO_TIMESTAMP = DATA_FROM_TIMESTAMP + DATA_DISPLAY_WINDOW;
+            }
+            UPDATE_X_AXES_TIME_LINE_STATUS = true;
+
+        }
+        $.each(PyScadaPlots,function(plot_id){
+            var self = this, doBind = function() {
+                PyScadaPlots[plot_id].update();
+            };
+            $.browserQueue.add(doBind, this);
+        });
+        for (var key in VARIABLE_KEYS) {
+            key = VARIABLE_KEYS[key];
+            if (typeof(DATA[key]) == 'object'){
+                update_data_values(key,DATA[key][DATA[key].length-1][1]);
+            }
+        }
+        /*
+        DATA_OUT_OF_DATE = (SERVER_TIME - timestamp  > CACHE_TIMEOUT);
+        if (DATA_OUT_OF_DATE){
+            raise_data_out_of_date_error();
+        }else{
+            clear_data_out_of_date_error();
+         }
+         */
+        // todo
+    }
     if (UPDATE_X_AXES_TIME_LINE_STATUS){
         update_timeline();
     }
@@ -488,8 +531,10 @@ function update_timeline(){
         $('#timeline-time-to-label').html("");
         min_to = 0;
     }else{
-        var min_to = ((DATA_TO_TIMESTAMP - DATA_DISPLAY_TO_TIMESTAMP)/60/1000);
-        $('#timeline-time-to-label').html("-" + min_to.toPrecision(3) + "min");
+        //var min_to = ((DATA_TO_TIMESTAMP - DATA_DISPLAY_TO_TIMESTAMP)/60/1000);
+        //$('#timeline-time-to-label').html("-" + min_to.toPrecision(3) + "min");
+        var date = new Date(DATA_DISPLAY_TO_TIMESTAMP);
+        $("#timeline-time-to-label").html(date.toLocaleTimeString());
     }
     var min_full = ((DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP)/60/1000);
     if (DATA_DISPLAY_FROM_TIMESTAMP < 0 ){
@@ -497,7 +542,9 @@ function update_timeline(){
         $('#timeline-time-from-label').html("");
     }else{
         var min_from = Math.min(min_full,((DATA_TO_TIMESTAMP - DATA_DISPLAY_FROM_TIMESTAMP)/60/1000));
-        $('#timeline-time-from-label').html("-" + min_from.toPrecision(3) + "min");
+        //$('#timeline-time-from-label').html("-" + min_from.toPrecision(3) + "min");
+        var date = new Date(DATA_DISPLAY_FROM_TIMESTAMP);
+        $("#timeline-time-from-label").html(date.toLocaleTimeString());
     }
     if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
         $('#timeline').css("width", "100%");
@@ -506,7 +553,9 @@ function update_timeline(){
         $('#timeline').css("width", (Math.min(100,(DATA_DISPLAY_WINDOW/60/1000/min_full * 100)).toString()) + "%");
         $('#timeline').css("left",Math.max(0,Math.min((100-(min_from/min_full * 100)),100)).toString() + "%");
     }
-    $('#timeline-time-left-label').html("-" + min_full.toPrecision(3) + "min");
+    //$('#timeline-time-left-label').html("-" + min_full.toPrecision(3) + "min");
+    var date = new Date(DATA_FROM_TIMESTAMP);
+    $("#timeline-time-left-label").html(date.toLocaleTimeString());
 }
 
 function progressbarSetWindow( event, ui ) {
@@ -739,15 +788,15 @@ function PyScadaPlot(id){
                 key = keys[key];
                 if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object'){
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
-                        start_id = find_index_sub(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
-                        stop_id = find_index_sub(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
+                        start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                        stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
                         chart_data = DATA[key].slice(start_id,stop_id);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
-                        start_id = find_index_sub(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                        start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
                         chart_data = DATA[key].slice(start_id);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
                         if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
-                        stop_id = find_index_sub(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
+                        stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
                         chart_data = DATA[key].slice(0,stop_id);
                     }else {
                         chart_data = DATA[key].slice();
@@ -808,10 +857,18 @@ function find_index(a,t){
         }
     }
 }
-function find_index_sub(a,t,d){
+function find_index_sub_lte(a,t,d){
     var i = a.length; //or 10
     while(i--){
         if (a[i][d]<=t){
+            return i
+        }
+    }
+}
+function find_index_sub_gte(a,t,d){
+    var i = 0; //or 10
+    while(i++ < a.length){
+        if (a[i][d]>=t){
             return i
         }
     }
@@ -1001,5 +1058,10 @@ $( document ).ready(function() {
         start: function( event, ui ) {progressbar_resize_active = true;},
         stop: function( event, ui ) {progressbar_resize_active = false;},
     });
-
+    $('#PlusTwoHoursButton').click(function(e) {
+        $('#PlusTwoHoursButton').addClass("disabled");
+        DATA_INIT_STATUS++;
+        DATA_BUFFER_SIZE = DATA_BUFFER_SIZE + 120*60*1000;
+        INIT_CHART_VARIABLES_DONE = false;
+    });
 });

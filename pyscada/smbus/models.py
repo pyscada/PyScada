@@ -34,8 +34,24 @@ class SMbusVariable(models.Model):
         return self.smbus_variable.short_name
 
 
+class ExtendedSMBusDevice(Device):
+    class Meta:
+        proxy = True
+        verbose_name = 'SMBus Device'
+        verbose_name_plural = 'SMBus Devices'
+
+
+class ExtendedSMbusVariable(Variable):
+    class Meta:
+        proxy = True
+        verbose_name = 'SMBus Variable'
+        verbose_name_plural = 'SMBus Variables'
+
+
 @receiver(post_save, sender=SMbusVariable)
 @receiver(post_save, sender=SMbusDevice)
+@receiver(post_save, sender=ExtendedSMBusDevice)
+@receiver(post_save, sender=ExtendedSMbusVariable)
 def _reinit_daq_daemons(sender, instance, **kwargs):
     """
     update the daq daemon configuration when changes be applied in the models
@@ -44,3 +60,7 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
         post_save.send_robust(sender=Device, instance=instance.modbus_device)
     elif type(instance) is SMbusVariable:
         post_save.send_robust(sender=Variable, instance=instance.modbus_variable)
+    elif type(instance) is ExtendedSMbusVariable:
+        post_save.send_robust(sender=Variable, instance=Variable.objects.get(pk=instance.pk))
+    elif type(instance) is ExtendedSMBusDevice:
+        post_save.send_robust(sender=Device, instance=Device.objects.get(pk=instance.pk))

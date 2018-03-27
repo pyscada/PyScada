@@ -180,7 +180,7 @@ class LogAdmin(admin.ModelAdmin):
 
 
 class BackgroundProcessAdmin(admin.ModelAdmin):
-    list_display = ('id', 'label', 'message', 'last_update', 'running_since', 'enabled', 'done', 'failed')
+    list_display = ('id','pid', 'label', 'message', 'last_update', 'running_since', 'enabled', 'done', 'failed')
     list_filter = (BackgroundProcessFilter, 'enabled', 'done', 'failed')
     list_display_links = ('id', 'label', 'message')
     readonly_fields = ('message', 'last_update', 'running_since', 'done', 'failed')

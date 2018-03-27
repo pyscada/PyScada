@@ -1,25 +1,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.systemstat.models import SystemStatVariable
+from pyscada.systemstat.models import SystemStatVariable, ExtendedSystemStatDevice, ExtendedSystemStatVariable
 from pyscada.systemstat import PROTOCOL_ID
 from pyscada.admin import admin_site
 from pyscada.admin import DeviceAdmin
 from pyscada.admin import VariableAdmin
-from pyscada.models import Variable
 from pyscada.models import Device, DeviceProtocol
 
 from django.contrib import admin
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-class ExtendedSystemStatDevice(Device):
-    class Meta:
-        proxy = True
-        verbose_name = 'SystemStat Device'
-        verbose_name_plural = 'SystemStat Devices'
 
 
 class SystemStatDeviceAdmin(DeviceAdmin):
@@ -33,13 +25,6 @@ class SystemStatDeviceAdmin(DeviceAdmin):
         """Limit Pages to those that belong to the request's user."""
         qs = super(SystemStatDeviceAdmin, self).get_queryset(request)
         return qs.filter(protocol_id=PROTOCOL_ID)
-
-
-class ExtendedSystemStatVariable(Variable):
-    class Meta:
-        proxy = True
-        verbose_name = 'SystemStat Variable'
-        verbose_name_plural = 'SystemStat Variables'
 
 
 class SystemStatVariableAdminInline(admin.StackedInline):

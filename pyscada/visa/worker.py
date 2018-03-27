@@ -7,6 +7,7 @@ from pyscada.utils.scheduler import Process as BaseDAQProcess
 from pyscada.models import BackgroundProcess
 from pyscada.visa.models import VISADevice
 import json
+import traceback
 import logging
 
 logger = logging.getLogger(__name__)
@@ -66,3 +67,13 @@ class Process(BaseDAQProcess):
     def cleanup(self):
         # todo cleanup
         pass
+
+    def restart(self):
+        for visa_process in self.VISA_PROCESSES:
+            try:
+                bp = BackgroundProcess.objects.get(pk=visa_process['id'])
+                bp.restart()
+            except:
+                logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
+
+        return False

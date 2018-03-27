@@ -3,10 +3,9 @@ from __future__ import unicode_literals
 
 from pyscada.admin import admin_site
 from pyscada.models import Device, DeviceProtocol
-from pyscada.models import Variable
 
 from pyscada.onewire import PROTOCOL_ID
-from pyscada.onewire.models import OneWireVariable, OneWireDevice
+from pyscada.onewire.models import OneWireVariable, OneWireDevice, ExtendedOneWireDevice, ExtendedOneWireVariable
 from pyscada.admin import DeviceAdmin
 from pyscada.admin import VariableAdmin
 from django.contrib import admin
@@ -14,12 +13,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
-class ExtendedOneWireDevice(Device):
-    class Meta:
-        proxy = True
-        verbose_name = 'OneWire Device'
-        verbose_name_plural = 'OneWire Devices'
 
 
 class OneWireDeviceAdminInline(admin.StackedInline):
@@ -41,13 +34,6 @@ class OneWireDeviceAdmin(DeviceAdmin):
     inlines = [
         OneWireDeviceAdminInline
     ]
-
-
-class ExtendedOneWireVariable(Variable):
-    class Meta:
-        proxy = True
-        verbose_name = 'OneWire Variable'
-        verbose_name_plural = 'OneWire Variable'
 
 
 class OneWireVariableAdminInline(admin.StackedInline):

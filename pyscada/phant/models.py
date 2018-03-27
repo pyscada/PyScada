@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.models import Device
+from pyscada.models import Device, Variable
 
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -26,3 +26,18 @@ class PhantDevice(models.Model):
 
     def __str__(self):
         return self.phant_device.short_name
+
+
+
+class ExtendedPhantDevice(Device):
+    class Meta:
+        proxy = True
+        verbose_name = 'Phant Device'
+        verbose_name_plural = 'Phant Devices'
+
+
+class ExtendedPhantVariable(Variable):
+    class Meta:
+        proxy = True
+        verbose_name = 'Phant Variable'
+        verbose_name_plural = 'Phant Variables'

@@ -2,8 +2,8 @@
 from __future__ import unicode_literals
 
 from pyscada.modbus import PROTOCOL_ID
-from pyscada.modbus.models import ModbusDevice
-from pyscada.modbus.models import ModbusVariable
+from pyscada.modbus.models import ModbusDevice, ExtendedModbusDevice
+from pyscada.modbus.models import ModbusVariable, ExtendedModbusVariable
 from pyscada.admin import DeviceAdmin
 from pyscada.admin import VariableAdmin
 from pyscada.admin import admin_site
@@ -13,13 +13,6 @@ from django.contrib import admin
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-class ExtendedModbusDevice(Device):
-    class Meta:
-        proxy = True
-        verbose_name = 'Modbus Device'
-        verbose_name_plural = 'Modbus Devices'
 
 
 class ModbusDeviceAdminInline(admin.StackedInline):
@@ -41,13 +34,6 @@ class ModbusDeviceAdmin(DeviceAdmin):
     inlines = [
         ModbusDeviceAdminInline
     ]
-
-
-class ExtendedModbusVariable(Variable):
-    class Meta:
-        proxy = True
-        verbose_name = 'Modbus Variable'
-        verbose_name_plural = 'Modbus Variables'
 
 
 class ModbusVariableAdminInline(admin.StackedInline):

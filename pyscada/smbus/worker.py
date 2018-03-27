@@ -6,7 +6,7 @@ from __future__ import unicode_literals
 from pyscada.utils.scheduler import Process as BaseDAQProcess
 from pyscada.models import BackgroundProcess
 from pyscada.smbus.models import SMbusDevice
-
+import traceback
 import json
 import logging
 
@@ -68,3 +68,13 @@ class Process(BaseDAQProcess):
     def cleanup(self):
         # todo cleanup
         pass
+
+    def restart(self):
+        for smbus_process in self.SMbus_PROCESSES:
+            try:
+                bp = BackgroundProcess.objects.get(pk=smbus_process['id'])
+                bp.restart()
+            except:
+                logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
+
+        return False

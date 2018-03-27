@@ -6,7 +6,7 @@ urls.py
 -------
 
 
-Open the urls configuration file and add the nesseary rewrite rule to the django URL dispatcher.
+Open the urls configuration file and add the necessary rewrite rule to the django URL dispatcher.
 
 ::
 
@@ -38,22 +38,23 @@ Open the django settings file and make the following modifications. See also the
 	nano /var/www/pyscada/PyScadaServer/PyScadaServer/settings.py
 
 
-First deaktivate the debuging, if debuging is active django will keep all SQL queries in the ram, the dataaquasition runs many queries so your system will run fast out of memory. Keep in mind to restart guinicorn and all dataaquasion daemons after you change the debuging state.
+First deactivate the debugging, if debugging is active django will keep all SQL queries in the ram, the data-acquisition
+runs a massive amount of queries so your system will run fast out of memory. Keep in mind to restart gunicorn and the
+pysada daemons after you change the debugging state.
 
 ::
 
 	DEBUG = False
-	TEMPLATE_DEBUG = DEBUG
 
 
-Add the host/domain of your machine, is this case every url that point to a ip of the machine is allowed.
+Add the host/domain of your machine, in this case every url that point to a ip of the machine is allowed.
 
 ::
 
 	ALLOWED_HOSTS = ['*']
 
 
-Add the PyScada and the subapps to the installed apps list.
+Add PyScada and the PyScada sub-apps to the installed apps list of Django.
 
 ::
 
@@ -66,7 +67,8 @@ Add the PyScada and the subapps to the installed apps list.
 		'pyscada.hmi',
 		'pyscada.systemstat',
 		'pyscada.export',
-		'pyscada.onewire'
+		'pyscada.onewire',
+        'pyscada.smbus',
 	]
 
 To use the MySQL Database, fill in the database, the user and password as selected in the *create Database section*.
@@ -86,14 +88,11 @@ To use the MySQL Database, fill in the database, the user and password as select
 	}
 
 
-Set the static file and media dir as followes.
+Set the static file and media dir as follows.
 
 ::
 
 	...
-	# Static files (CSS, JavaScript, Images)
-	# https://docs.djangoproject.com/en/1.6/howto/static-files/
-
 	STATIC_URL = '/static/'
 
 	STATIC_ROOT = '/var/www/pyscada/http/static/'
@@ -128,7 +127,7 @@ Append to the end of the `settings.py`:
 	EMAIL_HOST_PASSWORD = 'password'
 	EMAIL_PREFIX = 'PREFIX' # Mail subject will be "PREFIX subjecttext"
 	
-	# meta informations about the plant site 
+	# meta information's about the plant site
 	PYSCADA_META = {
 		'name':'A SHORT NAME',
 		'description':'A SHORT DESCRIPTION',
@@ -140,3 +139,33 @@ Append to the end of the `settings.py`:
 		'file_prefix':'PREFIX_',
 		'output_folder':'~/measurement_data_dumps',
 	}
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'standard': {
+                'format' : "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+                'datefmt' : "%d/%b/%Y %H:%M:%S"
+            },
+        },
+        'handlers': {
+            'file': {
+                'level': 'DEBUG',
+                'class': 'logging.FileHandler',
+                'filename': BASE_DIR + '/pyscada_debug.log',
+                'formatter': 'standard',
+            },
+        },
+        'loggers': {
+            'django': {
+                'handlers': ['file'],
+                'level': 'INFO',
+                'propagate': True,
+            },
+            'pyscada': {
+                'handlers': ['file'],
+                'level': 'DEBUG',
+                'propagate': True,
+            },
+        },
+    }

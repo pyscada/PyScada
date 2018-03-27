@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from pyscada.visa import PROTOCOL_ID
 from pyscada.visa.models import VISAVariable
 from pyscada.visa.models import VISADevice
-from pyscada.visa.models import VISADeviceHandler
+from pyscada.visa.models import VISADeviceHandler, ExtendedVISADevice, ExtendedVISAVariable
 from pyscada.admin import DeviceAdmin
 from pyscada.admin import VariableAdmin
 from pyscada.admin import admin_site
@@ -15,13 +15,6 @@ from django.contrib import admin
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-class ExtendedVISADevice(Device):
-    class Meta:
-        proxy = True
-        verbose_name = 'VISA Device'
-        verbose_name_plural = 'VISA Devices'
 
 
 class DeviceAdminInline(admin.StackedInline):
@@ -43,13 +36,6 @@ class VISADeviceAdmin(DeviceAdmin):
     inlines = [
         DeviceAdminInline
     ]
-
-
-class ExtendedVISAVariable(Variable):
-    class Meta:
-        proxy = True
-        verbose_name = 'VISA Variable'
-        verbose_name_plural = 'VISA Variable'
 
 
 class VISAVariableAdminInline(admin.StackedInline):

@@ -312,6 +312,7 @@ class Scheduler(object):
                     pass
                 elif sig == signal.SIGUSR1:
                     # restart all child processes
+                    logger.debug('PID %d, processed SIGUSR1 (%d) signal' % (self.pid, sig))
                     self.restart()
                 elif sig == signal.SIGUSR2:
                     # write the process status to stdout
@@ -418,6 +419,7 @@ class Scheduler(object):
             sleep(0.1)
         self.kill_processes(signal.SIGKILL)
         self.manage_processes()
+        logger.debug('BD %d: restarted'%self.process_id)
 
     def stop(self, sig=signal.SIGTERM):
         """
@@ -556,6 +558,7 @@ class Scheduler(object):
         """
         handle signals
         """
+        logger.debug('PID %d, received signal: %d' % (self.pid, signum))
         self.SIG_QUEUE.append(signum)
 
 
@@ -645,8 +648,8 @@ class Process(object):
                 elif sig == signal.SIGHUP:
                     raise StopIteration
                 elif sig == signal.SIGUSR1:
-                    # todo handle restart
-                    pass
+                    logger.debug('PID %d, process SIGUSR1 (%d) signal' % (self.pid, sig))
+                    self.restart()
                 elif sig == signal.SIGUSR2:
                     # todo handle restart
                     pass
@@ -659,6 +662,7 @@ class Process(object):
             sys.exit(0)
         except:
             logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
+            self.stop()
             sys.exit(0)
 
     def loop(self):
@@ -677,6 +681,7 @@ class Process(object):
         """
         receive signals
         """
+        logger.debug('PID %d, received signal: %d' %(self.pid, signum))
         self.SIG_QUEUE.append(signum)
 
     def stop(self, signum=None, frame=None):
@@ -690,6 +695,12 @@ class Process(object):
         BackgroundProcess.objects.filter(pk=self.process_id).update(pid=0,
                                                                     last_update=datetime_now(),
                                                                     message='stopped')
+
+    def restart(self):
+        """
+        override this
+        """
+        return None
 
 
 class SingleDeviceDAQProcess(Process):
@@ -748,6 +759,13 @@ class SingleDeviceDAQProcess(Process):
         mark the process as done
         """
         BackgroundProcess.objects.filter(pk=self.process_id).delete()
+
+    def restart(self):
+        """
+        just re-init
+        """
+        self.init_process()
+        return True
 
 
 class MultiDeviceDAQProcess(Process):
@@ -816,4 +834,9 @@ class MultiDeviceDAQProcess(Process):
         """
         BackgroundProcess.objects.filter(pk=self.process_id).delete()
 
-
+    def restart(self):
+        """
+        just re-init
+        """
+        self.init_process()
+        return True

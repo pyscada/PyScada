@@ -4,23 +4,15 @@ from __future__ import unicode_literals
 from pyscada.admin import admin_site
 from pyscada.admin import DeviceAdmin
 from pyscada.admin import VariableAdmin
-from pyscada.models import Variable
 from pyscada.models import Device, DeviceProtocol
 
 from pyscada.phant import PROTOCOL_ID
-from pyscada.phant.models import PhantDevice
+from pyscada.phant.models import PhantDevice, ExtendedPhantVariable, ExtendedPhantDevice
 
 from django.contrib import admin
 import logging
 
 logger = logging.getLogger(__name__)
-
-
-class ExtendedPhantDevice(Device):
-    class Meta:
-        proxy = True
-        verbose_name = 'Phant Device'
-        verbose_name_plural = 'Phant Devices'
 
 
 class PhantDeviceAdminInline(admin.StackedInline):
@@ -39,13 +31,6 @@ class PhantDeviceAdmin(DeviceAdmin):
         """Limit Pages to those that belong to the request's user."""
         qs = super(PhantDeviceAdmin, self).get_queryset(request)
         return qs.filter(protocol_id=PROTOCOL_ID)
-
-
-class ExtendedPhantVariable(Variable):
-    class Meta:
-        proxy = True
-        verbose_name = 'Phant Variable'
-        verbose_name_plural = 'Phant Variables'
 
 
 class PhantVariableAdmin(VariableAdmin):

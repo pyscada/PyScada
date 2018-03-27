@@ -16,6 +16,8 @@ import signal
 from os import kill
 from struct import *
 from os import getpid
+import errno
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -866,7 +868,7 @@ class BackgroundProcess(models.Model):
 
     def restart(self):
         """
-        restarts the process and all its childs
+        restarts the process and all its child's
 
         :return:
         """
@@ -874,12 +876,28 @@ class BackgroundProcess(models.Model):
 
             try:
                 kill(self.pid, signal.SIGUSR1)
+                logger.debug('%d: send SIGUSR1 to %d' % (self.pk, self.pid))
                 return True
             except OSError as e:
-                # if e.errno == errno.ESRCH:
-                #
-                # else:
                 return False
+
+    def stop(self,signum=signal.SIGTERM):
+        """
+        stops the process and all its child's
+
+        :return:
+        """
+        if self.pid is not 0 and self.pid is not None:
+            logger.debug('send sigterm to daemon')
+            try:
+                kill(self.pid, signum)
+                return True
+            except OSError as e:
+                if e.errno == errno.ESRCH:
+                    return False
+                else:
+                    return False
+
 
 @python_2_unicode_compatible
 class Event(models.Model):
@@ -1116,6 +1134,8 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
         for bp_pk in list(instance.variable_set.all().values_list('device__protocol_id').distinct()):
             try:
                 bp = BackgroundProcess.objects.get(pk=bp_pk)
-                bp.restart()
             except:
-                pass
+                return False
+            bp.restart()
+    else:
+        logger.debug('post_save from %s'%type(instance))
