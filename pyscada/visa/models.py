@@ -76,9 +76,9 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
     update the daq daemon configuration when changes be applied in the models
     """
     if type(instance) is VISADevice:
-        post_save.send_robust(sender=Device, instance=instance.modbus_device)
+        post_save.send_robust(sender=Device, instance=instance.visa_device)
     elif type(instance) is VISAVariable:
-        post_save.send_robust(sender=Variable, instance=instance.modbus_variable)
+        post_save.send_robust(sender=Variable, instance=instance.visa_variable)
     elif type(instance) is VISADeviceHandler:
         # todo
         pass

@@ -939,12 +939,38 @@ $('button.write-task-set').click(function(){
                 url: ROOT_URL+'form/write_task/',
                 data: {var_id:var_id,value:value},
                 success: function (data) {
-                    
+
                 },
                 error: function(data) {
                     add_notification('add new write task failed',3);
                 }
             });
+        };
+});
+
+$('button.write-task-form-set').click(function(){
+        name_form = $(this.form).attr('name');
+        tabinputs = document.forms[name_form].getElementsByTagName("input");
+        for (i=0;i<tabinputs.length;i++){
+            value = tabinputs[i].value;
+            var_id = $(tabinputs[i]).attr("id");
+            if (value == "" ){
+                add_notification('please provide a value',3);
+                alert("value vide");
+            }else{
+                $.ajax({
+                    type: 'post',
+                    url: ROOT_URL+'form/write_task/',
+                    data: {var_id:var_id,value:value},
+                    success: function (data) {
+
+                    },
+                    error: function(data) {
+                        add_notification('add new write task failed',3);
+                        alert("Form set NOT ok")
+                    }
+                });
+            };
         };
 });
 

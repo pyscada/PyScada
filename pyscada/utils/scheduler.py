@@ -730,20 +730,34 @@ class SingleDeviceDAQProcess(Process):
         return True
 
     def loop(self):
-
+        #data from a write
+        data=[]
         # process write tasks
         for task in DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False,
                                                    variable__device_id=self.device_id):
             if task.variable.scaling is not None:
                 task.value = task.variable.scaling.scale_output_value(task.value)
-            if self.device.write_data(task.variable.id, task.value):
-                task.done = True
-                task.finished = time()
-                task.save()
+            tmp_data = self.device.write_data(task.variable.id, task.value)
+            if isinstance(tmp_data, list):
+                if len(tmp_data) > 0:
+                    task.done = True
+                    task.finished = time()
+                    task.save()
+                    data.append(tmp_data)
+                else:
+                    task.failed = True
+                    task.finished = time()
+                    task.save()
             else:
                 task.failed = True
                 task.finished = time()
                 task.save()
+        if isinstance(data, list):
+            if len(data) > 0:
+                return 1, data
+            else:
+                return 1, None
+
         if time() - self.last_query > self.dt_query_data:
             self.last_query = time()
             # Query data
