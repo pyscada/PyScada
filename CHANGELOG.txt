@@ -124,3 +124,11 @@
   - updated Docs
   - updated systemd unit file
   - improved HMI
+
+0.7.0rc2
+  - fixed "-" bug in view link_title
+  - fixed visa daq restart handler 
+  - fixed hmi "AutoUpdateButton" not working
+  - updated docs, updated readme
+  - added utils.blow_up function to convert database data from change of value to constant timestep data
+    

@@ -7,7 +7,7 @@ with your admin account (*TODO link to createsuperuser* doc).
 
 .. image:: pic/backend_core_add_device.png
 
-After successful login in your see the view overview, to oben the admin panel 
+After successful login in your see the view overview, to open the admin panel 
 click on the *Admin* Icon.
 
 .. image:: pic/Frontend_view_overview_admin_empty.png

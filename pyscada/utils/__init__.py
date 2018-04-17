@@ -7,7 +7,7 @@ from datetime import datetime
 from pytz import UTC
 from django.utils.six import integer_types
 import logging
-
+import numpy as np
 logger = logging.getLogger(__name__)
 
 
@@ -87,4 +87,61 @@ def _cast(value, class_str):
 
 def datetime_now():
     return datetime.now(UTC)
+
+def blow_up_data(data,timevalues,mean_value_period,no_mean_value = True):
+    out_data = np.zeros(len(timevalues))
+    # i                            # time data index
+    ii = 0  # source data index
+    # calculate mean values
+    last_value = None
+    max_ii = len(data) - 1
+    for i in range(len(timevalues)):  # iter over time values
+
+        if ii >= max_ii + 1:
+            # if not more data in data source break
+            if last_value is not None:
+                out_data[i] = last_value
+                continue
+        # init mean value vars
+        tmp = 0.0  # sum
+        tmp_i = 0.0  # count
+
+        if data[ii][0] < timevalues[i]:
+            if ii == max_ii:
+                last_value = data[ii][1]
+            else:
+                # skip elements that are befor current time step
+                while data[ii][0] < timevalues[i] and ii < max_ii:
+                    last_value = data[ii][1]
+                    ii += 1
+
+        if ii >= max_ii:
+            if last_value is not None:
+                out_data[i] = last_value
+                continue
+        # calc mean value
+        if timevalues[i] <= data[ii][0] < timevalues[i] + mean_value_period:
+            # there is data in time range
+            while timevalues[i] <= data[ii][0] < timevalues[i] + mean_value_period and ii < max_ii:
+                # calculate mean value
+                if no_mean_value:
+                    tmp = data[ii][1]
+                    tmp_i = 1
+                else:
+                    tmp += data[ii][1]
+                    tmp_i += 1
+
+                last_value = data[ii][1]
+                ii += 1
+            # calc and store mean value
+            if tmp_i > 0:
+                out_data[i] = tmp / tmp_i
+            else:
+                out_data[i] = data[ii][1]
+                last_value = data[ii][1]
+        else:
+            # there is no data in time range, keep last value, not mean value
+            if last_value is not None:
+                out_data[i] = last_value
+    return np.asarray(out_data)
 

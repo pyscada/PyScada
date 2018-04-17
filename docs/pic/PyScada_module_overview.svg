@@ -1,0 +1,1075 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="47.106453cm"
+   height="26.960478cm"
+   viewBox="132 44 935.31849 535.99997"
+   version="1.1"
+   id="svg5510"
+   sodipodi:docname="PyScada_Block.svg"
+   inkscape:version="0.92.3 (unknown)">
+  <metadata
+     id="metadata5516">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <defs
+     id="defs5514" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1920"
+     inkscape:window-height="1019"
+     id="namedview5512"
+     showgrid="false"
+     inkscape:zoom="0.85"
+     inkscape:cx="631.56526"
+     inkscape:cy="333.66121"
+     inkscape:window-x="0"
+     inkscape:window-y="35"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg5510"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0" />
+  <rect
+     id="rect5044"
+     height="38"
+     width="91.375"
+     y="348.20001"
+     x="665.94128"
+     style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:1.98834372;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5048"
+     y="371.10001"
+     x="712.25842"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+     font-size="12.7998">
+    <tspan
+       id="tspan5046"
+       y="371.10001"
+       x="712.25842">PyModbus</tspan>
+  </text>
+  <rect
+     id="rect5054"
+     height="38"
+     width="90.5"
+     y="272.20001"
+     x="666.94543"
+     style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:1.98834372;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5058"
+     y="295.10001"
+     x="712.19543"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+     font-size="12.7998">
+    <tspan
+       id="tspan5056"
+       y="295.10001"
+       x="712.19543">PyVISA</tspan>
+  </text>
+  <rect
+     id="rect5064"
+     height="38"
+     width="90.5"
+     y="310.20001"
+     x="666.94543"
+     style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:1.97880065;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5068"
+     y="333.10001"
+     x="712.63342"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+     font-size="12.7998">
+    <tspan
+       id="tspan5066"
+       y="333.10001"
+       x="712.63342">BACpypes</tspan>
+  </text>
+  <rect
+     id="rect5072"
+     height="308"
+     width="450"
+     y="233.2"
+     x="217.44542"
+     style="fill:#ffffff" />
+  <rect
+     id="rect5074"
+     height="308"
+     width="450"
+     y="233.2"
+     x="217.44542"
+     style="fill:#0c4b33;fill-opacity:1;stroke:#000000;stroke-width:1.98809528;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5078"
+     y="256.65259"
+     x="223.41185"
+     style="font-style:normal;font-weight:normal;font-size:20.92817497px;font-family:sans-serif;text-anchor:start;fill:#ffffff;fill-opacity:1;stroke-width:1.63503933"
+     font-size="12.7998">
+    <tspan
+       id="tspan5076"
+       y="256.65259"
+       x="223.41185"
+       style="fill:#ffffff;fill-opacity:1;stroke-width:1.63503933">Django</tspan>
+  </text>
+  <rect
+     id="rect5084"
+     height="268.91913"
+     width="411.48013"
+     y="272.24045"
+     x="255.92487"
+     style="fill:#5b6eb2;fill-opacity:1;stroke:#000000;stroke-width:2.08088136" />
+  <text
+     id="text5088"
+     y="422.88547"
+     x="390.98651"
+     style="font-style:normal;font-weight:normal;font-size:33.18929291px;font-family:sans-serif;text-anchor:middle;fill:#ffffff;stroke-width:2.59295392"
+     font-size="12.7998">
+    <tspan
+       id="tspan5086"
+       y="422.88547"
+       x="390.98651"
+       style="fill:#ffffff;stroke-width:2.59295392">PyScada</tspan>
+  </text>
+  <rect
+     id="rect5094"
+     height="308"
+     width="84"
+     y="233.2"
+     x="132.39339"
+     style="fill:#30a0d5;fill-opacity:1;stroke:#000000;stroke-width:1.98809528;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5098"
+     y="393.55182"
+     x="172.86551"
+     style="font-style:normal;font-weight:normal;font-size:16.48675156px;font-family:sans-serif;text-anchor:middle;fill:#000000;stroke-width:1.28804755"
+     font-size="12.7998">
+    <tspan
+       id="tspan5096"
+       y="393.55182"
+       x="172.86551"
+       style="stroke-width:1.28804755">Database</tspan>
+  </text>
+  <rect
+     id="rect5104"
+     height="38"
+     width="90.625"
+     y="386.10001"
+     x="666.69543"
+     style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:1.98834372;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5108"
+     y="409"
+     x="712.25842"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+     font-size="12.7998">
+    <tspan
+       id="tspan5106"
+       y="409"
+       x="712.25842">PyOWS</tspan>
+  </text>
+  <rect
+     id="rect5114"
+     height="38"
+     width="90.625"
+     y="424"
+     x="666.94543"
+     style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:1.98834372;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5118"
+     y="446.90002"
+     x="712.25842"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+     font-size="12.7998">
+    <tspan
+       id="tspan5116"
+       y="446.90002"
+       x="712.25842">smbus</tspan>
+  </text>
+  <rect
+     id="rect5124"
+     height="38"
+     width="90.625"
+     y="461.90002"
+     x="666.94543"
+     style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:1.98834372;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5128"
+     y="484.80002"
+     x="712.25842"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+     font-size="12.7998">
+    <tspan
+       id="tspan5126"
+       y="484.80002"
+       x="712.25842">psutil</tspan>
+  </text>
+  <g
+     id="g5140"
+     transform="translate(0.44542825,-0.79999924)">
+    <rect
+       style="fill:#ffffff"
+       x="920.92499"
+       y="167"
+       width="90.150002"
+       height="38"
+       id="rect5132" />
+    <rect
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x="920.92499"
+       y="167"
+       width="90.150002"
+       height="38"
+       id="rect5134" />
+    <text
+       font-size="12.7998"
+       style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+       x="966"
+       y="189.89999"
+       id="text5138">
+      <tspan
+         x="966"
+         y="189.89999"
+         id="tspan5136">LXI-Device</tspan>
+    </text>
+  </g>
+  <g
+     id="g5150"
+     transform="translate(0.44542825,-0.79999924)">
+    <rect
+       style="fill:#ffffff"
+       x="921.25"
+       y="218.89999"
+       width="100.65"
+       height="38"
+       id="rect5142" />
+    <rect
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x="921.25"
+       y="218.89999"
+       width="100.65"
+       height="38"
+       id="rect5144" />
+    <text
+       font-size="12.7998"
+       style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+       x="971.57501"
+       y="241.8"
+       id="text5148">
+      <tspan
+         x="971.57501"
+         y="241.8"
+         id="tspan5146">GPIB-Device</tspan>
+    </text>
+  </g>
+  <rect
+     id="rect5154"
+     height="38"
+     width="150.27008"
+     y="272.10001"
+     x="517.00214"
+     style="fill:#354272;fill-opacity:1;stroke:#000000;stroke-width:1.98834372;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5158"
+     y="295"
+     x="615.63275"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#ffffff"
+     font-size="12.7998">
+    <tspan
+       id="tspan5156"
+       y="295"
+       x="615.63275"
+       style="fill:#ffffff">pyscada.visa</tspan>
+  </text>
+  <rect
+     id="rect5164"
+     height="37.853607"
+     width="150.07544"
+     y="310.17322"
+     x="517.19678"
+     style="fill:#354272;fill-opacity:1;stroke:#000000;stroke-width:1.98834372;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5168"
+     y="333"
+     x="602.44543"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#ffffff"
+     font-size="12.7998">
+    <tspan
+       id="tspan5166"
+       y="333"
+       x="602.44543"
+       style="fill:#ffffff">pyscada.bacnet*</tspan>
+  </text>
+  <rect
+     id="rect5174"
+     height="38"
+     width="150.02431"
+     y="348"
+     x="517.24792"
+     style="fill:#354272;fill-opacity:1;stroke:#000000;stroke-width:1.98834372;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5178"
+     y="370.90002"
+     x="602.24542"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#ffffff"
+     font-size="12.7998">
+    <tspan
+       id="tspan5176"
+       y="370.90002"
+       x="602.24542"
+       style="fill:#ffffff">pyscada.modbus</tspan>
+  </text>
+  <rect
+     id="rect5184"
+     height="38"
+     width="150.46979"
+     y="385.90002"
+     x="516.80243"
+     style="fill:#354272;fill-opacity:1;stroke:#000000;stroke-width:1.98834372;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5188"
+     y="408.80002"
+     x="602.60791"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#ffffff"
+     font-size="12.7998">
+    <tspan
+       id="tspan5186"
+       y="408.80002"
+       x="602.60791"
+       style="fill:#ffffff">pyscada.onewire</tspan>
+  </text>
+  <rect
+     id="rect5194"
+     height="38"
+     width="150.26315"
+     y="423.80002"
+     x="517.00909"
+     style="fill:#354272;fill-opacity:1;stroke:#000000;stroke-width:1.98834372;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5198"
+     y="446.70001"
+     x="606.88287"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#ffffff;fill-opacity:1"
+     font-size="12.7998">
+    <tspan
+       id="tspan5196"
+       y="446.70001"
+       x="606.88287"
+       style="fill:#ffffff;fill-opacity:1">pyscada.smbus</tspan>
+  </text>
+  <rect
+     id="rect5204"
+     height="38"
+     width="150.10001"
+     y="461.70001"
+     x="517.17218"
+     style="fill:#354272;fill-opacity:1;stroke:#000000;stroke-width:1.98834372;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5208"
+     y="484.60001"
+     x="592.16437"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#ffffff"
+     font-size="12.7998">
+    <tspan
+       id="tspan5206"
+       y="484.60001"
+       x="592.16437"
+       style="fill:#ffffff">pyscada.systemstat</tspan>
+  </text>
+  <rect
+     style="fill:#00b140;fill-opacity:1;stroke:#000000;stroke-width:1.98834372;stroke-miterlimit:4;stroke-dasharray:none"
+     x="217.44542"
+     y="157.2"
+     width="450"
+     height="76"
+     id="rect5214" />
+  <text
+     font-size="12.7998"
+     style="font-style:normal;font-weight:normal;font-size:19.69737434px;font-family:sans-serif;text-anchor:end;fill:#000000;stroke-width:1.53888142"
+     x="659.89856"
+     y="178.30118"
+     id="text5218">
+    <tspan
+       x="659.89856"
+       y="178.30118"
+       id="tspan5216"
+       style="stroke-width:1.53888142">NGINX</tspan>
+  </text>
+  <rect
+     style="fill:#2a8729;fill-opacity:1;stroke:#000000;stroke-width:1.98809528;stroke-miterlimit:4;stroke-dasharray:none"
+     x="217.44542"
+     y="196.75385"
+     width="303.52826"
+     height="36.446156"
+     id="rect5224" />
+  <text
+     font-size="12.7998"
+     style="font-style:normal;font-weight:normal;font-size:18.71452522px;font-family:sans-serif;text-anchor:middle;fill:#ffffff;stroke-width:1.46209526"
+     x="356.02344"
+     y="222.7659"
+     id="text5228"
+     transform="scale(1.0113209,0.98880584)">
+    <tspan
+       x="356.02344"
+       y="222.7659"
+       id="tspan5226"
+       style="fill:#ffffff;stroke-width:1.46209526">gunicorn</tspan>
+  </text>
+  <rect
+     id="rect5236"
+     height="38"
+     width="105"
+     y="272.24045"
+     x="255.92487"
+     style="fill:#354272;fill-opacity:1;stroke:#000000;stroke-width:2" />
+  <text
+     id="text5240"
+     y="294.2623"
+     x="310.8598"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#ffffff"
+     font-size="12.7998">
+    <tspan
+       id="tspan5238"
+       y="294.2623"
+       x="310.8598"
+       style="fill:#ffffff">pyscada.hmi</tspan>
+  </text>
+  <rect
+     id="rect5246"
+     height="38"
+     width="116.55"
+     y="272.24045"
+     x="360.92487"
+     style="fill:#354272;fill-opacity:1;stroke:#000000;stroke-width:2" />
+  <text
+     id="text5250"
+     y="294.16232"
+     x="417.64673"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#ffffff"
+     font-size="12.7998">
+    <tspan
+       id="tspan5248"
+       y="294.16232"
+       x="417.64673"
+       style="fill:#ffffff">pyscada.phant</tspan>
+  </text>
+  <g
+     id="g5262"
+     transform="translate(1.4470427,-2.8032282)">
+    <rect
+       style="fill:#ffffff"
+       x="929.57501"
+       y="540"
+       width="82.849998"
+       height="38"
+       id="rect5254" />
+    <rect
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x="929.57501"
+       y="540"
+       width="82.849998"
+       height="38"
+       id="rect5256" />
+    <text
+       font-size="12.7998"
+       style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+       x="971"
+       y="562.90002"
+       id="text5260">
+      <tspan
+         x="971"
+         y="562.90002"
+         id="tspan5258">Localhost</tspan>
+    </text>
+  </g>
+  <g
+     id="g5272"
+     transform="translate(0.44542825,-0.79999924)">
+    <rect
+       style="fill:#ffffff"
+       x="921.52502"
+       y="326"
+       width="144.95"
+       height="38"
+       id="rect5264" />
+    <rect
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x="921.52502"
+       y="326"
+       width="144.95"
+       height="38"
+       id="rect5266" />
+    <text
+       font-size="12.7998"
+       style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+       x="994"
+       y="348.89999"
+       id="text5270">
+      <tspan
+         x="994"
+         y="348.89999"
+         id="tspan5268">ModbusRTU Device</tspan>
+    </text>
+  </g>
+  <g
+     id="g5282"
+     transform="translate(0.44542825,-0.79999924)">
+    <rect
+       style="fill:#ffffff"
+       x="920.72498"
+       y="380.20001"
+       width="143.55"
+       height="38"
+       id="rect5274" />
+    <rect
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x="920.72498"
+       y="380.20001"
+       width="143.55"
+       height="38"
+       id="rect5276" />
+    <text
+       font-size="12.7998"
+       style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+       x="992.5"
+       y="403.10001"
+       id="text5280">
+      <tspan
+         x="992.5"
+         y="403.10001"
+         id="tspan5278">ModbusTCP Device</tspan>
+    </text>
+  </g>
+  <g
+     id="g5292"
+     transform="translate(0.44542825,-0.79999924)">
+    <rect
+       style="fill:#ffffff"
+       x="921.52502"
+       y="441.10001"
+       width="110.95"
+       height="38"
+       id="rect5284" />
+    <rect
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x="921.52502"
+       y="441.10001"
+       width="110.95"
+       height="38"
+       id="rect5286" />
+    <text
+       font-size="12.7998"
+       style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+       x="977"
+       y="464"
+       id="text5290">
+      <tspan
+         x="977"
+         y="464"
+         id="tspan5288">1-Wire Sensor</tspan>
+    </text>
+  </g>
+  <g
+     id="g5312"
+     transform="translate(0.44542825,-0.79999924)">
+    <rect
+       style="fill:#ffffff"
+       x="925.5"
+       y="484.89999"
+       width="110.95"
+       height="38"
+       id="rect5304" />
+    <rect
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x="925.5"
+       y="484.89999"
+       width="110.95"
+       height="38"
+       id="rect5306" />
+    <text
+       font-size="12.7998"
+       style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+       x="980.97498"
+       y="507.79999"
+       id="text5310">
+      <tspan
+         x="980.97498"
+         y="507.79999"
+         id="tspan5308">I2C Device</tspan>
+    </text>
+  </g>
+  <g
+     id="g5322"
+     transform="translate(0.44542825,-0.79999924)">
+    <rect
+       style="fill:#ffffff"
+       x="520.29999"
+       y="45.799999"
+       width="126.35"
+       height="38"
+       id="rect5314" />
+    <rect
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x="520.29999"
+       y="45.799999"
+       width="126.35"
+       height="38"
+       id="rect5316" />
+    <text
+       font-size="12.7998"
+       style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+       x="583.47498"
+       y="68.699997"
+       id="text5320">
+      <tspan
+         x="583.47498"
+         y="68.699997"
+         id="tspan5318">HTML5 Web HMI</tspan>
+    </text>
+  </g>
+  <rect
+     id="rect5326"
+     height="38"
+     width="120.89999"
+     y="464.54797"
+     x="255.90945"
+     style="fill:#354272;fill-opacity:1;stroke:#000000;stroke-width:1.98834372;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5330"
+     y="487.23529"
+     x="318.34897"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#ffffff"
+     font-size="12.7998">
+    <tspan
+       id="tspan5328"
+       y="487.23529"
+       x="318.34897"
+       style="fill:#ffffff">pyscada.event</tspan>
+  </text>
+  <rect
+     id="rect5336"
+     height="38"
+     width="120.9"
+     y="502.54797"
+     x="255.90945"
+     style="fill:#354272;fill-opacity:1;stroke:#000000;stroke-width:1.98834372;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5340"
+     y="525.70001"
+     x="317.4115"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#ffffff"
+     font-size="12.7998">
+    <tspan
+       id="tspan5338"
+       y="525.70001"
+       x="317.4115"
+       style="fill:#ffffff">pyscada.export</tspan>
+  </text>
+  <g
+     id="g5352"
+     transform="translate(0.44542825,-0.79999924)">
+    <rect
+       style="fill:#ffffff"
+       x="920.5"
+       y="269.5"
+       width="110.95"
+       height="38"
+       id="rect5344" />
+    <rect
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x="920.5"
+       y="269.5"
+       width="110.95"
+       height="38"
+       id="rect5346" />
+    <text
+       font-size="12.7998"
+       style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+       x="975.97498"
+       y="292.39999"
+       id="text5350">
+      <tspan
+         x="975.97498"
+         y="292.39999"
+         id="tspan5348">SCPI Device</tspan>
+    </text>
+  </g>
+  <g
+     id="g5364"
+     transform="translate(0.44542825,-0.79999924)">
+    <line
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x1="765.39001"
+       y1="277.561"
+       x2="912.53497"
+       y2="190.939"
+       id="line5354" />
+    <polygon
+       style="fill:#000000"
+       points="758.927,281.366 765.008,271.984 765.39,277.561 770.081,280.601 "
+       id="polygon5356" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="758.927,281.366 765.008,271.984 765.39,277.561 770.081,280.601 "
+       id="polygon5358" />
+    <polygon
+       style="fill:#000000"
+       points="918.998,187.134 912.917,196.516 912.535,190.939 907.844,187.899 "
+       id="polygon5360" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="918.998,187.134 912.917,196.516 912.535,190.939 907.844,187.899 "
+       id="polygon5362" />
+  </g>
+  <g
+     id="g5376"
+     transform="translate(0.44542825,-0.79999924)">
+    <line
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x1="766.24701"
+       y1="288.95401"
+       x2="912.00299"
+       y2="240.946"
+       id="line5366" />
+    <polygon
+       style="fill:#000000"
+       points="759.124,291.3 767.058,283.423 766.247,288.954 770.186,292.921 "
+       id="polygon5368" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="759.124,291.3 767.058,283.423 766.247,288.954 770.186,292.921 "
+       id="polygon5370" />
+    <polygon
+       style="fill:#000000"
+       points="919.126,238.6 911.192,246.477 912.003,240.946 908.064,236.979 "
+       id="polygon5372" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="919.126,238.6 911.192,246.477 912.003,240.946 908.064,236.979 "
+       id="polygon5374" />
+  </g>
+  <g
+     id="g5388"
+     transform="translate(0.44542825,-0.79999924)">
+    <line
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x1="766.70502"
+       y1="300.728"
+       x2="910.79498"
+       y2="289.272"
+       id="line5378" />
+    <polygon
+       style="fill:#000000"
+       points="759.229,301.323 768.801,295.546 766.705,300.728 769.594,305.514 "
+       id="polygon5380" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="759.229,301.323 768.801,295.546 766.705,300.728 769.594,305.514 "
+       id="polygon5382" />
+    <polygon
+       style="fill:#000000"
+       points="918.271,288.677 908.699,294.454 910.795,289.272 907.906,284.486 "
+       id="polygon5384" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="918.271,288.677 908.699,294.454 910.795,289.272 907.906,284.486 "
+       id="polygon5386" />
+  </g>
+  <g
+     id="g5400"
+     transform="translate(0.44542825,-0.79999924)">
+    <line
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x1="766.828"
+       y1="357.703"
+       x2="911.82202"
+       y2="345.797"
+       id="line5390" />
+    <polygon
+       style="fill:#000000"
+       points="759.354,358.317 768.911,352.515 766.828,357.703 769.729,362.482 "
+       id="polygon5392" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="759.354,358.317 768.911,352.515 766.828,357.703 769.729,362.482 "
+       id="polygon5394" />
+    <polygon
+       style="fill:#000000"
+       points="919.296,345.183 909.739,350.985 911.822,345.797 908.921,341.018 "
+       id="polygon5396" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="919.296,345.183 909.739,350.985 911.822,345.797 908.921,341.018 "
+       id="polygon5398" />
+  </g>
+  <g
+     id="g5412"
+     transform="translate(0.44542825,-0.79999924)">
+    <line
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x1="766.77698"
+       y1="378.78"
+       x2="911.073"
+       y2="397.92001"
+       id="line5402" />
+    <polygon
+       style="fill:#000000"
+       points="759.342,377.794 769.912,374.152 766.777,378.78 768.597,384.065 "
+       id="polygon5404" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="759.342,377.794 769.912,374.152 766.777,378.78 768.597,384.065 "
+       id="polygon5406" />
+    <polygon
+       style="fill:#000000"
+       points="918.508,398.906 907.938,402.548 911.073,397.92 909.253,392.635 "
+       id="polygon5408" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="918.508,398.906 907.938,402.548 911.073,397.92 909.253,392.635 "
+       id="polygon5410" />
+  </g>
+  <g
+     id="g5424"
+     transform="translate(0.44542825,-0.79999924)">
+    <line
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x1="766.37201"
+       y1="408.948"
+       x2="912.27802"
+       y2="457.052"
+       id="line5414" />
+    <polygon
+       style="fill:#000000"
+       points="759.249,406.6 770.311,404.983 766.372,408.948 767.18,414.48 "
+       id="polygon5416" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="759.249,406.6 770.311,404.983 766.372,408.948 767.18,414.48 "
+       id="polygon5418" />
+    <polygon
+       style="fill:#000000"
+       points="919.401,459.4 908.339,461.017 912.278,457.052 911.47,451.52 "
+       id="polygon5420" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="919.401,459.4 908.339,461.017 912.278,457.052 911.47,451.52 "
+       id="polygon5422" />
+  </g>
+  <g
+     id="g5436"
+     transform="translate(0.44542825,-0.79999924)">
+    <line
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x1="766.00897"
+       y1="485.68201"
+       x2="920.69098"
+       y2="555.01801"
+       id="line5426" />
+    <polygon
+       style="fill:#000000"
+       points="759.165,482.615 770.336,482.142 766.009,485.682 766.245,491.268 "
+       id="polygon5428" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="759.165,482.615 770.336,482.142 766.009,485.682 766.245,491.268 "
+       id="polygon5430" />
+    <polygon
+       style="fill:#000000"
+       points="927.535,558.085 916.364,558.558 920.691,555.018 920.455,549.432 "
+       id="polygon5432" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="927.535,558.085 916.364,558.558 920.691,555.018 920.455,549.432 "
+       id="polygon5434" />
+  </g>
+  <g
+     id="g5448"
+     transform="translate(0.44542825,-0.79999924)">
+    <line
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x1="766.29401"
+       y1="447.073"
+       x2="916.33099"
+       y2="500.62701"
+       id="line5438" />
+    <polygon
+       style="fill:#000000"
+       points="759.231,444.552 770.33,443.204 766.294,447.073 766.968,452.622 "
+       id="polygon5440" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="759.231,444.552 770.33,443.204 766.294,447.073 766.968,452.622 "
+       id="polygon5442" />
+    <polygon
+       style="fill:#000000"
+       points="923.394,503.148 912.295,504.496 916.331,500.627 915.657,495.078 "
+       id="polygon5444" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="923.394,503.148 912.295,504.496 916.331,500.627 915.657,495.078 "
+       id="polygon5446" />
+  </g>
+  <g
+     id="g5460"
+     transform="translate(0.44542825,-0.79999924)">
+    <line
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x1="583.75201"
+       y1="93.532097"
+       x2="585.31"
+       y2="148.26801"
+       id="line5450" />
+    <polygon
+       style="fill:#000000"
+       points="583.539,86.0352 588.821,95.8888 583.752,93.5321 578.825,96.1734 "
+       id="polygon5452" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="583.539,86.0352 588.821,95.8888 583.752,93.5321 578.825,96.1734 "
+       id="polygon5454" />
+    <polygon
+       style="fill:#000000"
+       points="585.524,155.765 580.241,145.911 585.31,148.268 590.237,145.627 "
+       id="polygon5456" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="585.524,155.765 580.241,145.911 585.31,148.268 590.237,145.627 "
+       id="polygon5458" />
+  </g>
+  <g
+     id="g5468"
+     transform="translate(0.44542825,-0.79999924)">
+    <line
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x1="676.414"
+       y1="193.51801"
+       x2="921.5"
+       y2="128.89999"
+       id="line5462" />
+    <polygon
+       style="fill:#000000"
+       points="669.162,195.43 677.557,188.046 676.414,193.518 680.106,197.715 "
+       id="polygon5464" />
+    <polygon
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       points="669.162,195.43 677.557,188.046 676.414,193.518 680.106,197.715 "
+       id="polygon5466" />
+  </g>
+  <g
+     id="g5478"
+     transform="translate(0.44542825,-0.79999924)">
+    <rect
+       style="fill:#ffffff"
+       x="921.5"
+       y="109.9"
+       width="110.95"
+       height="38"
+       id="rect5470" />
+    <rect
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x="921.5"
+       y="109.9"
+       width="110.95"
+       height="38"
+       id="rect5472" />
+    <text
+       font-size="12.7998"
+       style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+       x="976.97498"
+       y="132.8"
+       id="text5476">
+      <tspan
+         x="976.97498"
+         y="132.8"
+         id="tspan5474">Phant Device</tspan>
+    </text>
+  </g>
+  <g
+     id="g5488"
+     transform="translate(-30.063555,-0.79999924)">
+    <rect
+       style="fill:#ffffff"
+       x="287"
+       y="541.79999"
+       width="121"
+       height="38"
+       id="rect5480" />
+    <rect
+       style="fill:none;fill-opacity:0;stroke:#000000;stroke-width:2"
+       x="287"
+       y="541.79999"
+       width="121"
+       height="38"
+       id="rect5482" />
+    <text
+       font-size="12.7998"
+       style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#000000"
+       x="347.5"
+       y="564.70001"
+       id="text5486">
+      <tspan
+         x="347.5"
+         y="564.70001"
+         id="tspan5484">filesystem</tspan>
+    </text>
+  </g>
+  <rect
+     id="rect5492"
+     height="37.829987"
+     width="131.20181"
+     y="540.88501"
+     x="379.07355"
+     style="fill:#1a1a1a;fill-opacity:1;stroke:#000000;stroke-width:2.17001414" />
+  <text
+     id="text5496"
+     y="563.70001"
+     x="444.90881"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#ffffff"
+     font-size="12.7998">
+    <tspan
+       id="tspan5494"
+       y="563.70001"
+       x="444.90881"
+       style="fill:#ffffff">systemd</tspan>
+  </text>
+  <rect
+     id="rect5502"
+     height="38"
+     width="134"
+     y="502.54797"
+     x="377.35947"
+     style="fill:#354272;fill-opacity:1;stroke:#000000;stroke-width:1.98834372;stroke-miterlimit:4;stroke-dasharray:none" />
+  <text
+     id="text5506"
+     y="526.5"
+     x="445.4115"
+     style="font-style:normal;font-weight:normal;font-size:12.79979992px;font-family:sans-serif;text-anchor:middle;fill:#ffffff"
+     font-size="12.7998">
+    <tspan
+       id="tspan5504"
+       y="526.5"
+       x="445.4115"
+       style="fill:#ffffff">pyscada_daemon</tspan>
+  </text>
+</svg>

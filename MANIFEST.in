@@ -13,3 +13,6 @@ recursive-include pyscada/phant/*
 recursive-include pyscada/visa/*
 recursive-include docs *
 recursive-exclude * *.pyc
+recursive-exclude pyscada/jofra350 *
+recursive-exclude pyscada/report *
+recursive-exclude pyscada/bacnet *
