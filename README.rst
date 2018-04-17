@@ -19,6 +19,11 @@ Features
 	* Meter-Bus, MBus (in development)
 - very low Hardware requirements for the Server
 
+Structure
+---------
+
+.. image:: https://github.com/trombastic/PyScada/raw/dev/0.7.x/docs/pic/PyScada_module_overview.png
+    :width: 600px
 
 Dependencies
 ------------
@@ -89,3 +94,4 @@ License
 -------
 
 The project is licensed under the _GNU General Public License v3 (GPLv3)_.
+-
