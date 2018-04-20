@@ -121,7 +121,7 @@ class Handler(GenericDevice):
 
     def parse_value(self,value):
         '''
-        takes a string in the HP3456A format and returns a float value or None if not parseable
+        takes a string in the Tektronix AFG1022 format and returns a float value or None if not parseable
         '''
         try:
             return float(value)

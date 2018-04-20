@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 class Handler(GenericDevice):
     '''
-    HP3456A and other Devices with the same command set
+    Keithley DMM 2000 and other Devices with the same command set
     '''
 
     def read_data(self,device_property):
@@ -92,7 +92,7 @@ class Handler(GenericDevice):
 
     def parse_value(self,value):
         '''
-        takes a string in the HP3456A format and returns a float value or None if not parseable
+        takes a string in the Keithley DMM 2000 format and returns a float value or None if not parseable
         '''
         try:
             return float(value)
