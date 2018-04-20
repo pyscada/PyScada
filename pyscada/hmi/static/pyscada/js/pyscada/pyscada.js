@@ -40,6 +40,8 @@ var FETCH_DATA_PENDING = 0;
 var INIT_STATUS_VARIABLES_DONE = false;
 var INIT_CHART_VARIABLES_DONE = false;
 var INIT_CHART_VARIABLES_COUNT = 0;
+var X_AXIS_IS_TIME = 0; //if 0 is time. if not is var id
+var X_AXIS_LOG = 0; //if 1 set logarithmic scale for x axis
 // the code
 var debug = 0;
 var DataFetchingProcessCount = 0;
@@ -610,7 +612,7 @@ function timeline_drag( event, ui ) {
     update_timeline();
 }
 function PyScadaPlot(id){
-    
+    if(X_AXIS_IS_TIME == 0){
     var options = {
         xaxis: {
             mode: "time",
@@ -630,12 +632,39 @@ function PyScadaPlot(id){
                 top: 20,
                 bottom: 8,
                 left: 20
-            }
-        }
-    },
-    series = [],		// just the active data series
+            },
+            //to show points informations
+            hoverable: true,
+            clickable: true
+        },
+        lines: { show: true },
+        points: { show: true }
+    };} else {
+    var options = {
+        legend: {
+            show: false
+        },
+        selection: {
+            mode: "y"
+        },
+        grid: {
+            labelMargin: 10,
+            margin: {
+                top: 20,
+                bottom: 8,
+                left: 20
+            },
+            //to show points informations
+            hoverable: true,
+            clickable: true
+        },
+        lines: { show: true },
+        points: { show: true }
+    };
+    }
+    var series = [],		// just the active data series
     keys   = [],		// list of variable keys (ids)
-    variable_names = [], // list of all variable names 
+    variable_names = [], // list of all variable names
     flotPlot,			// handle to plot
     prepared = false,	//
     legend_id = '#chart-legend-' + id,
@@ -645,8 +674,8 @@ function PyScadaPlot(id){
     legend_checkbox_status_id = '#chart-legend-checkbox-status-' + id + '-',
     variables = {},
     plot = this;
-    
-    
+
+
     // public functions
     plot.update 			= update;
     plot.prepare 			= prepare;
@@ -714,7 +743,35 @@ function PyScadaPlot(id){
         flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series,options);
         // update the plot
         update();
-        // bind 
+
+        //add info on mouse over a point and position of the mouse
+        //add <span id="hoverdata"></span> to the html code to see the position of the mouse
+        $("<div id='tooltip'></div>").css({
+		position: "absolute",
+		display: "none",
+		border: "1px solid #fdd",
+		padding: "2px",
+		"background-color": "#fee",
+		opacity: 0.80
+	}).appendTo("body");
+
+	$(chart_container_id + ' .chart-placeholder').bind("plothover", function (event, pos, item) {
+	if (pos.x) {
+        	var str = "(" + pos.x.toFixed(0) + ", " + pos.y.toFixed(2) + ")";
+        }
+	$("#hoverdata").text(str);
+	if (item) {
+		var x = item.datapoint[0].toFixed(0),
+			y = item.datapoint[1].toFixed(2);
+		$("#tooltip").html(item.series.label + " of " + x + " = " + y)
+			.css({top: item.pageY+5, left: item.pageX+5})
+			.fadeIn(200);
+	} else {
+		$("#tooltip").hide();
+	}
+	});
+
+        // bind
         $(chart_container_id + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
             pOpt = flotPlot.getOptions();
 
@@ -747,8 +804,12 @@ function PyScadaPlot(id){
             DATA_DISPLAY_TO_TIMESTAMP = -1;
             set_x_axes();
             pOpt = flotPlot.getOptions();
-            pOpt.yaxes[0].min = $(chart_container_id).data('axes0Yaxis').min;
-            pOpt.yaxes[0].max = $(chart_container_id).data('axes0Yaxis').max;
+            //change to fit y axes like ZoomYToFit and not to load the default params
+            aOpt = flotPlot.getYAxes();
+            pOpt.yaxes[0].min = aOpt.datamin;
+            pOpt.yaxes[0].max = aOpt.datamax;
+            //pOpt.yaxes[0].min = $(chart_container_id).data('axes0Yaxis').min;
+            //pOpt.yaxes[0].max = $(chart_container_id).data('axes0Yaxis').max;
             flotPlot.setupGrid();
             flotPlot.draw();
         });
@@ -784,8 +845,10 @@ function PyScadaPlot(id){
             // add the selected data series to the "series" variable
             series = [];
             start_id = 0;
+            j=0;
             for (var key in keys){
                 key = keys[key];
+                fkey = X_AXIS_IS_TIME;
                 if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object'){
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
                         start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
@@ -801,25 +864,60 @@ function PyScadaPlot(id){
                     }else {
                         chart_data = DATA[key].slice();
                     }
-                    if (chart_data.length > 2){
-                        i = 1;
-                        while (i < chart_data.length) {
-                             if (chart_data[i][0] - chart_data[i - 1][0] > 1000.0 && chart_data[i][1] != chart_data[i - 1][1]){
-                                chart_data.splice(i,0, [chart_data[i][0], chart_data[i - 1][1]]);
-                                i += 2;
-                            }else{
+                    if (X_AXIS_IS_TIME > 0){
+                        if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
+                            start_fid = find_index_sub_lte(DATA[fkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                            stop_fid = find_index_sub_lte(DATA[fkey],DATA_DISPLAY_TO_TIMESTAMP,0);
+                            chart_fdata = DATA[fkey].slice(start_fid,stop_fid);
+                        }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
+                            start_fid = find_index_sub_lte(DATA[fkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                            chart_fdata = DATA[fkey].slice(start_fid);
+                        }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
+                            if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
+                            stop_fid = find_index_sub_lte(DATA[fkey],DATA_DISPLAY_TO_TIMESTAMP,0);
+                            chart_fdata = DATA[fkey].slice(0,stop_fid);
+                        }else {
+                            chart_fdata = DATA[fkey].slice();
+                        }
+                        new_data=[];
+                        if (chart_data.length > 0){
+                            i = 0;
+                            while (i < chart_data.length) {
+                                new_data.push([chart_fdata[i][1],chart_data[i][1]]);
                                 i += 1;
                             }
                         }
-                    }
-                    if (chart_data.length >= 1){
-                        if (DATA_DISPLAY_TO_TIMESTAMP < 0){
-                            chart_data.push([DATA_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
-                        }else{
-                            chart_data.push([DATA_DISPLAY_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
+                        $.each($(legend_table_id + ' .legendSeries'),function(kkey,val){
+                            val_inst = $(val);
+                            if (key == val_inst.find(".variable-config").data('key')){
+                                label = val_inst.find(".legendLabel").text();
+                            }
+                        });
+                        if (new_data.length > 0){
+                            series.push({"data":new_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":label});
+                            j=1;
+                        }
+                    }else {
+                        if (chart_data.length > 2){
+                            i = 1;
+                            while (i < chart_data.length) {
+                                 if (chart_data[i][0] - chart_data[i - 1][0] > 1000.0 && chart_data[i][1] != chart_data[i - 1][1]){
+                                    chart_data.splice(i,0, [chart_data[i][0], chart_data[i - 1][1]]);
+                                    i += 2;
+                                }else{
+                                    i += 1;
+                                }
+                            }
+                        }
+
+                        if (chart_data.length >= 1){
+                            if (DATA_DISPLAY_TO_TIMESTAMP < 0){
+                                chart_data.push([DATA_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
+                            }else{
+                                chart_data.push([DATA_DISPLAY_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
+                            }
                         }
                     }
-
                     series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis});
                 }
             }
@@ -827,22 +925,42 @@ function PyScadaPlot(id){
             flotPlot.setData(series);
             // update x window
             pOpt = flotPlot.getOptions();
+            if (j == 1 && X_AXIS_IS_TIME > 0){
+                var xticks=[];
+                if (X_AXIS_LOG == 1){
+                    xticks=xticks.concat(chart_fdata[0][1]);
+                    for (i=parseInt(Math.round(Math.log(chart_fdata[0][1])/Math.log(10)));i<=parseInt(Math.round(Math.log(chart_fdata[chart_fdata.length-1][1])/Math.log(10)));i++){
+                        xticks=xticks.concat(Math.pow(10,i)/2);
+                        xticks=xticks.concat(Math.pow(10,i));
+                    xticks=xticks.concat(chart_fdata[chart_fdata.length-1][1]);
+                    pOpt.xaxes[0].ticks = xticks;
+                    pOpt.xaxes[0].transform = function (v) { return Math.log(v); };
+                    pOpt.xaxes[0].inverseTransform = function (v) { return Math.exp(v); };
+                    }
+                }
+                pOpt.xaxes[0].mode = null;
+                pOpt.xaxes[0].min = chart_fdata[0][1];
+                pOpt.xaxes[0].max = chart_fdata[chart_fdata.length-1][1];
+            }else {
+//                pOpt.xaxes[0].mode = "time";
+                pOpt.xaxes[0].ticks = $('#chart-container-'+id).data('xaxisTicks');
+                pOpt.xaxes[0].timeformat = "%H:%M:%S";
+                pOpt.xaxes[0].timezone = "browser";
+                if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
+                    pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
+                    pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
 
-            if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
-                pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
-                pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
-
-            }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
-                pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
-                pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
-            }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
-                pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
-                pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
-            }else{
-                pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
-                pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
+                }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
+                    pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
+                    pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
+                }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
+                    pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
+                    pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
+                }else{
+                    pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
+                    pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
+                }
             }
-
             flotPlot.setupGrid();
             flotPlot.draw();
         }
@@ -951,12 +1069,18 @@ $('button.write-task-set').click(function(){
 $('button.write-task-form-set').click(function(){
         name_form = $(this.form).attr('name');
         tabinputs = document.forms[name_form].getElementsByTagName("input");
+        xaxis_value = document.getElementById("xaxis_value").innerHTML; //value of the x axis. if 0 then time
+        xaxis_log = document.getElementById("xaxis_log").innerHTML; //if 1 x axis with log scale
+        DATA={}; //reset the data after each button click
+        CHART_VARIABLE_KEYS[xaxis_value]=1;
+        X_AXIS_IS_TIME=xaxis_value;
+        X_AXIS_LOG=xaxis_log;
         for (i=0;i<tabinputs.length;i++){
             value = tabinputs[i].value;
             var_id = $(tabinputs[i]).attr("id");
             if (value == "" ){
                 add_notification('please provide a value',3);
-                alert("value vide");
+                alert("value empty");
             }else{
                 $.ajax({
                     type: 'post',
@@ -967,7 +1091,7 @@ $('button.write-task-form-set').click(function(){
                     },
                     error: function(data) {
                         add_notification('add new write task failed',3);
-                        alert("Form set NOT ok")
+                        alert("form set Nok")
                     }
                 });
             };
@@ -1034,6 +1158,9 @@ $( document ).ready(function() {
     $('.dropdown input, .dropdown label, .dropdown button').click(function(e) {
         e.stopPropagation();
     });
+    //load type of x axis to set the options
+    xaxis_value = document.getElementById("xaxis_value").innerHTML; //value of the x axis. if 0 then time
+    X_AXIS_IS_TIME=xaxis_value;
     // init
     $.each($('.chart-container'),function(key,val){
         // get identifier of the chart

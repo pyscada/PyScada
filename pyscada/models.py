@@ -310,7 +310,8 @@ class Device(models.Model):
             mod = __import__(self.protocol.device_class, fromlist=['Device'])
             device_class = getattr(mod, 'Device')
             return device_class(self)
-        except:
+        except Exception as e:
+            logger.error("Error get_device_instance : %s : %s" %(self.__str__(),e))
             return None
 
 

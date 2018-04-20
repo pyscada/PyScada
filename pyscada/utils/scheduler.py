@@ -503,6 +503,7 @@ class Scheduler(object):
         spawn a new process
         """
         if process is None:
+            logger.error("process is None")
             return False
         # start new child process
         pid = fork()
@@ -603,6 +604,7 @@ class Process(object):
     def run(self):
         BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=datetime_now(), message='running..')
         exec_loop = True
+        j=0
         try:
             while True:
                 t_start = time()
@@ -655,8 +657,14 @@ class Process(object):
                     pass
 
                 dt = self.dt_set - (time() - t_start)
+                dt = min(dt, j)
                 if dt > 0:
                     sleep(dt)
+#                logger.info("%s - Loop : %s - dt : %s" %(self.label, time()-t_start, dt))
+                if (sig is None) and (exec_loop) and (data is not None):
+                    j=0
+                else:
+                    j += 1
         except StopIteration:
             self.stop()
             sys.exit(0)
@@ -704,7 +712,7 @@ class Process(object):
 
 
 class SingleDeviceDAQProcess(Process):
-    def __init__(self, dt=5, **kwargs):
+    def __init__(self, dt=1, **kwargs):
         self.last_query = 0
         self.dt_query_data = 0
         self.device = None
@@ -717,6 +725,7 @@ class SingleDeviceDAQProcess(Process):
         """
         self.device = Device.objects.filter(protocol__daq_daemon=1, active=1, id=self.device_id).first()
         if not self.device:
+            logger.error("Error self.device")
             return False
         self.dt_set = min(self.dt_set, self.device.polling_interval)
         self.dt_query_data = self.device.polling_interval
@@ -734,7 +743,7 @@ class SingleDeviceDAQProcess(Process):
         data=[]
         # process write tasks
         for task in DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False,
-                                                   variable__device_id=self.device_id):
+                                                   variable__device_id=self.device_id).order_by('start'):
             if task.variable.scaling is not None:
                 task.value = task.variable.scaling.scale_output_value(task.value)
             tmp_data = self.device.write_data(task.variable.id, task.value)

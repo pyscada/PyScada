@@ -4,7 +4,11 @@ from __future__ import unicode_literals
 
 from django.conf import settings
 
-try: 
+import logging
+
+logger = logging.getLogger(__name__)
+
+try:
     import visa
     driver_ok = True
 except ImportError:
@@ -16,22 +20,22 @@ class GenericDevice:
         self._device = pyscada_device
         self.inst = None
         self.connect()
-    
+
     def connect(self):
         """
         establish a connection to the Instrument
         """
         if not driver_ok:
-            # todo add to log
+            logger.error("Visa driver NOT ok")
             return False
         visa_backend = '@py'  # use PyVISA-py as backend
         if hasattr(settings, 'VISA_BACKEND'):
             visa_backend = settings.VISA_BACKEND
-        
+
         try:
             self.rm = visa.ResourceManager(visa_backend)
         except:
-            # todo log
+            logger.error("Visa ResourceManager cannot load resources : %s" %self)
             return False
         try:
             resource_prefix = self._device.visadevice.resource_name.split('::')[0]
@@ -39,13 +43,13 @@ class GenericDevice:
             if hasattr(settings, 'VISA_DEVICE_SETTINGS'):
                 if resource_prefix in settings.VISA_DEVICE_SETTINGS:
                     extras = settings.VISA_DEVICE_SETTINGS[resource_prefix]
-            
+
             self.inst = self.rm.open_resource(self._device.visadevice.resource_name, **extras)
         except:
-            # todo log
+            logger.error("Visa ResourceManager cannot open resource : %s" %self._device.visadevice.resource_name)
             return False
         return True
-    
+
     def disconnect(self):
         if self.inst is not None:
             self.inst.close()
@@ -57,9 +61,9 @@ class GenericDevice:
         """
         read values from the device
         """
-        
+
         return None
-    
+
     def write_data(self, variable_id, value):
         """
         write values to the device

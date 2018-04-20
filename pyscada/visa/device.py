@@ -28,6 +28,7 @@ class Device:
             driver_handler_ok = True
         except ImportError:
             driver_handler_ok = False
+            logger.error("Handler error")
 
         for var in self.device.variable_set.filter(active=1):
             if not hasattr(var, 'visavariable'):
@@ -42,7 +43,9 @@ class Device:
         request data from the instrument/device
         """
         output = []
+        logger.info("visa device read")
         if not driver_visa_ok:
+            logger.info('Request Data Visa Driver Not Ok')
             return output
 
         for item in self.variables:
@@ -63,17 +66,20 @@ class Device:
         '''
         output = []
         if not driver_visa_ok:
-            logger.info("Visa driver NOT ok")
+            logger.info("Visa-device-write data-visa NOT ok")
             return output
         for item in self.variables:
             if not (item.visavariable.variable_type == 0 and item.id == variable_id):
                 # skip all config values
                 continue
-            #start=time()
+            start=time()
             read_value = self._h.write_data(item.visavariable.device_property, value)
-            #end=time()
-            #duration=float(end - start)
-            #logger.debug(("%s - %s - %s - %s - %s - %s") %(item.device.__str__(), item.__str__(), item.visavariable.device_property, value, read_value, duration))
+            end=time()
+            duration=float(end - start)
+            logger.info(("%s - %s - %s - %s - %s - %s") %(item.device.__str__(), item.__str__(), item.visavariable.device_property, value, read_value, duration))
             if read_value is not None and item.update_value(read_value, time()):
                 output.append(item.create_recorded_data_element())
+            else:
+                logger.info("Visa-Output not ok : %s" % output)
         return output
+
