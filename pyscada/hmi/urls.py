@@ -19,5 +19,5 @@ urlpatterns = [
     url(r'^json/cache_data/$', views.get_cache_data),
     url(r'^json/log_data/$', views.log_data),
     url(r'^form/write_task/$', views.form_write_task),
-    url(r'^view/(?P<link_title>\w+)/$', views.view, name="main-view"),
+    url(r'^view/(?P<link_title>[\w,-]+)/$', views.view, name="main-view"),
 ]

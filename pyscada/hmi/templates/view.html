@@ -139,22 +139,7 @@
                 $(this).stop().CSSAnimate({"bottom":-(oh - 31)},500)
             });
             
-            // auto update function
-            $('#AutoUpdateButton').click(function(e) {
-                if (AUTO_UPDATE_ACTIVE) {
-                    // deactivate auto update
-                    AUTO_UPDATE_ACTIVE = false;
-                    $("#AutoUpdateButton").addClass("btn-default");
-                    $("#AutoUpdateButton").removeClass("btn-success");
-                } else {
-                    // activate auto update
-                    AUTO_UPDATE_ACTIVE = true;
-                    $("#AutoUpdateButton").addClass("btn-success");
-                    $("#AutoUpdateButton").removeClass("btn-default");
-                    JsonErrorCount = 0;
-                    data_handler();
-                }
-            });
+
             // prevent reloading by existent 
             window.onbeforeunload = function() {
                 return "you realy wan't to reload/leave the page?";

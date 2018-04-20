@@ -9,6 +9,8 @@ from django.dispatch import receiver
 from django.core.mail import send_mail
 from django.utils.encoding import python_2_unicode_compatible
 
+from pyscada.utils import blow_up_data
+
 import traceback
 import time
 import json
@@ -17,7 +19,8 @@ from os import kill
 from struct import *
 from os import getpid
 import errno
-
+import numpy as np
+from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -55,7 +58,7 @@ class RecordedDataValueManager(models.Manager):
 
     def get_values_in_time_range(self, time_min=None, time_max=None, query_first_value=False, time_in_ms=False,
                                  key_is_variable_name=False, add_timetamp_field=False, add_fake_data=False,
-                                 add_latest_value=True, **kwargs):
+                                 add_latest_value=True,blow_up=False, **kwargs):
         # tic = time.time()
         if time_min is None:
             time_min = 0
@@ -70,6 +73,8 @@ class RecordedDataValueManager(models.Manager):
             time_max = time.time() * 2097152 * 1000 + 2097151
         else:
             time_max = min(time_max, time.time()) * 2097152 * 1000 + 2097151
+        
+        
         values = {}
         var_filter = True
         if 'variable' in kwargs:
@@ -88,6 +93,7 @@ class RecordedDataValueManager(models.Manager):
         else:
             variables = Variable.objects.all()
             var_filter = False
+        
         # export in seconds or millis
         if time_in_ms:
             f_time_scale = 1
@@ -217,7 +223,26 @@ class RecordedDataValueManager(models.Manager):
                         i += 2
                     else:
                         i += 1
+        '''
+        blow up data
+        '''
+        
+        if blow_up:
+            if 'mean_value_period' in kwargs:
+                mean_value_period = kwargs['mean_value_period']
+            else:
+                mean_value_period = 5.0
+            if 'no_mean_value' in kwargs:
+                no_mean_value = kwargs['no_mean_value']
+            else:
+                no_mean_value = True
+            timevalues = np.arange(np.ceil((time_min / (2097152.0 * 1000)) / mean_value_period) * mean_value_period,
+                                np.floor((time_max / (2097152.0 * 1000)) / mean_value_period) * mean_value_period, mean_value_period)
 
+            for key in values:
+                values[key] = blow_up_data(values[key],timevalues,mean_value_period,no_mean_value)
+            values['timevalues'] = timevalues
+        
         '''
         change output tuple key from pk to variable name
         '''
@@ -505,7 +530,7 @@ class Variable(models.Model):
 
     def query_prev_value(self):
         """
-        get the las value and timestamp from the database
+        get the last value and timestamp from the database
         """
         time_max = time.time() * 2097152 * 1000 + 2097151
         val = self.recordeddata_set.filter(id__range=(time_max - (3660 * 1000 * 2097152), time_max)).last()
@@ -715,6 +740,7 @@ class RecordedData(models.Model):
     value_float64 = models.FloatField(null=True, blank=True)  # float64
     variable = models.ForeignKey('Variable')
     objects = RecordedDataValueManager()
+    #date = models.DateTimeField(blank=True,null=True,db_index=True)
 
     def __init__(self, *args, **kwargs):
         if 'timestamp' in kwargs:
@@ -727,6 +753,10 @@ class RecordedData(models.Model):
             variable_id = kwargs['variable'].pk
         else:
             variable_id = None
+        # if 'date' in kwargs:
+        #   date = kwargs['date']
+        # else:
+        #   date = datetime.fromtimestamp(timestamp)
         if variable_id is not None and 'id' not in kwargs:
             kwargs['id'] = int(int(int(timestamp * 1000) * 2097152) + variable_id)
         if 'variable' in kwargs and 'value' in kwargs:
@@ -764,7 +794,8 @@ class RecordedData(models.Model):
         if timestamp is None:
             timestamp = time.time()
         self.pk = int(int(int(timestamp * 1000) * 2097152) + self.variable.pk)
-
+        # self.pk = int(int(int(time.time() * 1000) * 2097152) + self.variable.pk)
+        
     def __str__(self):
         return str(self.value())
 
@@ -773,6 +804,10 @@ class RecordedData(models.Model):
         return the timestamp in seconds calculated from the id
         """
         return (self.pk - self.variable.pk) / 2097152 / 1000.0  # value in seconds
+        # if self.date is None:
+        #   return (self.pk - self.variable.pk) / 2097152 / 1000.0  # value in seconds
+        #
+        #return (self.pk - self.variable.pk) / 2097152 / 1000.0  # value in seconds
 
     def value(self, value_class=None):
         """

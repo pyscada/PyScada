@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0b31
+version 0.7.0rc2
 
 Copyright (c) 2013-2018 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.7.0b31"
+var version = "0.7.0rc2"
 var NOTIFICATION_COUNT = 0
 var UPDATE_STATUS_COUNT = 0;
 var INIT_STATUS_COUNT = 0;
@@ -223,7 +223,8 @@ function data_handler_ajax(init,variable_keys,timestamp_from,timestamp_to){
     FETCH_DATA_PENDING++;
     if(init){show_init_status();}
     request_data = {timestamp_from:timestamp_from, variables: variable_keys, init: init};
-    if (typeof(timestamp_to !== 'undefined')){request_data['timestamp_to']=timestamp_to}
+    if (typeof(timestamp_to !== 'undefined')){request_data['timestamp_to']=timestamp_to};
+    if (!init){request_data['timestamp_from'] = request_data['timestamp_from'] - REFRESH_RATE;};
     $.ajax({
         url: ROOT_URL+'json/cache_data/',
         dataType: "json",
@@ -782,12 +783,12 @@ function PyScadaPlot(id){
                 flotPlot.draw();
             }
             flotPlot.clearSelection();
-			if ($("#activate_zoom_x").is(':checked')) {
-			    DATA_DISPLAY_TO_TIMESTAMP = ranges.xaxis.to;
-			    DATA_DISPLAY_FROM_TIMESTAMP = ranges.xaxis.from;
-			    DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP-DATA_DISPLAY_FROM_TIMESTAMP;
-			    set_x_axes();
-			}
+            if ($("#activate_zoom_x").is(':checked')) {
+                DATA_DISPLAY_TO_TIMESTAMP = ranges.xaxis.to;
+                DATA_DISPLAY_FROM_TIMESTAMP = ranges.xaxis.from;
+                DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP-DATA_DISPLAY_FROM_TIMESTAMP;
+                set_x_axes();
+            }
 
         });
 
@@ -1210,6 +1211,22 @@ $( document ).ready(function() {
         drag: timeline_drag,
         start: function( event, ui ) {progressbar_resize_active = true;},
         stop: function( event, ui ) {progressbar_resize_active = false;},
+    });
+    // auto update function
+    $('#AutoUpdateButton').click(function(e) {
+        if (AUTO_UPDATE_ACTIVE) {
+            // deactivate auto update
+            AUTO_UPDATE_ACTIVE = false;
+            $("#AutoUpdateButton").addClass("btn-default");
+            $("#AutoUpdateButton").removeClass("btn-success");
+        } else {
+            // activate auto update
+            AUTO_UPDATE_ACTIVE = true;
+            $("#AutoUpdateButton").addClass("btn-success");
+            $("#AutoUpdateButton").removeClass("btn-default");
+            JsonErrorCount = 0;
+            data_handler();
+        }
     });
     $('#PlusTwoHoursButton').click(function(e) {
         $('#PlusTwoHoursButton').addClass("disabled");
