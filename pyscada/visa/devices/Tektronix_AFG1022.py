@@ -37,7 +37,7 @@ class Handler(GenericDevice):
         j=0
         while i<10:
             try:
-                #self.inst.query('*IDN?')
+                self.inst.query('*IDN?')
                 #logger.info("Visa-AFG1022-Write-variable_id : %s et value : %s" %(variable_id, value))
                 i=12
                 j=1
@@ -46,49 +46,50 @@ class Handler(GenericDevice):
                 i += 1
                 logger.error("AFG1022 connect error i : %s" %i)
         if j == 0:
-            logger.error("AFG1022-Inst NOT connected")
+            logger.error("AFG1022-Instrument non connecté")
             return None
         if variable_id == 'init_BODE':
-            
+
             #N
             try:
-                N = int(RecordedData.objects.last_element(variable_id=16).value())
+                N = int(RecordedData.objects.last_element(variable_id=Variable.objects.get(name='BODE_n').id).value())
             except:
                 N = 0
-                #logger.error('AFG1022 cannot load N')
+                logger.error('AFG1022 cannot load N')
             if N == 0:
                 #Set N to 1
-                cwt = DeviceWriteTask(variable_id=16, value=1, start=time.time())
+                cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='BODE_n').id, value=1, start=time.time())
                 cwt.save()
                 #ReCall init GBF
-                cwt = DeviceWriteTask(variable_id=3, value=1, start=time.time())
+                cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='Init_BODE_GBF').id, value=1, start=time.time())
                 cwt.save()
                 return None
             elif N == 1:
+                self.inst.read_termination = '\n'
                 #Récup de Ve
-                Vepp = RecordedData.objects.last_element(variable_id=11)
+                Vepp = RecordedData.objects.last_element(variable_id=Variable.objects.get(name='BODE_Vpp').id).value()
                 #Fmin
-                Fmin = RecordedData.objects.last_element(variable_id=12)
+                Fmin = RecordedData.objects.last_element(variable_id=Variable.objects.get(name='BODE_Fmin').id).value()
                 #Call Range MM
-                cwt = DeviceWriteTask(variable_id=1, value=Vepp.value(), start=time.time())
+                cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='Set_AC_Range_and_Resolution_and_Measure_MM').id, value=Vepp, start=time.time())
                 cwt.save()
                 #Call Init Osc
-                cwt = DeviceWriteTask(variable_id=6, value=1, start=time.time())
+                cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='Init_BODE_Osc').id, value=1, start=time.time())
                 cwt.save()
                 #Reset GBF
-                CMD = str('*RST;OUTPut1:STATe ON;OUTP1:IMP MAX;SOUR1:AM:STAT OFF;SOUR1:FUNC:SHAP SIN;SOUR1:VOLT:LEV:IMM:AMPL '+str(Vepp.value())+'Vpp')
+                CMD = str('*RST;OUTPut1:STATe ON;OUTP1:IMP MAX;SOUR1:AM:STAT OFF;SOUR1:FUNC:SHAP SIN;SOUR1:VOLT:LEV:IMM:AMPL '+str(Vepp)+'Vpp')
                 self.inst.write(CMD)
 #                self.inst.write('*CLS')
                 #Set F value
-                cwt = DeviceWriteTask(variable_id=15, value=Fmin.value(), start=time.time())
+                cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='BODE_F').id, value=Fmin, start=time.time())
                 cwt.save()
                 #Call  Set Freq GBF
-#                cwt = DeviceWriteTask(variable_id=7, value=Fmin.value(), start=time.time())
+#                cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='Set_Freq_GBF').id, value=Fmin, start=time.time())
 #                cwt.save()
-                self.write_data("set_freq", Fmin.value())
+                self.write_data("set_freq", Fmin)
                 return True
             else:
-                cwt = DeviceWriteTask(variable_id=3, value=1, start=time.time())
+                cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='Init_BODE_GBF').id, value=1, start=time.time())
                 cwt.save()
                 logger.info("Init GBF - N : %s" %N)
                 return False
@@ -97,19 +98,19 @@ class Handler(GenericDevice):
             #Define Freq
             self.inst.write('SOUR1:FREQ:FIX '+str(value))
             #Call Read MM
-            cwt = DeviceWriteTask(variable_id=2, value=1, start=time.time())
+            cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='Read_MM_acual_value').id, value=1, start=time.time())
             cwt.save()
             return self.parse_value(value)
         elif variable_id == 'set_tension':
             #Define tension
             self.inst.write('SOUR1:VOLT:LEV:IMM:AMPL '+str(value)+'Vpp')
             #F = Fmin
-            F = RecordedData.objects.last_element(variable_id=12)
+            F = RecordedData.objects.last_element(variable_id=Variable.objects.get(name='BODE_Fmin').id).value()
             #Set F value
-            cwt = DeviceWriteTask(variable_id=15, value=F.value(), start=time.time())
+            cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='BODE_F').id, value=F, start=time.time())
             cwt.save()
             #Call  Set Freq GBF
-            cwt = DeviceWriteTask(variable_id=7, value=F.value(), start=time.time())
+            cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='Set_Freq_GBF').id, value=F, start=time.time())
             cwt.save()
             return self.parse_value(value)
         elif variable_id == 'return_value':
