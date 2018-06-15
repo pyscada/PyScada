@@ -9,14 +9,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Handler(GenericDevice):
-    '''
+    """
     Tektronix AFG1022 and other Devices with the same command set
-    '''
+    """
 
     def read_data(self,device_property):
-        '''
+        """
         read values from the device
-        '''
+        """
         if self.inst is None:
             logger.error("Visa-AFG1022-read data-Self.inst : None")
             return None
@@ -30,9 +30,9 @@ class Handler(GenericDevice):
         return None
 
     def write_data(self,variable_id, value):
-        '''
+        """
         write values to the device
-        '''
+        """
         i=0
         j=0
         while i<10:
@@ -42,6 +42,7 @@ class Handler(GenericDevice):
                 i=12
                 j=1
             except:
+                self.connect()
                 time.sleep(1)
                 i += 1
                 logger.error("AFG1022 connect error i : %s" %i)
@@ -115,14 +116,18 @@ class Handler(GenericDevice):
             return self.parse_value(value)
         elif variable_id == 'return_value':
             return self.parse_value(value)
+        elif variable_id == 'reboot':
+            import os
+            os.system('sudo reboot')
+            return 1
         else:
             return self.parse_value(self.inst.query(str(variable_id)+' '+str(value)))
         return None
 
     def parse_value(self,value):
-        '''
+        """
         takes a string in the Tektronix AFG1022 format and returns a float value or None if not parseable
-        '''
+        """
         try:
             return float(value)
         except:

@@ -123,7 +123,7 @@ function add_fetched_data(key,value){
                         if (typeof(stop_id) === "number" ){
                             DATA[key] = value.slice(0,stop_id).concat(DATA[key]);
                         }else{
-                            console.log(key + ' : dropped data');
+                            console.log(key + ' : dropped data 1');
                         }
                     } else if (v_t_max > d_t_max && d_t_min < v_t_min){
                         // data and value overlapping, data has older elements then value, append
@@ -131,10 +131,11 @@ function add_fetched_data(key,value){
                         if (typeof(stop_id) === "number" ){
                             DATA[key] = DATA[key].concat(value.slice(stop_id));
                         }else{
-                            console.log(key + ' : dropped data');
+                            console.log(key + ' : dropped data 2');
                         }
                     } else{
-                        console.log(key + ' : dropped data');
+                        console.log(key + ' : dropped data 3');
+                        console.log(v_t_min + " " + v_t_max + " " + d_t_min + " " + d_t_max);
                     }
                 }
                 if (value[0][0] < DATA_FROM_TIMESTAMP){
@@ -224,7 +225,7 @@ function data_handler_ajax(init,variable_keys,timestamp_from,timestamp_to){
     if(init){show_init_status();}
     request_data = {timestamp_from:timestamp_from, variables: variable_keys, init: init};
     if (typeof(timestamp_to !== 'undefined')){request_data['timestamp_to']=timestamp_to};
-    if (!init){request_data['timestamp_from'] = request_data['timestamp_from'] - REFRESH_RATE;};
+    if (!init && X_AXIS_IS_TIME == 0){request_data['timestamp_from'] = request_data['timestamp_from'] - REFRESH_RATE;};
     $.ajax({
         url: ROOT_URL+'json/cache_data/',
         dataType: "json",
@@ -844,7 +845,7 @@ function PyScadaPlot(id){
         if($(chart_container_id).is(":visible")){
             // only update if plot is visible
             // add the selected data series to the "series" variable
-            series = [];
+            var series = [];
             start_id = 0;
             j=0;
             for (var key in keys){
@@ -883,20 +884,27 @@ function PyScadaPlot(id){
                         new_data=[];
                         if (chart_data.length > 0){
                             i = 0;
-                            while (i < chart_data.length) {
-                                new_data.push([chart_fdata[i][1],chart_data[i][1]]);
-                                i += 1;
+                            if (chart_fdata.length < chart_data.length){
+                                console.log('X data smaller than Y data -> X : ' + chart_fdata + ' - Y : ' + chart_data);
+                            }else {
+                                while (i < chart_data.length) {
+                                    new_data.push([chart_fdata[i][1],chart_data[i][1]]);
+                                    i += 1;
+                                }
                             }
                         }
                         $.each($(legend_table_id + ' .legendSeries'),function(kkey,val){
                             val_inst = $(val);
                             if (key == val_inst.find(".variable-config").data('key')){
                                 label = val_inst.find(".legendLabel").text();
+                                unit = val_inst.find(".legendUnit").text();
                             }
                         });
                         if (new_data.length > 0){
-                            series.push({"data":new_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":label});
-                            j=1;
+                            j += 1;
+                            //plot Y with defferents axis
+                            series.push({"data":new_data,"color":variables[key].color,"yaxis":j,"label":label,"unit":unit});
+//                            series.push({"data":new_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":label});
                         }
                     }else {
                         if (chart_data.length > 2){
@@ -924,9 +932,39 @@ function PyScadaPlot(id){
             }
             // update flot plot
             flotPlot.setData(series);
+
+            //update y window
+            pOpt = flotPlot.getOptions();
+            if (j != 0 && X_AXIS_IS_TIME > 0){
+                yoptions = [];
+                l=0;
+                for (k = 1;k <= j;k++){
+                    if(k%2){pos="left";}else{pos="right";};
+                    var U = series[2*(k-1)]['unit'];
+                    yoptions.push({
+                        position: pos,
+                        tickFormatter: function (value, axis) {
+                            return value.toFixed(axis.tickDecimals) + U;
+                        },
+                        axisLabel: "test",
+                        axisLabelUseCanvas: true,
+                        axisLabelFontSizePixels: 12,
+                        axisLabelFontFamily: 'Verdana, Arial',
+                        axisLabelPadding: 3,
+                        //color: "green",
+                        min: null,
+                        max: null,
+                    });
+//                    yoptions.push({position: pos, tickFormatter: function(value, axis) {return value.toFixed(axis.tickDecimals);}, axisLabel: series[2*(k-1)]['label'], axisLabelUseCanvas: true, axisLabelFontSizePixels: 12, axisLabelFontFamily: 'Verdana, Arial', axisLabelPadding: 3, color: "green"});
+                }
+                options.yaxes = yoptions;
+                //TODO : replace "replot" with setupGrid and draw WORK ONLY WITH 1 AXIS...
+                flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series,options);
+            }
+
             // update x window
             pOpt = flotPlot.getOptions();
-            if (j == 1 && X_AXIS_IS_TIME > 0){
+            if (j != 0 && X_AXIS_IS_TIME > 0){
                 var xticks=[];
                 if (X_AXIS_LOG == 1){
                     xticks=xticks.concat(chart_fdata[0][1]);
@@ -1070,15 +1108,22 @@ $('button.write-task-set').click(function(){
 $('button.write-task-form-set').click(function(){
         name_form = $(this.form).attr('name');
         tabinputs = document.forms[name_form].getElementsByTagName("input");
-        xaxis_value = document.getElementById("xaxis_value").innerHTML; //value of the x axis. if 0 then time
-        xaxis_log = document.getElementById("xaxis_log").innerHTML; //if 1 x axis with log scale
+//        X_AXIS_IS_TIME = document.getElementById("xaxis_value").innerHTML; //value of the x axis. if 0 then time
+        X_AXIS_LOG = document.getElementById("xaxis_log").innerHTML; //if 1 x axis with log scale
         DATA={}; //reset the data after each button click
-        CHART_VARIABLE_KEYS[xaxis_value]=1;
-        X_AXIS_IS_TIME=xaxis_value;
-        X_AXIS_LOG=xaxis_log;
+        CHART_VARIABLE_KEYS[xaxis_value]=1; //permit to store value for x axis
         for (i=0;i<tabinputs.length;i++){
             value = tabinputs[i].value;
-            var_id = $(tabinputs[i]).attr("id");
+            var_name = $(tabinputs[i]).attr("name");
+//            var_id = $(tabinputs[i]).attr("id");
+            $.each($('.variable-config'),function(key,val){
+                key = parseInt($(val).data('key'));
+                name_var = $(val).data('name');
+                if (name_var==var_name){
+                    var_id = key;
+                }
+            });
+
             if (value == "" ){
                 add_notification('please provide a value',3);
                 alert("value empty");
@@ -1092,7 +1137,7 @@ $('button.write-task-form-set').click(function(){
                     },
                     error: function(data) {
                         add_notification('add new write task failed',3);
-                        alert("form set Nok")
+                        alert("form set Nok"+data)
                     }
                 });
             };
@@ -1160,8 +1205,10 @@ $( document ).ready(function() {
         e.stopPropagation();
     });
     //load type of x axis to set the options
-    xaxis_value = document.getElementById("xaxis_value").innerHTML; //value of the x axis. if 0 then time
-    X_AXIS_IS_TIME=xaxis_value;
+    if(document.getElementById("xaxis_value") !== null){ //value of the x axis. if 0 then time
+        xaxis_value = document.getElementById("xaxis_value").innerHTML;
+        X_AXIS_IS_TIME = xaxis_value;
+    }
     // init
     $.each($('.chart-container'),function(key,val){
         // get identifier of the chart

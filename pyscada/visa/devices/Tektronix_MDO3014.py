@@ -10,19 +10,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 try:
-    import statistics
+    import numpy as np
 except:
-    logger.error("Need to install statistics : pip install statistics")
+    logger.error("Need to install numpy : pip install numpy")
 
 class Handler(GenericDevice):
-    '''
+    """
     Tektronix MDO3014 and other Devices with the same command set
-    '''
+    """
 
     def read_data(self,device_property):
-        '''
+        """
         read values from the device
-        '''
+        """
         if self.inst is None:
             logger.error("Visa-MDO3014-read data-Self.inst : None")
             return None
@@ -35,9 +35,9 @@ class Handler(GenericDevice):
         return None
 
     def write_data(self,variable_id, value):
-        '''
+        """
         write values to the device
-        '''
+        """
         i=0
         j=0
         while i<10:
@@ -47,6 +47,7 @@ class Handler(GenericDevice):
                 i=12
                 j=1
             except:
+                self.connect()
                 time.sleep(1)
                 i += 1
                 logger.error("MDO3014 connect error i : %s" %i)
@@ -80,8 +81,8 @@ class Handler(GenericDevice):
             for k in range(1,4):
                 Phase.append(float(self.inst.query(CMD)))
                 time.sleep(0.1)
-            MeanPhase = statistics.mean(Phase)
-            StDevPhase = statistics.stdev(Phase)
+            MeanPhase = np.mean(Phase)
+            StDevPhase = np.std(Phase)
             logger.info("Phase : %s - Mean : %s - StDev : %s" %(Phase,MeanPhase,StDevPhase))
             i=0
             while (float(MeanPhase) > 100000 or StDevPhase > 3) and i<10:
@@ -90,8 +91,8 @@ class Handler(GenericDevice):
                 for k in range(1,4):
                     Phase.append(float(self.inst.query(CMD)))
                     time.sleep(0.1)
-                MeanPhase = statistics.mean(Phase)
-                StDevPhase = statistics.stdev(Phase)
+                MeanPhase = np.mean(Phase)
+                StDevPhase = np.std(Phase)
                 logger.info("Phase : %s - Mean : %s - StDev : %s" %(Phase,MeanPhase,StDevPhase))
                 i += 1
                 time.sleep((1+i)/10)
@@ -171,9 +172,9 @@ class Handler(GenericDevice):
 
 
     def parse_value(self,value):
-        '''
+        """
         takes a string in the Tektronix MDO3014 format and returns a float value or None if not parseable
-        '''
+        """
         try:
             return float(value)
         except:

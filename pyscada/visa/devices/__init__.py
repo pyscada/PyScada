@@ -47,6 +47,7 @@ class GenericDevice:
             self.inst = self.rm.open_resource(self._device.visadevice.resource_name, **extras)
         except:
             logger.error("Visa ResourceManager cannot open resource : %s" %self._device.visadevice.resource_name)
+            self.disconnect()
             return False
         return True
 

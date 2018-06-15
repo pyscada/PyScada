@@ -36,6 +36,7 @@ class Device:
             self.variables.append(var)
 
         if driver_visa_ok and driver_handler_ok:
+            self._h.disconnect()
             self._h.connect()
 
     def request_data(self):
@@ -82,4 +83,3 @@ class Device:
             else:
                 logger.info("Visa-Output not ok : %s" % output)
         return output
-

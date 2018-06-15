@@ -712,7 +712,7 @@ class Process(object):
 
 
 class SingleDeviceDAQProcess(Process):
-    def __init__(self, dt=1, **kwargs):
+    def __init__(self, dt=5, **kwargs):
         self.last_query = 0
         self.dt_query_data = 0
         self.device = None
@@ -742,6 +742,7 @@ class SingleDeviceDAQProcess(Process):
         #data from a write
         data=[]
         # process write tasks
+        # Do all the write task for this device starting with the oldest
         for task in DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False,
                                                    variable__device_id=self.device_id).order_by('start'):
             if task.variable.scaling is not None:
@@ -764,8 +765,8 @@ class SingleDeviceDAQProcess(Process):
         if isinstance(data, list):
             if len(data) > 0:
                 return 1, data
-            else:
-                return 1, None
+            # else:
+            #    return 1, None
 
         if time() - self.last_query > self.dt_query_data:
             self.last_query = time()

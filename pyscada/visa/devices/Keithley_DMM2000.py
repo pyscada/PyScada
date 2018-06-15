@@ -10,14 +10,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 class Handler(GenericDevice):
-    '''
+    """
     Keithley DMM 2000 and other Devices with the same command set
-    '''
+    """
 
     def read_data(self,device_property):
-        '''
+        """
         read values from the device
-        '''
+        """
         if self.inst is None:
             logger.error("Visa-Keithley-read data-Self.inst : None")
             return None
@@ -31,9 +31,9 @@ class Handler(GenericDevice):
         return None
 
     def write_data(self,variable_id, value):
-        '''
+        """
         write values to the device
-        '''
+        """
         i=0
         j=0
         while i<10:
@@ -43,6 +43,7 @@ class Handler(GenericDevice):
                 i=12
                 j=1
             except:
+                self.connect()
                 time.sleep(1)
                 i += 1
                 logger.error("Keithley connect error i : %s" %i)
@@ -66,7 +67,7 @@ class Handler(GenericDevice):
                     Vseff = self.parse_value(self.inst.query(':READ?'))
                     T2=time.time()
                 except:
-                    Vsedd = ""
+                    Vseff = ""
                 if Vseff is None or Vseff is "":
                     i += 1
                     logger.error("Keithley - Error Read - i : %s" %i)
@@ -91,9 +92,9 @@ class Handler(GenericDevice):
 
 
     def parse_value(self,value):
-        '''
+        """
         takes a string in the Keithley DMM 2000 format and returns a float value or None if not parseable
-        '''
+        """
         try:
             return float(value)
         except:
