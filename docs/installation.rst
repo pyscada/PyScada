@@ -106,6 +106,7 @@ all
     # for VISA Protocol
     pip install pyvisa pyvisa-py
     # for 1Wire Protocol
+    apt-get install owfs #
     pip install pyownet
     # for smbus Protocol, install libffi-dev first!
     pip install smbus-cffi

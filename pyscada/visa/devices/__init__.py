@@ -10,13 +10,16 @@ try:
 except ImportError:
     driver_ok = False
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class GenericDevice:
     def __init__(self, pyscada_device):
         self._device = pyscada_device
         self.inst = None
-        self.connect()
-    
+
     def connect(self):
         """
         establish a connection to the Instrument
@@ -42,8 +45,9 @@ class GenericDevice:
             
             self.inst = self.rm.open_resource(self._device.visadevice.resource_name, **extras)
         except:
-            # todo log
+            # todo add log
             return False
+        logger.debug('connected visa device')
         return True
     
     def disconnect(self):

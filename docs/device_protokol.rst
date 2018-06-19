@@ -11,6 +11,7 @@ Device Protocol IDs
  7: Phant
  8: SMBus
  9: Reserved (Jofra350)
+10: GPIO
  8X: Custom Worker
  96: Reserved (Event)
  97: Reserved (Mail)

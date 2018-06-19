@@ -110,12 +110,11 @@ class ProcessFlowDiagramItem(models.Model):
         (6, 'Display Value'),)
     type = models.PositiveSmallIntegerField(default=0, choices=type_choices)
     variable = models.ForeignKey(Variable, default=None, blank=True, null=True)
-    top = models.PositiveIntegerField(default=0)
-    left = models.PositiveIntegerField(default=0)
-    width = models.PositiveIntegerField(default=0)
-    height = models.PositiveIntegerField(default=0)
+    top = models.PositiveIntegerField(blank=True, default=0)
+    left = models.PositiveIntegerField(blank=True, default=0)
+    width = models.PositiveIntegerField(blank=True, default=0)
+    height = models.PositiveIntegerField(blank=True, default=0)
     visible = models.BooleanField(default=True)
-
     def __str__(self):
         if self.label:
             return (str(self.id) + ": " + self.label)

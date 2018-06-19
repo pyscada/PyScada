@@ -131,4 +131,11 @@
   - fixed hmi "AutoUpdateButton" not working
   - updated docs, updated readme
   - added utils.blow_up function to convert database data from change of value to constant timestep data
-    
+
+0.7.0rc3
+  - fixed double connect in visa device
+  - moved loading animation in hmi
+  - added 100 ms and 500 ms polling interval (experimental)
+  - added extension compatibility
+  - fixed onewire and smbus reinit handler
+  - added protocol id for the new GPIO Extension
