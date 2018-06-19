@@ -57,9 +57,9 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
     update the daq daemon configuration when changes be applied in the models
     """
     if type(instance) is SMbusDevice:
-        post_save.send_robust(sender=Device, instance=instance.modbus_device)
+        post_save.send_robust(sender=Device, instance=instance.smbus_device)
     elif type(instance) is SMbusVariable:
-        post_save.send_robust(sender=Variable, instance=instance.modbus_variable)
+        post_save.send_robust(sender=Variable, instance=instance.smbus_variable)
     elif type(instance) is ExtendedSMbusVariable:
         post_save.send_robust(sender=Variable, instance=Variable.objects.get(pk=instance.pk))
     elif type(instance) is ExtendedSMBusDevice:

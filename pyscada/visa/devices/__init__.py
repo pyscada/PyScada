@@ -4,22 +4,21 @@ from __future__ import unicode_literals
 
 from django.conf import settings
 
-import logging
-
-logger = logging.getLogger(__name__)
-
-try:
+try: 
     import visa
     driver_ok = True
 except ImportError:
     driver_ok = False
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class GenericDevice:
     def __init__(self, pyscada_device):
         self._device = pyscada_device
         self.inst = None
-        self.connect()
 
     def connect(self):
         """
@@ -47,8 +46,8 @@ class GenericDevice:
             self.inst = self.rm.open_resource(self._device.visadevice.resource_name, **extras)
         except:
             logger.error("Visa ResourceManager cannot open resource : %s" %self._device.visadevice.resource_name)
-            self.disconnect()
             return False
+        logger.debug('connected visa device')
         return True
 
     def disconnect(self):

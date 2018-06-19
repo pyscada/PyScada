@@ -311,6 +311,8 @@ class Device(models.Model):
     )
     byte_order = models.CharField(max_length=15, default='1-0-3-2', choices=byte_order_choices)
     polling_interval_choices = (
+        (0.1, '100 Milliseconds'),
+        (0.5, '500 Milliseconds'),
         (1.0, '1 Second'),
         (5.0, '5 Seconds'),
         (10.0, '10 Seconds'),
