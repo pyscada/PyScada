@@ -739,8 +739,8 @@ class SingleDeviceDAQProcess(Process):
         return True
 
     def loop(self):
-        #data from a write
-        data=[]
+        # data from a write
+        data = []
         # process write tasks
         # Do all the write task for this device starting with the oldest
         for task in DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False,

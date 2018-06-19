@@ -14,7 +14,7 @@ class Handler(GenericDevice):
     Keithley DMM 2000 and other Devices with the same command set
     """
 
-    def read_data(self,device_property):
+    def read_data(self, device_property):
         """
         read values from the device
         """
@@ -30,42 +30,42 @@ class Handler(GenericDevice):
             return self.parse_value(value)
         return None
 
-    def write_data(self,variable_id, value):
+    def write_data(self, variable_id, value):
         """
         write values to the device
         """
-        i=0
-        j=0
-        while i<10:
+        i = 0
+        j = 0
+        while i < 10:
             try:
                 self.inst.query('*IDN?')
-                #logger.info("Visa-Keithley-Write- variable_id : %s et value : %s" %(variable_id, value))
-                i=12
-                j=1
+                # logger.info("Visa-Keithley-Write- variable_id : %s et value : %s" %(variable_id, value))
+                i = 12
+                j = 1
             except:
                 self.connect()
                 time.sleep(1)
                 i += 1
                 logger.error("Keithley connect error i : %s" %i)
         if j == 0:
-            logger.error("Keithley-Instrument non connecté")
+            logger.error("Keithley-Instrument not connected")
             return False
         if variable_id == 'present_value':
             i = 0
-            while i<10:
-                T1=time.time()
-#                self.inst.timeout(5)
-#                res=self.inst.timeout
-#                logger.info("timeout : %s" %res)
-#                self.inst.write(':READ?')
-#                time.sleep(0.1)
-#                Vseff = self.parse_value(self.inst.read(termination='\n'))
-#                Vseff = self.parse_value(self.inst.read())
+            while i < 10:
+                T1 = time.time()
+                # self.inst.timeout(5)
+                # res=self.inst.timeout
+                # logger.info("timeout : %s" %res)
+                # self.inst.write(':READ?')
+                # time.sleep(0.1)
+                # Vseff = self.parse_value(self.inst.read(termination='\n'))
+                # Vseff = self.parse_value(self.inst.read())
                 self.inst.read_termination = '\n'
                 Vseff = ""
                 try:
                     Vseff = self.parse_value(self.inst.query(':READ?'))
-                    T2=time.time()
+                    T2 = time.time()
                 except:
                     Vseff = ""
                 if Vseff is None or Vseff is "":
@@ -74,15 +74,15 @@ class Handler(GenericDevice):
                     self.inst.write('*CLS')
                 else:
                     i = 12
-                    #Call Phase Osc
-                    T3=time.time()
+                    # Call Phase Osc
+                    T3 = time.time()
                     cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='Find_Phase_Osc').id, value=Vseff, start=time.time())
                     cwt.save()
-                    T4=time.time()
+                    T4 = time.time()
 #            logger.info("Read time - query : %s - vide : %s - save db : %s" %(T2-T1, T3-T2, T4-T3))
             return Vseff
         if variable_id == 'set_ac_range_res':
-#            Veeff = float(value)/float(math.sqrt(2))
+            # Veeff = float(value)/float(math.sqrt(2))
             self.inst.read_termination = '\n'
             CMD = str('*RST;:FUNC "VOLTage:AC";:VOLTage:AC:RANGe:AUTO 1;:VOLTage:AC:RESolution MIN;:TRIG:DEL MIN')
             self.inst.write(CMD)
@@ -90,8 +90,7 @@ class Handler(GenericDevice):
         else:
             return self.parse_value(self.inst.query(str(variable_id)+' '+str(value)))
 
-
-    def parse_value(self,value):
+    def parse_value(self, value):
         """
         takes a string in the Keithley DMM 2000 format and returns a float value or None if not parseable
         """
@@ -99,4 +98,3 @@ class Handler(GenericDevice):
             return float(value)
         except:
             return None
-

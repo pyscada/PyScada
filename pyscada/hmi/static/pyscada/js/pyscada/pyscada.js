@@ -937,25 +937,24 @@ function PyScadaPlot(id){
             pOpt = flotPlot.getOptions();
             if (j != 0 && X_AXIS_IS_TIME > 0){
                 yoptions = [];
-                l=0;
                 for (k = 1;k <= j;k++){
                     if(k%2){pos="left";}else{pos="right";};
                     var U = series[2*(k-1)]['unit'];
+                    unit = function (value, axis) {
+                            return value.toFixed(axis.tickDecimals) + U;
+                    };
                     yoptions.push({
                         position: pos,
-                        tickFormatter: function (value, axis) {
-                            return value.toFixed(axis.tickDecimals) + U;
-                        },
-                        axisLabel: "test",
+                        tickFormatter: unit,
+                        axisLabel: series[2*(k-1)]['label'],
                         axisLabelUseCanvas: true,
                         axisLabelFontSizePixels: 12,
                         axisLabelFontFamily: 'Verdana, Arial',
                         axisLabelPadding: 3,
-                        //color: "green",
+                        axisLabelColour: series[2*(k-1)]['color'],
                         min: null,
                         max: null,
                     });
-//                    yoptions.push({position: pos, tickFormatter: function(value, axis) {return value.toFixed(axis.tickDecimals);}, axisLabel: series[2*(k-1)]['label'], axisLabelUseCanvas: true, axisLabelFontSizePixels: 12, axisLabelFontFamily: 'Verdana, Arial', axisLabelPadding: 3, color: "green"});
                 }
                 options.yaxes = yoptions;
                 //TODO : replace "replot" with setupGrid and draw WORK ONLY WITH 1 AXIS...
