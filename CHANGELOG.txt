@@ -139,3 +139,6 @@
   - added extension compatibility
   - fixed onewire and smbus reinit handler
   - added protocol id for the new GPIO Extension
+
+0.7.0rc4
+- added missing migration file
