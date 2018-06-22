@@ -141,4 +141,8 @@
   - added protocol id for the new GPIO Extension
 
 0.7.0rc4
-- added missing migration file
+  - added missing migration file
+
+0.7.0rc5
+  - changed the method for namespace packages to the pkg_resources-style
+  - moved the version info to pyscada.core

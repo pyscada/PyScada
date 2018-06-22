@@ -28,7 +28,7 @@ Debian 7
     apt-get -y upgrade
     # if you use MySQL as Database system (recommend)
     apt-get -y install mysql-server python-mysqldb
-    apt-get -y python-pip libhdf5-7 libhdf5-dev python-dev nginx gunicorn
+    apt-get -y install python-pip libhdf5-7 libhdf5-dev python-dev nginx gunicorn
     pip install cython
     pip install numpy
     pip install h5py
