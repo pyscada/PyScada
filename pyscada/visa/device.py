@@ -44,7 +44,7 @@ class Device:
         request data from the instrument/device
         """
         output = []
-        logger.info("visa device read")
+        # logger.info("visa device read")
         if not driver_visa_ok:
             logger.info('Request Data Visa Driver Not Ok')
             return output
