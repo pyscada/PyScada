@@ -37,6 +37,7 @@ from datetime import datetime
 from django import db
 from django.conf import settings
 from django.db import connection, connections
+from django.utils.termcolors import colorize
 
 
 from pyscada.models import BackgroundProcess, DeviceWriteTask, Device, RecordedData
@@ -120,11 +121,14 @@ class Scheduler(object):
         parent_process.save()
         # check for processes to add in init block of each app
         for app in settings.INSTALLED_APPS:
+            if app == 'pyscada':
+                self.stderr.write(colorize("Warning: please change 'pyscada' to 'pyscada.core' in the INSTALLED_APPS section of the settings.py!\n",fg='red',opts=('bold',)))
+                app = 'pyscada.core'
             m = __import__(app, fromlist=[str('a')])
             self.stderr.write("app %s\n" % app)
             if hasattr(m, 'parent_process_list'):
                 for process in m.parent_process_list:
-                    self.stderr.write("add %s\n" % process['label'])
+                    self.stderr.write("--> add %s\n" % process['label'])
                     if 'enabled' not in process:
                         process['enabled'] = True
                     if 'parent_process' not in process:

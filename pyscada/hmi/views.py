@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada import version as core_version
+from pyscada.core import version as core_version
 from pyscada.models import RecordedData
 from pyscada.hmi.models import Chart
 from pyscada.hmi.models import ControlItem

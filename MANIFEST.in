@@ -11,8 +11,7 @@ recursive-include pyscada/modbus/fixtures *
 recursive-include pyscada/systemstat/fixtures *
 recursive-include pyscada/phant/*
 recursive-include pyscada/visa/*
+recursive-include pyscada/core/*
 recursive-include docs *
 recursive-exclude * *.pyc
-recursive-exclude pyscada/jofra350 *
 recursive-exclude pyscada/report *
-recursive-exclude pyscada/bacnet *
