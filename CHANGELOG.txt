@@ -146,3 +146,8 @@
 0.7.0rc5
   - changed the method for namespace packages to the pkg_resources-style
   - moved the version info to pyscada.core
+
+0.7.0rc6
+  - corrected typos
+  - fixes of AppConfig for setup.py develop
+  - added protocol id for scripting extension

@@ -13,6 +13,7 @@ Device Protocol IDs
  9: Reserved (Jofra350)
 10: GPIO
  8X: Custom Worker
+ 95: Reserved (Scripting)
  96: Reserved (Event)
  97: Reserved (Mail)
  98: Reserved (Report)

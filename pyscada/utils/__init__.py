@@ -2,12 +2,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from django.utils.six import integer_types
+
 import re
 from datetime import datetime
 from pytz import UTC
-from django.utils.six import integer_types
-import logging
 import numpy as np
+
+import logging
 logger = logging.getLogger(__name__)
 
 
