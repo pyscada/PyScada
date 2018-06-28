@@ -240,7 +240,7 @@ class RecordedDataValueManager(models.Manager):
                                 np.floor((time_max / (2097152.0 * 1000)) / mean_value_period) * mean_value_period, mean_value_period)
 
             for key in values:
-                values[key] = blow_up_data(values[key],timevalues,mean_value_period,no_mean_value)
+                values[key] = blow_up_data(values[key], timevalues, mean_value_period, no_mean_value)
             values['timevalues'] = timevalues
         
         '''
@@ -478,7 +478,7 @@ class Variable(models.Model):
             return Color.objects.get(id=c_id).color_code()
 
     '''
-    M: Mantissia
+    M: Mantissa
     E: Exponent
     S: Sign
     uint 0            uint 1 
@@ -705,9 +705,21 @@ class Variable(models.Model):
         create a new element to write to archive table
         """
         if self.store_value and self.value is not None:
+            # self._send_cov_notification(self.timestamp, self.value)
             return RecordedData(timestamp=self.timestamp, variable=self, value=self.value)
         else:
             return None
+
+    def _send_cov_notification(self, timestamp, value):
+        """
+        Sends a COV Notification via the Django Signal interface
+        :param value:
+        :return:
+        """
+        try:
+            pass
+        except:
+            logger.error('%s, unhandled exception in COV Receiver application\n%s' % (self.name, traceback.format_exc()))
 
 
 @python_2_unicode_compatible
