@@ -28,16 +28,22 @@ class ControlItem(models.Model):
         (6, 'Display Value'),)
     type = models.PositiveSmallIntegerField(default=0, choices=type_choices)
     variable = models.ForeignKey(Variable, null=True)
+    property_name = models.CharField(default='', blank=True, max_length=255)
 
     class Meta:
         ordering = ['position']
 
     def __str__(self):
-        return (self.label + " (" + self.variable.name + ")")
+        return self.label + " (" + self.variable.name + ")"
 
     def web_id(self):
         return self.id.__str__() + "-" + self.variable.name.replace(' ', '_')
 
+    def web_class_str(self):
+        if self.property_name == '':
+            return 'var-%d'%self.variable_id
+        else:
+            return 'prop-%d-%s' % (self.variable_id, self.property_name.lower().replace(':','-'))
 
 @python_2_unicode_compatible
 class Chart(models.Model):

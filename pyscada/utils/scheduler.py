@@ -751,7 +751,7 @@ class SingleDeviceDAQProcess(Process):
                                                    variable__device_id=self.device_id).order_by('start'):
             if task.variable.scaling is not None:
                 task.value = task.variable.scaling.scale_output_value(task.value)
-            tmp_data = self.device.write_data(task.variable.id, task.value)
+            tmp_data = self.device.write_data(task.variable.id, task.value, task)
             if isinstance(tmp_data, list):
                 if len(tmp_data) > 0:
                     task.done = True
@@ -831,7 +831,7 @@ class MultiDeviceDAQProcess(Process):
                                                        failed=False, variable__device_id=device_id):
                 if task.variable.scaling is not None:
                     task.value = task.variable.scaling.scale_output_value(task.value)
-                if device.write_data(task.variable.id, task.value):
+                if device.write_data(task.variable.id, task.value, task):
                     task.done = True
                     task.finished = time()
                     task.save()

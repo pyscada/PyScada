@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from pyscada.models import Device, DeviceProtocol
-from pyscada.models import Variable
+from pyscada.models import Variable, VariableProperty
 from pyscada.models import Scaling, Color
 from pyscada.models import Unit
 from pyscada.models import DeviceWriteTask
@@ -211,9 +211,20 @@ class EventAdmin(admin.ModelAdmin):
     raw_id_fields = ('variable',)
 
 
+class VariablePropertyAdmin(admin.ModelAdmin):
+    list_display = ('id','variable','name','property_class', 'value','timestamp')
+    list_display_links = ('id','variable','name','property_class')
+    list_filter = ('variable', 'name', 'property_class',)
+    raw_id_fields = ('variable',)
+
+    def value(self, instance):
+        return instance.value()
+
+
 admin_site = PyScadaAdminSite(name='pyscada_admin')
 admin_site.register(Device, DeviceAdmin)
 admin_site.register(Variable, CoreVariableAdmin)
+admin_site.register(VariableProperty, VariablePropertyAdmin)
 admin_site.register(Scaling)
 admin_site.register(Unit)
 admin_site.register(Event, EventAdmin)

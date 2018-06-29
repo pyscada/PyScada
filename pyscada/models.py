@@ -260,6 +260,58 @@ class RecordedDataValueManager(models.Manager):
         return values
 
 
+class VariablePropertyManager(models.Manager):
+    """
+
+    """
+    def update_or_create(self, variable, name, value, value_class='string', property_class=None, timestamp=None):
+        """
+
+        :param variable: Variable Object
+        :param name: Property Name (DEVICE:PROPERTY_NAME)
+        :param value: a value
+        :param value_class: type or class of the value
+        :param property_class: class of the property
+        :param timestamp:
+        :return: VariableProperty Object
+        """
+
+        kwargs = {'name': name.upper(), 'variable_id': variable.pk}
+        vp = super(VariablePropertyManager, self).get_queryset().filter(**kwargs).first()
+        if timestamp is not None:
+            kwargs['timestamp'] = timestamp
+        if property_class is not None:
+            kwargs['property_class'] = property_class
+        if value_class.upper() in ['STRING']:
+            kwargs['value_string'] = value
+        elif value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
+            kwargs['value_float64'] = value
+        elif value_class.upper() in ['INT64', 'UINT32', 'DWORD']:
+            kwargs['value_int64'] = value
+        elif value_class.upper() in ['WORD', 'UINT', 'UINT16', 'INT32']:
+            kwargs['value_int32'] = value
+        elif value_class.upper() in ['INT16', 'INT8', 'UINT8']:
+            kwargs['value_int16'] = value
+        elif value_class.upper() in ['BOOL', 'BOOLEAN']:
+            kwargs['value_boolean'] = value
+        if vp:
+            # update
+            for key, value in kwargs.items():
+                setattr(vp,key,value)
+            vp.save()
+        else:
+            # create
+            vp = VariableProperty(**kwargs)
+            vp.save()
+
+        return vp
+
+    def get(self, variable, name):
+        vp = super(VariablePropertyManager, self).get_queryset().filter(variable_id=variable.pk,name=name.upper()).first()
+        if vp:
+            return vp
+        else:
+            return None
 #
 # Models
 #
@@ -406,10 +458,29 @@ class VariableProperty(models.Model):
     value_float64 = models.FloatField(null=True, blank=True)  # float64
     value_string = models.CharField(default='', blank=True, max_length=255)
     timestamp = models.DateTimeField(blank=True, null=True)
+    objects = VariablePropertyManager()
 
     def __str__(self):
         return self.get_property_class_display() + ': ' + self.name
 
+    def value(self):
+        if self.value_float64 is not None:
+            return self.value_float64
+        elif self.value_int64 is not None:
+            return self.value_int64
+        elif self.value_int32 is not None:
+            return self.value_int32
+        elif self.value_int16 is not None:
+            return self.value_int16
+        elif self.value_boolean is not None:
+            return self.value_boolean
+        elif self.value_string is not None:
+            return self.value_string
+        else:
+            return '-'
+
+    def web_key(self):
+        return '%d-%s'%(self.variable.pk, self.name.upper().replace(':','-'))
 
 @python_2_unicode_compatible
 class Variable(models.Model):
@@ -727,6 +798,7 @@ class DeviceWriteTask(models.Model):
     id = models.AutoField(primary_key=True)
     variable = models.ForeignKey('Variable')
     value = models.FloatField()
+    property_name = models.CharField(default='', blank=True, max_length=255)
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     start = models.FloatField(default=0)  # TODO DateTimeField
     finished = models.FloatField(default=0, blank=True)  # TODO DateTimeField

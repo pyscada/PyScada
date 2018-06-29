@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from pyscada.core import version as core_version
-from pyscada.models import RecordedData
+from pyscada.models import RecordedData, VariableProperty
 from pyscada.hmi.models import Chart
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import CustomHTMLPanel
@@ -165,7 +165,8 @@ def form_write_task(request):
         return redirect('/accounts/login/?next=%s' % request.path)
     if 'var_id' in request.POST and 'value' in request.POST:
         cwt = DeviceWriteTask(variable_id=request.POST['var_id'], value=request.POST['value'], start=time.time(),
-                              user=request.user)
+                              user=request.user,
+                              property_name=request.POST['property_name'] if 'property_name' in request.POST else '',)
         cwt.save()
         return HttpResponse(status=200)
     else:
@@ -211,7 +212,7 @@ def get_cache_data(request):
         timestamp_from == time.time()-60
 
     if timestamp_to - timestamp_from > 120*60:
-        timestamp_from = timestamp_to -120*60
+        timestamp_from = timestamp_to - 120*60
 
     data = RecordedData.objects.get_values_in_time_range(
         time_min=timestamp_from,
@@ -225,7 +226,11 @@ def get_cache_data(request):
         add_latest_value=False)
 
     if data is None:
-        return HttpResponse(json.dumps({'server_time': time.time() * 1000}), content_type='application/json')
+        data = {}
+    data['variable_properties'] = {}
+    for item in VariableProperty.objects.filter(variable_id__in=active_variables):
+        data['variable_properties'][item.web_key()] = item.value()
+
     data["server_time"] = time.time() * 1000
     return HttpResponse(json.dumps(data), content_type='application/json')
 

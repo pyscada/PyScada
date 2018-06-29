@@ -16,9 +16,11 @@ logger = logging.getLogger(__name__)
 
 
 class GenericDevice:
-    def __init__(self, pyscada_device):
+    def __init__(self, pyscada_device, variables):
         self._device = pyscada_device
+        self._variables = variables
         self.inst = None
+        self.rm = None
 
     def connect(self):
         """
@@ -42,7 +44,7 @@ class GenericDevice:
             if hasattr(settings, 'VISA_DEVICE_SETTINGS'):
                 if resource_prefix in settings.VISA_DEVICE_SETTINGS:
                     extras = settings.VISA_DEVICE_SETTINGS[resource_prefix]
-
+            logger.debug('VISA_DEVICE_SETTINGS for %s: %r'%(resource_prefix,extras))
             self.inst = self.rm.open_resource(self._device.visadevice.resource_name, **extras)
         except:
             logger.error("Visa ResourceManager cannot open resource : %s" %self._device.visadevice.resource_name)
@@ -64,7 +66,7 @@ class GenericDevice:
 
         return None
 
-    def write_data(self, variable_id, value):
+    def write_data(self, variable_id, value, task):
         """
         write values to the device
         """
