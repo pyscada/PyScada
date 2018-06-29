@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from pyscada.visa.devices import GenericDevice
+from pyscada.models import VariableProperty
 
 
 class Handler(GenericDevice):
@@ -9,20 +10,26 @@ class Handler(GenericDevice):
     Keithley DMM 2000 and other Devices with the same command set
     """
     
-    def read_data(self,device_property):
+    def read_data(self,variable_instance):
         """
         read values from the device
         """
         if self.inst is None:
              return
-        if device_property == 'present_value':
+        if variable_instance.visavariable.device_property.upper() == 'PRESENT_VALUE':
             return self.parse_value(self.inst.query(':FETCH?'))
         return None
-    
-    def write_data(self,variable_id, value):
+
+    def write_data(self,variable_id, value, task):
         """
         write values to the device
         """
+        variable = self._variables[variable_id]
+        if task.property_name != '':
+            # write the freq property to VariableProperty use that for later read
+            vp = VariableProperty.objects.update_or_create(variable=variable, name='VISA:%s' % task.property_name.upper(),
+                                                        value=value, value_class='FLOAT64')
+            return True
         return False
 
     def parse_value(self,value):
@@ -33,4 +40,3 @@ class Handler(GenericDevice):
             return float(value)
         except:
             return None
-            

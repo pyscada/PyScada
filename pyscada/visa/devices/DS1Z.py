@@ -8,17 +8,17 @@ class Handler(GenericDevice):
     Keithley DMM 2000 and other Devices with the same command set
     """
 
-    def read_data(self, device_property):
+    def read_data(self, variable_instance):
         """
         read values from the device
         """
         if self.inst is None:
             return
-        if device_property == 'vrms_chan1':
+        if variable_instance.visavariable.device_property.upper() == 'vrms_chan1':
             return self.parse_value(self.inst.query(':MEAS:ITEM? VRMS,CHAN1'))
         return None
 
-    def write_data(self, variable_id, value):
+    def write_data(self, variable_id, value, task):
         """
         write values to the device
         """

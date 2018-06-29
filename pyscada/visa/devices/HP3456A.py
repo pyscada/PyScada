@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from pyscada.visa.devices import GenericDevice
+from pyscada.models import VariableProperty
 
 
 class Handler(GenericDevice):
@@ -9,31 +10,41 @@ class Handler(GenericDevice):
     HP3456A and other Devices with the same command set
     """
     
-    def read_data(self,device_property):
+    def read_data(self,variable_instance):
         """
         read values from the device
         """
         if self.inst is None:
             return
-        if device_property == 'present_value':
+        if variable_instance.visavariable.device_property.upper() == 'PRESENT_VALUE':
             return self.parse_value(self.inst.query('?U6P0'))
-        elif device_property == 'present_value_DCV':
+        elif variable_instance.visavariable.device_property.upper() == 'PRESENT_VALUE_DCV':
             return self.parse_value(self.inst.query('?U6P0F1T3'))
-        elif device_property == 'present_value_ACV':
+        elif variable_instance.visavariable.device_property.upper() == 'PRESENT_VALUE_ACV':
             return self.parse_value(self.inst.query('?U6P0F2T3'))
-        elif device_property == 'present_value_DCV+ACV':
+        elif variable_instance.visavariable.device_property.upper() == 'PRESENT_VALUE_DCV+ACV':
             return self.parse_value(self.inst.query('?U6P0F3T3'))
-        elif device_property == 'present_value_2W_Ohm':
+        elif variable_instance.visavariable.device_property.upper() == 'PRESENT_VALUE_2W_OHM':
             return self.parse_value(self.inst.query('?U6P0F4T3'))
-        elif device_property == 'present_value_4W_Ohm':
+        elif variable_instance.visavariable.device_property.upper() == 'PRESENT_VALUE_4W_OHM':
             return self.parse_value(self.inst.query('?U6P0F5T3'))
         return None
-    
-    def write_data(self,variable_id, value):
+
+    def write_data(self,variable_id, value, task):
         """
         write values to the device
         """
-        return False
+        variable = self._variables[variable_id]
+        if task.property_name != '':
+            # write the freq property to VariableProperty use that for later read
+            vp = VariableProperty.objects.update_or_create(variable=variable, name=task.property_name.upper(),
+                                                        value=value, value_class='FLOAT64')
+            return True
+        if variable.visavariable.variable_type == 0:  # configuration
+            # only write to configuration variables
+            pass
+        else:
+            return False
 
     def parse_value(self,value):
         """

@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0rc2
+version 0.7.0rc7
 
 Copyright (c) 2013-2018 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.7.0rc2"
+var version = "0.7.0rc7"
 var NOTIFICATION_COUNT = 0
 var UPDATE_STATUS_COUNT = 0;
 var INIT_STATUS_COUNT = 0;
@@ -34,6 +34,7 @@ var VARIABLE_KEYS = [];
 var STATUS_VARIABLE_KEYS = {count:function(){var c = 0;for (key in this){c++;} return c-2;},keys:function(){var k = [];for (key in this){if (key !=="keys" && key !=="count"){k.push(key);}} return k;}};
 var CHART_VARIABLE_KEYS = {count:function(){var c = 0;for (key in this){c++;} return c-2;},keys:function(){var k = [];for (key in this){if (key !=="keys" && key !=="count"){k.push(key);}} return k;}};
 var DATA = {}; // holds the fetched data from the server
+var VARIABLE_PROPERTIES = {};
 var DATA_INIT_STATUS = 0; // status 0: nothing done, 1:
 var UPDATE_X_AXES_TIME_LINE_STATUS = false;
 var FETCH_DATA_PENDING = 0;
@@ -249,6 +250,12 @@ function data_handler_done(fetched_data){
     }else{
         SERVER_TIME = 0;
     }
+    if (typeof(fetched_data['variable_properties'])==="object"){
+        VARIABLE_PROPERTIES = fetched_data['variable_properties'];
+        delete fetched_data['variable_properties'];
+    }else{
+        VARIABLE_PROPERTIES = {}
+    }
     if(DATA_TO_TIMESTAMP==0){
         DATA_TO_TIMESTAMP = DATA_FROM_TIMESTAMP = SERVER_TIME;
     }else{
@@ -282,8 +289,12 @@ function data_handler_done(fetched_data){
         for (var key in VARIABLE_KEYS) {
             key = VARIABLE_KEYS[key];
             if (typeof(DATA[key]) == 'object'){
-                update_data_values(key,DATA[key][DATA[key].length-1][1]);
+                update_data_values('var-' + key,DATA[key][DATA[key].length-1][1]);
             }
+        }
+        for (var key in VARIABLE_PROPERTIES) {
+            value = VARIABLE_PROPERTIES[key];
+            update_data_values('prop-' + key.toLowerCase(),value);
         }
         /*
         DATA_OUT_OF_DATE = (SERVER_TIME - timestamp  > CACHE_TIMEOUT);
@@ -472,47 +483,47 @@ function update_data_values(key,val){
             }else{
                 r_val = r_val.toPrecision(4);
             }
-            $(".type-numeric.var-" + key).html(r_val);
-            $('input.var-'+ key).attr("placeholder",r_val);
+            $(".type-numeric." + key).html(r_val);
+            $('input.'+ key).attr("placeholder",r_val);
             // unixtime
             var date = new Date(val*1000);
-            $(".type-numeric.unixtime_local_date_time.var-" + key).html(date.toLocaleString());
-            $(".type-numeric.unixtime_utc_date_time.var-" + key).html(date.toUTCString());
-            $(".type-numeric.hex_str_full.var-" + key).html(val.toString(16).toUpperCase());
+            $(".type-numeric.unixtime_local_date_time." + key).html(date.toLocaleString());
+            $(".type-numeric.unixtime_utc_date_time." + key).html(date.toUTCString());
+            $(".type-numeric.hex_str_full." + key).html(val.toString(16).toUpperCase());
         }
         
         // set value fields
         if (typeof(val)==="boolean"){
             // set button colors
             if (val === 0 | val == false) {
-                $(".label.type-bool.var-" + key).addClass("label-default");
-                $(".label.type-bool.var-" + key).removeClass("label-primary");
-                $(".label.type-bool.var-" + key).removeClass("label-info");
-                $(".label.type-bool.var-" + key).removeClass("label-success");
-                $(".label.type-bool.var-" + key).removeClass("label-warning");
-                $(".label.type-bool.var-" + key).removeClass("label-danger");
+                $(".label.type-bool." + key).addClass("label-default");
+                $(".label.type-bool." + key).removeClass("label-primary");
+                $(".label.type-bool." + key).removeClass("label-info");
+                $(".label.type-bool." + key).removeClass("label-success");
+                $(".label.type-bool." + key).removeClass("label-warning");
+                $(".label.type-bool." + key).removeClass("label-danger");
                 // inverted
-                $(".label.type-bool.status-red-inv.var-" + key).addClass("label-danger");
+                $(".label.type-bool.status-red-inv." + key).addClass("label-danger");
                 
-                $('button.btn-default.write-task-btn.var-' + key).addClass("updateable");
-                $('button.updateable.write-task-btn.var-' + key).addClass("btn-default");
-                $('button.updateable.write-task-btn.var-' + key).removeClass("btn-success");
-                $(".type-numeric.var-" + key).html(0);
-                $('input.var-'+ key).attr("placeholder",0);
+                $('button.btn-default.write-task-btn.' + key).addClass("updateable");
+                $('button.updateable.write-task-btn.' + key).addClass("btn-default");
+                $('button.updateable.write-task-btn.' + key).removeClass("btn-success");
+                $(".type-numeric." + key).html(0);
+                $('input.'+ key).attr("placeholder",0);
             } else {
-                $(".label.type-bool.var-" + key).removeClass("label-default");
-                $(".label.type-bool.var-" + key).removeClass("label-danger");
-                $(".label.type-bool.status-blue.var-" + key).addClass("label-primary");
-                $(".label.type-bool.status-info.var-" + key).addClass("label-info");
-                $(".label.type-bool.status-green.var-" + key).addClass("label-success");
-                $(".label.type-bool.status-yello.var-" + key).addClass("label-warning");
-                $(".label.type-bool.status-red.var-" + key).addClass("label-danger");
-                $(".label.type-bool.status-red-inv.var-" + key).addClass("label-default");
-                $('button.btn-success.write-task-btn.var-' + key).addClass("updateable");
-                $('button.updateable.write-task-btn.var-' + key).removeClass("btn-default");
-                $('button.updateable.write-task-btn.var-' + key).addClass("btn-success");
-                $(".type-numeric.var-" + key).html(1);
-                $('input.var-'+ key).attr("placeholder",1);
+                $(".label.type-bool." + key).removeClass("label-default");
+                $(".label.type-bool." + key).removeClass("label-danger");
+                $(".label.type-bool.status-blue." + key).addClass("label-primary");
+                $(".label.type-bool.status-info." + key).addClass("label-info");
+                $(".label.type-bool.status-green." + key).addClass("label-success");
+                $(".label.type-bool.status-yello." + key).addClass("label-warning");
+                $(".label.type-bool.status-red." + key).addClass("label-danger");
+                $(".label.type-bool.status-red-inv." + key).addClass("label-default");
+                $('button.btn-success.write-task-btn.' + key).addClass("updateable");
+                $('button.updateable.write-task-btn.' + key).removeClass("btn-default");
+                $('button.updateable.write-task-btn.' + key).addClass("btn-success");
+                $(".type-numeric." + key).html(1);
+                $('input.'+ key).attr("placeholder",1);
             }
         }
 }
@@ -932,13 +943,14 @@ $('button.write-task-set').click(function(){
         var_id = $(this).attr('var_id');
         id = $(this).attr('id');
         value = $("#"+id+"-value").val();
+        property_name = $(this).attr('property_name');
         if (value == "" ){
             add_notification('please provide a value',3);
         }else{
             $.ajax({
                 type: 'post',
                 url: ROOT_URL+'form/write_task/',
-                data: {var_id:var_id,value:value},
+                data: {var_id:var_id,value:value,property_name:property_name},
                 success: function (data) {
                     
                 },
@@ -952,12 +964,13 @@ $('button.write-task-set').click(function(){
 $('button.write-task-btn').click(function(){
         var_id = $(this).attr('var_id');
         id = $(this).attr('id');
+        property_name = $(this).attr('property_name');
         $('#'+id).removeClass('updateable');
         if($(this).hasClass('btn-default')){
             $.ajax({
                 type: 'post',
                 url: ROOT_URL+'form/write_task/',
-                data: {var_id:var_id,value:1},
+                data: {var_id:var_id,value:1,property_name:property_name},
                 success: function (data) {
                     $('#'+id).removeClass('btn-default')
                     $('#'+id).addClass('btn-success');
@@ -970,7 +983,7 @@ $('button.write-task-btn').click(function(){
             $.ajax({
                 type: 'post',
                 url: ROOT_URL+'form/write_task/',
-                data: {var_id:var_id,value:0},
+                data: {var_id:var_id,value:0,property_name:property_name},
                 success: function (data) {
                     $('#'+id).addClass('btn-default')
                     $('#'+id).removeClass('btn-success');

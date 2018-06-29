@@ -151,3 +151,8 @@
   - corrected typos
   - fixes of AppConfig for setup.py develop
   - added protocol id for scripting extension
+
+0.7.0rc7
+  - added admin for VariableProperty
+  - added capability of reading and writing VariableProperties from the HMI and devices
+  - altered arguents for device.write_data!
