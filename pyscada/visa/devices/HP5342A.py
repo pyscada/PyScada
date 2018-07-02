@@ -19,7 +19,7 @@ class Handler(GenericDevice):
         if variable_instance.visavariable.device_property.upper() == 'PRESENT_VALUE':
             return self.parse_value(self.inst.query('?U6P0'))
         elif variable_instance.visavariable.device_property.upper() == 'PRESENT_VALUE_MANUAL_C_FREQ':
-            freq = VariableProperty.objects.get(variable=variable_instance, name='VISA:FREQ')
+            freq = VariableProperty.objects.get_property(variable=variable_instance, name='VISA:FREQ')
             if freq is None:
                 freq = 500
             return self.parse_value(self.inst.query('?MAM1SR9HT3ST2SM%dE'%freq))
@@ -34,7 +34,7 @@ class Handler(GenericDevice):
             # only write to configuration variables
             if task.property_name != '':
                 # write the freq property to VariableProperty use that for later read
-                vp = VariableProperty.objects.update_or_create(variable=variable, name=task.property_name.upper(),
+                vp = VariableProperty.objects.update_or_create_property(variable=variable, name=task.property_name.upper(),
                                                             value=value, value_class='FLOAT64')
                 return True
             else:

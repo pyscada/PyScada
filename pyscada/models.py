@@ -264,7 +264,8 @@ class VariablePropertyManager(models.Manager):
     """
 
     """
-    def update_or_create(self, variable, name, value, value_class='string', property_class=None, timestamp=None):
+    def update_or_create_property(self, variable, name, value, value_class='string', property_class=None,
+                                  timestamp=None, **kwargs):
         """
 
         :param variable: Variable Object
@@ -306,8 +307,9 @@ class VariablePropertyManager(models.Manager):
 
         return vp
 
-    def get(self, variable, name):
-        vp = super(VariablePropertyManager, self).get_queryset().filter(variable_id=variable.pk,name=name.upper()).first()
+    def get_property(self, variable, name, **kwargs):
+        vp = super(VariablePropertyManager, self).get_queryset().filter(variable_id=variable.pk,
+                                                                        name=name.upper(), **kwargs).first()
         if vp:
             return vp
         else:
