@@ -59,7 +59,7 @@ class Device:
 
         return output
 
-    def write_data(self,variable_id, value):
+    def write_data(self,variable_id, value, task):
         '''
         write value to the instrument/device
         '''
@@ -67,7 +67,7 @@ class Device:
         if not driver_visa_ok:
             logger.info("Visa-device-write data-visa NOT ok")
             return output
-        for item in self.variables:
+        for item in self.variables.values():
             if not (item.visavariable.variable_type == 0 and item.id == variable_id):
                 # skip all config values
                 continue

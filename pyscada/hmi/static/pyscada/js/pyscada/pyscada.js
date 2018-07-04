@@ -1142,7 +1142,7 @@ $('button.write-task-form-set').click(function(){
                 $.ajax({
                     type: 'post',
                     url: ROOT_URL+'form/write_task/',
-                    data: {var_id:var_id,value:value},
+                    data: {var_id:var_id,value:value,property_name:property_name},
                     success: function (data) {
 
                     },

@@ -608,7 +608,6 @@ class Process(object):
     def run(self):
         BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=datetime_now(), message='running..')
         exec_loop = True
-        j=0
         try:
             while True:
                 t_start = time()
@@ -661,14 +660,8 @@ class Process(object):
                     pass
 
                 dt = self.dt_set - (time() - t_start)
-                dt = min(dt, j)
                 if dt > 0:
                     sleep(dt)
-#                logger.info("%s - Loop : %s - dt : %s" %(self.label, time()-t_start, dt))
-                if (sig is None) and (exec_loop) and (data is not None):
-                    j=0
-                else:
-                    j += 1
         except StopIteration:
             self.stop()
             sys.exit(0)
@@ -769,8 +762,6 @@ class SingleDeviceDAQProcess(Process):
         if isinstance(data, list):
             if len(data) > 0:
                 return 1, data
-            # else:
-            #    return 1, None
 
         if time() - self.last_query > self.dt_query_data:
             self.last_query = time()

@@ -43,7 +43,7 @@ class Handler(GenericDevice):
         while i < 10:
             try:
                 self.inst.query('*IDN?')
-                # logger.info("Visa-MDO3014-Write- variable_id : %s et value : %s" %(variable_id, value))
+                logger.info("Visa-MDO3014-Write- variable_id : %s et value : %s" %(variable_id, value))
                 i = 12
                 j = 1
             except:
@@ -57,7 +57,7 @@ class Handler(GenericDevice):
         if variable_id == 'init_BODE':
             self.inst.read_termination = '\n'
             # Reset and init Osc
-            Vepp = RecordedData.objects.last_element(variable_id=Variable.objects.get(name='BODE_Vpp').id)
+            Vepp = RecordedData.objects.last_element(variable__name='BODE_Vpp')
             # self.inst.write('*CLS')
             self.inst.write('*RST;:SEL:CH1 1;:SEL:CH2 1;:HORIZONTAL:POSITION 0;:CH1:YUN "V";:CH1:SCALE '
                             + str(1.2*float(Vepp.value())/(2*4))+';:CH2:YUN "V";:CH2:BANdwidth 10000000;:'
@@ -66,24 +66,25 @@ class Handler(GenericDevice):
                                                                  ':TRIG:A:EDGE:SLO FALL;:TRIG:A:MODE NORM')
             return True
         elif variable_id == 'find_phase':
-            # N = int(RecordedData.objects.last_element(variable_id=Variable.objects.get(name='BODE_n').id).value())
+            # N = int(RecordedData.objects.last_element(variable__name='BODE_n').value())
             # if N == 1:
             #     time.sleep(1)
             i = 0
-            F = RecordedData.objects.last_element(variable_id=Variable.objects.get(name='BODE_F').id)
+            F = RecordedData.objects.last_element(variable__name='BODE_F')
             while F is None and i<10:
-                F = RecordedData.objects.last_element(variable_id=Variable.objects.get(name='BODE_F').id)
+                F = RecordedData.objects.last_element(variable__name='BODE_F')
                 i += 1
             Vsff = value
             Vsmax = float(Vsff)*float(math.sqrt(2))
-            CMD = str(':HORIZONTAL:SCALE '+str(round(float(float(4)/(float(10)*float(F.value()))),6))+';:CH2:SCALE '
-                      +str(1.4*float(Vsmax)/4)+';:TRIG:A:LEV:CH1 '+str(0.8*float(Vsmax)) +
+            CMD = str(':HORIZONTAL:SCALE '+str(round(float(float(4)/(float(10)*float(F.value()))), 6))+';:CH2:SCALE '
+                      + str(1.4*float(Vsmax)/4)+';:TRIG:A:LEV:CH1 '+str(0.8*float(Vsmax)) +
                       ';:MEASUrement:IMMed:SOUrce1 CH1;:MEASUrement:IMMed:SOUrce2 CH2;:MEASUREMENT:IMMED:TYPE PHASE')
             self.inst.write(CMD)
             time.sleep(20/F.value())
             CMD = str(':MEASUREMENT:IMMED:VALUE?')
             Phase = []
             for k in range(1, 4):
+                # TODO : put a try to prevent if the read is not a float
                 Phase.append(float(self.inst.query(CMD)))
                 time.sleep(0.1)
             MeanPhase = np.mean(Phase)
@@ -101,7 +102,7 @@ class Handler(GenericDevice):
                 logger.info("Phase : %s - Mean : %s - StDev : %s" %(Phase,MeanPhase,StDevPhase))
                 i += 1
                 time.sleep((1+i)/10)
-            cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='Find_Gain_Osc').id, value=1, start=time.time())
+            cwt = DeviceWriteTask(variable__name='Find_Gain_Osc', value=1, start=time.time())
             cwt.save()
 #            self.write_data("find_gain", 1)
             return self.parse_value(MeanPhase)
@@ -150,12 +151,12 @@ class Handler(GenericDevice):
             G = 20*log10(float(P2P2)/float(P2P1))
             # self.inst.write('SELect:CH1 0')
             # self.inst.write('SELect:CH2 0')
-            N = RecordedData.objects.last_element(variable_id=Variable.objects.get(name='BODE_n').id)
+            N = RecordedData.objects.last_element(variable__name='BODE_n').id
             N_new = N.value() + 1
-            F = RecordedData.objects.last_element(variable_id=Variable.objects.get(name='BODE_F').id)
-            Fmin = RecordedData.objects.last_element(variable_id=Variable.objects.get(name='BODE_Fmin').id)
-            Fmax = RecordedData.objects.last_element(variable_id=Variable.objects.get(name='BODE_Fmax').id)
-            nb_points = RecordedData.objects.last_element(variable_id=Variable.objects.get(name='BODE_nb_points').id)
+            F = RecordedData.objects.last_element(variable__name='BODE_F').id
+            Fmin = RecordedData.objects.last_element(variable__name='BODE_Fmin').id
+            Fmax = RecordedData.objects.last_element(variable__name='BODE_Fmax').id
+            nb_points = RecordedData.objects.last_element(variable__name='BODE_nb_points').id
             # Variation de F en log
             k=pow(Fmax.value()/Fmin.value(),(N_new-11)/(nb_points.value()-1))
             F_new = Fmin.value()*pow(Fmax.value()/Fmin.value(),(N_new-1)/(nb_points.value()-1))

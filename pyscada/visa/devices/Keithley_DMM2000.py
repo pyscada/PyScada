@@ -29,6 +29,24 @@ class Handler(GenericDevice):
         write values to the device
         """
         variable = self._variables[variable_id]
+        if not variable.visavariable.variable_type == 0:  # configuration
+            # only write to configuration variables
+            return False
+        if task.property_name.upper() == 'BODE_INIT':
+            vp = VariableProperty.objects.update_or_create_property(variable=variable,
+                                                                    name=task.property_name.upper(),
+                                                                    value=value, value_class='BOOLEAN')
+        elif task.property_name.upper() == 'BODE_LOOP':
+            vp = VariableProperty.objects.update_or_create_property(variable=variable,
+                                                                    name=task.property_name.upper(),
+                                                                    value=value, value_class='BOOLEAN')
+        elif task.property_name != '':
+            # write the freq property to VariableProperty use that for later read
+            vp = VariableProperty.objects.update_or_create_property(variable=variable,
+                                                                    name='VISA:%s' % task.property_name.upper(),
+                                                                    value=value, value_class='FLOAT64')
+            return True
+        return False
         i = 0
         j = 0
         while i < 10:
@@ -45,7 +63,9 @@ class Handler(GenericDevice):
         if j == 0:
             logger.error("Keithley-Instrument not connected")
             return False
-        if variable_id == 'present_value':
+
+        # if variable_id == 'present_value':
+        if task.variable.visavariable.device_property.upper() == 'PRESENT_VALUE':
             i = 0
             while i < 10:
                 Vseff = ""
@@ -62,16 +82,21 @@ class Handler(GenericDevice):
                     # Call Phase Osc
                     # cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='Find_Phase_Osc').id, value=Vseff, start=time.time())
                     # cwt.save()
-                    vp = VariableProperty.objects.update_or_create(variable=variable,
+                    logger.info("Variable %s - task.property_name : %s - value %s" %(variable, task.property_name.upper(), value))
+                    vp = VariableProperty.objects.update_or_create_property(variable=variable,
                                                                    name='VISA:%s' % task.property_name.upper(),
                                                                    value=value, value_class='FLOAT64')
-
+                    #vp = VariableProperty.objects.update_or_create_property(variable=variable,
+                    #                                               name='VISA:%s' % task.property_name.upper())
             return Vseff
-        if variable_id == 'set_ac_range_res':
+
+        if variable_instance.visavariable.device_property.upper() == 'SET_AC_RANGE_RES':
+        # if variable_id == 'set_ac_range_res':
             CMD = str('*RST;:FUNC "VOLTage:AC";:VOLTage:AC:RANGe:AUTO 1;:VOLTage:AC:RESolution MIN;:TRIG:DEL MIN')
             self.inst.write(CMD)
             return True
         else:
+            logger.error("Keithley - variable_id : %s" %variable_id)
             return self.parse_value(self.inst.query(str(variable_id)+' '+str(value)))
 
     def parse_value(self, value):

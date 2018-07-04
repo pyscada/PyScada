@@ -392,7 +392,7 @@ class Device(models.Model):
             device_class = getattr(mod, 'Device')
             return device_class(self)
         except Exception as e:
-            logger.error("Error get_device_instance : %s : %s" %(self.__str__(),e))
+            logger.error("Error get_device_instance : %s : %s" %(self.__str__(), e))
             return None
 
 
