@@ -155,4 +155,8 @@
 0.7.0rc7
   - added admin for VariableProperty
   - added capability of reading and writing VariableProperties from the HMI and devices
-  - altered arguents for device.write_data!
+  - altered arguments for device.write_data!
+
+0.7.0rc8
+  - changed VariableProperty handling in DeviceWriteTask
+  - changed VariableProperty handling in HMI

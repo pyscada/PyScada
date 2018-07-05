@@ -142,7 +142,7 @@ class DeviceWriteTaskAdmin(admin.ModelAdmin):
     raw_id_fields = ('variable',)
 
     def name(self, instance):
-        return instance.variable.name
+        return instance.__str__()
 
     def user_name(self, instance):
         try:

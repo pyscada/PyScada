@@ -276,8 +276,13 @@ class VariablePropertyManager(models.Manager):
         :param timestamp:
         :return: VariableProperty Object
         """
+        if type(variable) == Variable:
+            kwargs = {'name': name.upper(), 'variable_id': variable.pk}
+        elif type(variable) == int or type(variable) == float:
+            kwargs = {'name': name.upper(), 'variable_id': variable}
+        else:
+            return None
 
-        kwargs = {'name': name.upper(), 'variable_id': variable.pk}
         vp = super(VariablePropertyManager, self).get_queryset().filter(**kwargs).first()
         if timestamp is not None:
             kwargs['timestamp'] = timestamp
@@ -308,12 +313,54 @@ class VariablePropertyManager(models.Manager):
         return vp
 
     def get_property(self, variable, name, **kwargs):
-        vp = super(VariablePropertyManager, self).get_queryset().filter(variable_id=variable.pk,
-                                                                        name=name.upper(), **kwargs).first()
+        if type(variable) == Variable:
+            vp = super(VariablePropertyManager, self).get_queryset().filter(variable_id=variable.pk,
+                                                                            name=name.upper(), **kwargs).first()
+        elif type(variable) == int or type(variable) == float:
+            vp = super(VariablePropertyManager, self).get_queryset().filter(variable_id=variable,
+                                                                            name=name.upper(), **kwargs).first()
+        else:
+            return None
         if vp:
             return vp
         else:
             return None
+
+    def update_property(self,variable_property=None, variable=None, name=None, value=None, **kwargs):
+        if type(variable_property) == VariableProperty:
+            vp = super(VariablePropertyManager, self).get_queryset().filter(pk=variable_property.pk
+                                                                            ).first()
+        elif type(variable_property) == int or type(variable_property) == float:
+            vp = super(VariablePropertyManager, self).get_queryset().filter(pk=variable_property
+                                                                            ).first()
+        elif type(variable) == Variable:
+            vp = super(VariablePropertyManager, self).get_queryset().filter(variable_id=variable.pk,
+                                                                            name=name.upper(), **kwargs).first()
+        elif type(variable) == int or type(variable) == float:
+            vp = super(VariablePropertyManager, self).get_queryset().filter(variable_id=variable,
+                                                                            name=name.upper(), **kwargs).first()
+        else:
+            return None
+        if vp:
+            value_class = vp.value_class
+            if value_class.upper() in ['STRING']:
+                vp.value_string = value
+            elif value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
+                vp.value_float64 = value
+            elif value_class.upper() in ['INT64', 'UINT32', 'DWORD']:
+                vp.value_int64 = value
+            elif value_class.upper() in ['WORD', 'UINT', 'UINT16', 'INT32']:
+                vp.value_int32 = value
+            elif value_class.upper() in ['INT16', 'INT8', 'UINT8']:
+                vp.value_int16 = value
+            elif value_class.upper() in ['BOOL', 'BOOLEAN']:
+                vp.value_boolean = value
+            vp.save()
+            return vp
+        else:
+            return None
+
+
 #
 # Models
 #
@@ -451,6 +498,33 @@ class VariableProperty(models.Model):
                               )
     property_class = models.CharField(default=None, blank=True, null=True, max_length=255,
                                       choices=property_class_choices)
+    value_class_choices = (('FLOAT32', 'REAL (FLOAT32)'),
+                           ('FLOAT32', 'SINGLE (FLOAT32)'),
+                           ('FLOAT32', 'FLOAT32'),
+                           ('UNIXTIMEF32', 'UNIXTIMEF32'),
+                           ('FLOAT64', 'LREAL (FLOAT64)'),
+                           ('FLOAT64', 'FLOAT  (FLOAT64)'),
+                           ('FLOAT64', 'DOUBLE (FLOAT64)'),
+                           ('FLOAT64', 'FLOAT64'),
+                           ('UNIXTIMEF64', 'UNIXTIMEF64'),
+                           ('INT64', 'INT64'),
+                           ('UINT64', 'UINT64'),
+                           ('UNIXTIMEI64', 'UNIXTIMEI64'),
+                           ('UNIXTIMEI32', 'UNIXTIMEI32'),
+                           ('INT32', 'INT32'),
+                           ('UINT32', 'DWORD (UINT32)'),
+                           ('UINT32', 'UINT32'),
+                           ('INT16', 'INT (INT16)'),
+                           ('INT16', 'INT16'),
+                           ('UINT16', 'WORD (UINT16)'),
+                           ('UINT16', 'UINT (UINT16)'),
+                           ('UINT16', 'UINT16'),
+                           ('BOOLEAN', 'BOOL (BOOLEAN)'),
+                           ('BOOLEAN', 'BOOLEAN'),
+                           ('STRING' , 'STRING'),
+                           )
+    value_class = models.CharField(max_length=15, default='FLOAT64', verbose_name="value_class",
+                                   choices=value_class_choices)
     name = models.CharField(default='', blank=True, max_length=255)
     value_boolean = models.BooleanField(default=False, blank=True)  # boolean
     value_int16 = models.SmallIntegerField(null=True, blank=True)  # int16, uint8, int8
@@ -465,23 +539,24 @@ class VariableProperty(models.Model):
         return self.get_property_class_display() + ': ' + self.name
 
     def value(self):
-        if self.value_float64 is not None:
-            return self.value_float64
-        elif self.value_int64 is not None:
-            return self.value_int64
-        elif self.value_int32 is not None:
-            return self.value_int32
-        elif self.value_int16 is not None:
-            return self.value_int16
-        elif self.value_boolean is not None:
-            return self.value_boolean
-        elif self.value_string is not None:
+        value_class = self.value_class
+        if value_class.upper() in ['STRING']:
             return self.value_string
-        else:
-            return '-'
+        elif value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
+            return self.value_float64
+        elif value_class.upper() in ['INT64', 'UINT32', 'DWORD']:
+            return self.value_int64
+        elif value_class.upper() in ['WORD', 'UINT', 'UINT16', 'INT32']:
+            return self.value_int32
+        elif value_class.upper() in ['INT16', 'INT8', 'UINT8']:
+            return self.value_int16
+        elif value_class.upper() in ['BOOL', 'BOOLEAN']:
+            return self.value_boolean
+        return None
 
     def web_key(self):
         return '%d-%s'%(self.variable.pk, self.name.upper().replace(':','-'))
+
 
 @python_2_unicode_compatible
 class Variable(models.Model):
@@ -797,9 +872,9 @@ class Variable(models.Model):
 @python_2_unicode_compatible
 class DeviceWriteTask(models.Model):
     id = models.AutoField(primary_key=True)
-    variable = models.ForeignKey('Variable')
+    variable = models.ForeignKey('Variable', blank=True, null=True)
+    variable_property = models.ForeignKey('VariableProperty', blank=True, null=True)
     value = models.FloatField()
-    property_name = models.CharField(default='', blank=True, max_length=255)
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     start = models.FloatField(default=0)  # TODO DateTimeField
     finished = models.FloatField(default=0, blank=True)  # TODO DateTimeField
@@ -807,7 +882,10 @@ class DeviceWriteTask(models.Model):
     failed = models.BooleanField(default=False, blank=True)
 
     def __str__(self):
-        return self.variable.short_name
+        if self.variable:
+            return self.variable.name
+        elif self.variable_property:
+            return self.variable_property.variable.name + ' : ' + self.variable_property.name
 
 
 @python_2_unicode_compatible

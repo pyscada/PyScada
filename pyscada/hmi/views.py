@@ -163,14 +163,21 @@ def log_data(request):
 def form_write_task(request):
     if not request.user.is_authenticated():
         return redirect('/accounts/login/?next=%s' % request.path)
-    if 'var_id' in request.POST and 'value' in request.POST:
-        cwt = DeviceWriteTask(variable_id=request.POST['var_id'], value=request.POST['value'], start=time.time(),
-                              user=request.user,
-                              property_name=request.POST['property_name'] if 'property_name' in request.POST else '',)
-        cwt.save()
-        return HttpResponse(status=200)
-    else:
-        return HttpResponse(status=404)
+    if 'key' in request.POST and 'value' in request.POST:
+        key = int(request.POST['key'])
+        item_type = request.POST['item_type']
+        if item_type == 'variable':
+            cwt = DeviceWriteTask(variable_id=key, value=request.POST['value'], start=time.time(),
+                                  user=request.user)
+            cwt.save()
+            return HttpResponse(status=200)
+        elif item_type == 'variable_property':
+            cwt = DeviceWriteTask(variable_property_id=key, value=request.POST['value'], start=time.time(),
+                                  user=request.user)
+            cwt.save()
+            return HttpResponse(status=200)
+
+    return HttpResponse(status=404)
 
 
 def get_cache_data(request):
@@ -195,6 +202,10 @@ def get_cache_data(request):
             GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator()).values_list(
                 'custom_html_panels__variables', flat=True))
         active_variables = list(set(active_variables))
+
+    active_variable_properties = []
+    if 'variable_properties[]' in request.POST:
+        active_variable_properties = request.POST.getlist('variable_properties[]')
 
     timestamp_from = time.time()
     if 'timestamp_from' in request.POST:
@@ -228,8 +239,9 @@ def get_cache_data(request):
     if data is None:
         data = {}
     data['variable_properties'] = {}
-    for item in VariableProperty.objects.filter(variable_id__in=active_variables):
-        data['variable_properties'][item.web_key()] = item.value()
+
+    for item in VariableProperty.objects.filter(pk__in=active_variable_properties):
+        data['variable_properties'][item.pk] = item.value()
 
     data["server_time"] = time.time() * 1000
     return HttpResponse(json.dumps(data), content_type='application/json')

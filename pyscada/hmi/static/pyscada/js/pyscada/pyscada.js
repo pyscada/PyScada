@@ -31,10 +31,12 @@ var REFRESH_RATE = 2500;
 var CACHE_TIMEOUT = 15000; // in milliseconds
 var ROOT_URL = window.location.protocol+"//"+window.location.host + "/";
 var VARIABLE_KEYS = [];
+var VARIABLE_PROPERTY_KEYS = [];
 var STATUS_VARIABLE_KEYS = {count:function(){var c = 0;for (key in this){c++;} return c-2;},keys:function(){var k = [];for (key in this){if (key !=="keys" && key !=="count"){k.push(key);}} return k;}};
 var CHART_VARIABLE_KEYS = {count:function(){var c = 0;for (key in this){c++;} return c-2;},keys:function(){var k = [];for (key in this){if (key !=="keys" && key !=="count"){k.push(key);}} return k;}};
 var DATA = {}; // holds the fetched data from the server
 var VARIABLE_PROPERTIES = {};
+var VARIABLE_PROPERTIES_DATA = {}
 var DATA_INIT_STATUS = 0; // status 0: nothing done, 1:
 var UPDATE_X_AXES_TIME_LINE_STATUS = false;
 var FETCH_DATA_PENDING = 0;
@@ -163,7 +165,7 @@ function data_handler(){
         }else{
             if(FETCH_DATA_PENDING<=0){
             // fetch new data
-                data_handler_ajax(0,VARIABLE_KEYS,DATA_TO_TIMESTAMP+1);
+                data_handler_ajax(0,VARIABLE_KEYS,VARIABLE_PROPERTY_KEYS,DATA_TO_TIMESTAMP+1);
             }
             // fetch historic data
             if(FETCH_DATA_PENDING<=1){
@@ -171,6 +173,7 @@ function data_handler(){
                 // first load STATUS_VARIABLES
                     var var_count = 0;
                     var vars = [];
+                    var props = [];
                     var timestamp = DATA_TO_TIMESTAMP;
                     for (var key in STATUS_VARIABLE_KEYS){
                         if (typeof(CHART_VARIABLE_KEYS[key]) === 'undefined'){
@@ -183,13 +186,14 @@ function data_handler(){
                         if(var_count >= 5){break;}
                     }
                     if(var_count>0){
-                        data_handler_ajax(1,vars,timestamp);
+                        data_handler_ajax(1,vars,props,timestamp);
                     }else{
                         INIT_STATUS_VARIABLES_DONE = true;
                     }
                 }else if (!INIT_CHART_VARIABLES_DONE){
                     var var_count = 0;
                     var vars = [];
+                    var props = [];
                     var timestamp = DATA_FROM_TIMESTAMP;
                     for (var key in CHART_VARIABLE_KEYS){
                        if(CHART_VARIABLE_KEYS[key]<=DATA_INIT_STATUS){
@@ -207,7 +211,7 @@ function data_handler(){
                         if (timestamp === DATA_FROM_TIMESTAMP){
                             timestamp = DATA_DISPLAY_TO_TIMESTAMP;
                         }
-                        data_handler_ajax(1,vars,timestamp-120*60*1000,timestamp);
+                        data_handler_ajax(1,vars,props,timestamp-120*60*1000,timestamp);
                     }else{
                         INIT_CHART_VARIABLES_DONE = true;
                         $('#PlusTwoHoursButton').removeClass("disabled");
@@ -218,10 +222,10 @@ function data_handler(){
     }
 }
 
-function data_handler_ajax(init,variable_keys,timestamp_from,timestamp_to){
+function data_handler_ajax(init,variable_keys,variable_property_keys,timestamp_from,timestamp_to){
     FETCH_DATA_PENDING++;
     if(init){show_init_status();}
-    request_data = {timestamp_from:timestamp_from, variables: variable_keys, init: init};
+    request_data = {timestamp_from:timestamp_from, variables: variable_keys, init: init, variable_properties:variable_property_keys};
     if (typeof(timestamp_to !== 'undefined')){request_data['timestamp_to']=timestamp_to};
     if (!init){request_data['timestamp_from'] = request_data['timestamp_from'] - REFRESH_RATE;};
     $.ajax({
@@ -251,10 +255,10 @@ function data_handler_done(fetched_data){
         SERVER_TIME = 0;
     }
     if (typeof(fetched_data['variable_properties'])==="object"){
-        VARIABLE_PROPERTIES = fetched_data['variable_properties'];
+        VARIABLE_PROPERTIES_DATA = fetched_data['variable_properties'];
         delete fetched_data['variable_properties'];
     }else{
-        VARIABLE_PROPERTIES = {}
+        VARIABLE_PROPERTIES_DATA = {}
     }
     if(DATA_TO_TIMESTAMP==0){
         DATA_TO_TIMESTAMP = DATA_FROM_TIMESTAMP = SERVER_TIME;
@@ -292,9 +296,9 @@ function data_handler_done(fetched_data){
                 update_data_values('var-' + key,DATA[key][DATA[key].length-1][1]);
             }
         }
-        for (var key in VARIABLE_PROPERTIES) {
-            value = VARIABLE_PROPERTIES[key];
-            update_data_values('prop-' + key.toLowerCase(),value);
+        for (var key in VARIABLE_PROPERTIES_DATA) {
+            value = VARIABLE_PROPERTIES_DATA[key];
+            update_data_values('prop-' + key,value);
         }
         /*
         DATA_OUT_OF_DATE = (SERVER_TIME - timestamp  > CACHE_TIMEOUT);
@@ -505,9 +509,9 @@ function update_data_values(key,val){
                 // inverted
                 $(".label.type-bool.status-red-inv." + key).addClass("label-danger");
                 
-                $('button.btn-default.write-task-btn.' + key).addClass("updateable");
-                $('button.updateable.write-task-btn.' + key).addClass("btn-default");
-                $('button.updateable.write-task-btn.' + key).removeClass("btn-success");
+                $('button.btn-default.write-task-btn.' + key).addClass("update-able");
+                $('button.update-able.write-task-btn.' + key).addClass("btn-default");
+                $('button.update-able.write-task-btn.' + key).removeClass("btn-success");
                 $(".type-numeric." + key).html(0);
                 $('input.'+ key).attr("placeholder",0);
             } else {
@@ -519,9 +523,9 @@ function update_data_values(key,val){
                 $(".label.type-bool.status-yello." + key).addClass("label-warning");
                 $(".label.type-bool.status-red." + key).addClass("label-danger");
                 $(".label.type-bool.status-red-inv." + key).addClass("label-default");
-                $('button.btn-success.write-task-btn.' + key).addClass("updateable");
-                $('button.updateable.write-task-btn.' + key).removeClass("btn-default");
-                $('button.updateable.write-task-btn.' + key).addClass("btn-success");
+                $('button.btn-success.write-task-btn.' + key).addClass("update-able");
+                $('button.update-able.write-task-btn.' + key).removeClass("btn-default");
+                $('button.update-able.write-task-btn.' + key).addClass("btn-success");
                 $(".type-numeric." + key).html(1);
                 $('input.'+ key).attr("placeholder",1);
             }
@@ -940,17 +944,17 @@ $.ajaxSetup({
 //form/write_task/
 
 $('button.write-task-set').click(function(){
-        var_id = $(this).attr('var_id');
+        key = $(this).data('key');
         id = $(this).attr('id');
         value = $("#"+id+"-value").val();
-        property_name = $(this).attr('property_name');
+        item_type = $(this).data('type');
         if (value == "" ){
             add_notification('please provide a value',3);
         }else{
             $.ajax({
                 type: 'post',
                 url: ROOT_URL+'form/write_task/',
-                data: {var_id:var_id,value:value,property_name:property_name},
+                data: {key:key, value:value, item_type:item_type},
                 success: function (data) {
                     
                 },
@@ -962,15 +966,15 @@ $('button.write-task-set').click(function(){
 });
 
 $('button.write-task-btn').click(function(){
-        var_id = $(this).attr('var_id');
+        key = $(this).data('key');
         id = $(this).attr('id');
-        property_name = $(this).attr('property_name');
-        $('#'+id).removeClass('updateable');
+        item_type = $(this).data('type');
+        $('#'+id).removeClass('update-able');
         if($(this).hasClass('btn-default')){
             $.ajax({
                 type: 'post',
                 url: ROOT_URL+'form/write_task/',
-                data: {var_id:var_id,value:1,property_name:property_name},
+                data: {key:key,value:1,item_type:item_type},
                 success: function (data) {
                     $('#'+id).removeClass('btn-default')
                     $('#'+id).addClass('btn-success');
@@ -983,7 +987,7 @@ $('button.write-task-btn').click(function(){
             $.ajax({
                 type: 'post',
                 url: ROOT_URL+'form/write_task/',
-                data: {var_id:var_id,value:0,property_name:property_name},
+                data: {key:key,value:0,item_type:item_type},
                 success: function (data) {
                     $('#'+id).addClass('btn-default')
                     $('#'+id).removeClass('btn-success');
@@ -1033,14 +1037,24 @@ $( document ).ready(function() {
     $.each($('.variable-config'),function(key,val){
         key = parseInt($(val).data('key'));
         init_type = parseInt($(val).data('init-type'));
-        if (VARIABLE_KEYS.indexOf(key)==-1){
+        item_type = $(val).data('type');
+        if(item_type == '' || typeof(item_type) == 'undefined'){
+            item_type = "variable";
+        }
+
+        if( VARIABLE_PROPERTY_KEYS.indexOf(key)==-1 && item_type === "variable_property"){
+            VARIABLE_PROPERTY_KEYS.push(key)
+        }else if (VARIABLE_KEYS.indexOf(key)==-1 && item_type === "variable"){
             VARIABLE_KEYS.push(key)
         }
-        if (typeof(STATUS_VARIABLE_KEYS[key]) == 'undefined' && init_type==0){
+        if (typeof(STATUS_VARIABLE_KEYS[key]) == 'undefined' && init_type==0 && item_type === "variable"){
             STATUS_VARIABLE_KEYS[key] = 0;
         }
-        if (typeof(CHART_VARIABLE_KEYS[key]) == 'undefined' && init_type==1){
+        if (typeof(CHART_VARIABLE_KEYS[key]) == 'undefined' && init_type==1 && item_type === "variable"){
             CHART_VARIABLE_KEYS[key] = 0;
+        }
+        if (typeof(VARIABLE_PROPERTIES[key]) == 'undefined' && item_type === "variable_property"){
+            VARIABLE_PROPERTIES[key] = 0;
         }
     });
 
