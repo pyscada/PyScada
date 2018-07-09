@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.models import Variable
+from pyscada.models import Variable, VariableProperty
 
 from django.db import models
 from django.contrib.auth.models import Group
@@ -28,22 +28,60 @@ class ControlItem(models.Model):
         (6, 'Display Value'),)
     type = models.PositiveSmallIntegerField(default=0, choices=type_choices)
     variable = models.ForeignKey(Variable, null=True)
-    property_name = models.CharField(default='', blank=True, max_length=255)
+    variable_property = models.ForeignKey(VariableProperty, null=True)
 
     class Meta:
         ordering = ['position']
 
     def __str__(self):
-        return self.label + " (" + self.variable.name + ")"
+        if self.variable_property:
+            return self.id.__str__() + "-" + self.variable_property.name.replace(' ', '_')
+        elif self.variable:
+            return self.id.__str__() + "-" + self.variable.name.replace(' ', '_')
 
     def web_id(self):
-        return self.id.__str__() + "-" + self.variable.name.replace(' ', '_')
+        if self.variable_property:
+            return self.id.__str__() + "-" + self.variable_property.name.replace(' ', '_')
+        elif self.variable:
+            return self.id.__str__() + "-" + self.variable.name.replace(' ', '_')
 
     def web_class_str(self):
-        if self.property_name == '':
-            return 'var-%d'%self.variable_id
-        else:
-            return 'prop-%d-%s' % (self.variable_id, self.property_name.lower().replace(':','-'))
+        if self.variable_property:
+            return 'prop-%d' % self.variable_property_id
+        elif self.variable:
+            return 'var-%d' % self.variable_id
+
+    def active(self):
+        if self.variable_property:
+            return True
+        elif self.variable:
+            return self.variable.active and self.variable.device.active
+        return False
+
+    def key(self):
+        if self.variable_property:
+            return self.variable_property_id
+        elif self.variable:
+            return self.variable_id
+
+    def name(self):
+        if self.variable_property:
+            return self.variable_property.name
+        elif self.variable:
+            return self.variable.name
+
+    def item_type(self):
+        if self.variable_property:
+            return "variable_property"
+        elif self.variable:
+            return "variable"
+
+    def unit(self):
+        if self.variable_property:
+            return ""  # todo
+        elif self.variable:
+            return self.variable.unit.unit
+
 
 @python_2_unicode_compatible
 class Chart(models.Model):
