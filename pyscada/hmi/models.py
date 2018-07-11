@@ -28,7 +28,7 @@ class ControlItem(models.Model):
         (6, 'Display Value'),)
     type = models.PositiveSmallIntegerField(default=0, choices=type_choices)
     variable = models.ForeignKey(Variable, null=True)
-    variable_property = models.ForeignKey(VariableProperty, null=True)
+    variable_property = models.ForeignKey(VariableProperty, null=True, blank=True)
 
     class Meta:
         ordering = ['position']
