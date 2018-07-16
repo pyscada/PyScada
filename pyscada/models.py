@@ -439,6 +439,7 @@ class Device(models.Model):
             device_class = getattr(mod, 'Device')
             return device_class(self)
         except:
+            logger.error('%s(%d), unhandled exception\n%s' % (self.short_name, getpid(), traceback.format_exc()))
             return None
 
 
