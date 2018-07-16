@@ -1130,12 +1130,11 @@ $('button.write-task-form-set').click(function(){
         for (i=0;i<tabinputs.length;i++){
             value = tabinputs[i].value;
             var_name = $(tabinputs[i]).attr("name");
-//            var_id = $(tabinputs[i]).attr("id");
-            $.each($('.variable-config'),function(key,val){
-                key = parseInt($(val).data('key'));
+            $.each($('.variable-config'),function(kkey,val){
                 name_var = $(val).data('name');
                 if (name_var==var_name){
-                    var_id = key;
+                    key = parseInt($(val).data('key'));
+                    item_type = $(val).data('type');
                 }
             });
 
@@ -1146,13 +1145,13 @@ $('button.write-task-form-set').click(function(){
                 $.ajax({
                     type: 'post',
                     url: ROOT_URL+'form/write_task/',
-                    data: {var_id:var_id,value:value,property_name:property_name},
+                    data: {key:key, value:value, item_type:item_type},
                     success: function (data) {
 
                     },
                     error: function(data) {
                         add_notification('add new write task failed',3);
-                        alert("form set Nok"+data)
+                        alert("Form Set NOK "+data+" - key "+key+" - value "+value+" - item_type "+item_type)
                     }
                 });
             };
