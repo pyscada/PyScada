@@ -160,3 +160,9 @@
 0.7.0rc8
   - changed VariableProperty handling in DeviceWriteTask
   - changed VariableProperty handling in HMI
+
+0.7.0rc9
+  - fixed variable and variable_property attributes in hmi.ControlItem
+  - added traceback to Device.get_device_instance method
+  - updated Keithley DMM2000 device in visa.devices
+
