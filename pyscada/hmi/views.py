@@ -62,6 +62,7 @@ def view(request, link_title):
         visible_widget_list = Widget.objects.filter(page__in=page_list.iterator()).values_list('pk', flat=True)
         visible_custom_html_panel_list = CustomHTMLPanel.objects.all().values_list('pk', flat=True)
         visible_chart_list = Chart.objects.all().values_list('pk', flat=True)
+        visible_xychart_list = XYChart.objects.all().values_list('pk', flat=True)
         visible_control_element_list = ControlItem.objects.all().values_list('pk', flat=True)
     else:
         page_list = v.pages.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).distinct()
@@ -110,6 +111,12 @@ def view(request, link_title):
                     continue
                 has_chart = True
                 widgets.append(widget)
+            elif widget.xychart:
+                if not widget.xychart.visable():
+                    continue
+                if widget.xychart.pk not in visible_xychart_list:
+                    continue
+                has_chart = True
             elif widget.control_panel:
                 widgets.append(widget)
             elif widget.process_flow_diagram:

@@ -868,7 +868,7 @@ function PyScadaPlot(id){
     }
 }
 
-function XYPlot(id){
+function XYPlot(id, xaxisType, xaxisLinLog){
     var options = {
         legend: {
             show: false
@@ -968,39 +968,39 @@ function XYPlot(id){
         }
 
         //
-        flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series,options);
+        flotPlot = $.plot($(chart_container_id + ' .xychart-placeholder'), series,options);
         // update the plot
         update();
 
         //add info on mouse over a point and position of the mouse
         //add <span id="hoverdata"></span> to the html code to see the position of the mouse
         $("<div id='tooltip'></div>").css({
-		position: "absolute",
-		display: "none",
-		border: "1px solid #fdd",
-		padding: "2px",
-		"background-color": "#fee",
-		opacity: 0.80
+            position: "absolute",
+            display: "none",
+            border: "1px solid #fdd",
+            padding: "2px",
+            "background-color": "#fee",
+            opacity: 0.80
 	    }).appendTo("body");
 
-	$(chart_container_id + ' .chart-placeholder').bind("plothover", function (event, pos, item) {
-	if (pos.x) {
-        	var str = "(" + pos.x.toFixed(0) + ", " + pos.y.toFixed(2) + ")";
-        }
-	$("#hoverdata").text(str);
-	if (item) {
-		var x = item.datapoint[0].toFixed(0),
-			y = item.datapoint[1].toFixed(2);
-		$("#tooltip").html(item.series.label + " of " + x + " = " + y)
-			.css({top: item.pageY+5, left: item.pageX+5})
-			.fadeIn(200);
-	} else {
-		$("#tooltip").hide();
-	}
-	});
+        $(chart_container_id + ' .xychart-placeholder').bind("plothover", function (event, pos, item) {
+            if (pos.x) {
+                    var str = "(" + pos.x.toFixed(0) + ", " + pos.y.toFixed(2) + ")";
+                }
+            $("#hoverdata").text(str);
+            if (item) {
+                var x = item.datapoint[0].toFixed(0),
+                    y = item.datapoint[1].toFixed(2);
+                $("#tooltip").html(item.series.label + " of " + x + " = " + y)
+                    .css({top: item.pageY+5, left: item.pageX+5})
+                    .fadeIn(200);
+            } else {
+                $("#tooltip").hide();
+            }
+        });
 
         // bind
-        $(chart_container_id + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
+        $(chart_container_id + ' .xychart-placeholder').bind("plotselected", function(event, ranges) {
             pOpt = flotPlot.getOptions();
 
             if ($("#activate_zoom_y").is(':checked')) {
@@ -1076,7 +1076,8 @@ function XYPlot(id){
             j=0;
             for (var key in keys){
                 key = keys[key];
-                fkey = X_AXIS_IS_TIME;
+                //fkey = X_AXIS_IS_TIME;
+                fkey = xaxisType
                 if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object'){
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
                         start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
@@ -1162,14 +1163,15 @@ function XYPlot(id){
                 }
                 options.yaxes = yoptions;
                 //TODO : replace "replot" with setupGrid and draw WORK ONLY WITH 1 AXIS...
-                flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series,options);
+                flotPlot = $.plot($(chart_container_id + ' .xychart-placeholder'), series,options);
             }
 
             // update x window
             pOpt = flotPlot.getOptions();
             if (j != 0){
                 var xticks=[];
-                if (X_AXIS_LOG == 1){
+                //if (X_AXIS_LOG == 1){
+                if (xaxisLinLog == 1){
                     xticks=xticks.concat(chart_fdata[0][1]);
                     for (i=parseInt(Math.round(Math.log(chart_fdata[0][1])/Math.log(10)));i<=parseInt(Math.round(Math.log(chart_fdata[chart_fdata.length-1][1])/Math.log(10)));i++){
                         xticks=xticks.concat(Math.pow(10,i)/2);
@@ -1294,9 +1296,9 @@ $('button.write-task-form-set').click(function(){
         name_form = $(this.form).attr('name');
         tabinputs = document.forms[name_form].getElementsByTagName("input");
 //        X_AXIS_IS_TIME = document.getElementById("xaxis_value").innerHTML; //value of the x axis. if 0 then time
-        X_AXIS_LOG = document.getElementById("xaxis_log").innerHTML; //if 1 x axis with log scale
+        //X_AXIS_LOG = document.getElementById("xaxis_log").innerHTML; //if 1 x axis with log scale
         DATA={}; //reset the data after each button click
-        CHART_VARIABLE_KEYS[xaxis_value]=1; //permit to store value for x axis
+        //CHART_VARIABLE_KEYS[xaxis_value]=1; //permit to store value for x axis
         for (i=0;i<tabinputs.length;i++){
             value = tabinputs[i].value;
             var_name = $(tabinputs[i]).attr("name");
@@ -1400,6 +1402,15 @@ $( document ).ready(function() {
         id = val.id.substring(16);
         // add a new Plot
         PyScadaPlots.push(new PyScadaPlot(id));
+    });
+    $.each($('.xychart-container'),function(key,val){
+        // get identifier of the chart
+        id = val.id.substring(16);
+        xaxisType = parseInt($(val).data('xaxis').type;
+        xaxisLinLog = parseInt($(val).data('xaxis').linlog;
+        CHART_VARIABLE_KEYS[xaxisType]=1;
+        // add a new Plot
+        PyScadaPlots.push(new XYPlot(id, xaxisType, xaxisLinLog));
     });
     
     $.each($('.variable-config'),function(key,val){

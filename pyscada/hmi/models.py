@@ -105,6 +105,48 @@ class Chart(models.Model):
 
 
 @python_2_unicode_compatible
+class XYChart(models.Model):
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=400, default='')
+    x_axis_label = models.CharField(max_length=400, default='', blank=True)
+    # x_axis_type = models.ModelChoiceField(queryset=Variable.objects.all(), to_field_name="name", empty_label="Time")
+    x_axis_type = models.ForeignKey(Variable, default=None)
+    x_axis_linlog = models.BooleanField(default=False, help_text="False->Lin / True->Log")
+    y_axis_label = models.CharField(max_length=400, default='', blank=True)
+    variables = models.ManyToManyField(Variable)
+
+    def __str__(self):
+        return text_type(str(self.id) + ': ' + self.title)
+
+    def visable(self):
+        return True
+
+    def variables_list(self, exclude_list=[]):
+        return [item.pk for item in self.variables.exclude(pk__in=exclude_list)]
+
+
+@python_2_unicode_compatible
+class Form(models.Model):
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=400, default='')
+    variables = models.ManyToManyField(Variable)
+    hidden_variables_set_up = models.ManyToManyField(Variable)
+    button = models.CharField(max_length=50, default='Ok')
+
+    def __str__(self):
+        return text_type(str(self.id) + ': ' + self.title)
+
+    def visable(self):
+        return True
+
+    def variables_list(self, exclude_list=[]):
+        return [item.pk for item in self.variables.exclude(pk__in=exclude_list)]
+
+    def hidden_variables_set_up_list(self, exclude_list=[]):
+        return [item.pk for item in self.hidden_variables_set_up.exclude(pk__in=exclude_list)]
+
+
+@python_2_unicode_compatible
 class Page(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')

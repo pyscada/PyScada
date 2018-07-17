@@ -1,0 +1,22 @@
+<div class="widget-body" id="widget-body-{{ widget_pk }}-ch-{{xychart.pk}}">
+    <div class="main-chart-area" style="height:450px; width:100%;">
+        <div id="xychart-container-{{ widget_pk }}-{{xychart.pk}}" class="xychart-container" style="width: 100%; height:100%;" data-xaxis='{"type":"{xychart.x_axis_type}","linlog":{xychart.x_axis_linlog}}' data-axes0-yaxis='{"label":"{{xychart.y_axis_label}}"}'>
+            <div class="chart-placeholder"></div>
+            <div class="chartTitle">{{xychart.title}}</div>
+            <div class="chart-btn-bar" >
+                <div class="btn-group">
+                    <button type="button" class="btn btn-default chart-ResetSelection">
+                        <span class="glyphicon glyphicon-fullscreen"></span>
+                    </button>
+                    <button type="button" class="btn btn-default chart-ZoomYToFit">
+                        <span class="glyphicon glyphicon-resize-vertical"></span>
+                    </button>
+                    <button type="button" class="btn btn-default chart-ZoomXToFit">
+                        <span class="glyphicon glyphicon-resize-horizontal"></span>
+                    </button>
+                </div>
+            </div>
+            <div class="axisLabel yaxisLabel">{{xychart.y_axis_label}}</div>
+        </div>
+    </div>
+</div>

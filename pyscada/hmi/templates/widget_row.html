@@ -6,6 +6,10 @@
             {% include "chart_legend.html" with chart=widget.chart widget_pk=widget.pk %}
             <div class="clear-sep"></div>
         {% endif %}
+        {% if widget.xychart %}
+            {% include "chart_legend.html" with chart=widget.xychart widget_pk=widget.pk %}
+            <div class="clear-sep"></div>
+        {% endif %}
     {% endfor %}
     </div>
 {% endif %}
@@ -17,6 +21,8 @@
     <div id="widget_{{widget.pk}}" class="widget {{ widget.css_class}}"> <!-- {{ widget.title }} -->
         {% if widget.chart %}
             {% include "chart.html" with chart=widget.chart widget_pk=widget.pk%}
+        {% elif widget.xychart %}
+            {% include "xychart.html" with xychart=widget.xychart widget_pk=widget.pk%}
         {% elif widget.control_panel %}
             {% include "control_panel.html" with control_panel=widget.control_panel visible_control_element_list=visible_control_element_list%}
         {% elif widget.custom_html_panel %}

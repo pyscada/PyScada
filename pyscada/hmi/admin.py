@@ -48,6 +48,36 @@ class ChartAdmin(admin.ModelAdmin):
         return instance.variables.name
 
 
+class XYChartForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(XYChartForm, self).__init__(*args, **kwargs)
+        wtf = Variable.objects.all()
+        w = self.fields['variables'].widget
+        choices = []
+        for choice in wtf:
+            choices.append((choice.id, choice.name + '( ' + choice.unit.description + ' )'))
+        w.choices = choices
+
+
+class XYChartAdmin(admin.ModelAdmin):
+    list_per_page = 100
+    # ordering = ['position',]
+    search_fields = ['name', ]
+    filter_horizontal = ('variables',)
+    List_display_link = ('title',)
+    list_display = ('id', 'title',)
+    list_filter = ('widget__page__title', 'widget__title',)
+    form = XYChartForm
+
+    def name(self, instance):
+        return instance.variables.name
+
+
+class FormAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'button',)
+    list_filter = ('controlpanel',)
+
+
 class ControlItemAdmin(admin.ModelAdmin):
     list_display = ('id', 'position', 'label', 'type', 'variable',)
     list_filter = ('controlpanel',)
