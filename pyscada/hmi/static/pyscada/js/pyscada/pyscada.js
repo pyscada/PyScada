@@ -629,7 +629,7 @@ function timeline_drag( event, ui ) {
     update_timeline();
 }
 function PyScadaPlot(id){
-    if(X_AXIS_IS_TIME == 0){
+
     var options = {
         xaxis: {
             mode: "time",
@@ -649,37 +649,10 @@ function PyScadaPlot(id){
                 top: 20,
                 bottom: 8,
                 left: 20
-            },
-            //to show points informations
-            hoverable: true,
-            clickable: true
-        },
-        lines: { show: true },
-        points: { show: true }
-    };} else {
-    var options = {
-        legend: {
-            show: false
-        },
-        selection: {
-            mode: "y"
-        },
-        grid: {
-            labelMargin: 10,
-            margin: {
-                top: 20,
-                bottom: 8,
-                left: 20
-            },
-            //to show points informations
-            hoverable: true,
-            clickable: true
-        },
-        lines: { show: true },
-        points: { show: true }
-    };
-    }
-    var series = [],		// just the active data series
+            }
+        }
+    },
+    series = [],		// just the active data series
     keys   = [],		// list of variable keys (ids)
     variable_names = [], // list of all variable names
     flotPlot,			// handle to plot
@@ -712,12 +685,12 @@ function PyScadaPlot(id){
         keys.push(variable_key);
         variable_names.push(variable_name);
     });
-    
-    
+
+
     function prepare(){
         // prepare legend table sorter
         $(legend_table_id).tablesorter({sortList: [[2,0]]});
-        
+
         // add onchange function to every checkbox in legend
         $.each(variables,function(key,val){
             $(legend_checkbox_id+key).change(function() {
@@ -747,11 +720,249 @@ function PyScadaPlot(id){
          });
         // expand the chart to the maximum width
         main_chart_area  = $(chart_container_id).closest('.main-chart-area');
-        
-        
+
+
         contentAreaHeight = main_chart_area.parent().height();
         mainChartAreaHeight = main_chart_area.height();
-        
+
+        if (contentAreaHeight>mainChartAreaHeight){
+            main_chart_area.height(contentAreaHeight);
+        }
+
+        //
+        flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series,options);
+        // update the plot
+        update();
+        // bind
+        $(chart_container_id + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
+            pOpt = flotPlot.getOptions();
+
+            if ($("#activate_zoom_y").is(':checked')) {
+                pOpt.yaxes[0].min = ranges.yaxis.from;
+                pOpt.yaxes[0].max = ranges.yaxis.to;
+                flotPlot.setupGrid();
+                flotPlot.draw();
+            }
+            flotPlot.clearSelection();
+            if ($("#activate_zoom_x").is(':checked')) {
+                DATA_DISPLAY_TO_TIMESTAMP = ranges.xaxis.to;
+                DATA_DISPLAY_FROM_TIMESTAMP = ranges.xaxis.from;
+                DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP-DATA_DISPLAY_FROM_TIMESTAMP;
+                set_x_axes();
+            }
+
+        });
+
+        // Since CSS transforms use the top-left corner of the label as the transform origin,
+        // we need to center the y-axis label by shifting it down by half its width.
+        // Subtract 20 to factor the chart's bottom margin into the centering.
+        var chartTitle = $(chart_container_id + ' .chartTitle');
+        chartTitle.css("margin-left", -chartTitle.width() / 2);
+        var yaxisLabel = $(chart_container_id + ' .axisLabel.yaxisLabel');
+        yaxisLabel.css("margin-top", yaxisLabel.width() / 2 - 20);
+
+
+        $(chart_container_id + " .btn.btn-default.chart-ResetSelection").click(function() {
+            DATA_DISPLAY_TO_TIMESTAMP = -1;
+            set_x_axes();
+            pOpt = flotPlot.getOptions();
+            pOpt.yaxes[0].min = $(chart_container_id).data('axes0Yaxis').min;
+            pOpt.yaxes[0].max = $(chart_container_id).data('axes0Yaxis').max;
+            flotPlot.setupGrid();
+            flotPlot.draw();
+        });
+
+        $(chart_container_id + " .btn.btn-default.chart-ZoomYToFit").click(function() {
+            pOpt = flotPlot.getOptions();
+            aOpt = flotPlot.getYAxes();
+            pOpt.yaxes[0].min = aOpt.datamin;
+            pOpt.yaxes[0].max = aOpt.datamax;
+            flotPlot.setupGrid();
+            flotPlot.draw();
+        });
+        $(chart_container_id + " .btn.btn-default.chart-ZoomXToFit").click(function() {
+            DATA_DISPLAY_FROM_TIMESTAMP = -1;
+            DATA_DISPLAY_TO_TIMESTAMP = -1;
+            DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
+            set_x_axes();
+        });
+    }
+
+
+    function update(){
+        if(!prepared ){
+            if($(chart_container_id).is(":visible")){
+                prepared = true;
+                prepare();
+            }else{
+                return;
+            }
+        }
+        if($(chart_container_id).is(":visible")){
+            // only update if plot is visible
+            // add the selected data series to the "series" variable
+            series = [];
+            start_id = 0;
+            for (var key in keys){
+                key = keys[key];
+                if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object'){
+                    if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
+                        start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                        stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
+                        chart_data = DATA[key].slice(start_id,stop_id);
+                    }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
+                        start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                        chart_data = DATA[key].slice(start_id);
+                    }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
+                        if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
+                        stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
+                        chart_data = DATA[key].slice(0,stop_id);
+                    }else {
+                        chart_data = DATA[key].slice();
+                    }
+                    if (chart_data.length > 2){
+                        i = 1;
+                        while (i < chart_data.length) {
+                             if (chart_data[i][0] - chart_data[i - 1][0] > 1000.0 && chart_data[i][1] != chart_data[i - 1][1]){
+                                chart_data.splice(i,0, [chart_data[i][0], chart_data[i - 1][1]]);
+                                i += 2;
+                            }else{
+                                i += 1;
+                            }
+                        }
+                    }
+                    if (chart_data.length >= 1){
+                        if (DATA_DISPLAY_TO_TIMESTAMP < 0){
+                            chart_data.push([DATA_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
+                        }else{
+                            chart_data.push([DATA_DISPLAY_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
+                        }
+                    }
+
+                    series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis});
+                }
+            }
+            // update flot plot
+            flotPlot.setData(series);
+            // update x window
+            pOpt = flotPlot.getOptions();
+
+            if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
+                pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
+                pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
+
+            }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
+                pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
+                pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
+            }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
+                pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
+                pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
+            }else{
+                pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
+                pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
+            }
+
+            flotPlot.setupGrid();
+            flotPlot.draw();
+        }
+    }
+}
+
+function XYPlot(id){
+    var options = {
+        legend: {
+            show: false
+        },
+        selection: {
+            mode: "y"
+        },
+        grid: {
+            labelMargin: 10,
+            margin: {
+                top: 20,
+                bottom: 8,
+                left: 20
+            },
+            //to show points informations
+            hoverable: true,
+            clickable: true
+        },
+        lines: { show: true },
+        points: { show: true }
+    },
+    series = [],		// just the active data series
+    keys   = [],		// list of variable keys (ids)
+    variable_names = [], // list of all variable names
+    flotPlot,			// handle to plot
+    prepared = false,	//
+    legend_id = '#chart-legend-' + id,
+    legend_table_id = '#chart-legend-table-' + id,
+    chart_container_id = '#chart-container-'+id,
+    legend_checkbox_id = '#chart-legend-checkbox-' + id + '-',
+    legend_checkbox_status_id = '#chart-legend-checkbox-status-' + id + '-',
+    variables = {},
+    plot = this;
+
+
+    // public functions
+    plot.update 			= update;
+    plot.prepare 			= prepare;
+    plot.getSeries 			= function () { return series };
+    plot.getFlotObject		= function () { return flotPlot};
+    plot.getKeys			= function (){ return keys};
+    plot.getVariableNames	= function (){ return variable_names};
+
+    plot.getInitStatus		= function () { if(InitDone){return InitRetry}else{return false}};
+    plot.getId				= function () {return id};
+    // init data
+    $.each($(legend_table_id + ' .variable-config'),function(key,val){
+        val_inst = $(val);
+        variable_name = val_inst.data('name');
+        variable_key = val_inst.data('key');
+        variables[variable_key] = {'color':val_inst.data('color'),'yaxis':1}
+        keys.push(variable_key);
+        variable_names.push(variable_name);
+    });
+
+
+    function prepare(){
+        // prepare legend table sorter
+        $(legend_table_id).tablesorter({sortList: [[2,0]]});
+
+        // add onchange function to every checkbox in legend
+        $.each(variables,function(key,val){
+            $(legend_checkbox_id+key).change(function() {
+                plot.update();
+                if ($(legend_checkbox_id+key).is(':checked')){
+                    $(legend_checkbox_status_id+key).html(1);
+                }else{
+                    $(legend_checkbox_status_id+key).html(0);
+                }
+            });
+        });
+        //
+        $(legend_checkbox_id+'make_all_none').change(function() {
+                //console.log(legend_checkbox_id + 'changed');
+                plot.update();
+                if ($(legend_checkbox_id+'make_all_none').is(':checked')){
+                    $.each(variables,function(key,val){
+                        $(legend_checkbox_status_id+key).html(1);
+                        $(legend_checkbox_id+key)[0].checked = true;
+                    });
+                }else{
+                    $.each(variables,function(key,val){
+                        $(legend_checkbox_status_id+key).html(0);
+                        $(legend_checkbox_id+key)[0].checked = false;
+                     });
+                }
+         });
+        // expand the chart to the maximum width
+        main_chart_area  = $(chart_container_id).closest('.main-chart-area');
+
+
+        contentAreaHeight = main_chart_area.parent().height();
+        mainChartAreaHeight = main_chart_area.height();
+
         if (contentAreaHeight>mainChartAreaHeight){
             main_chart_area.height(contentAreaHeight);
         }
@@ -770,7 +981,7 @@ function PyScadaPlot(id){
 		padding: "2px",
 		"background-color": "#fee",
 		opacity: 0.80
-	}).appendTo("body");
+	    }).appendTo("body");
 
 	$(chart_container_id + ' .chart-placeholder').bind("plothover", function (event, pos, item) {
 	if (pos.x) {
@@ -815,8 +1026,8 @@ function PyScadaPlot(id){
         chartTitle.css("margin-left", -chartTitle.width() / 2);
         var yaxisLabel = $(chart_container_id + ' .axisLabel.yaxisLabel');
         yaxisLabel.css("margin-top", yaxisLabel.width() / 2 - 20);
-        
-        
+
+
         $(chart_container_id + " .btn.btn-default.chart-ResetSelection").click(function() {
             DATA_DISPLAY_TO_TIMESTAMP = -1;
             set_x_axes();
@@ -830,7 +1041,7 @@ function PyScadaPlot(id){
             flotPlot.setupGrid();
             flotPlot.draw();
         });
-        
+
         $(chart_container_id + " .btn.btn-default.chart-ZoomYToFit").click(function() {
             pOpt = flotPlot.getOptions();
             aOpt = flotPlot.getYAxes();
@@ -881,66 +1092,44 @@ function PyScadaPlot(id){
                     }else {
                         chart_data = DATA[key].slice();
                     }
-                    if (X_AXIS_IS_TIME > 0){
-                        if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
-                            start_fid = find_index_sub_lte(DATA[fkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
-                            stop_fid = find_index_sub_lte(DATA[fkey],DATA_DISPLAY_TO_TIMESTAMP,0);
-                            chart_fdata = DATA[fkey].slice(start_fid,stop_fid);
-                        }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
-                            start_fid = find_index_sub_lte(DATA[fkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
-                            chart_fdata = DATA[fkey].slice(start_fid);
-                        }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
-                            if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
-                            stop_fid = find_index_sub_lte(DATA[fkey],DATA_DISPLAY_TO_TIMESTAMP,0);
-                            chart_fdata = DATA[fkey].slice(0,stop_fid);
-                        }else {
-                            chart_fdata = DATA[fkey].slice();
-                        }
-                        new_data=[];
-                        if (chart_data.length > 0){
-                            i = 0;
-                            if (chart_fdata.length < chart_data.length){
-                                console.log('X data smaller than Y data -> X : ' + chart_fdata + ' - Y : ' + chart_data);
-                            }else {
-                                while (i < chart_data.length) {
-                                    new_data.push([chart_fdata[i][1],chart_data[i][1]]);
-                                    i += 1;
-                                }
-                            }
-                        }
-                        $.each($(legend_table_id + ' .legendSeries'),function(kkey,val){
-                            val_inst = $(val);
-                            if (key == val_inst.find(".variable-config").data('key')){
-                                label = val_inst.find(".legendLabel").text();
-                                unit = val_inst.find(".legendUnit").text();
-                            }
-                        });
-                        if (new_data.length > 0){
-                            j += 1;
-                            //plot Y with defferents axis
-                            series.push({"data":new_data,"color":variables[key].color,"yaxis":j,"label":label,"unit":unit});
-//                            series.push({"data":new_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":label});
-                        }
+                    if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
+                        start_fid = find_index_sub_lte(DATA[fkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                        stop_fid = find_index_sub_lte(DATA[fkey],DATA_DISPLAY_TO_TIMESTAMP,0);
+                        chart_fdata = DATA[fkey].slice(start_fid,stop_fid);
+                    }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
+                        start_fid = find_index_sub_lte(DATA[fkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                        chart_fdata = DATA[fkey].slice(start_fid);
+                    }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
+                        if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
+                        stop_fid = find_index_sub_lte(DATA[fkey],DATA_DISPLAY_TO_TIMESTAMP,0);
+                        chart_fdata = DATA[fkey].slice(0,stop_fid);
                     }else {
-                        if (chart_data.length > 2){
-                            i = 1;
+                        chart_fdata = DATA[fkey].slice();
+                    }
+                    new_data=[];
+                    if (chart_data.length > 0){
+                        i = 0;
+                        if (chart_fdata.length < chart_data.length){
+                            console.log('X data smaller than Y data -> X : ' + chart_fdata + ' - Y : ' + chart_data);
+                        }else {
                             while (i < chart_data.length) {
-                                 if (chart_data[i][0] - chart_data[i - 1][0] > 1000.0 && chart_data[i][1] != chart_data[i - 1][1]){
-                                    chart_data.splice(i,0, [chart_data[i][0], chart_data[i - 1][1]]);
-                                    i += 2;
-                                }else{
-                                    i += 1;
-                                }
+                                new_data.push([chart_fdata[i][1],chart_data[i][1]]);
+                                i += 1;
                             }
                         }
-
-                        if (chart_data.length >= 1){
-                            if (DATA_DISPLAY_TO_TIMESTAMP < 0){
-                                chart_data.push([DATA_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
-                            }else{
-                                chart_data.push([DATA_DISPLAY_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
-                            }
+                    }
+                    $.each($(legend_table_id + ' .legendSeries'),function(kkey,val){
+                        val_inst = $(val);
+                        if (key == val_inst.find(".variable-config").data('key')){
+                            label = val_inst.find(".legendLabel").text();
+                            unit = val_inst.find(".legendUnit").text();
                         }
+                    });
+                    if (new_data.length > 0){
+                        j += 1;
+                        //plot Y with defferents axis
+                        series.push({"data":new_data,"color":variables[key].color,"yaxis":j,"label":label,"unit":unit});
+//                            series.push({"data":new_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":label});
                     }
                     series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis});
                 }
@@ -950,7 +1139,7 @@ function PyScadaPlot(id){
 
             //update y window
             pOpt = flotPlot.getOptions();
-            if (j != 0 && X_AXIS_IS_TIME > 0){
+            if (j != 0){
                 yoptions = [];
                 for (k = 1;k <= j;k++){
                     if(k%2){pos="left";}else{pos="right";};
@@ -978,7 +1167,7 @@ function PyScadaPlot(id){
 
             // update x window
             pOpt = flotPlot.getOptions();
-            if (j != 0 && X_AXIS_IS_TIME > 0){
+            if (j != 0){
                 var xticks=[];
                 if (X_AXIS_LOG == 1){
                     xticks=xticks.concat(chart_fdata[0][1]);
@@ -994,25 +1183,6 @@ function PyScadaPlot(id){
                 pOpt.xaxes[0].mode = null;
                 pOpt.xaxes[0].min = chart_fdata[0][1];
                 pOpt.xaxes[0].max = chart_fdata[chart_fdata.length-1][1];
-            }else {
-//                pOpt.xaxes[0].mode = "time";
-                pOpt.xaxes[0].ticks = $('#chart-container-'+id).data('xaxisTicks');
-                pOpt.xaxes[0].timeformat = "%H:%M:%S";
-                pOpt.xaxes[0].timezone = "browser";
-                if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
-                    pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
-                    pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
-
-                }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
-                    pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
-                    pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
-                }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
-                    pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
-                    pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
-                }else{
-                    pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
-                    pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
-                }
             }
             flotPlot.setupGrid();
             flotPlot.draw();
