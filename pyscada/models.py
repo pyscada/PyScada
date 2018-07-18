@@ -438,8 +438,8 @@ class Device(models.Model):
             mod = __import__(self.protocol.device_class, fromlist=['Device'])
             device_class = getattr(mod, 'Device')
             return device_class(self)
-        except Exception as e:
-            logger.error("Error get_device_instance : %s : %s" %(self.__str__(), e))
+        except:
+            logger.error('%s(%d), unhandled exception\n%s' % (self.short_name, getpid(), traceback.format_exc()))
             return None
 
 
