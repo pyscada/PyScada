@@ -1,6 +1,6 @@
 <div class="widget-body" id="widget-body-{{ widget_pk }}-ch-{{xy_chart.pk}}">
     <div class="main-chart-area" style="height:450px; width:100%;">
-        <div id="xy-chart-container-{{ widget_pk }}-{{xy_chart.pk}}" class="xy-chart-container" style="width: 100%; height:100%;" data-xaxis='{"type":"{{xy_chart.x_axis_type}}","linlog":"{{xy_chart.x_axis_linlog}}"}' data-axes0-yaxis='{"label":"{{xy_chart.y_axis_label}}"}'>
+        <div id="xy-chart-container-{{ widget_pk }}-{{xy_chart.pk}}" class="xy-chart-container" style="width: 100%; height:100%;" data-xaxis='{"id":"{{xy_chart.x_axis_type.id}}","linlog":"{{xy_chart.x_axis_linlog}}"}' data-axes0-yaxis='{"label":"{{xy_chart.y_axis_label}}"}'>
             <div class="chart-placeholder"></div>
             <div class="chartTitle">{{xy_chart.title}}</div>
             <div class="chart-btn-bar" >

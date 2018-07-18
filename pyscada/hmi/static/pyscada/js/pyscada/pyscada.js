@@ -868,7 +868,7 @@ function PyScadaPlot(id){
     }
 }
 
-function XYPlot(id, xaxisType, xaxisLinLog){
+function XYPlot(id, xaxisTypeId, xaxisLinLog){
     var options = {
         legend: {
             show: false
@@ -1076,8 +1076,7 @@ function XYPlot(id, xaxisType, xaxisLinLog){
             j=0;
             for (var key in keys){
                 key = keys[key];
-                //fkey = X_AXIS_IS_TIME;
-                fkey = xaxisType
+                xkey = xaxisTypeId
                 if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object'){
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
                         start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
@@ -1094,18 +1093,18 @@ function XYPlot(id, xaxisType, xaxisLinLog){
                         chart_data = DATA[key].slice();
                     }
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
-                        start_fid = find_index_sub_lte(DATA[fkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
-                        stop_fid = find_index_sub_lte(DATA[fkey],DATA_DISPLAY_TO_TIMESTAMP,0);
-                        chart_fdata = DATA[fkey].slice(start_fid,stop_fid);
+                        start_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                        stop_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_TO_TIMESTAMP,0);
+                        chart_fdata = DATA[xkey].slice(start_fid,stop_fid);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
-                        start_fid = find_index_sub_lte(DATA[fkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
-                        chart_fdata = DATA[fkey].slice(start_fid);
+                        start_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                        chart_fdata = DATA[xkey].slice(start_fid);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
                         if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
-                        stop_fid = find_index_sub_lte(DATA[fkey],DATA_DISPLAY_TO_TIMESTAMP,0);
-                        chart_fdata = DATA[fkey].slice(0,stop_fid);
+                        stop_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_TO_TIMESTAMP,0);
+                        chart_fdata = DATA[xkey].slice(0,stop_fid);
                     }else {
-                        chart_fdata = DATA[fkey].slice();
+                        chart_fdata = DATA[xkey].slice();
                     }
                     new_data=[];
                     if (chart_data.length > 0){
@@ -1407,11 +1406,11 @@ $( document ).ready(function() {
         // get identifier of the chart
         id = val.id.substring(19);
         label = $(val).data('axes0Yaxis').label;
-        xaxisType = $(val).data('xaxis').type;
+        xaxisTypeId = $(val).data('xaxis').id;
         xaxisLinLog = $(val).data('xaxis').linlog;
-        CHART_VARIABLE_KEYS[xaxisType]=1;
+        CHART_VARIABLE_KEYS[xaxisTypeId]=1;
         // add a new Plot
-        PyScadaPlots.push(new XYPlot(id, xaxisType, xaxisLinLog));
+        PyScadaPlots.push(new XYPlot(id, xaxisTypeId, xaxisLinLog));
     });
     
     $.each($('.variable-config'),function(key,val){
