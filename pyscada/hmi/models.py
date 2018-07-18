@@ -11,6 +11,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+logger.info("TEST HMI")
 
 @python_2_unicode_compatible
 class ControlItem(models.Model):
@@ -105,7 +106,7 @@ class Chart(models.Model):
 
 
 @python_2_unicode_compatible
-class XYChart(models.Model):
+class XY_Chart(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
     x_axis_label = models.CharField(max_length=400, default='', blank=True)
@@ -299,6 +300,7 @@ class GroupDisplayPermission(models.Model):
     pages = models.ManyToManyField(Page, blank=True)
     sliding_panel_menus = models.ManyToManyField(SlidingPanelMenu, blank=True)
     charts = models.ManyToManyField(Chart, blank=True)
+    xy_charts = models.ManyToManyField(Chart, blank=True)
     control_items = models.ManyToManyField(ControlItem, blank=True)
     widgets = models.ManyToManyField(Widget, blank=True)
     custom_html_panels = models.ManyToManyField(CustomHTMLPanel, blank=True)

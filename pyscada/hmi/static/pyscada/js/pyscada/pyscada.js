@@ -897,7 +897,7 @@ function XYPlot(id, xaxisType, xaxisLinLog){
     prepared = false,	//
     legend_id = '#chart-legend-' + id,
     legend_table_id = '#chart-legend-table-' + id,
-    chart_container_id = '#chart-container-'+id,
+    chart_container_id = '#xy-chart-container-'+id,
     legend_checkbox_id = '#chart-legend-checkbox-' + id + '-',
     legend_checkbox_status_id = '#chart-legend-checkbox-status-' + id + '-',
     variables = {},
@@ -968,7 +968,7 @@ function XYPlot(id, xaxisType, xaxisLinLog){
         }
 
         //
-        flotPlot = $.plot($(chart_container_id + ' .xychart-placeholder'), series,options);
+        flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series,options);
         // update the plot
         update();
 
@@ -983,7 +983,7 @@ function XYPlot(id, xaxisType, xaxisLinLog){
             opacity: 0.80
 	    }).appendTo("body");
 
-        $(chart_container_id + ' .xychart-placeholder').bind("plothover", function (event, pos, item) {
+        $(chart_container_id + ' .chart-placeholder').bind("plothover", function (event, pos, item) {
             if (pos.x) {
                     var str = "(" + pos.x.toFixed(0) + ", " + pos.y.toFixed(2) + ")";
                 }
@@ -1000,7 +1000,7 @@ function XYPlot(id, xaxisType, xaxisLinLog){
         });
 
         // bind
-        $(chart_container_id + ' .xychart-placeholder').bind("plotselected", function(event, ranges) {
+        $(chart_container_id + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
             pOpt = flotPlot.getOptions();
 
             if ($("#activate_zoom_y").is(':checked')) {
@@ -1163,7 +1163,7 @@ function XYPlot(id, xaxisType, xaxisLinLog){
                 }
                 options.yaxes = yoptions;
                 //TODO : replace "replot" with setupGrid and draw WORK ONLY WITH 1 AXIS...
-                flotPlot = $.plot($(chart_container_id + ' .xychart-placeholder'), series,options);
+                flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series,options);
             }
 
             // update x window
@@ -1403,7 +1403,7 @@ $( document ).ready(function() {
         // add a new Plot
         PyScadaPlots.push(new PyScadaPlot(id));
     });
-    $.each($('.xychart-container'),function(key,val){
+    $.each($('.xy-chart-container'),function(key,val){
         // get identifier of the chart
         id = val.id.substring(16);
         xaxisType = parseInt($(val).data('xaxis').type;

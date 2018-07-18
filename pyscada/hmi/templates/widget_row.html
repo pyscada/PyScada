@@ -6,23 +6,29 @@
             {% include "chart_legend.html" with chart=widget.chart widget_pk=widget.pk %}
             <div class="clear-sep"></div>
         {% endif %}
-        {% if widget.xychart %}
-            {% include "chart_legend.html" with chart=widget.xychart widget_pk=widget.pk %}
+    {% endfor %}
+    </div>
+{% endif %}
+{%if has_xy_chart %}
+    <div class="legend-sidebar">
+    {% for widget in widgets %}
+        {% if widget.chart %}
+            {% include "chart_legend.html" with chart=widget.xy_chart widget_pk=widget.pk %}
             <div class="clear-sep"></div>
         {% endif %}
     {% endfor %}
     </div>
 {% endif %}
 
-{%if has_chart %}
+{%if has_chart or has_xy_chart %}
     <div style="margin-left:240px;">
 {% endif %}
 {% for widget in widgets %}
     <div id="widget_{{widget.pk}}" class="widget {{ widget.css_class}}"> <!-- {{ widget.title }} -->
         {% if widget.chart %}
             {% include "chart.html" with chart=widget.chart widget_pk=widget.pk%}
-        {% elif widget.xychart %}
-            {% include "xychart.html" with xychart=widget.xychart widget_pk=widget.pk%}
+        {% elif widget.xy_chart %}
+            {% include "xy_chart.html" with xy_chart=widget.xy_chart widget_pk=widget.pk%}
         {% elif widget.control_panel %}
             {% include "control_panel.html" with control_panel=widget.control_panel visible_control_element_list=visible_control_element_list%}
         {% elif widget.custom_html_panel %}
@@ -32,7 +38,7 @@
         {% endif %}
     </div>
 {% endfor %}
-{%if has_chart %}
+{%if has_chart or has_xy_chart %}
     </div>
 {% endif %}
 </div>

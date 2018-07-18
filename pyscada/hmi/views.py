@@ -62,7 +62,7 @@ def view(request, link_title):
         visible_widget_list = Widget.objects.filter(page__in=page_list.iterator()).values_list('pk', flat=True)
         visible_custom_html_panel_list = CustomHTMLPanel.objects.all().values_list('pk', flat=True)
         visible_chart_list = Chart.objects.all().values_list('pk', flat=True)
-        visible_xychart_list = XYChart.objects.all().values_list('pk', flat=True)
+        visible_xy_chart_list = XY_Chart.objects.all().values_list('pk', flat=True)
         visible_control_element_list = ControlItem.objects.all().values_list('pk', flat=True)
     else:
         page_list = v.pages.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).distinct()
@@ -88,6 +88,7 @@ def view(request, link_title):
     for page in page_list:
         current_row = 0
         has_chart = False
+        has_xy_chart = False
         widgets = []
         widget_rows_html = ""
         for widget in page.widget_set.all():
@@ -95,10 +96,11 @@ def view(request, link_title):
             if current_row != widget.row:
                 # render new widget row and reset all loop variables
                 widget_rows_html += widget_row_template.render(
-                    {'row': current_row, 'has_chart': has_chart, 'widgets': widgets,
+                    {'row': current_row, 'has_chart': has_chart, 'has_xy_chart': has_xy_chart, 'widgets': widgets,
                      'visible_control_element_list': visible_control_element_list}, request)
                 current_row = widget.row
                 has_chart = False
+                has_xy_chart = False
                 widgets = []
             if widget.pk not in visible_widget_list:
                 continue
@@ -111,12 +113,12 @@ def view(request, link_title):
                     continue
                 has_chart = True
                 widgets.append(widget)
-            elif widget.xychart:
-                if not widget.xychart.visable():
+            elif widget.xy_chart:
+                if not widget.xy_chart.visable():
                     continue
-                if widget.xychart.pk not in visible_xychart_list:
+                if widget.xy_chart.pk not in visible_xy_chart_list:
                     continue
-                has_chart = True
+                has_xy_chart = True
             elif widget.control_panel:
                 widgets.append(widget)
             elif widget.process_flow_diagram:
@@ -128,6 +130,7 @@ def view(request, link_title):
 
         widget_rows_html += widget_row_template.render({'row': current_row,
                                                         'has_chart': has_chart,
+                                                        'has_xy_chart': has_xy_chart,
                                                         'widgets': widgets,
                                                         'visible_control_element_list': visible_control_element_list},
                                                        request)
@@ -202,6 +205,9 @@ def get_cache_data(request):
         active_variables = list(
             GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator()).values_list(
                 'charts__variables', flat=True))
+        active_variables += list(
+            GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator()).values_list(
+                'xy_charts__variables', flat=True))
         active_variables += list(
             GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator()).values_list(
                 'control_items__variable', flat=True))
