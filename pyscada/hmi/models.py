@@ -11,8 +11,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-logger.info("TEST HMI")
-
 @python_2_unicode_compatible
 class ControlItem(models.Model):
     id = models.AutoField(primary_key=True)
@@ -111,10 +109,10 @@ class XY_Chart(models.Model):
     title = models.CharField(max_length=400, default='')
     x_axis_label = models.CharField(max_length=400, default='', blank=True)
     # x_axis_type = models.ModelChoiceField(queryset=Variable.objects.all(), to_field_name="name", empty_label="Time")
-    x_axis_type = models.ForeignKey(Variable, default=None)
+    x_axis_type = models.ForeignKey(Variable, default=None, related_name='X_axis_type')
     x_axis_linlog = models.BooleanField(default=False, help_text="False->Lin / True->Log")
     y_axis_label = models.CharField(max_length=400, default='', blank=True)
-    variables = models.ManyToManyField(Variable)
+    variables = models.ManyToManyField(Variable, related_name='Variables_XY_Chart')
 
     def __str__(self):
         return text_type(str(self.id) + ': ' + self.title)
@@ -130,8 +128,8 @@ class XY_Chart(models.Model):
 class Form(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
-    variables = models.ManyToManyField(Variable)
-    hidden_variables_set_up = models.ManyToManyField(Variable)
+    variables = models.ManyToManyField(Variable, related_name='Variables_Form')
+    hidden_variables_set_up = models.ManyToManyField(Variable, related_name='Hidden_Variables_Form')
     button = models.CharField(max_length=50, default='Ok')
 
     def __str__(self):
@@ -250,6 +248,7 @@ class Widget(models.Model):
     size_choices = ((4, 'page width'), (3, '3/4 page width'), (2, '1/2 page width'), (1, '1/4 page width'))
     size = models.PositiveSmallIntegerField(default=4, choices=size_choices)
     chart = models.ForeignKey(Chart, blank=True, null=True, default=None)
+    xy_chart = models.ForeignKey(XY_Chart, blank=True, null=True, default=None)
     control_panel = models.ForeignKey(ControlPanel, blank=True, null=True, default=None)
     custom_html_panel = models.ForeignKey(CustomHTMLPanel, blank=True, null=True, default=None)
     process_flow_diagram = models.ForeignKey(ProcessFlowDiagram, blank=True, null=True, default=None)
@@ -300,7 +299,7 @@ class GroupDisplayPermission(models.Model):
     pages = models.ManyToManyField(Page, blank=True)
     sliding_panel_menus = models.ManyToManyField(SlidingPanelMenu, blank=True)
     charts = models.ManyToManyField(Chart, blank=True)
-    xy_charts = models.ManyToManyField(Chart, blank=True)
+    xy_charts = models.ManyToManyField(XY_Chart, blank=True)
     control_items = models.ManyToManyField(ControlItem, blank=True)
     widgets = models.ManyToManyField(Widget, blank=True)
     custom_html_panels = models.ManyToManyField(CustomHTMLPanel, blank=True)

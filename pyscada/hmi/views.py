@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 from pyscada.core import version as core_version
 from pyscada.models import RecordedData, VariableProperty
 from pyscada.hmi.models import Chart
+from pyscada.hmi.models import XY_Chart
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import CustomHTMLPanel
 from pyscada.hmi.models import GroupDisplayPermission
@@ -77,7 +78,8 @@ def view(request, link_title):
             groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
         visible_chart_list = Chart.objects.filter(
             groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
-
+        visible_xy_chart_list = XY_Chart.objects.filter(
+            groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
         visible_control_element_list = GroupDisplayPermission.objects.filter(
             hmi_group__in=request.user.groups.iterator()).values_list('control_items', flat=True)
 
@@ -92,6 +94,7 @@ def view(request, link_title):
         widgets = []
         widget_rows_html = ""
         for widget in page.widget_set.all():
+            logger.info("widget : %s " % widget.title)
             # check if row has changed
             if current_row != widget.row:
                 # render new widget row and reset all loop variables
@@ -119,6 +122,7 @@ def view(request, link_title):
                 if widget.xy_chart.pk not in visible_xy_chart_list:
                     continue
                 has_xy_chart = True
+                widgets.append(widget)
             elif widget.control_panel:
                 widgets.append(widget)
             elif widget.process_flow_diagram:

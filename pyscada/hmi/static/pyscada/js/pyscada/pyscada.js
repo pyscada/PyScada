@@ -1405,9 +1405,10 @@ $( document ).ready(function() {
     });
     $.each($('.xy-chart-container'),function(key,val){
         // get identifier of the chart
-        id = val.id.substring(16);
-        xaxisType = parseInt($(val).data('xaxis').type;
-        xaxisLinLog = parseInt($(val).data('xaxis').linlog;
+        id = val.id.substring(19);
+        label = $(val).data('axes0Yaxis').label;
+        xaxisType = $(val).data('xaxis').type;
+        xaxisLinLog = $(val).data('xaxis').linlog;
         CHART_VARIABLE_KEYS[xaxisType]=1;
         // add a new Plot
         PyScadaPlots.push(new XYPlot(id, xaxisType, xaxisLinLog));

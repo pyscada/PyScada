@@ -1,5 +1,5 @@
 <div class="row"> <!-- Widget Row {{ row }}-->
-{%if has_chart %}
+{% if has_chart %}
     <div class="legend-sidebar">
     {% for widget in widgets %}
         {% if widget.chart %}
@@ -8,13 +8,13 @@
         {% endif %}
     {% endfor %}
     </div>
-{% endif %}
-{%if has_xy_chart %}
+{% elif has_xy_chart %}
     <div class="legend-sidebar">
     {% for widget in widgets %}
-        {% if widget.chart %}
+        {% if widget.xy_chart %}
             {% include "chart_legend.html" with chart=widget.xy_chart widget_pk=widget.pk %}
             <div class="clear-sep"></div>
+        {% else %}
         {% endif %}
     {% endfor %}
     </div>
@@ -28,7 +28,7 @@
         {% if widget.chart %}
             {% include "chart.html" with chart=widget.chart widget_pk=widget.pk%}
         {% elif widget.xy_chart %}
-            {% include "xy_chart.html" with xy_chart=widget.xy_chart widget_pk=widget.pk%}
+            {% include "xychart.html" with xy_chart=widget.xy_chart widget_pk=widget.pk%}
         {% elif widget.control_panel %}
             {% include "control_panel.html" with control_panel=widget.control_panel visible_control_element_list=visible_control_element_list%}
         {% elif widget.custom_html_panel %}

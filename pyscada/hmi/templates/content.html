@@ -140,6 +140,10 @@
                                     {% if widget.chart.visable %}
                                         {% include "chart.html" with chart=widget.chart %}
                                     {% endif %}
+                                {% elif widget.xy_chart %}
+                                    {% if widget.xy_chart.visable %}
+                                        {% include "xychart.html" with xy_chart=widget.xy_chart %}
+                                    {% endif %}
                                 {% elif widget.control_panel %}
                                     {% include "control_panel.html" with control_panel=widget.control_panel %}
                                 {% elif widget.custom_html_panel %}
