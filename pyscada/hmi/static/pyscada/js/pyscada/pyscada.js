@@ -43,8 +43,7 @@ var FETCH_DATA_PENDING = 0;
 var INIT_STATUS_VARIABLES_DONE = false;
 var INIT_CHART_VARIABLES_DONE = false;
 var INIT_CHART_VARIABLES_COUNT = 0;
-var X_AXIS_IS_TIME = 0; //if 0 is time. if not is var id
-var X_AXIS_LOG = 0; //if 1 set logarithmic scale for x axis
+var X_AXIS = 0; // id of xaxis for XY charts
 // the code
 var debug = 0;
 var DataFetchingProcessCount = 0;
@@ -230,7 +229,7 @@ function data_handler_ajax(init,variable_keys,variable_property_keys,timestamp_f
     if(init){show_init_status();}
     request_data = {timestamp_from:timestamp_from, variables: variable_keys, init: init, variable_properties:variable_property_keys};
     if (typeof(timestamp_to !== 'undefined')){request_data['timestamp_to']=timestamp_to};
-    if (!init && X_AXIS_IS_TIME == 0){request_data['timestamp_from'] = request_data['timestamp_from'] - REFRESH_RATE;};
+    if (!init && X_AXIS == 0){request_data['timestamp_from'] = request_data['timestamp_from'] - REFRESH_RATE;};
     $.ajax({
         url: ROOT_URL+'json/cache_data/',
         dataType: "json",
@@ -1425,11 +1424,6 @@ $( document ).ready(function() {
     $('.dropdown input, .dropdown label, .dropdown button').click(function(e) {
         e.stopPropagation();
     });
-    //load type of x axis to set the options
-    if(document.getElementById("xaxis_value") !== null){ //value of the x axis. if 0 then time
-        xaxis_value = document.getElementById("xaxis_value").innerHTML;
-        X_AXIS_IS_TIME = xaxis_value;
-    }
     // init
     $.each($('.chart-container'),function(key,val){
         // get identifier of the chart
@@ -1444,10 +1438,11 @@ $( document ).ready(function() {
         xaxisVarId = $(val).data('xaxis').id;
         xaxisLinLog = $(val).data('xaxis').linlog;
         CHART_VARIABLE_KEYS[xaxisVarId]=1;
+        X_AXIS = xaxisVarId;
         // add a new Plot
         PyScadaPlots.push(new XYPlot(id, xaxisVarId, xaxisLinLog));
     });
-    
+
     $.each($('.variable-config'),function(key,val){
         key = parseInt($(val).data('key'));
         init_type = parseInt($(val).data('init-type'));
