@@ -868,7 +868,7 @@ function PyScadaPlot(id){
     }
 }
 
-function XYPlot(id, xaxisTypeId, xaxisLinLog){
+function XYPlot(id, xaxisVarId, xaxisLinLog){
     var options = {
         legend: {
             show: false
@@ -1076,7 +1076,7 @@ function XYPlot(id, xaxisTypeId, xaxisLinLog){
             j=0;
             for (var key in keys){
                 key = keys[key];
-                xkey = xaxisTypeId
+                xkey = xaxisVarId
                 if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object'){
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
                         start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
@@ -1169,8 +1169,7 @@ function XYPlot(id, xaxisTypeId, xaxisLinLog){
             pOpt = flotPlot.getOptions();
             if (j != 0){
                 var xticks=[];
-                //if (X_AXIS_LOG == 1){
-                if (xaxisLinLog == 1){
+                if (xaxisLinLog){
                     xticks=xticks.concat(chart_fdata[0][1]);
                     for (i=parseInt(Math.round(Math.log(chart_fdata[0][1])/Math.log(10)));i<=parseInt(Math.round(Math.log(chart_fdata[chart_fdata.length-1][1])/Math.log(10)));i++){
                         xticks=xticks.concat(Math.pow(10,i)/2);
@@ -1294,12 +1293,10 @@ $('button.write-task-set').click(function(){
 $('button.write-task-form-set').click(function(){
         name_form = $(this.form).attr('name');
         tabinputs = document.forms[name_form].getElementsByTagName("input");
-//        X_AXIS_IS_TIME = document.getElementById("xaxis_value").innerHTML; //value of the x axis. if 0 then time
-        //X_AXIS_LOG = document.getElementById("xaxis_log").innerHTML; //if 1 x axis with log scale
         DATA={}; //reset the data after each button click
-        //CHART_VARIABLE_KEYS[xaxis_value]=1; //permit to store value for x axis
         for (i=0;i<tabinputs.length;i++){
-            value = tabinputs[i].value;
+            //value = tabinputs[i].value;
+            value = $(tabinputs[i]).val();
             var_name = $(tabinputs[i]).attr("name");
             $.each($('.variable-config'),function(kkey,val){
                 name_var = $(val).data('name');
@@ -1312,6 +1309,32 @@ $('button.write-task-form-set').click(function(){
             if (value == "" ){
                 add_notification('please provide a value',3);
                 alert("value empty");
+            }else if ($(tabinputs[i]).hasClass('btn-success')){
+                id = $(tabinputs[i]).attr('id');
+                //$('#'+id).removeClass('update-able');
+                $.ajax({
+                    type: 'post',
+                    url: ROOT_URL+'form/write_task/',
+                    data: {key:key,value:1,item_type:item_type},
+                    success: function (data) {
+                    },
+                    error: function(data) {
+                        add_notification('add new write task failed',3);
+                    }
+                });
+            }else if ($(tabinputs[i]).hasClass('btn-default')){
+                id = $(tabinputs[i]).attr('id');
+                //$('#'+id).removeClass('update-able');
+                $.ajax({
+                    type: 'post',
+                    url: ROOT_URL+'form/write_task/',
+                    data: {key:key,value:0,item_type:item_type},
+                    success: function (data) {
+                    },
+                    error: function(data) {
+                        add_notification('add new write task failed',3);
+                    }
+                });
             }else{
                 $.ajax({
                     type: 'post',
@@ -1322,11 +1345,23 @@ $('button.write-task-form-set').click(function(){
                     },
                     error: function(data) {
                         add_notification('add new write task failed',3);
-                        alert("Form Set NOK "+data+" - key "+key+" - value "+value+" - item_type "+item_type)
+                        alert("Form Set NOK "+data+" - key "+key+" - value "+value+" - item_type "+item_type + " - name "+var_name)
                     }
                 });
             };
         };
+});
+
+$('input.write-task-btn').click(function(){
+        id = $(this).attr('id');
+        $('#'+id).removeClass('update-able');
+        if($(this).hasClass('btn-default')){
+            $('#'+id).removeClass('btn-default')
+            $('#'+id).addClass('btn-success');
+        }else if ($(this).hasClass('btn-success')){
+            $('#'+id).addClass('btn-default')
+            $('#'+id).removeClass('btn-success');
+        }
 });
 
 $('button.write-task-btn').click(function(){
@@ -1406,11 +1441,11 @@ $( document ).ready(function() {
         // get identifier of the chart
         id = val.id.substring(19);
         label = $(val).data('axes0Yaxis').label;
-        xaxisTypeId = $(val).data('xaxis').id;
+        xaxisVarId = $(val).data('xaxis').id;
         xaxisLinLog = $(val).data('xaxis').linlog;
-        CHART_VARIABLE_KEYS[xaxisTypeId]=1;
+        CHART_VARIABLE_KEYS[xaxisVarId]=1;
         // add a new Plot
-        PyScadaPlots.push(new XYPlot(id, xaxisTypeId, xaxisLinLog));
+        PyScadaPlots.push(new XYPlot(id, xaxisVarId, xaxisLinLog));
     });
     
     $.each($('.variable-config'),function(key,val){

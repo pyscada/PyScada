@@ -6,7 +6,8 @@ from pyscada.admin import admin_site
 from pyscada.models import Variable
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Chart
-from pyscada.hmi.models import XY_Chart
+from pyscada.hmi.models import XYChart
+from pyscada.hmi.models import Form
 from pyscada.hmi.models import SlidingPanelMenu
 from pyscada.hmi.models import Page
 from pyscada.hmi.models import GroupDisplayPermission
@@ -49,9 +50,9 @@ class ChartAdmin(admin.ModelAdmin):
         return instance.variables.name
 
 
-class XY_ChartForm(forms.ModelForm):
+class XYChartForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
-        super(XY_ChartForm, self).__init__(*args, **kwargs)
+        super(XYChartForm, self).__init__(*args, **kwargs)
         wtf = Variable.objects.all()
         w = self.fields['variables'].widget
         choices = []
@@ -60,23 +61,22 @@ class XY_ChartForm(forms.ModelForm):
         w.choices = choices
 
 
-class XY_ChartAdmin(admin.ModelAdmin):
+class XYChartAdmin(admin.ModelAdmin):
     list_per_page = 100
     # ordering = ['position',]
     search_fields = ['name', ]
     filter_horizontal = ('variables',)
     List_display_link = ('title',)
-    list_display = ('id', 'title',)
-    #list_filter = ('widget__page__title', 'widget__title',)
-    form = XY_ChartForm
+    list_display = ('id', 'title', 'x_axis_label', 'x_axis_linlog', 'y_axis_label')
+    list_filter = ('widget__page__title', 'widget__title',)
+    form = XYChartForm
 
     def name(self, instance):
         return instance.variables.name
 
 
 class FormAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'button',)
-    list_filter = ('controlpanel',)
+    filter_horizontal = ('control_items', 'hidden_control_items_to_true')
 
 
 class ControlItemAdmin(admin.ModelAdmin):
@@ -106,19 +106,20 @@ class SlidingPanelMenuAdmin(admin.ModelAdmin):
 
 class WidgetAdmin(admin.ModelAdmin):
     list_display_links = ('id',)
-    list_display = ('id', 'title', 'page', 'row', 'col', 'size', 'chart', 'xy_chart', 'control_panel', 'custom_html_panel',)
+    list_display = ('id', 'title', 'page', 'row', 'col', 'size', 'chart', 'xy_chart', 'control_panel',
+                    'custom_html_panel',)
     list_editable = ('title', 'page', 'row', 'col', 'size', 'chart', 'xy_chart', 'control_panel', 'custom_html_panel',)
     list_filter = ('page',)
 
 
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
     filter_horizontal = (
-        'pages', 'sliding_panel_menus', 'charts', 'xy_charts', 'control_items', 'widgets', 'views', 'custom_html_panels',
-        'process_flow_diagram')
+        'pages', 'sliding_panel_menus', 'charts', 'xy_charts', 'control_items', 'widgets', 'views',
+        'custom_html_panels', 'process_flow_diagram')
 
 
 class ControlPanelAdmin(admin.ModelAdmin):
-    filter_horizontal = ('items',)
+    filter_horizontal = ('items', 'forms')
 
 
 class ViewAdmin(admin.ModelAdmin):
@@ -146,7 +147,8 @@ class ProcessFlowDiagramAdmin(admin.ModelAdmin):
 
 admin_site.register(ControlItem, ControlItemAdmin)
 admin_site.register(Chart, ChartAdmin)
-admin_site.register(XY_Chart, XY_ChartAdmin)
+admin_site.register(XYChart, XYChartAdmin)
+admin_site.register(Form, FormAdmin)
 admin_site.register(SlidingPanelMenu, SlidingPanelMenuAdmin)
 admin_site.register(Page, PageAdmin)
 admin_site.register(GroupDisplayPermission, GroupDisplayPermissionAdmin)

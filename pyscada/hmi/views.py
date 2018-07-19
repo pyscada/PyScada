@@ -4,8 +4,9 @@ from __future__ import unicode_literals
 from pyscada.core import version as core_version
 from pyscada.models import RecordedData, VariableProperty
 from pyscada.hmi.models import Chart
-from pyscada.hmi.models import XY_Chart
+from pyscada.hmi.models import XYChart
 from pyscada.hmi.models import ControlItem
+from pyscada.hmi.models import Form
 from pyscada.hmi.models import CustomHTMLPanel
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import Widget
@@ -63,8 +64,9 @@ def view(request, link_title):
         visible_widget_list = Widget.objects.filter(page__in=page_list.iterator()).values_list('pk', flat=True)
         visible_custom_html_panel_list = CustomHTMLPanel.objects.all().values_list('pk', flat=True)
         visible_chart_list = Chart.objects.all().values_list('pk', flat=True)
-        visible_xy_chart_list = XY_Chart.objects.all().values_list('pk', flat=True)
+        visible_xy_chart_list = XYChart.objects.all().values_list('pk', flat=True)
         visible_control_element_list = ControlItem.objects.all().values_list('pk', flat=True)
+        visible_form_list = Form.objects.all().values_list('pk', flat=True)
     else:
         page_list = v.pages.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).distinct()
 
@@ -78,10 +80,12 @@ def view(request, link_title):
             groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
         visible_chart_list = Chart.objects.filter(
             groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
-        visible_xy_chart_list = XY_Chart.objects.filter(
+        visible_xy_chart_list = XYChart.objects.filter(
             groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
         visible_control_element_list = GroupDisplayPermission.objects.filter(
             hmi_group__in=request.user.groups.iterator()).values_list('control_items', flat=True)
+        visible_form_list = GroupDisplayPermission.objects.filter(
+            hmi_group__in=request.user.groups.iterator()).values_list('forms', flat=True)
 
     panel_list = sliding_panel_list.filter(position__in=(1, 2,))
     control_list = sliding_panel_list.filter(position=0)
@@ -94,13 +98,13 @@ def view(request, link_title):
         widgets = []
         widget_rows_html = ""
         for widget in page.widget_set.all():
-            logger.info("widget : %s " % widget.title)
             # check if row has changed
             if current_row != widget.row:
                 # render new widget row and reset all loop variables
                 widget_rows_html += widget_row_template.render(
                     {'row': current_row, 'has_chart': has_chart, 'has_xy_chart': has_xy_chart, 'widgets': widgets,
-                     'visible_control_element_list': visible_control_element_list}, request)
+                     'visible_control_element_list': visible_control_element_list,
+                     'visible_form_list': visible_form_list}, request)
                 current_row = widget.row
                 has_chart = False
                 has_xy_chart = False
@@ -136,7 +140,8 @@ def view(request, link_title):
                                                         'has_chart': has_chart,
                                                         'has_xy_chart': has_xy_chart,
                                                         'widgets': widgets,
-                                                        'visible_control_element_list': visible_control_element_list},
+                                                        'visible_control_element_list': visible_control_element_list,
+                                                        'visible_form_list': visible_form_list},
                                                        request)
 
         pages_html += page_template.render({'page': page, 'widget_rows_html': widget_rows_html}, request)
@@ -148,6 +153,7 @@ def view(request, link_title):
         'control_list': control_list,
         'user': request.user,
         'visible_control_element_list': visible_control_element_list,
+        'visible_form_list': visible_form_list,
         'view_title': v.title,
         'version_string': core_version
     }

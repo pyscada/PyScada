@@ -104,15 +104,14 @@ class Chart(models.Model):
 
 
 @python_2_unicode_compatible
-class XY_Chart(models.Model):
+class XYChart(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
     x_axis_label = models.CharField(max_length=400, default='', blank=True)
-    # x_axis_type = models.ModelChoiceField(queryset=Variable.objects.all(), to_field_name="name", empty_label="Time")
-    x_axis_type = models.ForeignKey(Variable, default=None, related_name='X_axis_type')
+    x_axis_var = models.ForeignKey(Variable, default=None, related_name='x_axis_var')
     x_axis_linlog = models.BooleanField(default=False, help_text="False->Lin / True->Log")
     y_axis_label = models.CharField(max_length=400, default='', blank=True)
-    variables = models.ManyToManyField(Variable, related_name='Variables_XY_Chart')
+    variables = models.ManyToManyField(Variable, related_name='variables_xy_chart')
 
     def __str__(self):
         return text_type(str(self.id) + ': ' + self.title)
@@ -128,9 +127,11 @@ class XY_Chart(models.Model):
 class Form(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
-    variables = models.ManyToManyField(Variable, related_name='Variables_Form')
-    hidden_variables_set_up = models.ManyToManyField(Variable, related_name='Hidden_Variables_Form')
     button = models.CharField(max_length=50, default='Ok')
+    control_items = models.ManyToManyField(ControlItem, related_name='control_items_form',
+                                           limit_choices_to={'type': '5'})
+    hidden_control_items_to_true = models.ManyToManyField(ControlItem, related_name='hidden_control_items_form',
+                                                          limit_choices_to={'type': '5'})
 
     def __str__(self):
         return text_type(str(self.id) + ': ' + self.title)
@@ -138,11 +139,11 @@ class Form(models.Model):
     def visable(self):
         return True
 
-    def variables_list(self, exclude_list=[]):
-        return [item.pk for item in self.variables.exclude(pk__in=exclude_list)]
+    def control_items_list(self):
+        return [item.pk for item in self.control_items]
 
-    def hidden_variables_set_up_list(self, exclude_list=[]):
-        return [item.pk for item in self.hidden_variables_set_up.exclude(pk__in=exclude_list)]
+    def hidden_control_items_to_true_list(self):
+        return [item.pk for item in self.hidden_control_items_to_true]
 
 
 @python_2_unicode_compatible
@@ -164,6 +165,7 @@ class ControlPanel(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
     items = models.ManyToManyField(ControlItem, blank=True)
+    forms = models.ManyToManyField(Form, blank=True)
 
     def __str__(self):
         return (str(self.id) + ': ' + self.title)
@@ -248,7 +250,7 @@ class Widget(models.Model):
     size_choices = ((4, 'page width'), (3, '3/4 page width'), (2, '1/2 page width'), (1, '1/4 page width'))
     size = models.PositiveSmallIntegerField(default=4, choices=size_choices)
     chart = models.ForeignKey(Chart, blank=True, null=True, default=None)
-    xy_chart = models.ForeignKey(XY_Chart, blank=True, null=True, default=None)
+    xy_chart = models.ForeignKey(XYChart, blank=True, null=True, default=None)
     control_panel = models.ForeignKey(ControlPanel, blank=True, null=True, default=None)
     custom_html_panel = models.ForeignKey(CustomHTMLPanel, blank=True, null=True, default=None)
     process_flow_diagram = models.ForeignKey(ProcessFlowDiagram, blank=True, null=True, default=None)
@@ -299,7 +301,7 @@ class GroupDisplayPermission(models.Model):
     pages = models.ManyToManyField(Page, blank=True)
     sliding_panel_menus = models.ManyToManyField(SlidingPanelMenu, blank=True)
     charts = models.ManyToManyField(Chart, blank=True)
-    xy_charts = models.ManyToManyField(XY_Chart, blank=True)
+    xy_charts = models.ManyToManyField(XYChart, blank=True)
     control_items = models.ManyToManyField(ControlItem, blank=True)
     widgets = models.ManyToManyField(Widget, blank=True)
     custom_html_panels = models.ManyToManyField(CustomHTMLPanel, blank=True)

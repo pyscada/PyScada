@@ -5,5 +5,10 @@
                 {% include "control_element.html" with item=item %}
             {% endif %}	
         {% endfor %}
+        {% for form in control_panel.forms.all %}
+            {% if form.pk in visible_form_list %}
+                {% include "form.html" with form=form %}
+            {% endif %}
+        {% endfor %}
     </div>
 </div>
