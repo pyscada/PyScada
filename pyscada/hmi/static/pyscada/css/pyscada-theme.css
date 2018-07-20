@@ -193,6 +193,15 @@ html,body {
 	font: 12px/1em "proxima-nova", Helvetica, Arial, sans-serif;
 }
 
+.xylegend-sidebar{
+	min-width:168px;
+	position: relative;
+	min-height: 1px;
+	padding-right: 15px;
+	float: left;
+	font: 12px/1em "proxima-nova", Helvetica, Arial, sans-serif;
+}
+
 .main-chart-area{
 	position: relative;
 	min-height: 1px;

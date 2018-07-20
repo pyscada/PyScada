@@ -1,5 +1,5 @@
 <div class="row"> <!-- Widget Row {{ row }}-->
-{% if has_chart %}
+{%if has_chart %}
     <div class="legend-sidebar">
     {% for widget in widgets %}
         {% if widget.chart %}
@@ -9,10 +9,10 @@
     {% endfor %}
     </div>
 {% elif has_xy_chart %}
-    <div class="legend-sidebar">
+    <div class="xylegend-sidebar">
     {% for widget in widgets %}
         {% if widget.xy_chart %}
-            {% include "chart_legend.html" with chart=widget.xy_chart widget_pk=widget.pk %}
+            {% include "xychart_legend.html" with chart=widget.xy_chart widget_pk=widget.pk %}
             <div class="clear-sep"></div>
         {% else %}
         {% endif %}
@@ -20,8 +20,10 @@
     </div>
 {% endif %}
 
-{%if has_chart or has_xy_chart %}
+{%if has_chart %}
     <div style="margin-left:240px;">
+{%elif has_xy_chart %}
+    <div style="margin-left:168px;">
 {% endif %}
 {% for widget in widgets %}
     <div id="widget_{{widget.pk}}" class="widget {{ widget.css_class}}"> <!-- {{ widget.title }} -->
@@ -38,7 +40,9 @@
         {% endif %}
     </div>
 {% endfor %}
-{%if has_chart or has_xy_chart %}
+{%if has_chart %}
+    </div>
+{%elif has_xy_chart %}
     </div>
 {% endif %}
 </div>
