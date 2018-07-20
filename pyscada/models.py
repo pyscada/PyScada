@@ -534,6 +534,7 @@ class VariableProperty(models.Model):
     value_float64 = models.FloatField(null=True, blank=True)  # float64
     value_string = models.CharField(default='', blank=True, max_length=255)
     timestamp = models.DateTimeField(blank=True, null=True)
+    unit = models.ForeignKey(Unit, on_delete=models.SET(1), default='')
     objects = VariablePropertyManager()
 
     def __str__(self):
