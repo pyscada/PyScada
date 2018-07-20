@@ -155,6 +155,7 @@ def view(request, link_title):
         'visible_control_element_list': visible_control_element_list,
         'visible_form_list': visible_form_list,
         'view_title': v.title,
+        'view_show_timeline': v.show_timeline,
         'version_string': core_version
     }
 

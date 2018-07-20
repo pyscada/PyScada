@@ -287,6 +287,7 @@ class View(models.Model):
     logo = models.ImageField(upload_to="img/", verbose_name="Overview Picture", blank=True)
     visable = models.BooleanField(default=True)
     position = models.PositiveSmallIntegerField(default=0)
+    show_timeline = models.BooleanField(default=True)
 
     def __str__(self):
         return self.title

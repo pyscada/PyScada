@@ -15,6 +15,7 @@ var DATA_OUT_OF_DATE = false;
 var DATA_OUT_OF_DATE_ALERT_ID = '';
 var JSON_ERROR_COUNT = 0;
 var AUTO_UPDATE_ACTIVE = true;
+var SHOW_TIMELINE_ACTIVE = true;
 var LOG_LAST_TIMESTAMP = 0;
 var DATA_TO_TIMESTAMP = 0;
 var DATA_FROM_TIMESTAMP = 0;
@@ -1443,6 +1444,7 @@ $( document ).ready(function() {
         PyScadaPlots.push(new XYPlot(id, xaxisVarId, xaxisLinLog));
     });
 
+
     $.each($('.variable-config'),function(key,val){
         key = parseInt($(val).data('key'));
         init_type = parseInt($(val).data('init-type'));
@@ -1509,6 +1511,33 @@ $( document ).ready(function() {
             $("#AutoUpdateButton").removeClass("btn-default");
             JsonErrorCount = 0;
             data_handler();
+        }
+    });
+    // show timeline function
+    if ($('#ShowTimelineButton').hasClass("btn-success")) {
+        $("#show_timeline").addClass("show_timeline_yes");
+        $("#show_timeline").removeClass("show_timeline_no");
+        SHOW_TIMELINE_ACTIVE = true;
+    } else {
+        $("#show_timeline").addClass("show_timeline_no");
+        $("#show_timeline").removeClass("show_timeline_yes");
+        SHOW_TIMELINE_ACTIVE = false;
+    };
+    $('#ShowTimelineButton').click(function(e) {
+        if (SHOW_TIMELINE_ACTIVE) {
+            // deactivate timeline
+            SHOW_TIMELINE_ACTIVE = false;
+            $("#show_timeline").addClass("show_timeline_no");
+            $("#show_timeline").removeClass("show_timeline_yes");
+            $("#ShowTimelineButton").addClass("btn-default");
+            $("#ShowTimelineButton").removeClass("btn-success");
+        } else {
+            // activate timeline
+            SHOW_TIMELINE_ACTIVE = true;
+            $("#show_timeline").addClass("show_timeline_yes");
+            $("#show_timeline").removeClass("show_timeline_no");
+            $("#ShowTimelineButton").addClass("btn-success");
+            $("#ShowTimelineButton").removeClass("btn-default");
         }
     });
     $('#PlusTwoHoursButton').click(function(e) {

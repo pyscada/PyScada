@@ -202,6 +202,13 @@ html,body {
 	font: 12px/1em "proxima-nova", Helvetica, Arial, sans-serif;
 }
 
+.show_timeline_no{
+    display: none
+}
+.show_timeline_yes{
+    display: block
+}
+
 .main-chart-area{
 	position: relative;
 	min-height: 1px;
