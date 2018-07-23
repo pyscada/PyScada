@@ -77,7 +77,10 @@ class ControlItem(models.Model):
 
     def unit(self):
         if self.variable_property:
-            return ""  # todo
+            if self.variable_property.unit is not None:
+                return self.variable_property.unit.unit
+            else:
+                return ''
         elif self.variable:
             return self.variable.unit.unit
 

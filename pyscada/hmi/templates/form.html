@@ -27,7 +27,7 @@
                         <div class="input-group set_value">
                             <span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
                             <input type="text" class="form-control {{ item.web_class_str }}" name="{{ item.name }}" id="{{ item.web_id }}-value" placeholder="">
-                            <span class="input-group-addon">{{ item.unit }}</span>
+                            {% if item.unit %}<span class="input-group-addon">{{ item.unit }}</span>{% endif %}
                         </div>
                     {% endif %}
                     <br><br>
@@ -47,7 +47,7 @@
                         <div class="input-group set_value">
                             <span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
                             <input type="text" class="form-control {{ item.web_class_str }}" name="{{ item.name }}" id="{{ item.web_id }}-value" placeholder="">
-                            <span class="input-group-addon">{{ item.unit }}</span>
+                            {% if item.unit %}<span class="input-group-addon">{{ item.unit }}</span>{% endif %}
                         </div>
                     {% endif %}
                     <br><br>
