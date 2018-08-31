@@ -428,7 +428,7 @@ class Device(models.Model):
         (1800.0, '30 Minutes'),
         (3600.0, '1 Hour'),
     )
-    polling_interval = models.FloatField(default=5, choices=polling_interval_choices)
+    polling_interval = models.FloatField(default=polling_interval_choices[3][0], choices=polling_interval_choices)
 
     def __str__(self):
         return self.short_name

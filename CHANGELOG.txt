@@ -166,3 +166,7 @@
   - added traceback to Device.get_device_instance method
   - updated Keithley DMM2000 device in visa.devices
 
+0.7.0rc10
+  - updated docs
+  - fixed no data download in pyscada.js
+  - fixed default pollingt interval in pyscada.device
