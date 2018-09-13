@@ -43,7 +43,7 @@ class ChartAdmin(admin.ModelAdmin):
     filter_horizontal = ('variables',)
     List_display_link = ('title',)
     list_display = ('id', 'title',)
-    list_filter = ('widget__page__title', 'widget__title',)
+    #list_filter = ('widget__page__title', 'widget__title',)
     form = ChartForm
 
     def name(self, instance):
@@ -106,9 +106,8 @@ class SlidingPanelMenuAdmin(admin.ModelAdmin):
 
 class WidgetAdmin(admin.ModelAdmin):
     list_display_links = ('id',)
-    list_display = ('id', 'title', 'page', 'row', 'col', 'size', 'chart', 'xy_chart', 'control_panel',
-                    'custom_html_panel',)
-    list_editable = ('title', 'page', 'row', 'col', 'size', 'chart', 'xy_chart', 'control_panel', 'custom_html_panel',)
+    list_display = ('id', 'title', 'page', 'row', 'col', 'size', 'content', )
+    list_editable = ('title', 'page', 'row', 'col', 'size', 'content', )
     list_filter = ('page',)
 
 

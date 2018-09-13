@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+
+{% if form.errors %}
+<p>Your username and password didn't match. Please try again.</p>
+{% endif %}
+
+{% csrf_token %}
+<p style="text-align: center;">
+    <button class="btn btn-lg btn-primary" type="button" onclick="window.location.href='/accounts/login/?next=/'">Sign in with Django</button>
+    <button class="btn btn-lg btn-primary" type="button" onclick="window.location.href='/accounts/CASlogin/?next=/'">Sign in with CAS</button>
+</p>
+</div>
+</div>
+{% endblock %}
+{% block script_bottom %}
+        $( document ).ready(function() {
+            // Handler for .ready() called.
+            $("#loadingAnimation").hide();
+            $("#AutoUpdateStatus").hide();
+        });
+{% endblock %}

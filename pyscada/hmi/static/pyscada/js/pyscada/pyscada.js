@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0rc7
+version 0.7.0rc10
 
 Copyright (c) 2013-2018 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.7.0rc7"
+var version = "0.7.0rc10"
 var NOTIFICATION_COUNT = 0
 var UPDATE_STATUS_COUNT = 0;
 var INIT_STATUS_COUNT = 0;
@@ -126,7 +126,7 @@ function add_fetched_data(key,value){
                         if (typeof(stop_id) === "number" ){
                             DATA[key] = value.slice(0,stop_id).concat(DATA[key]);
                         }else{
-                            console.log(key + ' : dropped data 1');
+                            console.log(key + ' : dropped data');
                         }
                     } else if (v_t_max > d_t_max && d_t_min < v_t_min){
                         // data and value overlapping, data has older elements then value, append
@@ -134,11 +134,10 @@ function add_fetched_data(key,value){
                         if (typeof(stop_id) === "number" ){
                             DATA[key] = DATA[key].concat(value.slice(stop_id));
                         }else{
-                            console.log(key + ' : dropped data 2');
+                            console.log(key + ' : dropped data');
                         }
                     } else{
-                        console.log(key + ' : dropped data 3');
-                        console.log(v_t_min + " " + v_t_max + " " + d_t_min + " " + d_t_max);
+                        console.log(key + ' : dropped data');
                     }
                 }
                 if (value[0][0] < DATA_FROM_TIMESTAMP){
@@ -164,7 +163,7 @@ function data_handler(){
 
     if(AUTO_UPDATE_ACTIVE){
         if(DATA_TO_TIMESTAMP==0){
-            data_handler_ajax(0,[],Date.now());
+            data_handler_ajax(0,[],[],Date.now());
         }else{
             if(FETCH_DATA_PENDING<=0){
             // fetch new data
@@ -1444,7 +1443,6 @@ $( document ).ready(function() {
         PyScadaPlots.push(new XYPlot(id, xaxisVarId, xaxisLinLog));
     });
 
-
     $.each($('.variable-config'),function(key,val){
         key = parseInt($(val).data('key'));
         init_type = parseInt($(val).data('init-type'));
@@ -1513,6 +1511,12 @@ $( document ).ready(function() {
             data_handler();
         }
     });
+    $('#PlusTwoHoursButton').click(function(e) {
+        $('#PlusTwoHoursButton').addClass("disabled");
+        DATA_INIT_STATUS++;
+        DATA_BUFFER_SIZE = DATA_BUFFER_SIZE + 120*60*1000;
+        INIT_CHART_VARIABLES_DONE = false;
+    });
     // show timeline function
     if ($('#ShowTimelineButton').hasClass("btn-success")) {
         $("#show_timeline").addClass("show_timeline_yes");
@@ -1540,10 +1544,18 @@ $( document ).ready(function() {
             $("#ShowTimelineButton").removeClass("btn-default");
         }
     });
-    $('#PlusTwoHoursButton').click(function(e) {
-        $('#PlusTwoHoursButton').addClass("disabled");
-        DATA_INIT_STATUS++;
-        DATA_BUFFER_SIZE = DATA_BUFFER_SIZE + 120*60*1000;
-        INIT_CHART_VARIABLES_DONE = false;
-    });
+    // actualize the picture with the list selection
+    $('.list-group-item').on('click', function() {
+        var $this = $(this);
+        var $img = $this.data('img');
+
+        $('.active').removeClass('active');
+        $this.toggleClass('active');
+
+        // Pass clicked link element to another function
+        change_plug_img($this, $img)
+    })
+    function change_plug_img($this, $img) {
+        $(".img-plug").attr("src",$img);
+    }
 });

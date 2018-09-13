@@ -1,0 +1,37 @@
+<br><br><br>list plugs :<br>
+<div class="col-md-4"><img src="/media/img/laborem/plugs/select_filter.jpg" class="img-plug img-responsive" alt="DUT selected"></div>
+<div class="list-group col-md-4" id="ListPlugs">
+    {% if dut_selector.plug1 %}
+        {% if dut_selector.plug1.plug_image %}
+            <a href="#" class="list-group-item" data-img="{{ dut_selector.plug1.plug_image.url }}">{{ dut_selector.plug1.description }}
+        {% else %}
+            <a href="#" class="list-group-item" data-img="/media/img/laborem/plugs/no_img.jpg">{{ dut_selector.plug1.description }}
+        {% endif %}
+            {% if "ROBOT" in dut_selector.plug1.name|upper %}
+                <span class="badge">Robot</span>
+            {% endif %}
+            </a>
+    {% endif %}
+    {% if dut_selector.plug2 %}
+        {% if dut_selector.plug2.plug_image %}
+            <a href="#" class="list-group-item" data-img="{{ dut_selector.plug2.plug_image.url }}">{{ dut_selector.plug2.description }}
+        {% else %}
+            <a href="#" class="list-group-item" data-img="/media/img/laborem/plugs/no_img.jpg">{{ dut_selector.plug2.description }}
+        {% endif %}
+            {% if "ROBOT" in dut_selector.plug2.name|upper %}
+                <span class="badge">Robot</span>
+            {% endif %}
+            </a>
+    {% endif %}
+    {% if dut_selector.plug3 %}
+        {% if dut_selector.plug3.plug_image %}
+            <a href="#" class="list-group-item" data-img="{{ dut_selector.plug3.plug_image.url }}">{{ dut_selector.plug3.description }}
+        {% else %}
+            <a href="#" class="list-group-item" data-img="/media/img/laborem/plugs/no_img.jpg">{{ dut_selector.plug3.description }}
+        {% endif %}
+            {% if "ROBOT" in dut_selector.plug3.name|upper %}
+                <span class="badge">Robot</span>
+            {% endif %}
+            </a>
+    {% endif %}
+</div>

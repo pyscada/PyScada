@@ -5,6 +5,7 @@ try:
     import smbus
     driver_ok = True
 except ImportError:
+    smbus = None
     driver_ok = False
 from time import time
 import logging

@@ -1,7 +1,7 @@
-<div id="chart-legend-{{widget.pk}}-{{chart.pk}}" style="padding: 0px; position: relative; table-layout: fixed; width: 212px;">
+<div id="chart-legend-{{widget_pk}}-{{chart.pk}}" style="padding: 0px; position: relative; table-layout: fixed; width: 212px;">
     <div class="legendTitle">{{ chart.title }}</div>
     <div class="legend">
-        <table id="chart-legend-table-{{widget.pk}}-{{chart.pk}}" class="tablesorter" style="font-size:smaller;color:#545454">
+        <table id="chart-legend-table-{{widget_pk}}-{{chart.pk}}" class="tablesorter" style="font-size:smaller;color:#545454">
             <thead>
                 <tr>
                     <th style="width:14px;">&nbsp;</th>
@@ -12,7 +12,7 @@
                 </tr>
                 <tr class="legendSeries">
                     <td>
-                        <input type="checkbox" checked="checked" id="chart-legend-checkbox-{{widget.pk}}-{{ chart.pk }}-make_all_none">
+                        <input type="checkbox" checked="checked" id="chart-legend-checkbox-{{widget_pk}}-{{ chart.pk }}-make_all_none">
                     </td>
                     <td></td>
                     <td>Mark All/None</td>
@@ -26,8 +26,8 @@
                 {% if var.active and var.device.active %}
                 <tr class="legendSeries" title="{{var.description}}">
                     <td>
-                        <span class="hidden" id="chart-legend-checkbox-status-{{widget.pk}}-{{chart.pk}}-{{var.pk}}" >1</span>
-                        <input type="checkbox" checked="checked" id="chart-legend-checkbox-{{widget.pk}}-{{ chart.pk }}-{{ var.pk }}">
+                        <span class="hidden" id="chart-legend-checkbox-status-{{widget_pk}}-{{chart.pk}}-{{var.pk}}" >1</span>
+                        <input type="checkbox" checked="checked" id="chart-legend-checkbox-{{widget_pk}}-{{ chart.pk }}-{{ var.pk }}">
                         <div class="hidden variable-config" data-name="{{var.name}}" data-key="{{var.pk}}" data-color="{{ var.chart_line_color_code }}" data-init-type="1" data-type="variable"></div>
                     </td>
                     <td class="legendColorBox">

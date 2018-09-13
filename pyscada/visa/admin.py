@@ -9,7 +9,6 @@ from pyscada.admin import DeviceAdmin
 from pyscada.admin import VariableAdmin
 from pyscada.admin import admin_site
 from pyscada.models import Device, DeviceProtocol
-from pyscada.models import Variable
 
 from django.contrib import admin
 import logging

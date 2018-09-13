@@ -111,9 +111,9 @@ class VariableAdminFrom(forms.ModelForm):
                                        attrs={'style': 'background: %s; color: #%s' % (label, font_color)})
 
         import types
-        from django.forms.widgets import Select
+        #from django.forms.widgets import Select
         w.widget._create_option = w.widget.create_option  # copy old method
-        w.widget.create_option = types.MethodType(create_option_color, w.widget, Select)  # replace old with new
+        w.widget.create_option = types.MethodType(create_option_color, w.widget)  # replace old with new
 
 
 class VariableAdmin(admin.ModelAdmin):
