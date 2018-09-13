@@ -826,7 +826,7 @@ class Variable(models.Model):
             byte_order = self.device.byte_order
         else:
             byte_order = self.byte_order
-        if source_format == '2H':
+        if target_format == '2H':
             if byte_order == '1-0-3-2':
                 return output
             if byte_order == '3-2-1-0':
