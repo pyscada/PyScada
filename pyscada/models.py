@@ -1217,14 +1217,14 @@ class Event(models.Model):
                 limit_check = actual_value <= (limit_value + self.hysteresis)
             else:
                 limit_check = actual_value <= (limit_value - self.hysteresis)
-        elif self.limit_type == 2:
+        elif self.limit_type == 4:
             limit_check = limit_value + self.hysteresis >= actual_value >= limit_value - self.hysteresis
         elif self.limit_type == 3:
             if prev_value:
                 limit_check = actual_value >= (limit_value - self.hysteresis)
             else:
                 limit_check = actual_value >= (limit_value + self.hysteresis)
-        elif self.limit_type == 4:
+        elif self.limit_type == 2:
             if prev_value:
                 limit_check = actual_value > (limit_value - self.hysteresis)
             else:
