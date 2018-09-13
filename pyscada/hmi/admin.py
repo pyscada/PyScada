@@ -68,7 +68,6 @@ class XYChartAdmin(admin.ModelAdmin):
     filter_horizontal = ('variables',)
     List_display_link = ('title',)
     list_display = ('id', 'title', 'x_axis_label', 'x_axis_linlog', 'y_axis_label')
-    list_filter = ('widget__page__title', 'widget__title',)
     form = XYChartForm
 
     def name(self, instance):
