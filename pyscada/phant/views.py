@@ -7,7 +7,7 @@ from pyscada.utils import extract_numbers_from_str
 
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
-
+from six import string_types
 from time import time
 import json
 import logging
@@ -54,7 +54,7 @@ def phant_input(request, public_key=None, json_response=False):
     output = []
     for item in device.phant_device.variable_set.filter(name__in=values.keys()):
         timestamp = time()
-        if type(values[item.name]) in [str, unicode]:
+        if isinstance(values[item.name], string_types):
             # convert from string to value
             values[item.name] = extract_numbers_from_str(values[item.name])
         # get prev_value from DB

@@ -169,4 +169,9 @@
 0.7.0rc10
   - updated docs
   - fixed no data download in pyscada.js
-  - fixed default pollingt interval in pyscada.device
+  - fixed default polling interval in pyscada.device
+
+0.7.0rc11
+  - changed widget model to support content from plugins
+  - changed visable to visible in pyscada.hmi.models.Chart, SlidingPanelMenu, Widget
+  - some changes for python 3 compatibility in pyscada.export

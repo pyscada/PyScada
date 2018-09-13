@@ -72,7 +72,7 @@ class ExportTask(models.Model):
     filename = models.CharField(blank=True, null=True, max_length=1000)
 
     def __str__(self):
-        return self.label.encode('utf-8')
+        return self.label
 
     def time_min(self):
         return time.mktime(self.datetime_min.timetuple())

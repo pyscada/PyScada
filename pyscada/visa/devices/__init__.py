@@ -8,6 +8,7 @@ try:
     import visa
     driver_ok = True
 except ImportError:
+    visa = None
     driver_ok = False
 
 import logging

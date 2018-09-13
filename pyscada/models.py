@@ -20,7 +20,6 @@ from struct import *
 from os import getpid
 import errno
 import numpy as np
-from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)

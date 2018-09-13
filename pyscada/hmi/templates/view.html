@@ -11,7 +11,7 @@
 
 {% block top_menu_right %}                  
     {% for panel in control_list %}
-        {% if panel.visable %}
+        {% if panel.visible %}
             <li class="dropdown"><!-- {{ panel.title|upper }} -->
                 <a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-wrench"></span> {{ panel.title }}<strong class="caret"></strong></a>
                 <div class="dropdown-menu" style="padding: 15px; width:715px;">

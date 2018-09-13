@@ -13,8 +13,6 @@ from time import time, gmtime, mktime
 from datetime import date, datetime, timedelta
 from pytz import UTC
 import json
-from os import getpid
-import traceback
 import logging
 
 logger = logging.getLogger(__name__)
