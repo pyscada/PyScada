@@ -1544,18 +1544,38 @@ $( document ).ready(function() {
             $("#ShowTimelineButton").removeClass("btn-default");
         }
     });
-    // actualize the picture with the list selection
+    // actualize the picture of the dut selector for laborem with the list selection
     $('.list-group-item').on('click', function() {
         var $this = $(this);
         var $img = $this.data('img');
+        var $mb_id = $this.data('motherboard-id');
+        var $plug_id = $this.data('plug-id');
 
         $('.active').removeClass('active');
         $this.toggleClass('active');
 
         // Pass clicked link element to another function
         change_plug_img($this, $img)
+        change_plug_selected_motherboard($mb_id, $plug_id)
     })
     function change_plug_img($this, $img) {
         $(".img-plug").attr("src",$img);
+    }
+    function change_plug_selected_motherboard(mb_id, plug_id) {
+        if (mb_id == "" || plug_id == ""){
+            add_notification('mb_id or plug_id empty',3);
+        }else{
+            $.ajax({
+                type: 'post',
+                url: ROOT_URL+'form/write_plug/',
+                data: {mb_id:mb_id, plug_id:plug_id},
+                success: function (data) {
+
+                },
+                error: function(data) {
+                    add_notification('write plug selected failed',3);
+                }
+            });
+        };
     }
 });

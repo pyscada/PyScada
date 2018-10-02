@@ -186,8 +186,8 @@ class XYChart(WidgetContentModel):
         widget_pk = kwargs['widget_pk'] if 'widget_pk' in kwargs else 0
         main_template = get_template('xy_chart.html')
         sidebar_template = get_template('xy_chart_legend.html')
-        main_content = main_template.render(dict(chart=self, widget_pk=widget_pk))
-        sidebar_content = sidebar_template.render(dict(chart=self, widget_pk=widget_pk))
+        main_content = main_template.render(dict(xy_chart=self, widget_pk=widget_pk))
+        sidebar_content = sidebar_template.render(dict(xy_chart=self, widget_pk=widget_pk))
         return main_content, sidebar_content
 
 

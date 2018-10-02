@@ -100,6 +100,7 @@ def view(request, link_title):
         widget_rows_html = ""
         main_content = list()
         sidebar_content = list()
+        has_chart = False
         for widget in page.widget_set.all():
             # check if row has changed
             if current_row != widget.row:
@@ -119,12 +120,15 @@ def view(request, link_title):
                 main_content.append(dict(html=mc,widget=widget))
             if sbc is not None:
                 sidebar_content.append(dict(html=sbc,widget=widget))
+            if widget.content.content_model == "pyscada.hmi.models.Chart":
+                has_chart = True
 
         widget_rows_html += widget_row_template.render(
             {'row': current_row, 'main_content': main_content, 'sidebar_content': sidebar_content,
              'sidebar_visible': len(sidebar_content) > 0}, request)
 
-        pages_html += page_template.render({'page': page, 'widget_rows_html': widget_rows_html}, request)
+        pages_html += page_template.render({'page': page, 'widget_rows_html': widget_rows_html, 'has_chart': has_chart},
+                                           request)
 
     c = {
         'page_list': page_list,

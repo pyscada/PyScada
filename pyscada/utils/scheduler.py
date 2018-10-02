@@ -507,7 +507,6 @@ class Scheduler(object):
         spawn a new process
         """
         if process is None:
-            logger.error("process is None")
             return False
         # start new child process
         pid = fork()
