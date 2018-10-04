@@ -167,6 +167,8 @@ class XYChart(WidgetContentModel):
     x_axis_var = models.ForeignKey(Variable, default=None, related_name='x_axis_var')
     x_axis_linlog = models.BooleanField(default=False, help_text="False->Lin / True->Log")
     y_axis_label = models.CharField(max_length=400, default='', blank=True)
+    y_axis_plotpoints = models.BooleanField(default=False, help_text="Show the plots points")
+    y_axis_uniquescale = models.BooleanField(default=True, help_text="To have a unique scale for all the y axis")
     variables = models.ManyToManyField(Variable, related_name='variables_xy_chart')
 
     def __str__(self):
@@ -197,9 +199,9 @@ class Form(models.Model):
     title = models.CharField(max_length=400, default='')
     button = models.CharField(max_length=50, default='Ok')
     control_items = models.ManyToManyField(ControlItem, related_name='control_items_form',
-                                           limit_choices_to={'type': '5'})
+                                           limit_choices_to={'type': '5'}, blank=True)
     hidden_control_items_to_true = models.ManyToManyField(ControlItem, related_name='hidden_control_items_form',
-                                                          limit_choices_to={'type': '5'})
+                                                          limit_choices_to={'type': '5'}, blank=True)
 
     def __str__(self):
         return text_type(str(self.id) + ': ' + self.title)

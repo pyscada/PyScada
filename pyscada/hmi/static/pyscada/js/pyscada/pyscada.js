@@ -867,7 +867,7 @@ function PyScadaPlot(id){
     }
 }
 
-function XYPlot(id, xaxisVarId, xaxisLinLog){
+function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
     var options = {
         legend: {
             show: false
@@ -887,7 +887,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog){
             clickable: true
         },
         lines: { show: true },
-        points: { show: true }
+        points: { show: plotPoints }
     },
     series = [],		// just the active data series
     keys   = [],		// list of variable keys (ids)
@@ -1126,8 +1126,9 @@ function XYPlot(id, xaxisVarId, xaxisLinLog){
                     });
                     if (new_data.length > 0){
                         j += 1;
+                        if (yaxisUniqueScale) {yj = 1} else {yj = j}
                         //plot Y with defferents axis
-                        series.push({"data":new_data,"color":variables[key].color,"yaxis":j,"label":label,"unit":unit});
+                        series.push({"data":new_data,"color":variables[key].color,"yaxis":yj,"label":label,"unit":unit});
 //                            series.push({"data":new_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":label});
                     }
                     series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis});
@@ -1437,6 +1438,8 @@ $( document ).ready(function() {
         label = $(val).data('axes0Yaxis').label;
         xaxisVarId = $(val).data('xaxis').id;
         xaxisLinLog = $(val).data('xaxis').linlog;
+        plotPoints = Boolean($(val).data('xaxis').plotpoints);
+        yaxisUniqueScale = Boolean($(val).data('yaxis').uniquescale);
         CHART_VARIABLE_KEYS[xaxisVarId]=1;
         X_AXIS = xaxisVarId;
         // add a new Plot
