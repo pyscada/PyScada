@@ -1438,12 +1438,12 @@ $( document ).ready(function() {
         label = $(val).data('axes0Yaxis').label;
         xaxisVarId = $(val).data('xaxis').id;
         xaxisLinLog = $(val).data('xaxis').linlog;
-        plotPoints = Boolean($(val).data('xaxis').plotpoints);
-        yaxisUniqueScale = Boolean($(val).data('yaxis').uniquescale);
+        if ($(val).data('yaxis').plotpoints == 'True') {plotPoints = true} else {plotPoints = false}
+        if ($(val).data('yaxis').uniquescale == 'True') {yaxisUniqueScale = true} else {yaxisUniqueScale = false}
         CHART_VARIABLE_KEYS[xaxisVarId]=1;
         X_AXIS = xaxisVarId;
         // add a new Plot
-        PyScadaPlots.push(new XYPlot(id, xaxisVarId, xaxisLinLog));
+        PyScadaPlots.push(new XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale));
     });
 
     $.each($('.variable-config'),function(key,val){
