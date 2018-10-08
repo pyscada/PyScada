@@ -60,8 +60,8 @@ def view(request, link_title):
         sliding_panel_list = v.sliding_panel_menus.all()
 
         visible_widget_list = Widget.objects.filter(page__in=page_list.iterator()).values_list('pk', flat=True)
-        visible_custom_html_panel_list = CustomHTMLPanel.objects.all().values_list('pk', flat=True)
-        visible_chart_list = Chart.objects.all().values_list('pk', flat=True)
+        # visible_custom_html_panel_list = CustomHTMLPanel.objects.all().values_list('pk', flat=True)
+        # visible_chart_list = Chart.objects.all().values_list('pk', flat=True)
         visible_control_element_list = ControlItem.objects.all().values_list('pk', flat=True)
     else:
         page_list = v.pages.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).distinct()
@@ -72,11 +72,13 @@ def view(request, link_title):
         visible_widget_list = Widget.objects.filter(
             groupdisplaypermission__hmi_group__in=request.user.groups.iterator(),
             page__in=page_list.iterator()).values_list('pk', flat=True)
+        """
+        # todo update permission model to reflect new widget structure
         visible_custom_html_panel_list = CustomHTMLPanel.objects.filter(
             groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
         visible_chart_list = Chart.objects.filter(
             groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
-
+        """
         visible_control_element_list = GroupDisplayPermission.objects.filter(
             hmi_group__in=request.user.groups.iterator()).values_list('control_items', flat=True)
 
@@ -85,45 +87,34 @@ def view(request, link_title):
 
     pages_html = ""
     for page in page_list:
+        # process content row by row
         current_row = 0
-        has_chart = False
-        widgets = []
         widget_rows_html = ""
+        main_content = list()
+        sidebar_content = list()
         for widget in page.widget_set.all():
             # check if row has changed
             if current_row != widget.row:
                 # render new widget row and reset all loop variables
                 widget_rows_html += widget_row_template.render(
-                    {'row': current_row, 'has_chart': has_chart, 'widgets': widgets,
-                     'visible_control_element_list': visible_control_element_list}, request)
+                    {'row': current_row, 'main_content': main_content, 'sidebar_content': sidebar_content,
+                     'sidebar_visible': len(sidebar_content) > 0}, request)
                 current_row = widget.row
-                has_chart = False
-                widgets = []
+                main_content = list()
+                sidebar_content = list()
             if widget.pk not in visible_widget_list:
                 continue
-            if not widget.visable:
+            if not widget.visible:
                 continue
-            if widget.chart:
-                if not widget.chart.visable():
-                    continue
-                if widget.chart.pk not in visible_chart_list:
-                    continue
-                has_chart = True
-                widgets.append(widget)
-            elif widget.control_panel:
-                widgets.append(widget)
-            elif widget.process_flow_diagram:
-                widgets.append(widget)
-            elif widget.custom_html_panel:
-                if widget.custom_html_panel.pk not in visible_custom_html_panel_list:
-                    continue
-                widgets.append(widget)
+            mc, sbc = widget.content.create_panel_html(widget_pk=widget.pk, user=request.user)
+            if mc is not None:
+                main_content.append(dict(html=mc,widget=widget))
+            if sbc is not None:
+                sidebar_content.append(dict(html=sbc,widget=widget))
 
-        widget_rows_html += widget_row_template.render({'row': current_row,
-                                                        'has_chart': has_chart,
-                                                        'widgets': widgets,
-                                                        'visible_control_element_list': visible_control_element_list},
-                                                       request)
+        widget_rows_html += widget_row_template.render(
+            {'row': current_row, 'main_content': main_content, 'sidebar_content': sidebar_content,
+             'sidebar_visible': len(sidebar_content) > 0}, request)
 
         pages_html += page_template.render({'page': page, 'widget_rows_html': widget_rows_html}, request)
 

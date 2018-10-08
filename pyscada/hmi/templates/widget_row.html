@@ -1,32 +1,19 @@
 <div class="row"> <!-- Widget Row {{ row }}-->
-{%if has_chart %}
+{%if sidebar_visible %}
     <div class="legend-sidebar">
-    {% for widget in widgets %}
-        {% if widget.chart %}
-            {% include "chart_legend.html" with chart=widget.chart widget_pk=widget.pk %}
+    {% for content in sidebar_content %}
+            {{ content.html|safe }}
             <div class="clear-sep"></div>
-        {% endif %}
     {% endfor %}
     </div>
-{% endif %}
-
-{%if has_chart %}
     <div style="margin-left:240px;">
 {% endif %}
-{% for widget in widgets %}
-    <div id="widget_{{widget.pk}}" class="widget {{ widget.css_class}}"> <!-- {{ widget.title }} -->
-        {% if widget.chart %}
-            {% include "chart.html" with chart=widget.chart widget_pk=widget.pk%}
-        {% elif widget.control_panel %}
-            {% include "control_panel.html" with control_panel=widget.control_panel visible_control_element_list=visible_control_element_list%}
-        {% elif widget.custom_html_panel %}
-            {% include "custom_html_panel.html" with custom_html_panel=widget.custom_html_panel %}
-        {% elif widget.process_flow_diagram %}
-            {% include "process_flow_diagram.html" with process_flow_diagram=widget.process_flow_diagram %}
-        {% endif %}
-    </div>
-{% endfor %}
-{%if has_chart %}
+    {% for content in main_content %}
+        <div id="widget_{{content.widget.pk}}" class="widget {{ content.widget.css_class}}"> <!-- {{ widget.title }} -->
+            {{ content.html|safe }}
+        </div>
+    {% endfor %}
+{%if sidebar_visible %}
     </div>
 {% endif %}
 </div>

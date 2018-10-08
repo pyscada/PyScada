@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-#from pyscada.models import Log
 from datetime import datetime
 from django.conf import settings
-import sys
 
 
 def add(message, level=0, user=None, message_short=None,log_file_name='%s/pyscada_daemon.log' % settings.BASE_DIR,):

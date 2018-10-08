@@ -20,7 +20,6 @@ from struct import *
 from os import getpid
 import errno
 import numpy as np
-from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -428,7 +427,7 @@ class Device(models.Model):
         (1800.0, '30 Minutes'),
         (3600.0, '1 Hour'),
     )
-    polling_interval = models.FloatField(default=5, choices=polling_interval_choices)
+    polling_interval = models.FloatField(default=polling_interval_choices[3][0], choices=polling_interval_choices)
 
     def __str__(self):
         return self.short_name
@@ -827,7 +826,7 @@ class Variable(models.Model):
             byte_order = self.device.byte_order
         else:
             byte_order = self.byte_order
-        if source_format == '2H':
+        if target_format == '2H':
             if byte_order == '1-0-3-2':
                 return output
             if byte_order == '3-2-1-0':
@@ -1218,14 +1217,14 @@ class Event(models.Model):
                 limit_check = actual_value <= (limit_value + self.hysteresis)
             else:
                 limit_check = actual_value <= (limit_value - self.hysteresis)
-        elif self.limit_type == 2:
+        elif self.limit_type == 4:
             limit_check = limit_value + self.hysteresis >= actual_value >= limit_value - self.hysteresis
         elif self.limit_type == 3:
             if prev_value:
                 limit_check = actual_value >= (limit_value - self.hysteresis)
             else:
                 limit_check = actual_value >= (limit_value + self.hysteresis)
-        elif self.limit_type == 4:
+        elif self.limit_type == 2:
             if prev_value:
                 limit_check = actual_value > (limit_value - self.hysteresis)
             else:

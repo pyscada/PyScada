@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0rc7
+version 0.7.0rc10
 
 Copyright (c) 2013-2018 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.7.0rc7"
+var version = "0.7.0rc10"
 var NOTIFICATION_COUNT = 0
 var UPDATE_STATUS_COUNT = 0;
 var INIT_STATUS_COUNT = 0;
@@ -161,7 +161,7 @@ function data_handler(){
 
     if(AUTO_UPDATE_ACTIVE){
         if(DATA_TO_TIMESTAMP==0){
-            data_handler_ajax(0,[],Date.now());
+            data_handler_ajax(0,[],[],Date.now());
         }else{
             if(FETCH_DATA_PENDING<=0){
             // fetch new data

@@ -8,6 +8,7 @@ from pyscada.export.hdf5_file import unix_time_stamp_to_matlab_datenum
 from pyscada.export.csv_file import ExcelCompatibleCSV
 from pyscada.export.csv_file import unix_time_stamp_to_excel_datenum
 from pyscada.export.models import ExportTask
+from six import string_types
 
 # Django
 from django.conf import settings
@@ -38,10 +39,10 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
     else:
         tp = None
 
-    if type(time_max) in [str, unicode]:
+    if isinstance(time_max, string_types):
         # convert date strings
         time_max = mktime(datetime.strptime(time_max, "%d-%b-%Y %H:%M:%S").timetuple())
-    if type(time_min) in [str, unicode]:
+    if isinstance(time_min, string_types):
         # convert date strings
         time_min = mktime(datetime.strptime(time_min, "%d-%b-%Y %H:%M:%S").timetuple())
 
