@@ -1599,5 +1599,23 @@ $( document ).ready(function() {
             }
         }
         $this.addClass('active');
+        change_base_selected_element($this.context.parentElement.parentElement.id, $this.context.id)
     })
+    function change_base_selected_element(base_id, element_id) {
+        if (base_id == "" || element_id == ""){
+            add_notification('base_id or element_id empty',3);
+        }else{
+            $.ajax({
+                type: 'post',
+                url: ROOT_URL+'form/write_robot_base/',
+                data: {base_id:base_id, element_id:element_id},
+                success: function (data) {
+
+                },
+                error: function(data) {
+                    add_notification('write plug selected failed',3);
+                }
+            });
+        };
+    }
 });
