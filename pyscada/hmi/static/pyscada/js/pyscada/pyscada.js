@@ -990,13 +990,23 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             if (item) {
                 var x = item.datapoint[0].toFixed(0),
                     y = item.datapoint[1].toFixed(2);
-                $("#tooltip").html(item.series.label + " of " + x + " = " + y)
+                $("#tooltip").html(item.series.label + "(" + x + ") = " + y)
                     .css({top: item.pageY+5, left: item.pageX+5})
                     .fadeIn(200);
             } else {
                 $("#tooltip").hide();
             }
         });
+        $(chart_container_id + ' .chart-placeholder').bind("plotclick", function (event, pos, item) {
+			if (item) {
+			    var x = item.datapoint[0].toFixed(0),
+                    y = item.datapoint[1].toFixed(2);
+				$("#clickdata").text(" - click point " + item.dataIndex + " in " + item.series.label +
+				" - (x,y) = (" + x + ", " + y + ")");
+				//TODO highlight the point and remove on nextclick
+				//plot.highlight(item.series, item.datapoint);
+			}
+		});
 
         // bind
         $(chart_container_id + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
@@ -1618,4 +1628,39 @@ $( document ).ready(function() {
             });
         };
     }
+    // Active the selected item in a listbox and disable it in others listboxes
+    $('.dropdown-afg-function').on('click', function() {
+        var $this = $(this);
+        //$('.dropdown-afg-function').$('.active').removeClass('active');
+        dropdown_item = document.getElementsByClassName("dropdown-afg-function")
+        for (i=0;i<dropdown_item.length;i++){
+            if ($(dropdown_item[i]).context.parentElement.parentElement.id == $this.context.parentElement.parentElement.id) {
+            $(dropdown_item[i]).removeClass('active');
+            }
+        }
+        $this.addClass('active');
+        key = $(this).data('key');
+        value = $(this).data('value');
+        item_type = $(this).data('type');
+
+        change_vp_string(key, value, item_type)
+    });
+
+    function change_vp_string(key, value, item_type) {
+        if (value == "" ){
+            add_notification('please provide a value',3);
+        }else{
+            $.ajax({
+                type: 'post',
+                url: ROOT_URL+'form/write_property/',
+                data: {key:key, value:value, item_type:item_type},
+                success: function (data) {
+
+                },
+                error: function(data) {
+                    add_notification('add new write task failed',3);
+                }
+            });
+        };
+    };
 });
