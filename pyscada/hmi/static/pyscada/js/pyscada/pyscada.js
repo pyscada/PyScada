@@ -1608,6 +1608,7 @@ $( document ).ready(function() {
             $(dropdown_item[i]).removeClass('active');
             }
         }
+        $this.context.parentElement.parentElement.firstElementChild.firstChild.data = $this.context.textContent;
         $this.addClass('active');
         change_base_selected_element($this.context.parentElement.parentElement.id, $this.context.id)
     })
@@ -1639,28 +1640,23 @@ $( document ).ready(function() {
             }
         }
         $this.addClass('active');
-        key = $(this).data('key');
-        value = $(this).data('value');
-        item_type = $(this).data('type');
-
-        change_vp_string(key, value, item_type)
-    });
-
-    function change_vp_string(key, value, item_type) {
-        if (value == "" ){
+        $this.context.parentElement.parentElement.firstElementChild.firstChild.data = $this.context.textContent;
+        variable_property_id = $(this).data('key');
+        value = $(this).data('value').toString();
+        if (value == ""){
             add_notification('please provide a value',3);
-        }else{
+        }else {
             $.ajax({
                 type: 'post',
                 url: ROOT_URL+'form/write_property/',
-                data: {key:key, value:value, item_type:item_type},
+                data: {variable_property_id:variable_property_id, value:value},
                 success: function (data) {
 
                 },
                 error: function(data) {
-                    add_notification('add new write task failed',3);
+                    add_notification('write plug selected failed',3);
                 }
             });
-        };
-    };
+        }
+    });
 });
