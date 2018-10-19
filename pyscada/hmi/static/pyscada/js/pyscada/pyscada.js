@@ -1305,7 +1305,6 @@ $('button.write-task-form-set').click(function(){
         tabinputs = document.forms[name_form].getElementsByTagName("input");
         DATA={}; //reset the data after each button click
         for (i=0;i<tabinputs.length;i++){
-            //value = tabinputs[i].value;
             value = $(tabinputs[i]).val();
             var_name = $(tabinputs[i]).attr("name");
             $.each($('.variable-config'),function(kkey,val){
@@ -1555,108 +1554,6 @@ $( document ).ready(function() {
             $("#show_timeline").removeClass("show_timeline_no");
             $("#ShowTimelineButton").addClass("btn-success");
             $("#ShowTimelineButton").removeClass("btn-default");
-        }
-    });
-    // actualize the picture of the dut selector for laborem with the list selection
-    $('.list-group-item').on('click', function() {
-        var $this = $(this);
-        var $img = $this.data('img');
-        var $mb_id = $this.data('motherboard-id');
-        var $plug_id = $this.data('plug-id');
-
-        $('.active').removeClass('active');
-        $this.toggleClass('active');
-
-        // Pass clicked link element to another function
-        change_plug_img($this, $img)
-        change_plug_selected_motherboard($mb_id, $plug_id)
-    })
-    function change_plug_img($this, $img) {
-        $(".img-plug").attr("src",$img);
-    }
-    function change_plug_selected_motherboard(mb_id, plug_id) {
-        if (mb_id == "" || plug_id == ""){
-            add_notification('mb_id or plug_id empty',3);
-        }else{
-            $.ajax({
-                type: 'post',
-                url: ROOT_URL+'form/write_plug/',
-                data: {mb_id:mb_id, plug_id:plug_id},
-                success: function (data) {
-
-                },
-                error: function(data) {
-                    add_notification('write plug selected failed',3);
-                }
-            });
-        };
-    }
-    // Active the selected item in a listbox and disable it in others listboxes
-    $('.dropdown-base').on('click', function() {
-        var $this = $(this);
-        dropdown_item = document.getElementsByClassName("dropdown-base")
-        for (i=0;i<dropdown_item.length;i++){
-            if ($(dropdown_item[i]).context.parentElement.parentElement.id !== $this.context.parentElement.parentElement.id) {
-                if ($(dropdown_item[i]).context.id == $this.context.id) {
-                    $(dropdown_item[i]).addClass('disabled');
-                }
-                else {
-                    $(dropdown_item[i]).removeClass('disabled');
-                }
-            }
-            else {
-            $(dropdown_item[i]).removeClass('active');
-            }
-        }
-        $this.context.parentElement.parentElement.firstElementChild.firstChild.data = $this.context.textContent;
-        $this.addClass('active');
-        change_base_selected_element($this.context.parentElement.parentElement.id, $this.context.id)
-    })
-    function change_base_selected_element(base_id, element_id) {
-        if (base_id == "" || element_id == ""){
-            add_notification('base_id or element_id empty',3);
-        }else{
-            $.ajax({
-                type: 'post',
-                url: ROOT_URL+'form/write_robot_base/',
-                data: {base_id:base_id, element_id:element_id},
-                success: function (data) {
-
-                },
-                error: function(data) {
-                    add_notification('write plug selected failed',3);
-                }
-            });
-        };
-    }
-    // Active the selected item in a listbox and disable it in others listboxes
-    $('.dropdown-afg-function').on('click', function() {
-        var $this = $(this);
-        //$('.dropdown-afg-function').$('.active').removeClass('active');
-        dropdown_item = document.getElementsByClassName("dropdown-afg-function")
-        for (i=0;i<dropdown_item.length;i++){
-            if ($(dropdown_item[i]).context.parentElement.parentElement.id == $this.context.parentElement.parentElement.id) {
-            $(dropdown_item[i]).removeClass('active');
-            }
-        }
-        $this.addClass('active');
-        $this.context.parentElement.parentElement.firstElementChild.firstChild.data = $this.context.textContent;
-        variable_property_id = $(this).data('key');
-        value = $(this).data('value').toString();
-        if (value == ""){
-            add_notification('please provide a value',3);
-        }else {
-            $.ajax({
-                type: 'post',
-                url: ROOT_URL+'form/write_property/',
-                data: {variable_property_id:variable_property_id, value:value},
-                success: function (data) {
-
-                },
-                error: function(data) {
-                    add_notification('write plug selected failed',3);
-                }
-            });
         }
     });
 });
