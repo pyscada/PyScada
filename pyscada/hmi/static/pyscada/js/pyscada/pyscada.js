@@ -1285,6 +1285,7 @@ $('button.write-task-set').click(function(){
         item_type = $(this).data('type');
         if (value == "" ){
             add_notification('please provide a value',3);
+            console.log('please provide a value');
         }else{
             $.ajax({
                 type: 'post',
@@ -1295,6 +1296,7 @@ $('button.write-task-set').click(function(){
                 },
                 error: function(data) {
                     add_notification('add new write task failed',3);
+                    console.log("add new write task failed");
                 }
             });
         };

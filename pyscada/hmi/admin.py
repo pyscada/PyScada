@@ -113,7 +113,7 @@ class WidgetAdmin(admin.ModelAdmin):
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
     filter_horizontal = (
         'pages', 'sliding_panel_menus', 'charts', 'xy_charts', 'control_items', 'widgets', 'views',
-        'custom_html_panels', 'process_flow_diagram')
+        'custom_html_panels', 'process_flow_diagram', 'forms')
 
 
 class ControlPanelAdmin(admin.ModelAdmin):

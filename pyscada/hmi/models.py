@@ -437,6 +437,7 @@ class GroupDisplayPermission(models.Model):
     charts = models.ManyToManyField(Chart, blank=True)
     xy_charts = models.ManyToManyField(XYChart, blank=True)
     control_items = models.ManyToManyField(ControlItem, blank=True)
+    forms = models.ManyToManyField(Form, blank=True)
     widgets = models.ManyToManyField(Widget, blank=True)
     custom_html_panels = models.ManyToManyField(CustomHTMLPanel, blank=True)
     views = models.ManyToManyField(View, blank=True)
