@@ -1308,7 +1308,7 @@ $('button.write-task-form-set').click(function(){
         DATA={}; //reset the data after each button click
         for (i=0;i<tabinputs.length;i++){ //test if there is an empty or non numeric value
             value = $(tabinputs[i]).val();
-            if (value == "" || isNaN(value){
+            if (value == "" || isNaN(value)){
                 add_notification('please provide a value',3);
                 alert("An input is empty or non numeric");
                 return;
