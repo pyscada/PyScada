@@ -170,14 +170,21 @@ def form_write_task(request):
     if 'key' in request.POST and 'value' in request.POST:
         key = int(request.POST['key'])
         item_type = request.POST['item_type']
+        value = request.POST['value']
+        # check if float as DeviceWriteTask doesn't support string values
+        try:
+            float(value)
+        except ValueError:
+            logger.info("not float")
+            return HttpResponse(status=403)
         if GroupDisplayPermission.objects.count() == 0:
             if item_type == 'variable':
-                cwt = DeviceWriteTask(variable_id=key, value=request.POST['value'], start=time.time(),
+                cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
                                       user=request.user)
                 cwt.save()
                 return HttpResponse(status=200)
             elif item_type == 'variable_property':
-                cwt = DeviceWriteTask(variable_property_id=key, value=request.POST['value'], start=time.time(),
+                cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
                                       user=request.user)
                 cwt.save()
                 return HttpResponse(status=200)
@@ -186,14 +193,14 @@ def form_write_task(request):
                 if item_type == 'variable':
                     for group in GroupDisplayPermission.objects.filter(hmi_group=group_user, control_items__type=5,
                                                                        control_items__variable__pk=key):
-                        cwt = DeviceWriteTask(variable_id=key, value=request.POST['value'], start=time.time(),
+                        cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
                                               user=request.user)
                         cwt.save()
                         return HttpResponse(status=200)
                 elif item_type == 'variable_property':
                     for group in GroupDisplayPermission.objects.filter(hmi_group=group_user, control_items__type=5,
                                                                        control_items__variable_property__pk=key):
-                        cwt = DeviceWriteTask(variable_property_id=key, value=request.POST['value'], start=time.time(),
+                        cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
                                               user=request.user)
                         cwt.save()
                         return HttpResponse(status=200)
