@@ -1306,6 +1306,15 @@ $('button.write-task-form-set').click(function(){
         name_form = $(this.form).attr('name');
         tabinputs = document.forms[name_form].getElementsByTagName("input");
         DATA={}; //reset the data after each button click
+        for (i=0;i<tabinputs.length;i++){ //test if there is an empty or non numeric value
+            value = $(tabinputs[i]).val();
+            if (value == "" || isNaN(value){
+                add_notification('please provide a value',3);
+                alert("An input is empty or non numeric");
+                return;
+            };
+        };
+
         for (i=0;i<tabinputs.length;i++){
             value = $(tabinputs[i]).val();
             var_name = $(tabinputs[i]).attr("name");
@@ -1317,10 +1326,7 @@ $('button.write-task-form-set').click(function(){
                 }
             });
 
-            if (value == "" ){
-                add_notification('please provide a value',3);
-                alert("value empty");
-            }else if ($(tabinputs[i]).hasClass('btn-success')){
+            if ($(tabinputs[i]).hasClass('btn-success')){
                 id = $(tabinputs[i]).attr('id');
                 //$('#'+id).removeClass('update-able');
                 $.ajax({
