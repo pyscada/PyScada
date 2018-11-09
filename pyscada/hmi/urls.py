@@ -8,7 +8,7 @@ from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     # Public pages
-    url(r'^$', views.index, name="view-overview"),
+    #url(r'^$', views.index, name="view-overview"),
     url(r'^pyscada_admin/', admin_site.urls),
     url(r'^accounts/logout/$', views.logout_view),
     url(r'^accounts/login/$', auth_views.login, {'template_name': 'login.html'}, name='login_view'),
