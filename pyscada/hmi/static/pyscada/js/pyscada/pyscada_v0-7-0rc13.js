@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0rc10
+version 0.7.0rc13
 
 Copyright (c) 2013-2018 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.7.0rc10"
+var version = "0.7.0rc13"
 var NOTIFICATION_COUNT = 0
 var UPDATE_STATUS_COUNT = 0;
 var INIT_STATUS_COUNT = 0;
@@ -24,6 +24,7 @@ var DATA_DISPLAY_WINDOW = 20*60*1000;
 var DATA_BUFFER_SIZE = 300*60*1000; // size of the data buffer in ms
 var progressbar_resize_active = false;
 var SERVER_TIME = 0;
+var LAST_QUERY_TIME = 0;
 var CSRFTOKEN = $.cookie('csrftoken');
 var FETCH_DATA_TIMEOUT = 5000;
 var LOG_FETCH_PENDING_COUNT = false;
@@ -43,14 +44,18 @@ var FETCH_DATA_PENDING = 0;
 var INIT_STATUS_VARIABLES_DONE = false;
 var INIT_CHART_VARIABLES_DONE = false;
 var INIT_CHART_VARIABLES_COUNT = 0;
+
+
 // the code
 var debug = 0;
 var DataFetchingProcessCount = 0;
+
 
 function show_update_status(){
     $("#AutoUpdateStatus").show();
     UPDATE_STATUS_COUNT++;
 }
+
 function hide_update_status(){
     UPDATE_STATUS_COUNT--;
     if (UPDATE_STATUS_COUNT <= 0){
@@ -58,22 +63,26 @@ function hide_update_status(){
         UPDATE_STATUS_COUNT = 0;
     }
 }
+
 function show_init_status(){
     $("#loadingAnimation").show();
     INIT_STATUS_COUNT = INIT_STATUS_COUNT + 1;
 }
+
 function hide_init_status(){
     INIT_STATUS_COUNT = INIT_STATUS_COUNT -1;
     if (INIT_STATUS_COUNT <= 0){
         $("#loadingAnimation").hide();
     }
 }
+
 function raise_data_out_of_date_error(){
     if (!DATA_OUT_OF_DATE){
         DATA_OUT_OF_DATE = true;
         DATA_OUT_OF_DATE_ALERT_ID = add_notification('displayed data is out of date!',4,false,false);
     }
 }
+
 function clear_data_out_of_date_error(){
     if (DATA_OUT_OF_DATE){
         DATA_OUT_OF_DATE = false;
@@ -87,6 +96,7 @@ function check_buffer(key){
         DATA[key] = DATA[key].splice(stop_id);
     }
 }
+
 function add_fetched_data(key,value){
     if (typeof(value)==="object"){
         if (value.length >0){
@@ -149,7 +159,6 @@ function add_fetched_data(key,value){
     }
 }
 
-
 function data_handler(){
     // call the data handler periodically
     if(!INIT_STATUS_VARIABLES_DONE || !INIT_CHART_VARIABLES_DONE){
@@ -161,11 +170,12 @@ function data_handler(){
 
     if(AUTO_UPDATE_ACTIVE){
         if(DATA_TO_TIMESTAMP==0){
+        // fetch the SERVER_TIME
             data_handler_ajax(0,[],[],Date.now());
         }else{
             if(FETCH_DATA_PENDING<=0){
             // fetch new data
-                data_handler_ajax(0,VARIABLE_KEYS,VARIABLE_PROPERTY_KEYS,DATA_TO_TIMESTAMP+1);
+                data_handler_ajax(0, VARIABLE_KEYS, VARIABLE_PROPERTY_KEYS, LAST_QUERY_TIME);
             }
             // fetch historic data
             if(FETCH_DATA_PENDING<=1){
@@ -227,7 +237,7 @@ function data_handler_ajax(init,variable_keys,variable_property_keys,timestamp_f
     if(init){show_init_status();}
     request_data = {timestamp_from:timestamp_from, variables: variable_keys, init: init, variable_properties:variable_property_keys};
     if (typeof(timestamp_to !== 'undefined')){request_data['timestamp_to']=timestamp_to};
-    if (!init){request_data['timestamp_from'] = request_data['timestamp_from'] - REFRESH_RATE;};
+    //if (!init){request_data['timestamp_from'] = request_data['timestamp_from'] - REFRESH_RATE;};
     $.ajax({
         url: ROOT_URL+'json/cache_data/',
         dataType: "json",
@@ -253,6 +263,12 @@ function data_handler_done(fetched_data){
         $(".server_time").html(date.toLocaleString());
     }else{
         SERVER_TIME = 0;
+    }
+    if (typeof(fetched_data['date_saved_max'])==="number"){
+        LAST_QUERY_TIME = fetched_data['date_saved_max'];
+        delete fetched_data['date_saved_max'];
+    }else{
+        LAST_QUERY_TIME = 0;
     }
     if (typeof(fetched_data['variable_properties'])==="object"){
         VARIABLE_PROPERTIES_DATA = fetched_data['variable_properties'];
@@ -647,7 +663,10 @@ function PyScadaPlot(id){
                 bottom: 8,
                 left: 20
             }
-        }
+        },
+        lines: {
+            steps:true
+            }
     },
     series = [],		// just the active data series
     keys   = [],		// list of variable keys (ids)
@@ -817,6 +836,8 @@ function PyScadaPlot(id){
                     }else {
                         chart_data = DATA[key].slice();
                     }
+                    // add data for step display
+                    /*
                     if (chart_data.length > 2){
                         i = 1;
                         while (i < chart_data.length) {
@@ -828,6 +849,8 @@ function PyScadaPlot(id){
                             }
                         }
                     }
+                    */
+                    // append last value
                     if (chart_data.length >= 1){
                         if (DATA_DISPLAY_TO_TIMESTAMP < 0){
                             chart_data.push([DATA_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
@@ -1103,9 +1126,11 @@ $( document ).ready(function() {
         }
     });
     $('#PlusTwoHoursButton').click(function(e) {
-        $('#PlusTwoHoursButton').addClass("disabled");
-        DATA_INIT_STATUS++;
-        DATA_BUFFER_SIZE = DATA_BUFFER_SIZE + 120*60*1000;
-        INIT_CHART_VARIABLES_DONE = false;
+        if (INIT_CHART_VARIABLES_DONE){
+            $('#PlusTwoHoursButton').addClass("disabled");
+            DATA_INIT_STATUS++;
+            DATA_BUFFER_SIZE = DATA_BUFFER_SIZE + 120*60*1000;
+            INIT_CHART_VARIABLES_DONE = false;
+        }
     });
 });

@@ -7,14 +7,16 @@ from django.db import migrations
 from pytz import UTC
 from datetime import datetime
 
+
 def convert_unixtime_float_to_datetime(apps,schema_editor):
     ExportTask = apps.get_model("export","ExportTask")
-    for item in ExportTask.objects.all():
+    for item in ExportTask.objects.using(schema_editor.connection.alias).all():
         item.datetime_fineshed = datetime.fromtimestamp(item.fineshed,UTC)
         item.datetime_start = datetime.fromtimestamp(item.start,UTC)
         item.datetime_max = datetime.fromtimestamp(item.time_max,UTC)
         item.datetime_min = datetime.fromtimestamp(item.time_min,UTC)
         item.save()
+
 
 class Migration(migrations.Migration):
 
@@ -23,5 +25,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-    migrations.RunPython(convert_unixtime_float_to_datetime)
+        migrations.RunPython(convert_unixtime_float_to_datetime)
     ]
