@@ -1380,13 +1380,13 @@ class Event(models.Model):
                 prev_event = RecordedEvent(event=self, time_begin=timestamp, active=True)
                 prev_event.save()
 
-                if self.limit_type >= 1:
+                if self.action >= 1:
                     # compose and send mail
                     (subject, message,) = compose_mail(True)
                     for recipient in self.mail_recipients.exclude(email=''):
                         Mail(None, subject, message, recipient.email, time.time()).save()
 
-                if self.limit_type >= 3:
+                if self.action >= 3:
                     # do action
                     if self.variable_to_change:
                         DeviceWriteTask(variable=self.variable_to_change, value=self.new_value, start=timestamp)
@@ -1397,7 +1397,7 @@ class Event(models.Model):
                 prev_event.time_end = timestamp
                 prev_event.save()
 
-                if self.limit_type >= 2:
+                if self.action >= 2:
                     # compose and send mail
                     (subject, message,) = compose_mail(False)
                     for recipient in self.mail_recipients.exclude(email=''):
