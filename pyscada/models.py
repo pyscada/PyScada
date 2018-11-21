@@ -316,6 +316,7 @@ class VariablePropertyManager(models.Manager):
             return None
 
         vp = super(VariablePropertyManager, self).get_queryset().filter(**kwargs).first()
+        kwargs['value_class'] = value_class.upper()
         if timestamp is not None:
             kwargs['timestamp'] = timestamp
         if property_class is not None:
