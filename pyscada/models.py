@@ -283,6 +283,7 @@ class VariablePropertyManager(models.Manager):
             return None
 
         vp = super(VariablePropertyManager, self).get_queryset().filter(**kwargs).first()
+        kwargs['value_class'] = value_class.upper()
         if timestamp is not None:
             kwargs['timestamp'] = timestamp
         if property_class is not None:
@@ -302,7 +303,7 @@ class VariablePropertyManager(models.Manager):
         if vp:
             # update
             for key, value in kwargs.items():
-                setattr(vp,key,value)
+                setattr(vp, key, value)
             vp.save()
         else:
             # create
