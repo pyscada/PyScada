@@ -1121,8 +1121,12 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                         if (chart_fdata.length < chart_data.length){
                             console.log('X data smaller than Y data -> X : ' + chart_fdata + ' - Y : ' + chart_data);
                         }else {
+                            chart_data_min = chart_data[0][1]
+                            chart_data_max = chart_data[0][1]
                             while (i < chart_data.length) {
                                 new_data.push([chart_fdata[i][1],chart_data[i][1]]);
+                                chart_data_min = Math.min(chart_data_min, chart_data[i][1])
+                                chart_data_max = Math.max(chart_data_max, chart_data[i][1])
                                 i += 1;
                             }
                         }
@@ -1138,10 +1142,8 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                         j += 1;
                         if (yaxisUniqueScale) {yj = 1} else {yj = j}
                         //plot Y with defferents axis
-                        series.push({"data":new_data,"color":variables[key].color,"yaxis":yj,"label":label,"unit":unit});
-//                            series.push({"data":new_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":label});
+                        series.push({"data":new_data,"color":variables[key].color,"yaxis":yj,"label":label,"unit":unit,"chart_data_min":chart_data_min,"chart_data_max":chart_data_max});
                     }
-                    series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis});
                 }
             }
             // update flot plot
@@ -1153,21 +1155,22 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                 yoptions = [];
                 for (k = 1;k <= j;k++){
                     if(k%2){pos="left";}else{pos="right";};
-                    var U = series[2*(k-1)]['unit'];
-                    unit = function (value, axis) {
-                            return value.toFixed(axis.tickDecimals) + U;
+                    S = series[k-1]
+                    tf = function (value, axis) {
+                            return value.toFixed(axis.tickDecimals) + axis.options.unit;
                     };
                     yoptions.push({
                         position: pos,
-                        tickFormatter: unit,
-                        axisLabel: series[2*(k-1)]['label'],
+                        tickFormatter: tf,
+                        axisLabel: S['label'],
                         axisLabelUseCanvas: true,
                         axisLabelFontSizePixels: 12,
                         axisLabelFontFamily: 'Verdana, Arial',
                         axisLabelPadding: 3,
-                        axisLabelColour: series[2*(k-1)]['color'],
-                        min: null,
-                        max: null,
+                        axisLabelColour: S['color'],
+                        min: S['chart_data_min'],
+                        max: S['chart_data_max'],
+                        unit: S['unit'];
                     });
                 }
                 options.yaxes = yoptions;
