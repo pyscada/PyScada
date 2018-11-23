@@ -1170,7 +1170,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                         axisLabelColour: S['color'],
                         min: S['chart_data_min'],
                         max: S['chart_data_max'],
-                        unit: S['unit'];
+                        unit: S['unit'],
                     });
                 }
                 options.yaxes = yoptions;
