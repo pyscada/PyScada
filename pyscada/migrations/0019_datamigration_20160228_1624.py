@@ -8,7 +8,7 @@ def move_time_values(apps, schema_editor):
     # We can't import the Person model directly as it may be a newer
     # version than this migration expects. We use the historical version.
     RecordedEvent = apps.get_model("pyscada", "RecordedEvent")
-    for item in RecordedEvent.objects.all():
+    for item in RecordedEvent.objects.using(schema_editor.connection.alias).all():
         item.time_begin_new = item.time_begin.timestamp
         if item.time_end is not None:
             item.time_end_new = item.time_end.timestamp

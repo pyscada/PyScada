@@ -83,7 +83,7 @@ class MatCompatibleH5:
         userblock_data += chr(0) * 9
         userblock_data += 'IM'
         with io.open(self.filename, 'rb+') as f:
-            f.write(userblock_data)
+            f.write(userblock_data.encode('utf-8'))
         self.reopen()
 
     def close_file(self):

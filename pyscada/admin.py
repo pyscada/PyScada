@@ -61,8 +61,9 @@ class BackgroundProcessFilter(admin.SimpleListFilter):
         provided in the query string and retrievable via
         `self.value()`.
         """
-        if self.value() > 0:
-            return queryset.filter(parent_process_id=self.value())
+        if self.value() is not None:
+            if self.value() > 0:
+                return queryset.filter(parent_process_id=self.value())
 
 
 class VariableState(Variable):

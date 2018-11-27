@@ -86,7 +86,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
             os.mkdir(backup_file_path)
 
         # validate time values
-        db_time_min = RecordedData.objects.first()
+        db_time_min = RecordedData.objects.first()  # todo add RecordedDataOld
         if not db_time_min:
             if tp is not None:
                 tp.last_update = datetime_now()
@@ -96,7 +96,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
             return
         time_min = max(db_time_min.time_value(), time_min)
 
-        db_time_max = RecordedData.objects.last()
+        db_time_max = RecordedData.objects.last()  # todo add RecordedDataOld
         if not db_time_max:
             if tp is not None:
                 tp.last_update = datetime_now()

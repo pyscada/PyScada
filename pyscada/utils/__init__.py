@@ -90,6 +90,11 @@ def _cast(value, class_str):
 def datetime_now():
     return datetime.now(UTC)
 
+
+def timestamp_to_datetime(timestamp, tz=UTC):
+    return datetime.fromtimestamp(timestamp,tz)
+
+
 def blow_up_data(data,timevalues,mean_value_period,no_mean_value = True):
     out_data = np.zeros(len(timevalues))
     # i                            # time data index

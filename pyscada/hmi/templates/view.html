@@ -89,7 +89,8 @@
 <script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.resize.min.js" %}"></script>
 <script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.time.min.js" %}"></script>
 <script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.selection.min.js" %}"></script>
-<script type="text/javascript" src="{% static "pyscada/js/pyscada/pyscada.js" %}"></script>
+<!--<script type="text/javascript" src="{% static "pyscada/js/dexie/dexie.js" %}"></script>-->
+<script type="text/javascript" src="{% static "pyscada/js/pyscada/pyscada_v0-7-0rc13.js" %}"></script>
 {% endblock %}        
 {% block script_bottom %}
         $( document ).ready(function() {
@@ -102,7 +103,17 @@
             }else{
                 window.location.hash = $('ul.navbar-nav li a').first().attr("href");
             }
-            
+            // move overlapping side menus
+            var menu_pos = $('footer')[0].clientHeight + 6;
+            $.each($('.side-menu.left'),function(key,val){
+                $(val).attr("style","bottom: " + menu_pos + "px;");
+                menu_pos = menu_pos + val.clientHeight + 10;
+            });
+            var menu_pos = $('footer')[0].clientHeight + 6;
+            $.each($('.side-menu.right'),function(key,val){
+                $(val).attr("style","bottom: " + menu_pos + "px;");
+                menu_pos = menu_pos + val.clientHeight + 10;
+            });
             // sidemenues
             $('.side-menu.left').mouseenter(function(){
                 $(this).stop().CSSAnimate({"left":0},500)
