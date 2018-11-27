@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0rc7
+version 0.7.0rc10
 
 Copyright (c) 2013-2018 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.7.0rc7"
+var version = "0.7.0rc10"
 var NOTIFICATION_COUNT = 0
 var UPDATE_STATUS_COUNT = 0;
 var INIT_STATUS_COUNT = 0;
@@ -126,7 +126,7 @@ function add_fetched_data(key,value){
                         if (typeof(stop_id) === "number" ){
                             DATA[key] = value.slice(0,stop_id).concat(DATA[key]);
                         }else{
-                            console.log(key + ' : dropped data 1');
+                            console.log(key + ' : dropped data');
                         }
                     } else if (v_t_max > d_t_max && d_t_min < v_t_min){
                         // data and value overlapping, data has older elements then value, append
@@ -134,11 +134,10 @@ function add_fetched_data(key,value){
                         if (typeof(stop_id) === "number" ){
                             DATA[key] = DATA[key].concat(value.slice(stop_id));
                         }else{
-                            console.log(key + ' : dropped data 2');
+                            console.log(key + ' : dropped data');
                         }
                     } else{
-                        console.log(key + ' : dropped data 3');
-                        console.log(v_t_min + " " + v_t_max + " " + d_t_min + " " + d_t_max);
+                        console.log(key + ' : dropped data');
                     }
                 }
                 if (value[0][0] < DATA_FROM_TIMESTAMP){
@@ -164,7 +163,7 @@ function data_handler(){
 
     if(AUTO_UPDATE_ACTIVE){
         if(DATA_TO_TIMESTAMP==0){
-            data_handler_ajax(0,[],Date.now());
+            data_handler_ajax(0,[],[],Date.now());
         }else{
             if(FETCH_DATA_PENDING<=0){
             // fetch new data
@@ -868,7 +867,7 @@ function PyScadaPlot(id){
     }
 }
 
-function XYPlot(id, xaxisVarId, xaxisLinLog){
+function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
     var options = {
         legend: {
             show: false
@@ -888,7 +887,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog){
             clickable: true
         },
         lines: { show: true },
-        points: { show: true }
+        points: { show: plotPoints }
     },
     series = [],		// just the active data series
     keys   = [],		// list of variable keys (ids)
@@ -991,13 +990,23 @@ function XYPlot(id, xaxisVarId, xaxisLinLog){
             if (item) {
                 var x = item.datapoint[0].toFixed(0),
                     y = item.datapoint[1].toFixed(2);
-                $("#tooltip").html(item.series.label + " of " + x + " = " + y)
+                $("#tooltip").html(item.series.label + "(" + x + ") = " + y)
                     .css({top: item.pageY+5, left: item.pageX+5})
                     .fadeIn(200);
             } else {
                 $("#tooltip").hide();
             }
         });
+        $(chart_container_id + ' .chart-placeholder').bind("plotclick", function (event, pos, item) {
+			if (item) {
+			    var x = item.datapoint[0].toFixed(0),
+                    y = item.datapoint[1].toFixed(2);
+				$("#clickdata").text(" - click point " + item.dataIndex + " in " + item.series.label +
+				" - (x,y) = (" + x + ", " + y + ")");
+				//TODO highlight the point and remove on nextclick
+				//plot.highlight(item.series, item.datapoint);
+			}
+		});
 
         // bind
         $(chart_container_id + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
@@ -1112,8 +1121,12 @@ function XYPlot(id, xaxisVarId, xaxisLinLog){
                         if (chart_fdata.length < chart_data.length){
                             console.log('X data smaller than Y data -> X : ' + chart_fdata + ' - Y : ' + chart_data);
                         }else {
+                            chart_data_min = chart_data[0][1]
+                            chart_data_max = chart_data[0][1]
                             while (i < chart_data.length) {
                                 new_data.push([chart_fdata[i][1],chart_data[i][1]]);
+                                chart_data_min = Math.min(chart_data_min, chart_data[i][1])
+                                chart_data_max = Math.max(chart_data_max, chart_data[i][1])
                                 i += 1;
                             }
                         }
@@ -1127,11 +1140,10 @@ function XYPlot(id, xaxisVarId, xaxisLinLog){
                     });
                     if (new_data.length > 0){
                         j += 1;
+                        if (yaxisUniqueScale) {yj = 1} else {yj = j}
                         //plot Y with defferents axis
-                        series.push({"data":new_data,"color":variables[key].color,"yaxis":j,"label":label,"unit":unit});
-//                            series.push({"data":new_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":label});
+                        series.push({"data":new_data,"color":variables[key].color,"yaxis":yj,"label":label,"unit":unit,"chart_data_min":chart_data_min,"chart_data_max":chart_data_max});
                     }
-                    series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis});
                 }
             }
             // update flot plot
@@ -1143,21 +1155,22 @@ function XYPlot(id, xaxisVarId, xaxisLinLog){
                 yoptions = [];
                 for (k = 1;k <= j;k++){
                     if(k%2){pos="left";}else{pos="right";};
-                    var U = series[2*(k-1)]['unit'];
-                    unit = function (value, axis) {
-                            return value.toFixed(axis.tickDecimals) + U;
+                    S = series[k-1]
+                    tf = function (value, axis) {
+                            return value.toFixed(axis.tickDecimals) + axis.options.unit;
                     };
                     yoptions.push({
                         position: pos,
-                        tickFormatter: unit,
-                        axisLabel: series[2*(k-1)]['label'],
+                        tickFormatter: tf,
+                        axisLabel: S['label'],
                         axisLabelUseCanvas: true,
                         axisLabelFontSizePixels: 12,
                         axisLabelFontFamily: 'Verdana, Arial',
                         axisLabelPadding: 3,
-                        axisLabelColour: series[2*(k-1)]['color'],
-                        min: null,
-                        max: null,
+                        axisLabelColour: S['color'],
+                        min: S['chart_data_min'],
+                        max: S['chart_data_max'],
+                        unit: S['unit'],
                     });
                 }
                 options.yaxes = yoptions;
@@ -1275,6 +1288,7 @@ $('button.write-task-set').click(function(){
         item_type = $(this).data('type');
         if (value == "" ){
             add_notification('please provide a value',3);
+            console.log('please provide a value');
         }else{
             $.ajax({
                 type: 'post',
@@ -1285,6 +1299,7 @@ $('button.write-task-set').click(function(){
                 },
                 error: function(data) {
                     add_notification('add new write task failed',3);
+                    console.log("add new write task failed");
                 }
             });
         };
@@ -1294,8 +1309,16 @@ $('button.write-task-form-set').click(function(){
         name_form = $(this.form).attr('name');
         tabinputs = document.forms[name_form].getElementsByTagName("input");
         DATA={}; //reset the data after each button click
+        for (i=0;i<tabinputs.length;i++){ //test if there is an empty or non numeric value
+            value = $(tabinputs[i]).val();
+            if (value == "" || isNaN(value)){
+                add_notification('please provide a value',3);
+                alert("An input is empty or non numeric");
+                return;
+            };
+        };
+
         for (i=0;i<tabinputs.length;i++){
-            //value = tabinputs[i].value;
             value = $(tabinputs[i]).val();
             var_name = $(tabinputs[i]).attr("name");
             $.each($('.variable-config'),function(kkey,val){
@@ -1306,10 +1329,7 @@ $('button.write-task-form-set').click(function(){
                 }
             });
 
-            if (value == "" ){
-                add_notification('please provide a value',3);
-                alert("value empty");
-            }else if ($(tabinputs[i]).hasClass('btn-success')){
+            if ($(tabinputs[i]).hasClass('btn-success')){
                 id = $(tabinputs[i]).attr('id');
                 //$('#'+id).removeClass('update-able');
                 $.ajax({
@@ -1438,12 +1458,13 @@ $( document ).ready(function() {
         label = $(val).data('axes0Yaxis').label;
         xaxisVarId = $(val).data('xaxis').id;
         xaxisLinLog = $(val).data('xaxis').linlog;
+        if ($(val).data('yaxis').plotpoints == 'True') {plotPoints = true} else {plotPoints = false}
+        if ($(val).data('yaxis').uniquescale == 'True') {yaxisUniqueScale = true} else {yaxisUniqueScale = false}
         CHART_VARIABLE_KEYS[xaxisVarId]=1;
         X_AXIS = xaxisVarId;
         // add a new Plot
-        PyScadaPlots.push(new XYPlot(id, xaxisVarId, xaxisLinLog));
+        PyScadaPlots.push(new XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale));
     });
-
 
     $.each($('.variable-config'),function(key,val){
         key = parseInt($(val).data('key'));
@@ -1513,6 +1534,12 @@ $( document ).ready(function() {
             data_handler();
         }
     });
+    $('#PlusTwoHoursButton').click(function(e) {
+        $('#PlusTwoHoursButton').addClass("disabled");
+        DATA_INIT_STATUS++;
+        DATA_BUFFER_SIZE = DATA_BUFFER_SIZE + 120*60*1000;
+        INIT_CHART_VARIABLES_DONE = false;
+    });
     // show timeline function
     if ($('#ShowTimelineButton').hasClass("btn-success")) {
         $("#show_timeline").addClass("show_timeline_yes");
@@ -1539,11 +1566,5 @@ $( document ).ready(function() {
             $("#ShowTimelineButton").addClass("btn-success");
             $("#ShowTimelineButton").removeClass("btn-default");
         }
-    });
-    $('#PlusTwoHoursButton').click(function(e) {
-        $('#PlusTwoHoursButton').addClass("disabled");
-        DATA_INIT_STATUS++;
-        DATA_BUFFER_SIZE = DATA_BUFFER_SIZE + 120*60*1000;
-        INIT_CHART_VARIABLES_DONE = false;
     });
 });

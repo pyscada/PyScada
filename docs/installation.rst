@@ -202,7 +202,7 @@ Add a Admin User To Your Django Project
 ::
 
     cd /var/www/pyscada/PyScadaServer
-    python manage.py createsuperuser
+    sudo -u pyscada python manage.py createsuperuser
 
 
 Setup the Webserver (nginx, gunicorn)

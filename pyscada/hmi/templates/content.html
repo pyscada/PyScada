@@ -46,13 +46,13 @@
                     </ul>
                     <ul class="nav navbar-right navbar-nav">
                     {% for panel in control_list %}
-                        {% if panel.visable %}
+                        {% if panel.visible %}
                             <li class="dropdown"><!-- {{ panel.title|upper }} -->
                                 <a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-wrench"></span> {{ panel.title }}<strong class="caret"></strong></a>
                                 <div class="dropdown-menu" style="padding: 15px; width:715px;">
                                     <div class="control-panel">
                                         {% for item in panel.control_panel.items.all %}
-                                            {% if item.pk in visable_control_element_list %}
+                                            {% if item.pk in visible_control_element_list %}
                                                 {% include "control_element.html" with item=item %}
                                             {% endif %}
                                         {% endfor %}
@@ -129,7 +129,7 @@
                 <div id="{{page.link_title}}" class="sub-page" >
                     <div class="row">
                         {% for widget in page.widget_set.all %}
-                            {% if widget.visable  and widget.pk in visable_widget_list%}
+                            {% if widget.visible  and widget.pk in visible_widget_list%}
                                 {% if widget.col == 0 and widget.row > 0 %}
                     </div>
                     <div class="row">
@@ -137,12 +137,8 @@
                                 {% endif %}
                             <div id="widget_{{widget.pk}}" class="widget {{ widget.css_class}}"> <!-- {{ widget.title }} -->
                                 {% if widget.chart %}
-                                    {% if widget.chart.visable %}
+                                    {% if widget.chart.visible %}
                                         {% include "chart.html" with chart=widget.chart %}
-                                    {% endif %}
-                                {% elif widget.xy_chart %}
-                                    {% if widget.xy_chart.visable %}
-                                        {% include "xychart.html" with xy_chart=widget.xy_chart %}
                                     {% endif %}
                                 {% elif widget.control_panel %}
                                     {% include "control_panel.html" with control_panel=widget.control_panel %}
@@ -178,7 +174,7 @@
                     <ul class="status-panel">
                         <li>{{ panel.title }}</li>
                         {% for item in panel.control_panel.items.all %}
-                            {% if item.pk in visable_control_element_list %}
+                            {% if item.pk in visible_control_element_list %}
                                 {% include "status_element.html" with item=item %}
                             {% endif %}
                         {% endfor %}

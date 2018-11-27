@@ -43,7 +43,7 @@ class ChartAdmin(admin.ModelAdmin):
     filter_horizontal = ('variables',)
     List_display_link = ('title',)
     list_display = ('id', 'title',)
-    list_filter = ('widget__page__title', 'widget__title',)
+    #list_filter = ('widget__page__title', 'widget__title',)
     form = ChartForm
 
     def name(self, instance):
@@ -68,7 +68,6 @@ class XYChartAdmin(admin.ModelAdmin):
     filter_horizontal = ('variables',)
     List_display_link = ('title',)
     list_display = ('id', 'title', 'x_axis_label', 'x_axis_linlog', 'y_axis_label')
-    list_filter = ('widget__page__title', 'widget__title',)
     form = XYChartForm
 
     def name(self, instance):
@@ -106,16 +105,15 @@ class SlidingPanelMenuAdmin(admin.ModelAdmin):
 
 class WidgetAdmin(admin.ModelAdmin):
     list_display_links = ('id',)
-    list_display = ('id', 'title', 'page', 'row', 'col', 'size', 'chart', 'xy_chart', 'control_panel',
-                    'custom_html_panel',)
-    list_editable = ('title', 'page', 'row', 'col', 'size', 'chart', 'xy_chart', 'control_panel', 'custom_html_panel',)
+    list_display = ('id', 'title', 'page', 'row', 'col', 'size', 'content', )
+    list_editable = ('title', 'page', 'row', 'col', 'size', 'content', )
     list_filter = ('page',)
 
 
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
     filter_horizontal = (
         'pages', 'sliding_panel_menus', 'charts', 'xy_charts', 'control_items', 'widgets', 'views',
-        'custom_html_panels', 'process_flow_diagram')
+        'custom_html_panels', 'process_flow_diagram', 'forms')
 
 
 class ControlPanelAdmin(admin.ModelAdmin):

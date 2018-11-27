@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 def index(request):
     if not request.user.is_authenticated():
-        return redirect('/accounts/login/?next=%s' % request.path)
+        return redirect('/accounts/choose_login/?next=%s' % request.path)
     if GroupDisplayPermission.objects.count() == 0:
         view_list = View.objects.all()
     else:
@@ -46,7 +46,7 @@ def index(request):
 @requires_csrf_token
 def view(request, link_title):
     if not request.user.is_authenticated():
-        return redirect('/accounts/login/?next=%s' % request.path)
+        return redirect('/accounts/choose_login/?next=%s' % request.path)
 
     page_template = get_template('content_page.html')
     widget_row_template = get_template('widget_row.html')
@@ -62,9 +62,9 @@ def view(request, link_title):
         sliding_panel_list = v.sliding_panel_menus.all()
 
         visible_widget_list = Widget.objects.filter(page__in=page_list.iterator()).values_list('pk', flat=True)
-        visible_custom_html_panel_list = CustomHTMLPanel.objects.all().values_list('pk', flat=True)
-        visible_chart_list = Chart.objects.all().values_list('pk', flat=True)
-        visible_xy_chart_list = XYChart.objects.all().values_list('pk', flat=True)
+        # visible_custom_html_panel_list = CustomHTMLPanel.objects.all().values_list('pk', flat=True)
+        # visible_chart_list = Chart.objects.all().values_list('pk', flat=True)
+        # visible_xy_chart_list = XYChart.objects.all().values_list('pk', flat=True)
         visible_control_element_list = ControlItem.objects.all().values_list('pk', flat=True)
         visible_form_list = Form.objects.all().values_list('pk', flat=True)
     else:
@@ -76,12 +76,15 @@ def view(request, link_title):
         visible_widget_list = Widget.objects.filter(
             groupdisplaypermission__hmi_group__in=request.user.groups.iterator(),
             page__in=page_list.iterator()).values_list('pk', flat=True)
+        """
+        # todo update permission model to reflect new widget structure
         visible_custom_html_panel_list = CustomHTMLPanel.objects.filter(
             groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
         visible_chart_list = Chart.objects.filter(
             groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
         visible_xy_chart_list = XYChart.objects.filter(
             groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
+        """
         visible_control_element_list = GroupDisplayPermission.objects.filter(
             hmi_group__in=request.user.groups.iterator()).values_list('control_items', flat=True)
         visible_form_list = GroupDisplayPermission.objects.filter(
@@ -92,59 +95,40 @@ def view(request, link_title):
 
     pages_html = ""
     for page in page_list:
+        # process content row by row
         current_row = 0
-        has_chart = False
-        has_xy_chart = False
-        widgets = []
         widget_rows_html = ""
+        main_content = list()
+        sidebar_content = list()
+        has_chart = False
         for widget in page.widget_set.all():
             # check if row has changed
             if current_row != widget.row:
                 # render new widget row and reset all loop variables
                 widget_rows_html += widget_row_template.render(
-                    {'row': current_row, 'has_chart': has_chart, 'has_xy_chart': has_xy_chart, 'widgets': widgets,
-                     'visible_control_element_list': visible_control_element_list,
-                     'visible_form_list': visible_form_list}, request)
+                    {'row': current_row, 'main_content': main_content, 'sidebar_content': sidebar_content,
+                     'sidebar_visible': len(sidebar_content) > 0}, request)
                 current_row = widget.row
-                has_chart = False
-                has_xy_chart = False
-                widgets = []
+                main_content = list()
+                sidebar_content = list()
             if widget.pk not in visible_widget_list:
                 continue
-            if not widget.visable:
+            if not widget.visible:
                 continue
-            if widget.chart:
-                if not widget.chart.visable():
-                    continue
-                if widget.chart.pk not in visible_chart_list:
-                    continue
+            mc, sbc = widget.content.create_panel_html(widget_pk=widget.pk, user=request.user)
+            if mc is not None:
+                main_content.append(dict(html=mc,widget=widget))
+            if sbc is not None:
+                sidebar_content.append(dict(html=sbc,widget=widget))
+            if widget.content.content_model == "pyscada.hmi.models.Chart":
                 has_chart = True
-                widgets.append(widget)
-            elif widget.xy_chart:
-                if not widget.xy_chart.visable():
-                    continue
-                if widget.xy_chart.pk not in visible_xy_chart_list:
-                    continue
-                has_xy_chart = True
-                widgets.append(widget)
-            elif widget.control_panel:
-                widgets.append(widget)
-            elif widget.process_flow_diagram:
-                widgets.append(widget)
-            elif widget.custom_html_panel:
-                if widget.custom_html_panel.pk not in visible_custom_html_panel_list:
-                    continue
-                widgets.append(widget)
 
-        widget_rows_html += widget_row_template.render({'row': current_row,
-                                                        'has_chart': has_chart,
-                                                        'has_xy_chart': has_xy_chart,
-                                                        'widgets': widgets,
-                                                        'visible_control_element_list': visible_control_element_list,
-                                                        'visible_form_list': visible_form_list},
-                                                       request)
+        widget_rows_html += widget_row_template.render(
+            {'row': current_row, 'main_content': main_content, 'sidebar_content': sidebar_content,
+             'sidebar_visible': len(sidebar_content) > 0}, request)
 
-        pages_html += page_template.render({'page': page, 'widget_rows_html': widget_rows_html}, request)
+        pages_html += page_template.render({'page': page, 'widget_rows_html': widget_rows_html, 'has_chart': has_chart},
+                                           request)
 
     c = {
         'page_list': page_list,
@@ -159,13 +143,12 @@ def view(request, link_title):
         'version_string': core_version
     }
 
-    #logger.info('open hmi', request.user)
     return TemplateResponse(request, 'view.html', c)
 
 
 def log_data(request):
     if not request.user.is_authenticated():
-        return redirect('/accounts/login/?next=%s' % request.path)
+        return redirect('/accounts/choose_login/?next=%s' % request.path)
     if 'timestamp' in request.POST:
         timestamp = float(request.POST['timestamp'])
     else:
@@ -183,27 +166,50 @@ def log_data(request):
 
 def form_write_task(request):
     if not request.user.is_authenticated():
-        return redirect('/accounts/login/?next=%s' % request.path)
+        return redirect('/accounts/choose_login/?next=%s' % request.path)
     if 'key' in request.POST and 'value' in request.POST:
         key = int(request.POST['key'])
         item_type = request.POST['item_type']
-        if item_type == 'variable':
-            cwt = DeviceWriteTask(variable_id=key, value=request.POST['value'], start=time.time(),
-                                  user=request.user)
-            cwt.save()
-            return HttpResponse(status=200)
-        elif item_type == 'variable_property':
-            cwt = DeviceWriteTask(variable_property_id=key, value=request.POST['value'], start=time.time(),
-                                  user=request.user)
-            cwt.save()
-            return HttpResponse(status=200)
-
+        value = request.POST['value']
+        # check if float as DeviceWriteTask doesn't support string values
+        try:
+            float(value)
+        except ValueError:
+            logger.debug("input is not float")
+            return HttpResponse(status=403)
+        if GroupDisplayPermission.objects.count() == 0:
+            if item_type == 'variable':
+                cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
+                                      user=request.user)
+                cwt.save()
+                return HttpResponse(status=200)
+            elif item_type == 'variable_property':
+                cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
+                                      user=request.user)
+                cwt.save()
+                return HttpResponse(status=200)
+        else:
+            for group_user in request.user.groups.iterator():
+                if item_type == 'variable':
+                    for group in GroupDisplayPermission.objects.filter(hmi_group=group_user, control_items__type=5,
+                                                                       control_items__variable__pk=key):
+                        cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
+                                              user=request.user)
+                        cwt.save()
+                        return HttpResponse(status=200)
+                elif item_type == 'variable_property':
+                    for group in GroupDisplayPermission.objects.filter(hmi_group=group_user, control_items__type=5,
+                                                                       control_items__variable_property__pk=key):
+                        cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
+                                              user=request.user)
+                        cwt.save()
+                        return HttpResponse(status=200)
     return HttpResponse(status=404)
 
 
 def get_cache_data(request):
     if not request.user.is_authenticated():
-        return redirect('/accounts/login/?next=%s' % request.path)
+        return redirect('/accounts/choose_login/?next=%s' % request.path)
 
     if 'init' in request.POST:
         init = bool(float(request.POST['init']))
@@ -275,8 +281,8 @@ def logout_view(request):
     logger.info('logout %s' % request.user)
     logout(request)
     # Redirect to a success page.
-    return redirect('/accounts/login/?next=/')
+    return redirect('/accounts/choose_login/?next=/')
 
 
 def user_profile_change(request):
-    return redirect('/accounts/login/?next=/')
+    return redirect('/accounts/choose_login/?next=/')

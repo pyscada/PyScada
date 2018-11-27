@@ -6,10 +6,51 @@ from pyscada.models import Variable, VariableProperty
 from django.db import models
 from django.contrib.auth.models import Group
 from django.utils.encoding import python_2_unicode_compatible
+from django.template.loader import get_template
+
 from six import text_type
+import traceback
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class WidgetContentModel(models.Model):
+
+    def save(self, *args, **kwargs):
+        created = self.pk is None
+        super(WidgetContentModel, self).save(*args, **kwargs)  # Call the "real" save() method.
+        # create a WidgetContent Entry
+        if created:
+            self.create_widget_content_entry()
+
+    def delete(self, *args, **kwargs):
+        # delete WidgetContent Entry
+        wcs = WidgetContent.objects.filter(
+            content_pk=self.pk,
+            content_model=('%s'%self.__class__).replace("<class '", '').replace("'>", ''))
+        for wc in wcs:
+            wc.delete()
+
+        super(WidgetContentModel, self).delete(*args, **kwargs)  # Call the "real" save() method.
+
+    def gen_html(self, **kwargs):
+        """
+
+        :return: main panel html and sidebar html as
+        """
+        return '', ''
+
+    def create_widget_content_entry(self):
+        def fullname(o):
+            return o.__module__ + "." + o.__class__.__name__
+        wc = WidgetContent(content_pk=self.pk,
+                           content_model=fullname(self))
+        wc.save()
+
+    class Meta:
+        abstract = True
+
 
 @python_2_unicode_compatible
 class ControlItem(models.Model):
@@ -86,7 +127,7 @@ class ControlItem(models.Model):
 
 
 @python_2_unicode_compatible
-class Chart(models.Model):
+class Chart(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
     x_axis_label = models.CharField(max_length=400, default='', blank=True)
@@ -99,31 +140,57 @@ class Chart(models.Model):
     def __str__(self):
         return text_type(str(self.id) + ': ' + self.title)
 
-    def visable(self):
+    def visible(self):
         return True
 
     def variables_list(self, exclude_list=[]):
         return [item.pk for item in self.variables.exclude(pk__in=exclude_list)]
 
+    def gen_html(self, **kwargs):
+        """
+
+        :return: main panel html and sidebar html as
+        """
+        widget_pk = kwargs['widget_pk'] if 'widget_pk' in kwargs else 0
+        main_template = get_template('chart.html')
+        sidebar_template = get_template('chart_legend.html')
+        main_content = main_template.render(dict(chart=self, widget_pk=widget_pk))
+        sidebar_content = sidebar_template.render(dict(chart=self, widget_pk=widget_pk))
+        return main_content, sidebar_content
+
 
 @python_2_unicode_compatible
-class XYChart(models.Model):
+class XYChart(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
     x_axis_label = models.CharField(max_length=400, default='', blank=True)
     x_axis_var = models.ForeignKey(Variable, default=None, related_name='x_axis_var')
     x_axis_linlog = models.BooleanField(default=False, help_text="False->Lin / True->Log")
     y_axis_label = models.CharField(max_length=400, default='', blank=True)
+    y_axis_plotpoints = models.BooleanField(default=False, help_text="Show the plots points")
+    y_axis_uniquescale = models.BooleanField(default=True, help_text="To have a unique scale for all the y axis")
     variables = models.ManyToManyField(Variable, related_name='variables_xy_chart')
 
     def __str__(self):
         return text_type(str(self.id) + ': ' + self.title)
 
-    def visable(self):
+    def visible(self):
         return True
 
     def variables_list(self, exclude_list=[]):
         return [item.pk for item in self.variables.exclude(pk__in=exclude_list)]
+
+    def gen_html(self, **kwargs):
+        """
+
+        :return: main panel html and sidebar html as
+        """
+        widget_pk = kwargs['widget_pk'] if 'widget_pk' in kwargs else 0
+        main_template = get_template('xy_chart.html')
+        sidebar_template = get_template('xy_chart_legend.html')
+        main_content = main_template.render(dict(xy_chart=self, widget_pk=widget_pk))
+        sidebar_content = sidebar_template.render(dict(xy_chart=self, widget_pk=widget_pk))
+        return main_content, sidebar_content
 
 
 @python_2_unicode_compatible
@@ -132,14 +199,14 @@ class Form(models.Model):
     title = models.CharField(max_length=400, default='')
     button = models.CharField(max_length=50, default='Ok')
     control_items = models.ManyToManyField(ControlItem, related_name='control_items_form',
-                                           limit_choices_to={'type': '5'})
+                                           limit_choices_to={'type': '5'}, blank=True)
     hidden_control_items_to_true = models.ManyToManyField(ControlItem, related_name='hidden_control_items_form',
-                                                          limit_choices_to={'type': '5'})
+                                                          limit_choices_to={'type': '5'}, blank=True)
 
     def __str__(self):
         return text_type(str(self.id) + ': ' + self.title)
 
-    def visable(self):
+    def visible(self):
         return True
 
     def control_items_list(self):
@@ -164,25 +231,46 @@ class Page(models.Model):
 
 
 @python_2_unicode_compatible
-class ControlPanel(models.Model):
+class ControlPanel(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
     items = models.ManyToManyField(ControlItem, blank=True)
     forms = models.ManyToManyField(Form, blank=True)
 
     def __str__(self):
-        return (str(self.id) + ': ' + self.title)
+        return str(self.id) + ': ' + self.title
+
+    def gen_html(self, **kwargs):
+        """
+
+        :return: main panel html and sidebar html as
+        """
+        visible_element_list = kwargs['visible_control_element_list'] if 'visible_control_element_list' in kwargs else []
+        main_template = get_template('control_panel.html')
+        main_content = main_template.render(dict(control_panel=self, visible_control_element_list=visible_element_list))
+        sidebar_content = None
+        return main_content, sidebar_content
 
 
 @python_2_unicode_compatible
-class CustomHTMLPanel(models.Model):
+class CustomHTMLPanel(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='', blank=True)
     html = models.TextField()
     variables = models.ManyToManyField(Variable)
 
     def __str__(self):
-        return (str(self.id) + ': ' + self.title)
+        return str(self.id) + ': ' + self.title
+
+    def gen_html(self, **kwargs):
+        """
+
+        :return: main panel html and sidebar html as
+        """
+        main_template = get_template('custom_html_panel.html')
+        main_content = main_template.render(dict(custom_html_panel=self))
+        sidebar_content = None
+        return main_content, sidebar_content
 
 
 @python_2_unicode_compatible
@@ -205,15 +293,16 @@ class ProcessFlowDiagramItem(models.Model):
     width = models.PositiveIntegerField(blank=True, default=0)
     height = models.PositiveIntegerField(blank=True, default=0)
     visible = models.BooleanField(default=True)
+
     def __str__(self):
         if self.label:
-            return (str(self.id) + ": " + self.label)
+            return str(self.id) + ": " + self.label
         else:
-            return (str(self.id) + ": " + self.variable.name)
+            return str(self.id) + ": " + self.variable.name
 
 
 @python_2_unicode_compatible
-class ProcessFlowDiagram(models.Model):
+class ProcessFlowDiagram(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='', blank=True)
     background_image = models.ImageField(upload_to="img/", verbose_name="background image", blank=True)
@@ -225,6 +314,16 @@ class ProcessFlowDiagram(models.Model):
         else:
             return str(self.id) + ": " + self.background_image.name
 
+    def gen_html(self, **kwargs):
+        """
+
+        :return: main panel html and sidebar html as
+        """
+        main_template = get_template('process_flow_diagram.html')
+        main_content = main_template.render(dict(process_flow_diagram=self))
+        sidebar_content = None
+        return main_content, sidebar_content
+
 
 @python_2_unicode_compatible
 class SlidingPanelMenu(models.Model):
@@ -233,17 +332,52 @@ class SlidingPanelMenu(models.Model):
     position_choices = ((0, 'Control Menu'), (1, 'left'), (2, 'right'))
     position = models.PositiveSmallIntegerField(default=0, choices=position_choices)
     control_panel = models.ForeignKey(ControlPanel, blank=True, null=True, default=None)
-    visable = models.BooleanField(default=True)
+    visible = models.BooleanField(default=True)
 
     def __str__(self):
         return self.title
 
 
 @python_2_unicode_compatible
+class WidgetContent(models.Model):
+    content_model = models.CharField(max_length=400)
+    content_pk = models.PositiveIntegerField()
+
+    def create_panel_html(self, **kwargs):
+        content_model = self._import_content_model()
+        try:
+            if content_model is not None:
+                return content_model.gen_html(**kwargs)
+            else:
+                return '', ''
+        except:
+            logger.error('%s unhandled exception\n%s' % (content_model, traceback.format_exc()))
+            # todo del self
+            return '', ''
+
+    def _import_content_model(self):
+        content_class_str = self.content_model
+        class_name = content_class_str.split('.')[-1]
+        class_path = content_class_str.replace('.' + class_name, '')
+        try:
+            mod = __import__(class_path, fromlist=[class_name.__str__()])
+            content_class = getattr(mod, class_name.__str__())
+            if isinstance(content_class, models.base.ModelBase):
+                return content_class.objects.get(pk=self.content_pk)
+            return None
+        except:
+            logger.error('%s unhandled exception\n%s' % (class_path, traceback.format_exc()))
+            return None
+
+    def __str__(self):
+        return '%s [%d]'%(self.content_model, self.content_pk) # todo add more infos
+
+
+@python_2_unicode_compatible
 class Widget(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='', blank=True)
-    page = models.ForeignKey(Page, null=True, default=None, blank=True, )
+    page = models.ForeignKey(Page, null=True, default=None, blank=True)
     row_choices = (
         (0, "1. row"), (1, "2. row"), (2, "3. row"), (3, "4. row"), (4, "5. row"), (5, "6. row"), (6, "7. row"),
         (7, "8. row"), (8, "9. row"), (9, "10. row"), (10, "11. row"), (11, "12. row"),)
@@ -252,19 +386,15 @@ class Widget(models.Model):
     col = models.PositiveSmallIntegerField(default=0, choices=col_choices)
     size_choices = ((4, 'page width'), (3, '3/4 page width'), (2, '1/2 page width'), (1, '1/4 page width'))
     size = models.PositiveSmallIntegerField(default=4, choices=size_choices)
-    chart = models.ForeignKey(Chart, blank=True, null=True, default=None)
-    xy_chart = models.ForeignKey(XYChart, blank=True, null=True, default=None)
-    control_panel = models.ForeignKey(ControlPanel, blank=True, null=True, default=None)
-    custom_html_panel = models.ForeignKey(CustomHTMLPanel, blank=True, null=True, default=None)
-    process_flow_diagram = models.ForeignKey(ProcessFlowDiagram, blank=True, null=True, default=None)
-    visable = models.BooleanField(default=True)
+    visible = models.BooleanField(default=True)
+    content = models.ForeignKey(WidgetContent, null=True, default=None)
 
     class Meta:
         ordering = ['row', 'col']
 
     def __str__(self):
         if self.title is not None and self.page:
-            return (str(self.id) + ': ' + self.page.title + ', ' + self.title)
+            return str(self.id) + ': ' + self.page.title + ', ' + self.title
         else:
             return str(self.id) + ': ' + 'None, None'
 
@@ -288,7 +418,7 @@ class View(models.Model):
     pages = models.ManyToManyField(Page)
     sliding_panel_menus = models.ManyToManyField(SlidingPanelMenu, blank=True)
     logo = models.ImageField(upload_to="img/", verbose_name="Overview Picture", blank=True)
-    visable = models.BooleanField(default=True)
+    visible = models.BooleanField(default=True)
     position = models.PositiveSmallIntegerField(default=0)
     show_timeline = models.BooleanField(default=True)
 
@@ -307,6 +437,7 @@ class GroupDisplayPermission(models.Model):
     charts = models.ManyToManyField(Chart, blank=True)
     xy_charts = models.ManyToManyField(XYChart, blank=True)
     control_items = models.ManyToManyField(ControlItem, blank=True)
+    forms = models.ManyToManyField(Form, blank=True)
     widgets = models.ManyToManyField(Widget, blank=True)
     custom_html_panels = models.ManyToManyField(CustomHTMLPanel, blank=True)
     views = models.ManyToManyField(View, blank=True)

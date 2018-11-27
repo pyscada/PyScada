@@ -1,72 +1,19 @@
-{%if has_chart %}
-    <div class="row show_timeline_yes" id="show_timeline">
-        <div class="col-md-1">
-            <label><input id="activate_zoom_x" type="checkbox" >zoom on x axes</label>
-        </div>
-        <div class="col-md-1">
-            <label><input id="activate_zoom_y" type="checkbox" checked="checked">zoom on y axes</label>
-        </div>
-        <div class="col-md-10">
-            <span class="pull-left"><button type="button" class="btn" id="PlusTwoHoursButton" style="height:24px; padding-top:1px;"><img id="loadingAnimation" style="display: inline; height:15px;padding-bottom:3px;" src="/static/pyscada/img/load.gif" alt="loading"> +2h</button></span>
-            <span id="timeline-time-left-label" class="pull-left" style="padding-left: 10px; line-height:24px;color:#333"></span>
-            <div style="height:24px; padding-left:150px;">
-                <div id="timeline-border" style="height:24px; background-color: #9d9d9d;">
-                    <div id="timeline" class="ui-widget-content ui-resizable ui-draggable ui-draggable-handle" style="background-color: #333; height: 24px; left: 0px; width: 0px; top: 0px;">
-                        <span class="pull-left glyphicon glyphicon-triangle-left" style="line-height:20px;color:#9d9d9d;" aria-hidden="true"></span>
-                        <span class="pull-right glyphicon glyphicon-triangle-right" style="line-height:20px;color:#9d9d9d;" aria-hidden="true"></span>
-                        <span id="timeline-time-from-label" class="pull-left" style="padding-left:3px; line-height:24px; color:#9d9d9d"> </span>
-                        <span id="timeline-time-to-label" class="pull-right" style="padding-right:3px; line-height:24px; color:#9d9d9d"> </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-{% endif %}
 <div class="row"> <!-- Widget Row {{ row }}-->
-{%if has_chart %}
+{%if sidebar_visible %}
     <div class="legend-sidebar">
-    {% for widget in widgets %}
-        {% if widget.chart %}
-            {% include "chart_legend.html" with chart=widget.chart widget_pk=widget.pk %}
+    {% for content in sidebar_content %}
+            {{ content.html|safe }}
             <div class="clear-sep"></div>
-        {% endif %}
     {% endfor %}
     </div>
-{% elif has_xy_chart %}
-    <div class="xylegend-sidebar">
-    {% for widget in widgets %}
-        {% if widget.xy_chart %}
-            {% include "xychart_legend.html" with chart=widget.xy_chart widget_pk=widget.pk %}
-            <div class="clear-sep"></div>
-        {% else %}
-        {% endif %}
-    {% endfor %}
-    </div>
-{% endif %}
-
-{%if has_chart %}
     <div style="margin-left:240px;">
-{%elif has_xy_chart %}
-    <div style="margin-left:168px;">
 {% endif %}
-{% for widget in widgets %}
-    <div id="widget_{{widget.pk}}" class="widget {{ widget.css_class}}"> <!-- {{ widget.title }} -->
-        {% if widget.chart %}
-            {% include "chart.html" with chart=widget.chart widget_pk=widget.pk%}
-        {% elif widget.xy_chart %}
-            {% include "xychart.html" with xy_chart=widget.xy_chart widget_pk=widget.pk%}
-        {% elif widget.control_panel %}
-            {% include "control_panel.html" with control_panel=widget.control_panel visible_control_element_list=visible_control_element_list visible_form_list=visible_form_list%}
-        {% elif widget.custom_html_panel %}
-            {% include "custom_html_panel.html" with custom_html_panel=widget.custom_html_panel %}
-        {% elif widget.process_flow_diagram %}
-            {% include "process_flow_diagram.html" with process_flow_diagram=widget.process_flow_diagram %}
-        {% endif %}
-    </div>
-{% endfor %}
-{%if has_chart %}
-    </div>
-{%elif has_xy_chart %}
+    {% for content in main_content %}
+        <div id="widget_{{content.widget.pk}}" class="widget {{ content.widget.css_class}}"> <!-- {{ content.widget.title }} -->
+            {{ content.html|safe }}
+        </div>
+    {% endfor %}
+{%if sidebar_visible %}
     </div>
 {% endif %}
 </div>

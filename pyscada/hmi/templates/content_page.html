@@ -1,3 +1,27 @@
 <div id="{{page.link_title}}" class="sub-page" >
+    {% if has_chart %}
+        <div class="row show_timeline_yes" id="show_timeline">
+                <div class="col-md-1">
+                    <label><input id="activate_zoom_x" type="checkbox" >zoom on x axes</label>
+                </div>
+                <div class="col-md-1">
+                    <label><input id="activate_zoom_y" type="checkbox" checked="checked">zoom on y axes</label>
+                </div>
+                <div class="col-md-10">
+                    <span class="pull-left"><button type="button" class="btn" id="PlusTwoHoursButton" style="height:24px; padding-top:1px;"><img id="loadingAnimation" style="display: inline; height:15px;padding-bottom:3px;" src="/static/pyscada/img/load.gif" alt="loading"> +2h</button></span>
+                    <span id="timeline-time-left-label" class="pull-left" style="padding-left: 10px; line-height:24px;color:#333"></span>
+                    <div style="height:24px; padding-left:150px;">
+                        <div id="timeline-border" style="height:24px; background-color: #9d9d9d;">
+                            <div id="timeline" class="ui-widget-content ui-resizable ui-draggable ui-draggable-handle" style="background-color: #333; height: 24px; left: 0px; width: 0px; top: 0px;">
+                                <span class="pull-left glyphicon glyphicon-triangle-left" style="line-height:20px;color:#9d9d9d;" aria-hidden="true"></span>
+                                <span class="pull-right glyphicon glyphicon-triangle-right" style="line-height:20px;color:#9d9d9d;" aria-hidden="true"></span>
+                                <span id="timeline-time-from-label" class="pull-left" style="padding-left:3px; line-height:24px; color:#9d9d9d"> </span>
+                                <span id="timeline-time-to-label" class="pull-right" style="padding-right:3px; line-height:24px; color:#9d9d9d"> </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    {% endif %}
     {{ widget_rows_html|safe}}
 </div>

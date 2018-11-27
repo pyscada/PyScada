@@ -38,27 +38,6 @@ class Device:
         if driver_visa_ok and driver_handler_ok:
             self._h.connect()
 
-    def request_data(self):
-        """
-        request data from the instrument/device
-        """
-        output = []
-        if not driver_visa_ok:
-            logger.info('Request Data Visa Driver Not Ok')
-            return output
-        
-        for item in self.variables.values():
-            if not item.visavariable.variable_type == 1:
-                # skip all config values
-                continue
-            
-            value = self._h.read_data(item)
-            
-            if value is not None and item.update_value(value, time()):
-                output.append(item.create_recorded_data_element())
-
-        return output
-
     def write_data(self,variable_id, value, task):
         '''
         write value to the instrument/device
@@ -81,4 +60,25 @@ class Device:
                 output.append(item.create_recorded_data_element())
             else:
                 logger.info("Visa-Output not ok : %s" % output)
+        return output
+
+    def request_data(self):
+        """
+        request data from the instrument/device
+        """
+        output = []
+        if not driver_visa_ok:
+            logger.info('Request Data Visa Driver Not Ok')
+            return output
+        
+        for item in self.variables.values():
+            if not item.visavariable.variable_type == 1:
+                # skip all config values
+                continue
+            
+            value = self._h.read_data(item)
+            
+            if value is not None and item.update_value(value, time()):
+                output.append(item.create_recorded_data_element())
+
         return output

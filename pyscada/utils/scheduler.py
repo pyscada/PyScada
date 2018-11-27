@@ -507,7 +507,6 @@ class Scheduler(object):
         spawn a new process
         """
         if process is None:
-            logger.error("process is None")
             return False
         # start new child process
         pid = fork()
@@ -722,7 +721,7 @@ class SingleDeviceDAQProcess(Process):
         """
         self.device = Device.objects.filter(protocol__daq_daemon=1, active=1, id=self.device_id).first()
         if not self.device:
-            logger.error("Error self.device")
+            logger.error("Error init_process for %s" % self.device_id)
             return False
         self.dt_set = min(self.dt_set, self.device.polling_interval)
         self.dt_query_data = self.device.polling_interval
@@ -766,7 +765,10 @@ class SingleDeviceDAQProcess(Process):
         if time() - self.last_query > self.dt_query_data:
             self.last_query = time()
             # Query data
-            tmp_data = self.device.request_data()
+            if self.device is not None:
+                tmp_data = self.device.request_data()
+            else:
+                return 1, None
             if isinstance(tmp_data, list):
                 if len(tmp_data) > 0:
                     return 1, [tmp_data, ]
