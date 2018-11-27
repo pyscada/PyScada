@@ -10,6 +10,7 @@ from django.template.loader import get_template
 
 from six import text_type
 import traceback
+from uuid import uuid4
 import logging
 
 logger = logging.getLogger(__name__)
@@ -186,7 +187,9 @@ class ControlPanel(WidgetContentModel):
         """
         visible_element_list = kwargs['visible_control_element_list'] if 'visible_control_element_list' in kwargs else []
         main_template = get_template('control_panel.html')
-        main_content = main_template.render(dict(control_panel=self, visible_control_element_list=visible_element_list))
+        main_content = main_template.render(dict(control_panel=self,
+                                                 visible_control_element_list=visible_element_list,
+                                                 uuid=uuid4.hex)
         sidebar_content = None
         return main_content, sidebar_content
 

@@ -27,10 +27,12 @@ Debian 8/9, Raspbian
     apt-get update
     apt-get -y upgrade
     # if you use MariaDB/MySQL as Database system (recommend)
-    apt-get -y install mariadb-server python-mysqldb
+    apt-get -y install mariadb-server python3-mysqldb
     apt-get install -y python3-pip libhdf5-100 libhdf5-dev python3-dev nginx
 
     pip3 install gunicorn
+    pip3 install pyserial
+    pip3 install docutils
 
 
 macOS
