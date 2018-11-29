@@ -274,7 +274,7 @@ function data_handler_done(fetched_data){
             }
             if (DATA_DISPLAY_TO_TIMESTAMP < 0 && DATA_DISPLAY_FROM_TIMESTAMP < 0){
                 // both fixed
-                DATA_DISPLAY_WINDOW = DATA_FROM_TIMESTAMP - DATA_TO_TIMESTAMP;
+                DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
             }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
                 // to time is fixed
                 DATA_DISPLAY_FROM_TIMESTAMP = DATA_TO_TIMESTAMP - DATA_DISPLAY_WINDOW;
@@ -966,7 +966,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         options.yaxes[k-1].tickFormatter = tf;
         if (yaxisUniqueScale == false) {
             options.yaxes[k-1].axisLabel = lb;
-            options.yaxes[k-1].axisLabelUseCanvas = true;
+            //options.yaxes[k-1].axisLabelUseCanvas = true;
             options.yaxes[k-1].axisLabelFontSizePixels = 12;
             options.yaxes[k-1].axisLabelFontFamily = 'Verdana, Arial';
             options.yaxes[k-1].axisLabelPadding = 3;
@@ -1411,7 +1411,9 @@ $('button.write-task-set').click(function(){
 $('button.write-task-form-set').click(function(){
         name_form = $(this.form).attr('name');
         tabinputs = document.forms[name_form].getElementsByTagName("input");
-        DATA={}; //reset the data after each button click
+        DATA = {}; //reset the data after each button click
+        DATA_DISPLAY_FROM_TIMESTAMP = -1;
+        DATA_DISPLAY_TO_TIMESTAMP = -1;
         for (i=0;i<tabinputs.length;i++){ //test if there is an empty or non numeric value
             value = $(tabinputs[i]).val();
             if (value == "" || isNaN(value)){
