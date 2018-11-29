@@ -1252,12 +1252,12 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                         xticks=xticks.concat(Math.pow(10,i)/2);
                         xticks=xticks.concat(Math.pow(10,i));
                     xticks=xticks.concat(chart_x_data[chart_x_data.length-1][1]);
-                    pOpt.xaxis.ticks = xticks;
-                    pOpt.xaxis.transform = function (v) { return Math.log(v); };
-                    pOpt.xaxis.inverseTransform = function (v) { return Math.exp(v); };
+                    pOpt.xaxes[0].ticks = xticks;
+                    pOpt.xaxes[0].transform = function (v) { return Math.log(v); };
+                    pOpt.xaxes[0].inverseTransform = function (v) { return Math.exp(v); };
                     }
                 }else {
-                    pOpt.xaxis.ticks = chart_x_data.length;
+                    pOpt.xaxes[0].ticks = chart_x_data.length;
                 }
                 pOpt.xaxes[0].x_data_min = series[0]['x_data_min'];
                 pOpt.xaxes[0].x_data_max = series[0]['x_data_max'];
