@@ -955,16 +955,23 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         };
         if(k%2){pos="left";}else{pos="right";};
         tf = function (value, axis) {
-                return value.toFixed(axis.tickDecimals) + axis.options.unit;
+            return value.toFixed(axis.tickDecimals) + axis.options.unit;
         };
+        if (unit != "") {
+            lb = label.replace(/\s/g, '') + "(" + unit + ")";
+        }else{
+            lb = label.replace(/\s/g, '');
+        }
         options.yaxes[k-1].position = pos;
         options.yaxes[k-1].tickFormatter = tf;
-        options.yaxes[k-1].axisLabel = label;
-        options.yaxes[k-1].axisLabelUseCanvas = true;
-        options.yaxes[k-1].axisLabelFontSizePixels = 12;
-        options.yaxes[k-1].axisLabelFontFamily = 'Verdana, Arial';
-        options.yaxes[k-1].axisLabelPadding = 3;
-        options.yaxes[k-1].axisLabelColour = variables[variable_key]['color'];
+        if (yaxisUniqueScale == false) {
+            options.yaxes[k-1].axisLabel = lb;
+            options.yaxes[k-1].axisLabelUseCanvas = true;
+            options.yaxes[k-1].axisLabelFontSizePixels = 12;
+            options.yaxes[k-1].axisLabelFontFamily = 'Verdana, Arial';
+            options.yaxes[k-1].axisLabelPadding = 3;
+            options.yaxes[k-1].axisLabelColour = variables[variable_key]['color'];
+        }
         options.yaxes[k-1].unit = unit;
         options.yaxes[k-1].labelWidth = null;
         options.yaxes[k-1].reserveSpace = true;
@@ -1243,7 +1250,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             }
 
             // update x window
-            pOpt = flotPlot.getOptions();
+            //pOpt = flotPlot.getOptions();
             if (j != 0){
                 var xticks=[];
                 if (xaxisLinLog == "True"){
@@ -1257,7 +1264,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                     pOpt.xaxes[0].inverseTransform = function (v) { return Math.exp(v); };
                     }
                 }else {
-                    pOpt.xaxes[0].ticks = chart_x_data.length;
+                    pOpt.xaxes[0].ticks = Math.min(chart_x_data.length,11);
                 }
                 pOpt.xaxes[0].x_data_min = series[0]['x_data_min'];
                 pOpt.xaxes[0].x_data_max = series[0]['x_data_max'];
@@ -1276,10 +1283,23 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             flotPlot.draw();
 
             // Change the color of the axis
-            if (j != 0){
+            if (j != 0 && yaxisUniqueScale == false){
                 for (k = 1;k <= j;k++){
                     S = series[k-1]
-                    $(chart_container_id + ' .flot-y' + k + '-axis').css('color',S['color'])
+                    if (S['unit'] != "") {
+                        lb = S['label'].replace(/\s/g, '') + "(" + S['unit'] + ")";
+                    }else{
+                        lb = S['label'].replace(/\s/g, '');
+                    }
+                    if (k == 1){
+                        $(chart_container_id + ' .axisLabels.yaxisLabel')[0].innerHTML = lb
+                        $(chart_container_id + ' .axisLabels.yaxisLabel').css('color',S['color'])
+                        $(chart_container_id + ' .flot-y' + k + '-axis').css('color',S['color'])
+                    }else {
+                        $(chart_container_id + ' .axisLabels.y' + k + 'axisLabel')[0].innerHTML = lb
+                        $(chart_container_id + ' .axisLabels.y' + k + 'axisLabel').css('color',S['color'])
+                        $(chart_container_id + ' .flot-y' + k + '-axis').css('color',S['color'])
+                    }
                 }
             }
         }
