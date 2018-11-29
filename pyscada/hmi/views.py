@@ -175,7 +175,7 @@ def form_write_task(request):
         try:
             float(value)
         except ValueError:
-            logger.debug("input is not float")
+            logger.debug("form_write_task input is not a float")
             return HttpResponse(status=403)
         if GroupDisplayPermission.objects.count() == 0:
             if item_type == 'variable':

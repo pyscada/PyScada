@@ -15,7 +15,6 @@ var DATA_OUT_OF_DATE = false;
 var DATA_OUT_OF_DATE_ALERT_ID = '';
 var JSON_ERROR_COUNT = 0;
 var AUTO_UPDATE_ACTIVE = true;
-var SHOW_TIMELINE_ACTIVE = true;
 var LOG_LAST_TIMESTAMP = 0;
 var DATA_TO_TIMESTAMP = 0;
 var DATA_FROM_TIMESTAMP = 0;
@@ -628,7 +627,6 @@ function timeline_drag( event, ui ) {
     update_timeline();
 }
 function PyScadaPlot(id){
-
     var options = {
         xaxis: {
             mode: "time",
@@ -729,21 +727,33 @@ function PyScadaPlot(id){
         }
 
         //
-        flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series,options);
+        flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series, options);
+        set_chart_selection_mode();
         // update the plot
         update();
         // bind
         $(chart_container_id + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
             pOpt = flotPlot.getOptions();
 
-            if ($("#activate_zoom_y").is(':checked')) {
-                pOpt.yaxes[0].min = ranges.yaxis.from;
-                pOpt.yaxes[0].max = ranges.yaxis.to;
+            if ($(chart_container_id + " .activate_zoom_y").is(':checked')) {
+                for (range in ranges) {
+                    if (~range.indexOf('y')) {
+                        if (range.match(/\d+/) != null) {
+                            y_number = range.match(/\d+/)[0];
+                            pOpt.yaxes[y_number-1].min = ranges[range].from;
+                            pOpt.yaxes[y_number-1].max = ranges[range].to;
+
+                        }else {
+                            pOpt.yaxes[0].min = ranges[range].from;
+                            pOpt.yaxes[0].max = ranges[range].to;
+                        }
+                    }
+                }
                 flotPlot.setupGrid();
                 flotPlot.draw();
             }
             flotPlot.clearSelection();
-            if ($("#activate_zoom_x").is(':checked')) {
+            if ($(chart_container_id + " .activate_zoom_x").is(':checked') && ranges.xaxis != null) {
                 DATA_DISPLAY_TO_TIMESTAMP = ranges.xaxis.to;
                 DATA_DISPLAY_FROM_TIMESTAMP = ranges.xaxis.from;
                 DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP-DATA_DISPLAY_FROM_TIMESTAMP;
@@ -762,11 +772,14 @@ function PyScadaPlot(id){
 
 
         $(chart_container_id + " .btn.btn-default.chart-ResetSelection").click(function() {
+            DATA_DISPLAY_FROM_TIMESTAMP = -1;
             DATA_DISPLAY_TO_TIMESTAMP = -1;
+            DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
             set_x_axes();
             pOpt = flotPlot.getOptions();
-            pOpt.yaxes[0].min = $(chart_container_id).data('axes0Yaxis').min;
-            pOpt.yaxes[0].max = $(chart_container_id).data('axes0Yaxis').max;
+            aOpt = flotPlot.getYAxes();
+            pOpt.yaxes[0].min = aOpt.datamin;
+            pOpt.yaxes[0].max = aOpt.datamax;
             flotPlot.setupGrid();
             flotPlot.draw();
         });
@@ -808,14 +821,14 @@ function PyScadaPlot(id){
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
                         start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
                         stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
-                        chart_data = DATA[key].slice(start_id,stop_id);
+                        chart_data = DATA[key].slice(start_id,stop_id+1);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
                         start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
                         chart_data = DATA[key].slice(start_id);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
                         if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
                         stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
-                        chart_data = DATA[key].slice(0,stop_id);
+                        chart_data = DATA[key].slice(0,stop_id+1);
                     }else {
                         chart_data = DATA[key].slice();
                     }
@@ -869,6 +882,11 @@ function PyScadaPlot(id){
 
 function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
     var options = {
+        yaxes: [],
+        xaxis: {
+            ticks: 5,
+            mode: null
+        },
         legend: {
             show: false
         },
@@ -913,14 +931,44 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
 
     plot.getInitStatus		= function () { if(InitDone){return InitRetry}else{return false}};
     plot.getId				= function () {return id};
+    plot.getChartContainerId= function () {return chart_container_id};
     // init data
+    k=1
     $.each($(legend_table_id + ' .variable-config'),function(key,val){
         val_inst = $(val);
         variable_name = val_inst.data('name');
         variable_key = val_inst.data('key');
-        variables[variable_key] = {'color':val_inst.data('color'),'yaxis':1}
+        variables[variable_key] = {'color':val_inst.data('color'),'yaxis':k}
         keys.push(variable_key);
         variable_names.push(variable_name);
+        unit = "";
+        label = "";
+        $.each($(legend_table_id + ' .legendSeries'),function(kkey,val){
+            val_inst = $(val);
+            if (variable_key == val_inst.find(".variable-config").data('key')){
+                label = val_inst.find(".legendLabel").text();
+                unit = val_inst.find(".legendUnit").text();
+            }
+        });
+        if (options.yaxes[k-1] == null) {
+            options.yaxes[k-1] = {};
+        };
+        if(k%2){pos="left";}else{pos="right";};
+        tf = function (value, axis) {
+                return value.toFixed(axis.tickDecimals) + axis.options.unit;
+        };
+        options.yaxes[k-1].position = pos;
+        options.yaxes[k-1].tickFormatter = tf;
+        options.yaxes[k-1].axisLabel = label;
+        options.yaxes[k-1].axisLabelUseCanvas = true;
+        options.yaxes[k-1].axisLabelFontSizePixels = 12;
+        options.yaxes[k-1].axisLabelFontFamily = 'Verdana, Arial';
+        options.yaxes[k-1].axisLabelPadding = 3;
+        options.yaxes[k-1].axisLabelColour = variables[variable_key]['color'];
+        options.yaxes[k-1].unit = unit;
+        options.yaxes[k-1].labelWidth = null;
+        options.yaxes[k-1].reserveSpace = true;
+        k += 1;
     });
 
 
@@ -967,7 +1015,8 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         }
 
         //
-        flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series,options);
+        flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series, options)
+        set_chart_selection_mode();
         // update the plot
         update();
 
@@ -1011,21 +1060,44 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         // bind
         $(chart_container_id + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
             pOpt = flotPlot.getOptions();
-
-            if ($("#activate_zoom_y").is(':checked')) {
-                pOpt.yaxes[0].min = ranges.yaxis.from;
-                pOpt.yaxes[0].max = ranges.yaxis.to;
+            if ($(chart_container_id + " .activate_zoom_y").is(':checked')) {
+                for (range in ranges) {
+                    if (~range.indexOf('y')) {
+                        if (range.match(/\d+/) != null) {
+                            y_number = range.match(/\d+/)[0];
+                            pOpt.yaxes[y_number-1].min = ranges[range].from;
+                            pOpt.yaxes[y_number-1].max = ranges[range].to;
+                        }else {
+                            pOpt.yaxes[0].min = ranges[range].from;
+                            pOpt.yaxes[0].max = ranges[range].to;
+                        }
+                    }
+                }
+                flotPlot.setupGrid();
+                flotPlot.draw();
+            }
+            pOpt = flotPlot.getOptions();
+            if ($(chart_container_id + " .activate_zoom_x").is(':checked') && ranges.xaxis != null) {
+                pData = flotPlot.getData();
+                tmin=0;
+                tmax=0;
+                for (x in pData[0].xdata) {
+                    if (pData[0].xdata[x][1] >= ranges.xaxis.from && tmin == 0) {
+                        tmin = pData[0].xdata[x][0] - 1000;
+                    }
+                    if (pData[0].xdata[x][1] >= ranges.xaxis.to && tmax == 0) {
+                        tmax = pData[0].xdata[x][0] + 1000;
+                    }
+                }
+                DATA_DISPLAY_TO_TIMESTAMP = tmax;
+                DATA_DISPLAY_FROM_TIMESTAMP = tmin;
+                DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP-DATA_DISPLAY_FROM_TIMESTAMP;
+                pOpt.xaxes[0].min = ranges.xaxis.from;
+                pOpt.xaxes[0].max = ranges.xaxis.to;
                 flotPlot.setupGrid();
                 flotPlot.draw();
             }
             flotPlot.clearSelection();
-            if ($("#activate_zoom_x").is(':checked')) {
-                DATA_DISPLAY_TO_TIMESTAMP = ranges.xaxis.to;
-                DATA_DISPLAY_FROM_TIMESTAMP = ranges.xaxis.from;
-                DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP-DATA_DISPLAY_FROM_TIMESTAMP;
-                set_x_axes();
-            }
-
         });
 
         // Since CSS transforms use the top-left corner of the label as the transform origin,
@@ -1038,24 +1110,27 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
 
 
         $(chart_container_id + " .btn.btn-default.chart-ResetSelection").click(function() {
+            DATA_DISPLAY_FROM_TIMESTAMP = -1;
             DATA_DISPLAY_TO_TIMESTAMP = -1;
+            DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
             set_x_axes();
             pOpt = flotPlot.getOptions();
-            //change to fit y axes like ZoomYToFit and not to load the default params
-            aOpt = flotPlot.getYAxes();
-            pOpt.yaxes[0].min = aOpt.datamin;
-            pOpt.yaxes[0].max = aOpt.datamax;
-            //pOpt.yaxes[0].min = $(chart_container_id).data('axes0Yaxis').min;
-            //pOpt.yaxes[0].max = $(chart_container_id).data('axes0Yaxis').max;
+            for (y in pOpt.yaxes){
+                pOpt.yaxes[y].min = pOpt.yaxes[y].chart_data_min;
+                pOpt.yaxes[y].max = pOpt.yaxes[y].chart_data_max;
+            }
+            pOpt.xaxes[0].min = pOpt.xaxes[0].x_data_min;
+            pOpt.xaxes[0].max = pOpt.xaxes[0].x_data_max;
             flotPlot.setupGrid();
             flotPlot.draw();
         });
 
         $(chart_container_id + " .btn.btn-default.chart-ZoomYToFit").click(function() {
             pOpt = flotPlot.getOptions();
-            aOpt = flotPlot.getYAxes();
-            pOpt.yaxes[0].min = aOpt.datamin;
-            pOpt.yaxes[0].max = aOpt.datamax;
+            for (y in pOpt.yaxes){
+                pOpt.yaxes[y].min = pOpt.yaxes[y].chart_data_min;
+                pOpt.yaxes[y].max = pOpt.yaxes[y].chart_data_max;
+            }
             flotPlot.setupGrid();
             flotPlot.draw();
         });
@@ -1064,6 +1139,11 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             DATA_DISPLAY_TO_TIMESTAMP = -1;
             DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
             set_x_axes();
+            pOpt = flotPlot.getOptions();
+            pOpt.xaxes[0].min = pOpt.xaxes[0].x_data_min;
+            pOpt.xaxes[0].max = pOpt.xaxes[0].x_data_max;
+            flotPlot.setupGrid();
+            flotPlot.draw();
         });
     }
 
@@ -1090,43 +1170,47 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
                         start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
                         stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
-                        chart_data = DATA[key].slice(start_id,stop_id);
+                        chart_data = DATA[key].slice(start_id,stop_id+1);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
                         start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
                         chart_data = DATA[key].slice(start_id);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
                         if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
                         stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
-                        chart_data = DATA[key].slice(0,stop_id);
+                        chart_data = DATA[key].slice(0,stop_id+1);
                     }else {
                         chart_data = DATA[key].slice();
                     }
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
                         start_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
                         stop_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_TO_TIMESTAMP,0);
-                        chart_fdata = DATA[xkey].slice(start_fid,stop_fid);
+                        chart_x_data = DATA[xkey].slice(start_fid,stop_fid+1);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
                         start_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
-                        chart_fdata = DATA[xkey].slice(start_fid);
+                        chart_x_data = DATA[xkey].slice(start_fid);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
                         if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
                         stop_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_TO_TIMESTAMP,0);
-                        chart_fdata = DATA[xkey].slice(0,stop_fid);
+                        chart_x_data = DATA[xkey].slice(0,stop_fid+1);
                     }else {
-                        chart_fdata = DATA[xkey].slice();
+                        chart_x_data = DATA[xkey].slice();
                     }
                     new_data=[];
                     if (chart_data.length > 0){
                         i = 0;
-                        if (chart_fdata.length < chart_data.length){
-                            console.log('X data smaller than Y data -> X : ' + chart_fdata + ' - Y : ' + chart_data);
+                        if (chart_x_data.length < chart_data.length){
+                            console.log('X data smaller than Y data -> X : ' + chart_x_data + ' - Y : ' + chart_data);
                         }else {
                             chart_data_min = chart_data[0][1]
                             chart_data_max = chart_data[0][1]
+                            x_data_min = chart_x_data[0][1]
+                            x_data_max = chart_x_data[0][1]
                             while (i < chart_data.length) {
-                                new_data.push([chart_fdata[i][1],chart_data[i][1]]);
+                                new_data.push([chart_x_data[i][1],chart_data[i][1]]);
                                 chart_data_min = Math.min(chart_data_min, chart_data[i][1])
                                 chart_data_max = Math.max(chart_data_max, chart_data[i][1])
+                                x_data_min = Math.min(x_data_min, chart_x_data[i][1])
+                                x_data_max = Math.max(x_data_max, chart_x_data[i][1])
                                 i += 1;
                             }
                         }
@@ -1142,7 +1226,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                         j += 1;
                         if (yaxisUniqueScale) {yj = 1} else {yj = j}
                         //plot Y with defferents axis
-                        series.push({"data":new_data,"color":variables[key].color,"yaxis":yj,"label":label,"unit":unit,"chart_data_min":chart_data_min,"chart_data_max":chart_data_max});
+                        series.push({"data":new_data,"xdata":chart_x_data,"color":variables[key].color,"yaxis":yj,"label":label,"unit":unit,"chart_data_min":chart_data_min,"chart_data_max":chart_data_max,"x_data_min":x_data_min,"x_data_max":x_data_max});
                     }
                 }
             }
@@ -1152,53 +1236,52 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             //update y window
             pOpt = flotPlot.getOptions();
             if (j != 0){
-                yoptions = [];
                 for (k = 1;k <= j;k++){
-                    if(k%2){pos="left";}else{pos="right";};
-                    S = series[k-1]
-                    tf = function (value, axis) {
-                            return value.toFixed(axis.tickDecimals) + axis.options.unit;
-                    };
-                    yoptions.push({
-                        position: pos,
-                        tickFormatter: tf,
-                        axisLabel: S['label'],
-                        axisLabelUseCanvas: true,
-                        axisLabelFontSizePixels: 12,
-                        axisLabelFontFamily: 'Verdana, Arial',
-                        axisLabelPadding: 3,
-                        axisLabelColour: S['color'],
-                        min: S['chart_data_min'],
-                        max: S['chart_data_max'],
-                        unit: S['unit'],
-                    });
+                    pOpt.yaxes[k-1].chart_data_min = series[k-1]['chart_data_min'];
+                    pOpt.yaxes[k-1].chart_data_max = series[k-1]['chart_data_max'];
                 }
-                options.yaxes = yoptions;
-                //TODO : replace "replot" with setupGrid and draw WORK ONLY WITH 1 AXIS...
-                flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series,options);
             }
 
             // update x window
             pOpt = flotPlot.getOptions();
             if (j != 0){
                 var xticks=[];
-                if (xaxisLinLog){
-                    xticks=xticks.concat(chart_fdata[0][1]);
-                    for (i=parseInt(Math.round(Math.log(chart_fdata[0][1])/Math.log(10)));i<=parseInt(Math.round(Math.log(chart_fdata[chart_fdata.length-1][1])/Math.log(10)));i++){
+                if (xaxisLinLog == "True"){
+                    xticks=xticks.concat(chart_x_data[0][1]);
+                    for (i=parseInt(Math.round(Math.log(chart_x_data[0][1])/Math.log(10)));i<=parseInt(Math.round(Math.log(chart_x_data[chart_x_data.length-1][1])/Math.log(10)));i++){
                         xticks=xticks.concat(Math.pow(10,i)/2);
                         xticks=xticks.concat(Math.pow(10,i));
-                    xticks=xticks.concat(chart_fdata[chart_fdata.length-1][1]);
-                    pOpt.xaxes[0].ticks = xticks;
-                    pOpt.xaxes[0].transform = function (v) { return Math.log(v); };
-                    pOpt.xaxes[0].inverseTransform = function (v) { return Math.exp(v); };
+                    xticks=xticks.concat(chart_x_data[chart_x_data.length-1][1]);
+                    options.xaxis.ticks = xticks;
+                    options.xaxis.transform = function (v) { return Math.log(v); };
+                    options.xaxis.inverseTransform = function (v) { return Math.exp(v); };
                     }
+                }else {
+                    options.xaxis.ticks = chart_x_data.length;
                 }
-                pOpt.xaxes[0].mode = null;
-                pOpt.xaxes[0].min = chart_fdata[0][1];
-                pOpt.xaxes[0].max = chart_fdata[chart_fdata.length-1][1];
+                pOpt.xaxes[0].x_data_min = series[0]['x_data_min'];
+                pOpt.xaxes[0].x_data_max = series[0]['x_data_max'];
+
+                if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
+                }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
+                    pOpt.xaxes[0].max = series[0]['x_data_max'];
+                }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
+                    pOpt.xaxes[0].min = series[0]['x_data_min'];
+                }else{
+                    pOpt.xaxes[0].min = series[0]['x_data_min'];
+                    pOpt.xaxes[0].max = series[0]['x_data_max'];
+                }
             }
             flotPlot.setupGrid();
             flotPlot.draw();
+
+            // Change the color of the axis
+            if (j != 0){
+                for (k = 1;k <= j;k++){
+                    S = series[k-1]
+                    $(chart_container_id + ' .flot-y' + k + '-axis').css('color',S['color'])
+                }
+            }
         }
     }
 }
@@ -1419,19 +1502,39 @@ $('button.write-task-btn').click(function(){
 });
 
 function set_chart_selection_mode(){
-    var mode = "xy";
-    if ($('#activate_zoom_x').is(':checked') && $('#activate_zoom_y').is(':checked')){
-        mode = "";
-    }else if($('#activate_zoom_y').is(':checked')){
-        mode = "y";
-     }else if($('#activate_zoom_x').is(':checked')){
-        mode = "x";
-     }
-     $.each(PyScadaPlots,function(plot_id){
-        if(typeof(PyScadaPlots[plot_id].getFlotObject()) !== 'undefined'){
-            PyScadaPlots[plot_id].getFlotObject().getOptions().selection.mode = mode;
+    var mode = "";
+    $.each($('.xy-chart-container'),function(key,val){
+        // get identifier of the chart
+        id = val.id.substring(19);
+        if ($('#xy-chart-container-' + id +' .activate_zoom_x').is(':checked') && $('#xy-chart-container-' + id +' .activate_zoom_y').is(':checked')){
+            mode = "xy";
+        }else if($('#xy-chart-container-' + id +' .activate_zoom_y').is(':checked')){
+            mode = "y";
+        }else if($('#xy-chart-container-' + id +' .activate_zoom_x').is(':checked')){
+            mode = "x";
         }
-     });
+        $.each(PyScadaPlots,function(plot_id){
+            if(typeof(PyScadaPlots[plot_id].getFlotObject()) !== 'undefined' && PyScadaPlots[plot_id].getId() === id){
+                PyScadaPlots[plot_id].getFlotObject().getOptions().selection.mode = mode;
+            }
+        });
+    });
+    $.each($('.chart-container'),function(key,val){
+        // get identifier of the chart
+        id = val.id.substring(16);
+        if ($('#chart-container-' + id +' .activate_zoom_x').is(':checked') && $('#chart-container-' + id +' .activate_zoom_y').is(':checked')){
+            mode = "xy";
+        }else if($('#chart-container-' + id +' .activate_zoom_y').is(':checked')){
+            mode = "y";
+        }else if($('#chart-container-' + id +' .activate_zoom_x').is(':checked')){
+            mode = "x";
+        }
+        $.each(PyScadaPlots,function(plot_id){
+            if(typeof(PyScadaPlots[plot_id].getFlotObject()) !== 'undefined' && PyScadaPlots[plot_id].getId() === id){
+                PyScadaPlots[plot_id].getFlotObject().getOptions().selection.mode = mode;
+            }
+        });
+    });
 }
 
 
@@ -1491,15 +1594,24 @@ $( document ).ready(function() {
     });
 
 
-    $('#activate_zoom_x').change(function() {
+    $('.activate_zoom_x').change(function() {
         set_chart_selection_mode();
     });
-    $('#activate_zoom_y').change(function() {
+    $('.activate_zoom_y').change(function() {
         set_chart_selection_mode();
     });
 
     setTimeout(function() {data_handler()}, 5000);
     set_chart_selection_mode();
+    $(window).on('hashchange', function() {
+        if (window.location.hash.substr(1) !== '') {
+            if ($("#" + window.location.hash.substr(1) + " .has_chart").length && $('#ShowTimelineButton').hasClass("btn-success")) {
+                $("#show_timeline").removeClass("hidden");
+            }else {
+                $("#show_timeline").addClass("hidden");
+            }
+        }
+    })
     $( "#timeline" ).resizable({
         handles: "e, w",
         containment: "#timeline-border",
@@ -1540,31 +1652,29 @@ $( document ).ready(function() {
         DATA_BUFFER_SIZE = DATA_BUFFER_SIZE + 120*60*1000;
         INIT_CHART_VARIABLES_DONE = false;
     });
-    // show timeline function
-    if ($('#ShowTimelineButton').hasClass("btn-success")) {
-        $("#show_timeline").addClass("show_timeline_yes");
-        $("#show_timeline").removeClass("show_timeline_no");
-        SHOW_TIMELINE_ACTIVE = true;
-    } else {
-        $("#show_timeline").addClass("show_timeline_no");
-        $("#show_timeline").removeClass("show_timeline_yes");
-        SHOW_TIMELINE_ACTIVE = false;
-    };
-    $('#ShowTimelineButton').click(function(e) {
-        if (SHOW_TIMELINE_ACTIVE) {
-            // deactivate timeline
-            SHOW_TIMELINE_ACTIVE = false;
-            $("#show_timeline").addClass("show_timeline_no");
-            $("#show_timeline").removeClass("show_timeline_yes");
-            $("#ShowTimelineButton").addClass("btn-default");
-            $("#ShowTimelineButton").removeClass("btn-success");
+    // show timeline init
+    if (window.location.hash.substr(1) !== '') {
+        if ($("#" + window.location.hash.substr(1) + " .has_chart").length && $('#ShowTimelineButton').hasClass("btn-success")) {
+            $("#show_timeline").removeClass("hidden");
         } else {
-            // activate timeline
-            SHOW_TIMELINE_ACTIVE = true;
-            $("#show_timeline").addClass("show_timeline_yes");
-            $("#show_timeline").removeClass("show_timeline_no");
+            $("#show_timeline").addClass("hidden");
+        };
+    }
+    $('#ShowTimelineButton').click(function(e) {
+        if ($('#ShowTimelineButton').hasClass("btn-default")) {
+            // deactivate timeline
+            if (window.location.hash.substr(1) !== '') {
+                if ($("#" + window.location.hash.substr(1) + " .has_chart").length) {
+                    $("#show_timeline").removeClass("hidden");
+                }
+            }
             $("#ShowTimelineButton").addClass("btn-success");
             $("#ShowTimelineButton").removeClass("btn-default");
+        } else if ($('#ShowTimelineButton').hasClass("btn-success")) {
+            // activate timeline
+            $("#show_timeline").addClass("hidden");
+            $("#ShowTimelineButton").addClass("btn-default");
+            $("#ShowTimelineButton").removeClass("btn-success");
         }
     });
 });

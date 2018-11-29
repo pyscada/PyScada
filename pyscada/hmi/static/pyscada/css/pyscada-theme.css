@@ -221,13 +221,6 @@ html,body {
 	font: 12px/1em "proxima-nova", Helvetica, Arial, sans-serif;
 }
 
-.show_timeline_no{
-    display: none
-}
-.show_timeline_yes{
-    display: block
-}
-
 .main-chart-area{
 	position: relative;
 	min-height: 1px;
@@ -337,6 +330,16 @@ html,body {
 	padding:0px 12px;
 }
 
+.chart-zoom-bar {
+	position: absolute;
+	top:2px;
+	left:2px;
+}
+.chart-zoom-bar input{
+	padding:0px 12px;
+	vertical-align: middle;
+	margin: 1px;
+}
 
 table.tablesorter thead tr .header {
 	background-image: url(/static/pyscada/img/unsorted.gif);
