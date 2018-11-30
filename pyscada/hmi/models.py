@@ -189,7 +189,7 @@ class ControlPanel(WidgetContentModel):
         main_template = get_template('control_panel.html')
         main_content = main_template.render(dict(control_panel=self,
                                                  visible_control_element_list=visible_element_list,
-                                                 uuid=uuid4.hex))
+                                                 uuid=uuid4().hex))
         sidebar_content = None
         return main_content, sidebar_content
 
