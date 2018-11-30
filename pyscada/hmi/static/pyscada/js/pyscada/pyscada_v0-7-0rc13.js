@@ -642,10 +642,6 @@ function timeline_drag( event, ui ) {
     update_timeline();
 }
 function PyScadaPlot(id){
-<<<<<<< HEAD:pyscada/hmi/static/pyscada/js/pyscada/pyscada.js
-=======
-    
->>>>>>> remotes/upstream/hmi:pyscada/hmi/static/pyscada/js/pyscada/pyscada_v0-7-0rc13.js
     var options = {
         xaxis: {
             mode: "time",
