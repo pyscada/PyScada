@@ -46,13 +46,13 @@ class RegisterBlock:
             'len': variable_length,
             'registers': []
         }
-        for idx in range(variable_length / self.register_size):
+        for idx in range(int(variable_length / self.register_size)):
             if not (variable_address + idx) in self.registers_data:
                 # register will not be queried add register 
                 self.registers_data[variable_address + idx] = None
 
             self.variables[variable_id]['registers'].append(variable_address + idx)
-        self.registers = self.registers_data.keys()
+        self.registers = list(self.registers_data.keys())
         self.registers.sort()
 
     def check(self):
@@ -194,10 +194,10 @@ class Device:
             else:
                 continue
 
-        self.trans_discrete_inputs.sort()
-        self.trans_holding_registers.sort()
-        self.trans_coils.sort()
-        self.trans_input_registers.sort()
+        self.trans_discrete_inputs.sort(key=lambda x: x[0])
+        self.trans_holding_registers.sort(key=lambda x: x[0])
+        self.trans_coils.sort(key=lambda x: x[0])
+        self.trans_input_registers.sort(key=lambda x: x[0])
         out = []
 
         # input registers

@@ -179,3 +179,14 @@
 0.7.0rc12
   - fixed issue #13, Mismatch between event limit elif cases and the displayed limit types.
   - merged pull request #12, changing from source_format to target_format to match preceding setting of '2H' value
+
+0.7.0rc13
+  - updated docs, switching from python 2.7 to python 3
+  - added redirect to https to the nginx sample config
+  - fixed server error for BackgroundProcess View in Admin with python3
+  - fixed HDF5 export for python 3
+  - fixed ProcessFlowDiagram in HMI
+  - added support for multiple SlidingSidePanels on one Side
+  - added date_saved field to the RecordedData Model, renamed the RecordedData model without the field to RecordedDataOld,
+    migration #48 will copy some data to the new model, the rest can be copied by using the move_data.py script
+

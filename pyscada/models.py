@@ -9,7 +9,7 @@ from django.dispatch import receiver
 from django.core.mail import send_mail
 from django.utils.encoding import python_2_unicode_compatible
 
-from pyscada.utils import blow_up_data
+from pyscada.utils import blow_up_data, datetime_now, timestamp_to_datetime
 
 import traceback
 import time
@@ -24,56 +24,67 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 #
 # Manager
 #
 
 
 class RecordedDataValueManager(models.Manager):
-    def filter_time(self, time_min=None, time_max=None, **kwargs):
+    def filter_time(self, time_min=None, time_max=None, use_date_saved=True, **kwargs):
         if time_min is None:
             time_min = 0
-        else:
-            time_min = time_min * 2097152 * 1000
-        if time_max is None:
-            time_max = time.time() * 2097152 * 1000 + 2097151
-        else:
-            time_max = time_max * 2097152 * 1000 + 2097151
-        return super(RecordedDataValueManager, self).get_queryset().filter(id__range=(time_min, time_max), **kwargs)
 
-    def last_element(self, **kwargs):
-        if 'time_min' in kwargs:
-            time_min = kwargs.pop('time_min') * 2097152 * 1000
+        if time_max is None:
+            time_max = time.time()
+        if use_date_saved:
+            return super(RecordedDataValueManager, self).get_queryset().filter(
+                date_saved__range=(timestamp_to_datetime(time_min), timestamp_to_datetime(time_max)), **kwargs)
         else:
-            time_min = (time.time() - 3660) * 2097152 * 1000  # all values will be stored once in a hour
+            return super(RecordedDataValueManager, self).get_queryset().filter(
+                id__range=(time_min * 2097152 * 1000, time_max * 2097152 * 1000 + 2097151), **kwargs)
+
+    def last_element(self, use_date_saved=True, **kwargs):
+
+        if 'time_min' in kwargs:
+            time_min = kwargs.pop('time_min')
+        else:
+            time_min = (time.time() - 3660)
 
         if 'time_max' in kwargs:
-            time_max = kwargs.pop('time_max') * 2097152 * 1000
+            time_max = kwargs.pop('time_max')
         else:
-            time_max = time.time() * 2097152 * 1000  # values can't be more recent then now
-
-        return super(RecordedDataValueManager, self).get_queryset().filter(
-            id__range=(time_min, time_max), **kwargs).last()
+            time_max = time.time()
+        if use_date_saved:
+            return super(RecordedDataValueManager, self).get_queryset().filter(
+                date_saved__range=(timestamp_to_datetime(time_min), timestamp_to_datetime(time_max)), **kwargs).last()
+        else:
+            return super(RecordedDataValueManager, self).get_queryset().filter(
+                id__range=(time_min * 2097152 * 1000, time_max * 2097152 * 1000 + 2097151), **kwargs).last()
 
     def get_values_in_time_range(self, time_min=None, time_max=None, query_first_value=False, time_in_ms=False,
-                                 key_is_variable_name=False, add_timetamp_field=False, add_fake_data=False,
-                                 add_latest_value=True,blow_up=False, **kwargs):
-        # tic = time.time()
+                                 key_is_variable_name=False, add_timestamp_field=False, add_fake_data=False,
+                                 add_latest_value=True, blow_up=False, use_date_saved=False,
+                                 use_recorded_data_old=False, add_date_saved_max_field=False, **kwargs):
+        #logger.debug('%r' % [time_min, time_max])
         if time_min is None:
             time_min = 0
         else:
             db_time_min = RecordedData.objects.first()
+            if use_recorded_data_old:
+                pass  # todo
             if db_time_min:
                 db_time_min = db_time_min.timestamp
             else:
                 return None
-            time_min = max(db_time_min, time_min) * 2097152 * 1000
+            time_min = max(db_time_min, time_min)
         if time_max is None:
-            time_max = time.time() * 2097152 * 1000 + 2097151
+            time_max = time.time()
         else:
-            time_max = min(time_max, time.time()) * 2097152 * 1000 + 2097151
-        
-        
+            time_max = min(time_max, time.time())
+
+        #logger.debug('%r' % [time_min, time_max])
+        date_saved_max = time_min
         values = {}
         var_filter = True
         if 'variable' in kwargs:
@@ -92,12 +103,12 @@ class RecordedDataValueManager(models.Manager):
         else:
             variables = Variable.objects.all()
             var_filter = False
-        
+
         # export in seconds or millis
         if time_in_ms:
-            f_time_scale = 1
-        else:
             f_time_scale = 1000
+        else:
+            f_time_scale = 1
 
         variable_ids = variables.values_list('pk', flat=True)
         # only filter by variable wenn less the 70% of all variables are queried
@@ -105,39 +116,55 @@ class RecordedDataValueManager(models.Manager):
             var_filter = False
 
         tmp_time_max = 0  # get the most recent time value
-        if time_in_ms:
-            tmp_time_min = time.time() * 1000  #
-        else:
-            tmp_time_min = time.time()  #
-        # print('%1.3fs'%(time.time()-tic))
-        # tic = time.time()
-        # for var in variables:
-        time_slice = 2097152 * 1000 * 60 * max(60, min(24 * 60, -3 * len(variable_ids) + 1440))
+        tmp_time_min = time.time()  #
+
+        time_slice = 60 * max(60, min(24 * 60, -3 * len(variable_ids) + 1440))
         query_time_min = time_min
         query_time_max = min(time_min + time_slice, time_max)
-        while query_time_min < time_max:
-            if var_filter:
-                tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
-                    id__range=(query_time_min, min(query_time_max, time_max)),
-                    variable__in=variables
-                ).values_list('variable_id', 'pk', 'value_float64',
-                              'value_int64', 'value_int32', 'value_int16',
-                              'value_boolean'))
-            else:
-                tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
-                    id__range=(query_time_min, min(query_time_max, time_max))
-                ).values_list('variable_id', 'pk', 'value_float64',
-                              'value_int64', 'value_int32', 'value_int16', 'value_boolean'))
+        #logger.debug('%r'%[time_min,time_max,query_time_min,query_time_max,time_slice])
 
-            # print('%1.3fs'%(time.time()-tic))
+        while query_time_min < time_max:
+            if use_date_saved:
+                if var_filter:
+                    tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
+                        date_saved__range=(timestamp_to_datetime(query_time_min),
+                                           timestamp_to_datetime(min(query_time_max, time_max))),
+                        variable__in=variables
+                    ).values_list('variable_id', 'pk', 'value_float64',
+                                  'value_int64', 'value_int32', 'value_int16',
+                                  'value_boolean', 'date_saved'))
+                else:
+                    tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
+                        date_saved__range=(timestamp_to_datetime(query_time_min),
+                                           timestamp_to_datetime(min(query_time_max, time_max)))
+                    ).values_list('variable_id', 'pk', 'value_float64',
+                                  'value_int64', 'value_int32', 'value_int16', 'value_boolean', 'date_saved'))
+            else:
+                if var_filter:
+                    tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
+                        id__range=(query_time_min * 2097152 * 1000, min(query_time_max * 2097152 * 1000 + 2097151,
+                                                                        time_max * 2097152 * 1000 + 2097151)),
+                        variable__in=variables
+                    ).values_list('variable_id', 'pk', 'value_float64',
+                                  'value_int64', 'value_int32', 'value_int16',
+                                  'value_boolean', 'date_saved'))
+                else:
+                    tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
+                        id__range=(query_time_min * 2097152 * 1000, min(query_time_max * 2097152 * 1000 + 2097151,
+                                                                        time_max * 2097152 * 1000 + 2097151))
+                    ).values_list('variable_id', 'pk', 'value_float64',
+                                  'value_int64', 'value_int32', 'value_int16', 'value_boolean', 'date_saved'))
+
             for item in tmp:
                 if item[0] not in variable_ids:
                     continue
                 if not item[0] in values:
                     values[item[0]] = []
-                tmp_time = (item[1] - item[0]) / (2097152.0 * f_time_scale)
+                tmp_time = float(item[1] - item[0]) / (2097152.0 * 1000)  # calc the timestamp in seconds
                 tmp_time_max = max(tmp_time, tmp_time_max)
                 tmp_time_min = min(tmp_time, tmp_time_min)
+                tmp_time = tmp_time * f_time_scale
+                date_saved_max = max(date_saved_max, time.mktime(item[7].utctimetuple())+item[7].microsecond/1e6)
                 if item[2] is not None:  # float64
                     values[item[0]].append([tmp_time, item[2]])  # time, value
                 elif item[3] is not None:  # int64
@@ -152,23 +179,18 @@ class RecordedDataValueManager(models.Manager):
                     values[item[0]].append([tmp_time, 0])  # time, value
 
             del tmp
-            query_time_min = query_time_max + 1
+            query_time_min = query_time_max  # + 1
             query_time_max = query_time_min + time_slice
-        # print('%1.3fs'%(time.time()-tic))
-        # tic = time.time()
 
-        # print('%1.3fs'%(time.time()-tic))
-        # tic = time.time()
-        # check if for all variables the first and last value is present
         update_first_value_list = []
         timestamp_max = tmp_time_max
         for key, item in values.items():
-            if item[-1][0] < time_max / (2097152.0 * f_time_scale):
-                if (time_max / (2097152.0 * f_time_scale)) - item[-1][0] < 3610 and add_latest_value:
+            if item[-1][0] < time_max * f_time_scale:
+                if (time_max * f_time_scale) - item[-1][0] < 3610 and add_latest_value:
                     # append last value
-                    item.append([time_max / (2097152.0 * f_time_scale), item[-1][1]])
+                    item.append([time_max * f_time_scale, item[-1][1]])
 
-            if query_first_value and item[0][0] > time_min / (2097152.0 * f_time_scale):
+            if query_first_value and item[0][0] > time_min * f_time_scale:
                 update_first_value_list.append(key)
 
         if query_first_value:
@@ -177,16 +199,25 @@ class RecordedDataValueManager(models.Manager):
                     update_first_value_list.append(vid)
 
         if len(update_first_value_list) > 0:  # TODO add n times the recording interval to the range (3600 + n)
-            tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
-                id__range=(time_min - (3660 * 1000 * 2097152), time_min),
-                variable_id__in=update_first_value_list
-            ).values_list('variable_id', 'pk', 'value_float64',
-                          'value_int64', 'value_int32', 'value_int16',
-                          'value_boolean'))
+            if use_date_saved:
+                tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
+                    use_date_saved__range=(timestamp_to_datetime(time_min - 3660), timestamp_to_datetime(time_min)),
+                    variable_id__in=update_first_value_list
+                ).values_list('variable_id', 'pk', 'value_float64',
+                              'value_int64', 'value_int32', 'value_int16',
+                              'value_boolean'))
+            else:
+                tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
+                    id__range=((time_min - 3660) * 2097152 * 1000, time_min * 2097152 * 1000),
+                    variable_id__in=update_first_value_list
+                ).values_list('variable_id', 'pk', 'value_float64',
+                              'value_int64', 'value_int32', 'value_int16',
+                              'value_boolean'))
 
             first_values = {}
             for item in tmp:
-                tmp_timestamp = (item[1] - item[0]) / (2097152.0 * f_time_scale)
+                tmp_timestamp = float(item[1] - item[0]) / (2097152.0 * 1000)
+
                 if not item[0] in first_values:
                     first_values[item[0]] = [tmp_timestamp, 0]
 
@@ -206,9 +237,7 @@ class RecordedDataValueManager(models.Manager):
                 if key in first_values:
                     if key not in values:
                         values[key] = []
-                    values[key].insert(0, [time_min / (2097152.0 * f_time_scale), first_values[key][1]])
-        # print('%1.3fs'%(time.time()-tic))
-        # tic = time.time()
+                    values[key].insert(0, [time_min * f_time_scale, first_values[key][1]])
 
         '''
         add a data point before the next change of state
@@ -225,7 +254,7 @@ class RecordedDataValueManager(models.Manager):
         '''
         blow up data
         '''
-        
+
         if blow_up:
             if 'mean_value_period' in kwargs:
                 mean_value_period = kwargs['mean_value_period']
@@ -235,13 +264,13 @@ class RecordedDataValueManager(models.Manager):
                 no_mean_value = kwargs['no_mean_value']
             else:
                 no_mean_value = True
-            timevalues = np.arange(np.ceil((time_min / (2097152.0 * 1000)) / mean_value_period) * mean_value_period,
-                                np.floor((time_max / (2097152.0 * 1000)) / mean_value_period) * mean_value_period, mean_value_period)
+            timevalues = np.arange(np.ceil((time_min) / mean_value_period) * mean_value_period*f_time_scale,
+                                   np.floor((time_max) / mean_value_period) * mean_value_period*f_time_scale, mean_value_period*f_time_scale)
 
             for key in values:
-                values[key] = blow_up_data(values[key], timevalues, mean_value_period, no_mean_value)
+                values[key] = blow_up_data(values[key], timevalues, mean_value_period*f_time_scale, no_mean_value)
             values['timevalues'] = timevalues
-        
+
         '''
         change output tuple key from pk to variable name
         '''
@@ -252,10 +281,13 @@ class RecordedDataValueManager(models.Manager):
         '''
         add the timestamp of the most recent value
         '''
-        if add_timetamp_field:
+        if add_timestamp_field:
             if timestamp_max == 0:
-                timestamp_max = time_min / (2097152.0 * f_time_scale)
-            values['timestamp'] = timestamp_max
+                timestamp_max = time_min
+            values['timestamp'] = timestamp_max * f_time_scale
+
+        if add_date_saved_max_field:
+            values['date_saved_max'] = date_saved_max * f_time_scale
         return values
 
 
@@ -263,6 +295,7 @@ class VariablePropertyManager(models.Manager):
     """
 
     """
+
     def update_or_create_property(self, variable, name, value, value_class='string', property_class=None,
                                   timestamp=None, **kwargs):
         """
@@ -326,7 +359,7 @@ class VariablePropertyManager(models.Manager):
         else:
             return None
 
-    def update_property(self,variable_property=None, variable=None, name=None, value=None, **kwargs):
+    def update_property(self, variable_property=None, variable=None, name=None, value=None, **kwargs):
         if type(variable_property) == VariableProperty:
             vp = super(VariablePropertyManager, self).get_queryset().filter(pk=variable_property.pk
                                                                             ).first()
@@ -522,7 +555,7 @@ class VariableProperty(models.Model):
                            ('UINT16', 'UINT16'),
                            ('BOOLEAN', 'BOOL (BOOLEAN)'),
                            ('BOOLEAN', 'BOOLEAN'),
-                           ('STRING' , 'STRING'),
+                           ('STRING', 'STRING'),
                            )
     value_class = models.CharField(max_length=15, default='FLOAT64', verbose_name="value_class",
                                    choices=value_class_choices)
@@ -557,7 +590,7 @@ class VariableProperty(models.Model):
         return None
 
     def web_key(self):
-        return '%d-%s'%(self.variable.pk, self.name.upper().replace(':','-'))
+        return '%d-%s' % (self.variable.pk, self.name.upper().replace(':', '-'))
 
 
 @python_2_unicode_compatible
@@ -868,7 +901,8 @@ class Variable(models.Model):
         try:
             pass
         except:
-            logger.error('%s, unhandled exception in COV Receiver application\n%s' % (self.name, traceback.format_exc()))
+            logger.error(
+                '%s, unhandled exception in COV Receiver application\n%s' % (self.name, traceback.format_exc()))
 
 
 @python_2_unicode_compatible
@@ -891,13 +925,15 @@ class DeviceWriteTask(models.Model):
 
 
 @python_2_unicode_compatible
-class RecordedData(models.Model):
-    # Big Int first 42 bits are used for the unixtime in ms, unsigned because we only
-    # store time values that are later then 1970, rest 21 bits are used for the
-    # variable id to have a uniqe primary key
-    # 63 bit 111111111111111111111111111111111111111111111111111111111111111
-    # 42 bit 111111111111111111111111111111111111111111000000000000000000000
-    # 21 bit 										  1000000000000000000000
+class RecordedDataOld(models.Model):
+    """
+    Big Int first 42 bits are used for the unixtime in ms, unsigned because we only
+    store time values that are later then 1970, rest 21 bits are used for the
+    variable id to have a uniqe primary key
+    63 bit 111111111111111111111111111111111111111111111111111111111111111
+    42 bit 111111111111111111111111111111111111111111000000000000000000000
+    21 bit 										    1000000000000000000000
+    """
 
     id = models.BigIntegerField(primary_key=True)
     value_boolean = models.BooleanField(default=False, blank=True)  # boolean
@@ -907,7 +943,6 @@ class RecordedData(models.Model):
     value_float64 = models.FloatField(null=True, blank=True)  # float64
     variable = models.ForeignKey('Variable')
     objects = RecordedDataValueManager()
-    #date = models.DateTimeField(blank=True,null=True,db_index=True)
 
     def __init__(self, *args, **kwargs):
         if 'timestamp' in kwargs:
@@ -920,10 +955,116 @@ class RecordedData(models.Model):
             variable_id = kwargs['variable'].pk
         else:
             variable_id = None
-        # if 'date' in kwargs:
-        #   date = kwargs['date']
-        # else:
-        #   date = datetime.fromtimestamp(timestamp)
+
+        if variable_id is not None and 'id' not in kwargs:
+            kwargs['id'] = int(int(int(timestamp * 1000) * 2097152) + variable_id)
+        if 'variable' in kwargs and 'value' in kwargs:
+            if kwargs['variable'].value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
+                kwargs['value_float64'] = float(kwargs.pop('value'))
+            elif kwargs['variable'].scaling and not kwargs['variable'].value_class.upper() in ['BOOL', 'BOOLEAN']:
+                kwargs['value_float64'] = float(kwargs.pop('value'))
+            elif kwargs['variable'].value_class.upper() in ['INT64', 'UINT32', 'DWORD']:
+                kwargs['value_int64'] = int(kwargs.pop('value'))
+                if kwargs['value_int64'].bit_length() > 64:
+                    # todo throw exeption or do anything
+                    pass
+            elif kwargs['variable'].value_class.upper() in ['WORD', 'UINT', 'UINT16', 'INT32']:
+                kwargs['value_int32'] = int(kwargs.pop('value'))
+                if kwargs['value_int32'].bit_length() > 32:
+                    # todo throw exeption or do anything
+                    pass
+            elif kwargs['variable'].value_class.upper() in ['INT16', 'INT8', 'UINT8', 'INT']:
+                kwargs['value_int16'] = int(kwargs.pop('value'))
+                if kwargs['value_int16'].bit_length() > 15:
+                    # todo throw exeption or do anything
+                    pass
+
+            elif kwargs['variable'].value_class.upper() in ['BOOL', 'BOOLEAN']:
+                kwargs['value_boolean'] = bool(kwargs.pop('value'))
+
+        # call the django model __init__
+        super(RecordedDataOld, self).__init__(*args, **kwargs)
+        self.timestamp = self.time_value()
+
+    def calculate_pk(self, timestamp=None):
+        """
+        calculate the primary key from the timestamp in seconds
+        """
+        if timestamp is None:
+            timestamp = time.time()
+        self.pk = int(int(int(timestamp * 1000) * 2097152) + self.variable.pk)
+
+    def __str__(self):
+        return str(self.value())
+
+    def time_value(self):
+        """
+        return the timestamp in seconds calculated from the id
+        """
+        return (self.pk - self.variable.pk) / 2097152 / 1000.0  # value in seconds
+
+    def value(self, value_class=None):
+        """
+        return the stored value
+        """
+        if value_class is None:
+            value_class = self.variable.value_class
+
+        if value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
+            return self.value_float64
+        elif self.variable.scaling and not value_class.upper() in ['BOOL', 'BOOLEAN']:
+            return self.value_float64
+        elif value_class.upper() in ['INT64', 'UINT32', 'DWORD']:
+            return self.value_int64
+        elif value_class.upper() in ['WORD', 'UINT', 'UINT16', 'INT32']:
+            return self.value_int32
+        elif value_class.upper() in ['INT16', 'INT8', 'UINT8']:
+            return self.value_int16
+        elif value_class.upper() in ['BOOL', 'BOOLEAN']:
+            return self.value_boolean
+        else:
+            return None
+
+
+@python_2_unicode_compatible
+class RecordedData(models.Model):
+    """
+    id: Big Int first 42 bits are used for the unix time in ms, unsigned because we only
+        store values that are past 1970, the last 21 bits are used for the
+        variable id to have a unique primary key
+        63 bit 111111111111111111111111111111111111111111111111111111111111111
+        42 bit 111111111111111111111111111111111111111111000000000000000000000
+        21 bit 										    1000000000000000000000
+    date_saved: datetime when the model instance is saved in the database (will be set in the save method)
+
+
+    """
+
+    id = models.BigIntegerField(primary_key=True)
+    date_saved = models.DateTimeField(blank=True, null=True, db_index=True)
+    value_boolean = models.BooleanField(default=False, blank=True)  # boolean
+    value_int16 = models.SmallIntegerField(null=True, blank=True)  # int16, uint8, int8
+    value_int32 = models.IntegerField(null=True, blank=True)  # uint8, int16, uint16, int32
+    value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64
+    value_float64 = models.FloatField(null=True, blank=True)  # float64
+    variable = models.ForeignKey('Variable')
+    objects = RecordedDataValueManager()
+
+    #
+
+    def __init__(self, *args, **kwargs):
+        if 'timestamp' in kwargs:
+            timestamp = kwargs.pop('timestamp')
+        else:
+            timestamp = time.time()
+
+        if 'variable_id' in kwargs:
+            variable_id = kwargs['variable_id']
+        elif 'variable' in kwargs:
+            variable_id = kwargs['variable'].pk
+        else:
+            variable_id = None
+
         if variable_id is not None and 'id' not in kwargs:
             kwargs['id'] = int(int(int(timestamp * 1000) * 2097152) + variable_id)
         if 'variable' in kwargs and 'value' in kwargs:
@@ -961,8 +1102,7 @@ class RecordedData(models.Model):
         if timestamp is None:
             timestamp = time.time()
         self.pk = int(int(int(timestamp * 1000) * 2097152) + self.variable.pk)
-        # self.pk = int(int(int(time.time() * 1000) * 2097152) + self.variable.pk)
-        
+
     def __str__(self):
         return str(self.value())
 
@@ -971,10 +1111,6 @@ class RecordedData(models.Model):
         return the timestamp in seconds calculated from the id
         """
         return (self.pk - self.variable.pk) / 2097152 / 1000.0  # value in seconds
-        # if self.date is None:
-        #   return (self.pk - self.variable.pk) / 2097152 / 1000.0  # value in seconds
-        #
-        #return (self.pk - self.variable.pk) / 2097152 / 1000.0  # value in seconds
 
     def value(self, value_class=None):
         """
@@ -997,6 +1133,11 @@ class RecordedData(models.Model):
             return self.value_boolean
         else:
             return None
+
+    def save(self, *args, **kwargs):
+        if self.date is None:
+            self.date = datetime_now()
+        super(RecordedData, self).save(*args, **kwargs)
 
 
 @python_2_unicode_compatible
@@ -1084,7 +1225,7 @@ class BackgroundProcess(models.Model):
             except OSError as e:
                 return False
 
-    def stop(self,signum=signal.SIGTERM):
+    def stop(self, signum=signal.SIGTERM):
         """
         stops the process and all its child's
 
@@ -1241,13 +1382,13 @@ class Event(models.Model):
                 prev_event = RecordedEvent(event=self, time_begin=timestamp, active=True)
                 prev_event.save()
 
-                if self.limit_type >= 1:
+                if self.action >= 1:
                     # compose and send mail
                     (subject, message,) = compose_mail(True)
                     for recipient in self.mail_recipients.exclude(email=''):
                         Mail(None, subject, message, recipient.email, time.time()).save()
 
-                if self.limit_type >= 3:
+                if self.action >= 3:
                     # do action
                     if self.variable_to_change:
                         DeviceWriteTask(variable=self.variable_to_change, value=self.new_value, start=timestamp)
@@ -1258,7 +1399,7 @@ class Event(models.Model):
                 prev_event.time_end = timestamp
                 prev_event.save()
 
-                if self.limit_type >= 2:
+                if self.action >= 2:
                     # compose and send mail
                     (subject, message,) = compose_mail(False)
                     for recipient in self.mail_recipients.exclude(email=''):
@@ -1341,4 +1482,4 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
                 return False
             bp.restart()
     else:
-        logger.debug('post_save from %s'%type(instance))
+        logger.debug('post_save from %s' % type(instance))

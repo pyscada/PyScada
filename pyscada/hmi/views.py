@@ -261,10 +261,12 @@ def get_cache_data(request):
         query_first_value=init,
         time_in_ms=True,
         key_is_variable_name=False,
-        add_timetamp_field=True,
+        add_timestamp_field=True,
+        add_date_saved_max_field=True,
         add_fake_data=False,
         variable_id__in=active_variables,
-        add_latest_value=False)
+        add_latest_value=False,
+        use_date_saved=not init)
 
     if data is None:
         data = {}

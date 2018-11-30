@@ -18,22 +18,6 @@ Dependencies
 ------------
 
 
-Debian 7
-^^^^^^^^
-
-::
-
-    sudo -i
-    apt-get update
-    apt-get -y upgrade
-    # if you use MySQL as Database system (recommend)
-    apt-get -y install mysql-server python-mysqldb
-    apt-get -y install python-pip libhdf5-7 libhdf5-dev python-dev nginx gunicorn
-    pip install cython
-    pip install numpy
-    pip install h5py
-
-
 Debian 8/9, Raspbian
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -43,42 +27,12 @@ Debian 8/9, Raspbian
     apt-get update
     apt-get -y upgrade
     # if you use MariaDB/MySQL as Database system (recommend)
-    apt-get -y install mariadb-server python-mysqldb
-    apt-get install -y python-pip libhdf5-100 libhdf5-dev python-dev nginx gunicorn
+    apt-get -y install mariadb-server python3-mysqldb
+    apt-get install -y python3-pip libhdf5-100 libhdf5-dev python3-dev nginx
 
-    ## debian 8 only
-    pip install cython
-    pip install numpy
-
-    # for 64bit
-    export HDF5_DIR=/usr/lib/x86_64-linux-gnu/hdf5/serial/
-    # for 32 bit
-    export HDF5_DIR=/usr/lib/x86_32-linux-gnu/hdf5/serial/
-    # for ARM (Raspberry Pi)
-    export HDF5_DIR=/usr/lib/arm-linux-gnueabihf/hdf5/serial/
-    ## end debian 8 only
-
-    pip install h5py
-
-
-Fedora 22/23
-^^^^^^^^^^^^
-
-::
-
-    sudo -i
-    dnf install libjpeg-turbo-devel-1.4.1-2.fc23 nginx
-
-    # if you use MySQL as Database system (recommend)
-    dnf install mysql-server mysql-devel
-    pip install MySQL-python
-
-    pip install cython
-    pip install numpy
-    pip install h5py
-    pip install gunicorn
-
-
+    pip3 install gunicorn
+    pip3 install pyserial
+    pip3 install docutils
 
 
 macOS
@@ -100,19 +54,19 @@ all
 
 ::
 
-
-    pip install https://github.com/trombastic/PyScada/archive/dev/0.7.x.zip
+    sudo -i
+    pip3 install https://github.com/trombastic/PyScada/archive/dev/0.7.x.zip
 
     # for VISA Protocol
-    pip install pyvisa pyvisa-py
+    pip3 install pyvisa pyvisa-py
     # for 1Wire Protocol
     apt-get install owfs #
-    pip install pyownet
+    pip3 install pyownet
     # for smbus Protocol, install libffi-dev first!
-    pip install smbus-cffi
+    apt-get install libffi-dev
+    pip3 install smbus-cffi
     # systemstat (monitor system statistics)
-    sudo apt-get install libffi-dev
-    pip install psutil
+    pip3 install psutil
 
 
 
@@ -184,15 +138,15 @@ Initialize Database And Copy Static Files
 
 
     cd /var/www/pyscada/PyScadaServer # linux
-    sudo -u pyscada python manage.py migrate
-    sudo -u pyscada python manage.py collectstatic
+    sudo -u pyscada python3 manage.py migrate
+    sudo -u pyscada python3 manage.py collectstatic
 
     # load fixtures with default configuration for chart lin colors and units
-    sudo -u pyscada python manage.py loaddata color
-    sudo -u pyscada python manage.py loaddata units
+    sudo -u pyscada python3 manage.py loaddata color
+    sudo -u pyscada python3 manage.py loaddata units
 
     # initialize the background service system of pyscada
-    sudo -u pyscada python manage.py pyscada_daemon init
+    sudo -u pyscada python3 manage.py pyscada_daemon init
 
 
 
@@ -202,7 +156,7 @@ Add a Admin User To Your Django Project
 ::
 
     cd /var/www/pyscada/PyScadaServer
-    sudo -u pyscada python manage.py createsuperuser
+    sudo -u pyscada python3 manage.py createsuperuser
 
 
 Setup the Webserver (nginx, gunicorn)

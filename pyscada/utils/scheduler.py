@@ -624,6 +624,9 @@ class Process(object):
                     if data is not None:
                         # write data to the database
                         for item in data:
+                            for r in item:
+                                r.date_saved = datetime_now()
+                            # todo add date field value
                             RecordedData.objects.bulk_create(item)
                     if status == 1: # Process OK
                         pass

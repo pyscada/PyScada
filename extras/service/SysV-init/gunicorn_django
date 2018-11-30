@@ -50,7 +50,7 @@ start () {
 	export PYTHONPATH=${data[1]}:$PYTHONPATH
 	# Start your Django Unicorn
 	# Programs meant to be run under supervisor should not daemonize themselves (do not use --daemon)
-	start-stop-daemon --start --quiet -c $RUN_AS -d $DJANGO_DIR --pidfile $PID_FILE --exec /usr/bin/gunicorn -- $APP_NAME.wsgi:application -n $APP_NAME -w $NUMBER_OF_WORKERS -u $RUN_AS -b unix:$SOCKET_FILE -p $PID_FILE -D
+	start-stop-daemon --start --quiet -c $RUN_AS -d $DJANGO_DIR --pidfile $PID_FILE --exec /usr/local/bin/gunicorn -- $APP_NAME.wsgi:application -n $APP_NAME -w $NUMBER_OF_WORKERS -u $RUN_AS -b unix:$SOCKET_FILE -p $PID_FILE -D
 
 	return
 }
