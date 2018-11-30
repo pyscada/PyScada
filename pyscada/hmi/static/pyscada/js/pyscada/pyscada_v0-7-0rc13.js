@@ -1438,7 +1438,7 @@ $('button.write-task-form-set').click(function(){
         name_form = $(this.form).attr('name');
         tabinputs = document.forms[name_form].getElementsByTagName("input");
         DATA = {}; //reset the data after each button click
-        DATA_DISPLAY_FROM_TIMESTAMP = -1;
+        DATA_DISPLAY_FROM_TIMESTAMP = SERVER_TIME;
         DATA_DISPLAY_TO_TIMESTAMP = -1;
         for (i=0;i<tabinputs.length;i++){ //test if there is an empty or non numeric value
             value = $(tabinputs[i]).val();
