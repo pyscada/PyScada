@@ -1195,14 +1195,14 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             for (var key in keys){
                 key = keys[key];
                 xkey = xaxisVarId
-                if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object'){
+                if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object' && typeof(DATA[xkey]) === 'object'){
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
                         start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
                         stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
-                        chart_data = DATA[key].slice(start_id,stop_id+1);
+                        chart_data = DATA[key].slice(start_id+1,stop_id+1);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
                         start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
-                        chart_data = DATA[key].slice(start_id);
+                        chart_data = DATA[key].slice(start_id+1);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
                         if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
                         stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
@@ -1213,10 +1213,10 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
                         start_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
                         stop_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_TO_TIMESTAMP,0);
-                        chart_x_data = DATA[xkey].slice(start_fid,stop_fid+1);
+                        chart_x_data = DATA[xkey].slice(start_fid+1,stop_fid+1);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
                         start_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
-                        chart_x_data = DATA[xkey].slice(start_fid);
+                        chart_x_data = DATA[xkey].slice(start_fid+1);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
                         if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
                         stop_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_TO_TIMESTAMP,0);
@@ -1433,9 +1433,9 @@ $('button.write-task-set').click(function(){
 $('button.write-task-form-set').click(function(){
         name_form = $(this.form).attr('name');
         tabinputs = document.forms[name_form].getElementsByTagName("input");
-        DATA = {}; //reset the data after each button click
-        DATA_DISPLAY_FROM_TIMESTAMP = SERVER_TIME;
-        DATA_DISPLAY_TO_TIMESTAMP = -1;
+        //DATA = {}; //reset the data after each button click
+        //DATA_DISPLAY_FROM_TIMESTAMP = SERVER_TIME;
+        //DATA_DISPLAY_TO_TIMESTAMP = -1;
         for (i=0;i<tabinputs.length;i++){ //test if there is an empty or non numeric value
             value = $(tabinputs[i]).val();
             if (value == "" || isNaN(value)){
