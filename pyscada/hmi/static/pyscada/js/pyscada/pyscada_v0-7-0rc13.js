@@ -127,8 +127,22 @@ function add_fetched_data(key,value){
                     } else if (v_t_max == d_t_min){
                         // prepend, drop last element of value
                         DATA[key] = value.slice(0,value.length-1).concat(DATA[key]);
+                    } else if (v_t_max > d_t_max && v_t_min < d_t_min){
+                        // data and value overlapping, value has older and newer elements than data, prepend and append
+                        start_id = find_index_sub_lte(value,DATA[key][0][0],0);
+                        stop_id = find_index_sub_gte(value,DATA[key][DATA[key].length-1][0],0);
+                        if (typeof(stop_id) === "number" ){
+                            DATA[key] = DATA[key].concat(value.slice(stop_id));
+                            if (typeof(start_id) === "number" ){
+                                DATA[key] = value.slice(0,start_id).concat(DATA[key]);
+                            }else{
+                                console.log(key + ' : dropped data');
+                            }
+                        }else{
+                            console.log(key + ' : dropped data');
+                        }
                     } else if (v_t_max > d_t_min && v_t_min < d_t_min){
-                        // data and value overlapping, value has older elements then data, prepend
+                        // data and value overlapping, value has older elements than data, prepend
                         stop_id = find_index_sub_lte(value,DATA[key][0][0],0);
                         if (typeof(stop_id) === "number" ){
                             DATA[key] = value.slice(0,stop_id).concat(DATA[key]);
@@ -136,7 +150,7 @@ function add_fetched_data(key,value){
                             console.log(key + ' : dropped data');
                         }
                     } else if (v_t_max > d_t_max && d_t_min < v_t_min){
-                        // data and value overlapping, data has older elements then value, append
+                        // data and value overlapping, data has older elements than value, append
                         stop_id = find_index_sub_gte(value,DATA[key][DATA[key].length-1][0],0);
                         if (typeof(stop_id) === "number" ){
                             DATA[key] = DATA[key].concat(value.slice(stop_id));
