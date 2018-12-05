@@ -1,0 +1,27 @@
+<!-- Dropdown {{ dropdown.name }} -->
+{% if dropdown.active == 1 %}
+    <div class="hidden variable-config" data-name="{{ dropdown.name }}" data-key="{{ dropdown.key }}" data-init-type="0" data-type="{{ dropdown.item_type}}"></div>
+    <div class="input-group set_value">
+        <span class="input-group-addon input-group-addon-label">{{ dropdown.title }}</span>
+        {% if form == "0" %}
+            <select class="form-control select {{ dropdown.web_class_str }}" id="{{ dropdown.web_id }}-{{ uuid }}-value" data-key="{{ dropdown.key }}" data-type="{{ dropdown.item_type}}" data-name="{{ dropdown.name}}">
+        {% else %}
+            <select class="form-control select {{ dropdown.web_class_str }}" id="{{ form.web_id }}-{{ uuid }}-{{ dropdown.web_id }}-value" data-key="{{ dropdown.key }}" data-type="{{ dropdown.item_type}}" data-name="{{ dropdown.name}}">
+        {% endif %}
+            {% if dropdown.empty == 1 %}
+                <option disabled selected value> {{ dropdown.empty_value }} </option>
+            {% endif %}
+            {% for dropdown_item in dropdown.items.all %}
+                <option class="select-item {{ dropdown.web_class_str }}" id="{{ dropdown_item.pk }}" data-value="{{ dropdown_item.title }}" value="{{ dropdown_item.title }}">{{ dropdown_item.title }}</option>
+            {% endfor %}
+        </select>
+        {% if dropdown.unit %}
+            <span class="input-group-addon">{{ dropdown.unit }}</span>
+        {% endif %}
+        {% if form == "0" %}
+            <span class="input-group-btn">
+                <button class="btn btn-default write-task-set set-{{ dropdown.key }}" data-key="{{ dropdown.key }}" data-type="{{ dropdown.item_type}}" id="{{ dropdown.web_id }}-{{ uuid }}" type="button">set</button>
+            </span>
+        {% endif %}
+    </div>
+{% endif %}

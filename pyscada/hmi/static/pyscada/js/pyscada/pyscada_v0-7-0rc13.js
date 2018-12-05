@@ -1425,78 +1425,27 @@ $('button.write-task-set').click(function(){
         id = $(this).attr('id');
         value = $("#"+id+"-value").val();
         item_type = $(this).data('type');
-        if (value == "" ){
+        if (value == "" || value == null){
             add_notification('please provide a value',3);
-            console.log('please provide a value');
+            alert('please provide a value');
         }else{
-            $.ajax({
-                type: 'post',
-                url: ROOT_URL+'form/write_task/',
-                data: {key:key, value:value, item_type:item_type},
-                success: function (data) {
-                    
-                },
-                error: function(data) {
-                    add_notification('add new write task failed',3);
-                    console.log("add new write task failed");
-                }
-            });
-        };
-});
+            if (isNaN(value)){
+                if (item_type == "variable_property"){
+                    $.ajax({
+                        type: 'post',
+                        url: ROOT_URL+'form/write_property2/',
+                        data: {variable_property:key, value:value},
+                        success: function (data) {
 
-$('button.write-task-form-set').click(function(){
-        name_form = $(this.form).attr('name');
-        tabinputs = document.forms[name_form].getElementsByTagName("input");
-        //DATA = {}; //reset the data after each button click
-        //DATA_DISPLAY_FROM_TIMESTAMP = SERVER_TIME;
-        //DATA_DISPLAY_TO_TIMESTAMP = -1;
-        for (i=0;i<tabinputs.length;i++){ //test if there is an empty or non numeric value
-            value = $(tabinputs[i]).val();
-            if (value == "" || isNaN(value)){
-                add_notification('please provide a value',3);
-                alert("An input is empty or non numeric");
-                return;
-            };
-        };
-
-        for (i=0;i<tabinputs.length;i++){
-            value = $(tabinputs[i]).val();
-            var_name = $(tabinputs[i]).attr("name");
-            $.each($('.variable-config'),function(kkey,val){
-                name_var = $(val).data('name');
-                if (name_var==var_name){
-                    key = parseInt($(val).data('key'));
-                    item_type = $(val).data('type');
-                }
-            });
-
-            if ($(tabinputs[i]).hasClass('btn-success')){
-                id = $(tabinputs[i]).attr('id');
-                //$('#'+id).removeClass('update-able');
-                $.ajax({
-                    type: 'post',
-                    url: ROOT_URL+'form/write_task/',
-                    data: {key:key,value:1,item_type:item_type},
-                    success: function (data) {
-                    },
-                    error: function(data) {
-                        add_notification('add new write task failed',3);
-                    }
-                });
-            }else if ($(tabinputs[i]).hasClass('btn-default')){
-                id = $(tabinputs[i]).attr('id');
-                //$('#'+id).removeClass('update-able');
-                $.ajax({
-                    type: 'post',
-                    url: ROOT_URL+'form/write_task/',
-                    data: {key:key,value:0,item_type:item_type},
-                    success: function (data) {
-                    },
-                    error: function(data) {
-                        add_notification('add new write task failed',3);
-                    }
-                });
-            }else{
+                        },
+                        error: function(data) {
+                            add_notification('write plug selected failed',3);
+                        }
+                    });
+                }else {
+                    console.log("select is " + item_type + " and not a number");
+                };
+            }else {
                 $.ajax({
                     type: 'post',
                     url: ROOT_URL+'form/write_task/',
@@ -1506,11 +1455,122 @@ $('button.write-task-form-set').click(function(){
                     },
                     error: function(data) {
                         add_notification('add new write task failed',3);
-                        alert("Form Set NOK "+data+" - key "+key+" - value "+value+" - item_type "+item_type + " - name "+var_name)
+                        console.log("add new write task failed");
                     }
                 });
             };
         };
+});
+
+$('button.write-task-form-set').click(function(){
+    id_form = $(this.form).attr('id');
+    tabinputs = $('#'+id_form+ ' :text');
+    for (i=0;i<tabinputs.length;i++){ //test if there is an empty or non numeric value
+        value = $(tabinputs[i]).val();
+        if (value == "" || isNaN(value)){
+            add_notification('please provide a value',3);
+            alert("An input is empty or non numeric : " + $(tabinputs[i]).attr('name') + " - value = " + value);
+            return;
+        };
+    };
+    tabselects = $('#'+id_form+ ' .select');
+    for (i=0;i<tabselects.length;i++){ //test if there is an empty value
+        value = $(tabselects[i]).val();
+        if (value == "" || value == null){
+            add_notification('please provide a value',3);
+            alert("A select is empty");
+            return;
+        };
+    };
+
+    for (i=0;i<tabinputs.length;i++){
+        value = $(tabinputs[i]).val();
+        var_name = $(tabinputs[i]).attr("name");
+        $.each($('.variable-config'),function(kkey,val){
+            name_var = $(val).data('name');
+            if (name_var==var_name){
+                key = parseInt($(val).data('key'));
+                item_type = $(val).data('type');
+            }
+        });
+
+        if ($(tabinputs[i]).hasClass('btn-success')){
+            id = $(tabinputs[i]).attr('id');
+            //$('#'+id).removeClass('update-able');
+            $.ajax({
+                type: 'post',
+                url: ROOT_URL+'form/write_task/',
+                data: {key:key,value:1,item_type:item_type},
+                success: function (data) {
+                },
+                error: function(data) {
+                    add_notification('add new write task failed',3);
+                }
+            });
+        }else if ($(tabinputs[i]).hasClass('btn-default')){
+            id = $(tabinputs[i]).attr('id');
+            //$('#'+id).removeClass('update-able');
+            $.ajax({
+                type: 'post',
+                url: ROOT_URL+'form/write_task/',
+                data: {key:key,value:0,item_type:item_type},
+                success: function (data) {
+                },
+                error: function(data) {
+                    add_notification('add new write task failed',3);
+                }
+            });
+        }else{
+            $.ajax({
+                type: 'post',
+                url: ROOT_URL+'form/write_task/',
+                data: {key:key, value:value, item_type:item_type},
+                success: function (data) {
+
+                },
+                error: function(data) {
+                    add_notification('add new write task failed',3);
+                    alert("Form Set NOK "+data+" - key "+key+" - value "+value+" - item_type "+item_type + " - name "+var_name)
+                }
+            });
+        };
+    };
+    for (i=0;i<tabselects.length;i++){ //test if there is an empty value
+        value = $(tabselects[i]).val();
+        var_name = $(tabselects[i]).data("name");
+        key = $(tabselects[i]).data('key');
+        item_type = $(tabselects[i]).data('type');
+        if (isNaN(value)){
+            if (item_type == "variable_property"){
+                $.ajax({
+                    type: 'post',
+                    url: ROOT_URL+'form/write_property2/',
+                    data: {variable_property:var_name, value:value},
+                    success: function (data) {
+
+                    },
+                    error: function(data) {
+                        add_notification('write plug selected failed',3);
+                    }
+                });
+            }else {
+                console.log("select is " + item_type + " and not a number");
+            };
+        }else {
+            $.ajax({
+                type: 'post',
+                url: ROOT_URL+'form/write_task/',
+                data: {key:key, value:value, item_type:item_type},
+                success: function (data) {
+
+                },
+                error: function(data) {
+                    add_notification('add new write task failed',3);
+                    alert("Form Set NOK "+data+" - key "+key+" - value "+value+" - item_type "+item_type + " - name "+var_name)
+                }
+            });
+        };
+    };
 });
 
 $('input.write-task-btn').click(function(){

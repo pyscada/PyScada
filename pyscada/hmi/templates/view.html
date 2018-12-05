@@ -22,8 +22,13 @@
                             {% endif %}	
                         {% endfor %}
                         {% for form in panel.control_panel.forms.all %}
-                            {% if item.pk in visible_form_list %}
+                            {% if form.pk in visible_form_list %}
                                 {% include "form.html" with form=form %}
+                            {% endif %}
+                        {% endfor %}
+                        {% for dropdown in panel.control_panel.dropdowns.all %}
+                            {% if dropdown.pk in visible_dropdown_list %}
+                                {% include "dropdown.html" with dropdown=dropdown %}
                             {% endif %}
                         {% endfor %}
                     </div>

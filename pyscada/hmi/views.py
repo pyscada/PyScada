@@ -7,6 +7,7 @@ from pyscada.hmi.models import Chart
 from pyscada.hmi.models import XYChart
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Form
+from pyscada.hmi.models import DropDown
 from pyscada.hmi.models import CustomHTMLPanel
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import Widget
@@ -67,6 +68,7 @@ def view(request, link_title):
         # visible_xy_chart_list = XYChart.objects.all().values_list('pk', flat=True)
         visible_control_element_list = ControlItem.objects.all().values_list('pk', flat=True)
         visible_form_list = Form.objects.all().values_list('pk', flat=True)
+        visible_dropdown_list = DropDown.objects.all().values_list('pk', flat=True)
     else:
         page_list = v.pages.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).distinct()
 
@@ -89,6 +91,8 @@ def view(request, link_title):
             hmi_group__in=request.user.groups.iterator()).values_list('control_items', flat=True)
         visible_form_list = GroupDisplayPermission.objects.filter(
             hmi_group__in=request.user.groups.iterator()).values_list('forms', flat=True)
+        visible_dropdown_list = GroupDisplayPermission.objects.filter(
+            hmi_group__in=request.user.groups.iterator()).values_list('dropdowns', flat=True)
 
     panel_list = sliding_panel_list.filter(position__in=(1, 2,))
     control_list = sliding_panel_list.filter(position=0)
@@ -138,6 +142,7 @@ def view(request, link_title):
         'user': request.user,
         'visible_control_element_list': visible_control_element_list,
         'visible_form_list': visible_form_list,
+        'visible_dropdown_list': visible_dropdown_list,
         'view_title': v.title,
         'view_show_timeline': v.show_timeline,
         'version_string': core_version
@@ -204,6 +209,23 @@ def form_write_task(request):
                                               user=request.user)
                         cwt.save()
                         return HttpResponse(status=200)
+    return HttpResponse(status=404)
+
+
+def form_write_property2(request):
+    if not request.user.is_authenticated():
+        return redirect('/accounts/choose_login/?next=%s' % request.path)
+    if 'variable_property' in request.POST and 'value' in request.POST:
+        value = request.POST['value']
+        try:
+            int(request.POST['variable_property'])
+            variable_property = int(request.POST['variable_property'])
+            VariableProperty.objects.update_property(variable_property=variable_property, value=value)
+        except ValueError:
+            variable_property = str(request.POST['variable_property'])
+            VariableProperty.objects.update_property(variable_property=VariableProperty.objects.get(
+                    name=variable_property), value=value)
+        return HttpResponse(status=200)
     return HttpResponse(status=404)
 
 
