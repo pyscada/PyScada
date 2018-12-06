@@ -1464,7 +1464,7 @@ $('button.write-task-set').click(function(){
 
 $('button.write-task-form-set').click(function(){
     id_form = $(this.form).attr('id');
-    tabinputs = $('#'+id_form+ ' :text');
+    tabinputs = $.merge($('#'+id_form+ ' :text'),$('#'+id_form+ ' :input:hidden'));
     for (i=0;i<tabinputs.length;i++){ //test if there is an empty or non numeric value
         value = $(tabinputs[i]).val();
         if (value == "" || isNaN(value)){
