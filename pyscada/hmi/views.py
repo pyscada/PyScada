@@ -218,13 +218,15 @@ def form_write_property2(request):
     if 'variable_property' in request.POST and 'value' in request.POST:
         value = request.POST['value']
         try:
-            int(request.POST['variable_property'])
             variable_property = int(request.POST['variable_property'])
             VariableProperty.objects.update_property(variable_property=variable_property, value=value)
         except ValueError:
             variable_property = str(request.POST['variable_property'])
-            VariableProperty.objects.update_property(variable_property=VariableProperty.objects.get(
+            if VariableProperty.objects.get(name=variable_property).value_class.upper() in ['STRING']:
+                VariableProperty.objects.update_property(variable_property=VariableProperty.objects.get(
                     name=variable_property), value=value)
+            else:
+                return HttpResponse(status=404)
         return HttpResponse(status=200)
     return HttpResponse(status=404)
 

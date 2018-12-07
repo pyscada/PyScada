@@ -126,6 +126,42 @@ class ControlItem(models.Model):
         elif self.variable:
             return self.variable.unit.unit
 
+    def min(self):
+        if self.variable_property:
+            return self.variable_property.value_min
+        elif self.variable:
+            return self.variable.value_min
+
+    def max(self):
+        if self.variable_property:
+            return self.variable_property.value_max
+        elif self.variable:
+            return self.variable.value_max
+
+    def value(self):
+        if self.variable_property:
+            return self.variable_property.value
+        elif self.variable:
+            return self.variable.value
+
+    def value_class(self):
+        if self.variable_property:
+            return self.variable_property.value_class
+        elif self.variable:
+            return self.variable.value_class
+
+    def min_type(self):
+        if self.variable_property:
+            return self.variable_property.min_type
+        elif self.variable:
+            return self.variable.min_type
+
+    def max_type(self):
+        if self.variable_property:
+            return self.variable_property.max_type
+        elif self.variable:
+            return self.variable.max_type
+
 
 @python_2_unicode_compatible
 class Chart(WidgetContentModel):
@@ -273,6 +309,42 @@ class DropDown(models.Model):
                 return ''
         elif self.variable:
             return self.variable.unit.unit
+
+    def min(self):
+        if self.variable_property:
+            return self.variable_property.value_min
+        elif self.variable:
+            return self.variable.value_min
+
+    def max(self):
+        if self.variable_property:
+            return self.variable_property.value_max
+        elif self.variable:
+            return self.variable.value_max
+
+    def value(self):
+        if self.variable_property:
+            return self.variable_property.value
+        elif self.variable:
+            return self.variable.value
+
+    def value_class(self):
+        if self.variable_property:
+            return self.variable_property.value_class
+        elif self.variable:
+            return self.variable.value_class
+
+    def min_type(self):
+        if self.variable_property:
+            return self.variable_property.min_type
+        elif self.variable:
+            return self.variable.min_type
+
+    def max_type(self):
+        if self.variable_property:
+            return self.variable_property.max_type
+        elif self.variable:
+            return self.variable.max_type
 
 
 @python_2_unicode_compatible

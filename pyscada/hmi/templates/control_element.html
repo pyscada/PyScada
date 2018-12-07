@@ -1,5 +1,5 @@
 {% if item.active == 1 %}
-        <div class="hidden variable-config" data-name="{{ item.name }}" data-key="{{ item.key }}" data-init-type="0" data-type="{{ item.item_type}}"></div>
+        <div class="hidden variable-config" data-name="{{ item.name }}" data-key="{{ item.key }}" data-init-type="0" data-type="{{ item.item_type}}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-value-class="{{ item.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}"></div>
     {% if item.type == 0 %}<!-- label blue -->
         <div class="input-group control_label"><span class="label label-default type-bool status-green {{ item.web_class_str }}">{{ item.label }}</span></div>
     {% elif item.type == 1 %}<!-- label light blue -->
@@ -13,32 +13,17 @@
     {% elif item.type == 7 %}<!-- label alarm inverted -->
                 <div class="input-group control_label"><span class="label label-default type-bool status-red-inv {{ item.web_class_str }}">{{ item.label }}</span></div>
     {% elif item.type == 5 %}<!-- input -->
-        {% if item.item_type == 'variable_property' %}<!-- VP -->
-            {% if item.variable_property.value_class == 'BOOL' or item.variable_property.value_class == 'BOOLEAN' %}
-                <div class="input-group control_button"><button type="button" data-key="{{ item.key }}" data-type="{{ item.item_type}}"  class="btn btn-default update-able write-task-btn type-bool {{ item.web_class_str }}" id="{{ item.web_id }}-{{ uuid }}">{{ item.label }}</button></div>
-            {% else %}
-                <div class="input-group set_value">
-                    <span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
-                    <input type="text" class="form-control {{ item.web_class_str }}" id="{{ item.web_id }}-{{ uuid }}-value" placeholder="">
-                    <span class="input-group-addon">{{ item.unit }}</span>
-                    <span class="input-group-btn">
-                        <button class="btn btn-default write-task-set set-{{ item.variable_property.pk }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}" id="{{ item.web_id }}-{{ uuid }}" type="button">set</button>
-                    </span>
-                </div>
-            {% endif %}
-        {% else %}<!-- Var -->
-            {% if item.variable.value_class == 'BOOL' or item.variable.value_class == 'BOOLEAN' %}
-                <div class="input-group control_button"><button type="button" data-key="{{ item.key }}" data-type="{{ item.item_type}}"  class="btn btn-default update-able write-task-btn type-bool {{ item.web_class_str }}" id="{{ item.web_id }}-{{ uuid }}">{{ item.label }}</button></div>
-            {% else %}
-                <div class="input-group set_value">
-                    <span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
-                    <input type="text" class="form-control {{ item.web_class_str }}" id="{{ item.web_id }}-{{ uuid }}-value" placeholder="">
-                    <span class="input-group-addon">{{ item.unit }}</span>
-                    <span class="input-group-btn">
-                        <button class="btn btn-default write-task-set set-{{ item.variable.pk }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}" id="{{ item.web_id }}-{{ uuid }}" type="button">set</button>
-                    </span>
-                </div>
-            {% endif %}
+        {% if item.value_class == 'BOOL' or item.value_class == 'BOOLEAN' %}
+            <div class="input-group control_button"><button type="button" data-key="{{ item.key }}" data-type="{{ item.item_type}}"  class="btn btn-default update-able write-task-btn type-bool {{ item.web_class_str }}" id="{{ item.web_id }}-{{ uuid }}">{{ item.label }}</button></div>
+        {% else %}
+            <div class="input-group set_value">
+                <span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
+                <input type="text" class="form-control {{ item.web_class_str }}" id="{{ item.web_id }}-{{ uuid }}-value" placeholder="">
+                <span class="input-group-addon">{{ item.unit }}</span>
+                <span class="input-group-btn">
+                    <button class="btn btn-default write-task-set set-{{ item.key }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}" id="{{ item.web_id }}-{{ uuid }}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-value-class="{{ item.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}" type="button">set</button>
+                </span>
+            </div>
         {% endif %}
     {% elif item.type == 6 %}<!-- display value -->
         <div class="input-group control_label"><span class="type-label">{{ item.label }}<span class="type-unit"><span class="type-numeric {{ item.web_class_str }}">NaN</span> {{ item.unit }}</span></span></div>

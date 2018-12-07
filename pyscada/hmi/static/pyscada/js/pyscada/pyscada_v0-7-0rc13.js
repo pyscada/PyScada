@@ -1417,20 +1417,63 @@ $.ajaxSetup({
     }
 });
 
+function check_min_max(value, min, max, min_strict, max_strict) {
+    console.log(value);
+    console.log(min);
+    console.log(max);
+    console.log(min_strict);
+    console.log(max_strict);
+    min_strict = typeof min_strict !== 'undefined' ? min_strict : "lte";
+    max_strict = typeof max_strict !== 'undefined' ? max_strict : "gte";
+    min = typeof min !== 'undefined' ? min : false;
+    max = typeof max !== 'undefined' ? max : false;
+    if (min_strict == "lt" && parseFloat(value) <= parseFloat(min) && min !== false) {
+        return -1;
+    }
+    if (min_strict == "lte" && parseFloat(value) < parseFloat(min) && min !== false) {
+        return -1;
+    }
+    if (max_strict == "gt" && parseFloat(value) >= parseFloat(max) && max !== false) {
+        return 1;
+    }
+    if (max_strict == "gte" && parseFloat(value) > parseFloat(max) && max !== false) {
+        return 1;
+    }
+    return 0;
+}
 
 //form/write_task/
 
 $('button.write-task-set').click(function(){
-        key = $(this).data('key');
-        id = $(this).attr('id');
-        value = $("#"+id+"-value").val();
-        item_type = $(this).data('type');
-        if (value == "" || value == null){
-            add_notification('please provide a value',3);
-            alert('please provide a value');
-        }else{
-            if (isNaN(value)){
-                if (item_type == "variable_property"){
+    key = $(this).data('key');
+    id = $(this).attr('id');
+    value = $("#"+id+"-value").val();
+    item_type = $(this).data('type');
+    min = $(this).data('min');
+    max = $(this).data('max');
+    value_class = $(this).data('value-class');
+    min_type = $(this).data('min-type');
+    max_type = $(this).data('max-type');
+    if (min_type == 'lte') {min_type_char = ">="} else {min_type_char = ">"};
+    if (max_type == 'gte') {max_type_char = "<="} else {max_type_char = "<"};
+    if (value == "" || value == null) {
+        add_notification('please provide a value',3);
+        $(this).parents(".input-group").addClass("has-error");
+        $(this).parents(".input-group").find('.help-block').remove()
+        $(this).parents(".input-group-btn").after('<span id="helpBlock-' + id + '" class="help-block">Please provide a value !</span>');
+    }else {
+        $(this).parents(".input-group").find('.help-block').remove()
+        check_mm = check_min_max(parseFloat(value), parseFloat(min), parseFloat(max), min_type, max_type)
+        if (check_mm == -1) {
+            $(this).parents(".input-group").addClass("has-error");
+            $(this).parents(".input-group-btn").after('<span id="helpBlock-' + id + '" class="help-block">Enter a value ' + min_type_char + ' ' + min + '</span>');
+        }else if (check_mm == 1) {
+            $(this).parents(".input-group").addClass("has-error");
+            $(this).parents(".input-group-btn").after('<span id="helpBlock-' + id + '" class="help-block">Enter a value ' + max_type_char + ' ' + max + '</span>');
+        }else if (check_mm == 0) {
+            $(this).parents(".input-group").removeClass("has-error")
+            if (isNaN(value)) {
+                if (item_type == "variable_property" && value_class == 'STRING'){
                     $.ajax({
                         type: 'post',
                         url: ROOT_URL+'form/write_property2/',
@@ -1439,11 +1482,14 @@ $('button.write-task-set').click(function(){
 
                         },
                         error: function(data) {
-                            add_notification('write plug selected failed',3);
+                            add_notification('write task failed',3);
+                            $(this).parents(".input-group").addClass("has-error");
+                            $(this).parents(".input-group-btn").after('<span id="helpBlock-' + id + '" class="help-block">The value must be a number ! Use dot not coma.</span>');
                         }
                     });
                 }else {
-                    console.log("select is " + item_type + " and not a number");
+                    $(this).parents(".input-group").addClass("has-error");
+                    $(this).parents(".input-group-btn").after('<span id="helpBlock-' + id + '" class="help-block">The value must be a number ! Use dot not coma.</span>');
                 };
             }else {
                 $.ajax({
@@ -1460,28 +1506,109 @@ $('button.write-task-set').click(function(){
                 });
             };
         };
+    };
 });
 
 $('button.write-task-form-set').click(function(){
+    err = false;
     id_form = $(this.form).attr('id');
     tabinputs = $.merge($('#'+id_form+ ' :text'),$('#'+id_form+ ' :input:hidden'));
     for (i=0;i<tabinputs.length;i++){ //test if there is an empty or non numeric value
         value = $(tabinputs[i]).val();
-        if (value == "" || isNaN(value)){
-            add_notification('please provide a value',3);
-            alert("An input is empty or non numeric : " + $(tabinputs[i]).attr('name') + " - value = " + value);
-            return;
-        };
+        id = $(tabinputs[i]).attr('id');
+        var_name = $(tabinputs[i]).attr("name");
+        $.each($('.variable-config'),function(kkey,val){
+            name_var = $(val).data('name');
+            if (name_var==var_name){
+                key = parseInt($(val).data('key'));
+                item_type = $(val).data('type');
+                value_class = $(val).data('value-class');
+                min = $(val).data('min');
+                max = $(val).data('max');
+                min_type = $(val).data('min-type');
+                max_type = $(val).data('max-type');
+                if (min_type == 'lte') {min_type_char = ">="} else {min_type_char = ">"};
+                if (max_type == 'gte') {max_type_char = "<="} else {max_type_char = "<"};
+            }
+        });
+        if (value == "" || value == null){
+            $(tabinputs[i]).parents(".input-group").addClass("has-error");
+            $(tabinputs[i]).parents(".input-group").find('.help-block').remove()
+            $(tabinputs[i]).parents(".input-group").append('<span id="helpBlock-' + id + '" class="help-block">Please provide a value !</span>');
+            err = true;
+        }else {
+            $(tabinputs[i]).parents(".input-group").find('.help-block').remove()
+            check_mm = check_min_max(parseFloat(value), parseFloat(min), parseFloat(max), min_type, max_type)
+            if (check_mm == -1) {
+                $(tabinputs[i]).parents(".input-group").addClass("has-error");
+                $(tabinputs[i]).parents(".input-group").append('<span id="helpBlock-' + id + '" class="help-block">Enter a value ' + min_type_char + ' ' + min + '</span>');
+                err = true;
+            }else if (check_mm == 1) {
+                $(tabinputs[i]).parents(".input-group").addClass("has-error");
+                $(tabinputs[i]).parents(".input-group").append('<span id="helpBlock-' + id + '" class="help-block">Enter a value ' + max_type_char + ' ' + max + '</span>');
+                err = true;
+            }else if (check_mm == 0) {
+                $(tabinputs[i]).parents(".input-group").removeClass("has-error")
+                if (isNaN(value)) {
+                    if (item_type == "variable_property" && value_class == 'STRING') {
+                    }else {
+                        $(tabinputs[i]).parents(".input-group").addClass("has-error");
+                        $(tabinputs[i]).parents(".input-group").append('<span id="helpBlock-' + id + '" class="help-block">The value must be a number ! Use dot not coma.</span>');
+                        err = true;
+                    }
+                }
+            }
+        }
     };
     tabselects = $('#'+id_form+ ' .select');
     for (i=0;i<tabselects.length;i++){ //test if there is an empty value
         value = $(tabselects[i]).val();
+        id = $(tabselects[i]).attr('id');
+        var_name = $(tabselects[i]).data("name");
+        $.each($('.variable-config'),function(kkey,val){
+            name_var = $(val).data('name');
+            if (name_var==var_name){
+                key = parseInt($(val).data('key'));
+                item_type = $(val).data('type');
+                value_class = $(val).data('value-class');
+                min = $(val).data('min');
+                max = $(val).data('max');
+                min_type = $(val).data('min-type');
+                max_type = $(val).data('max-type');
+                if (min_type == 'lte') {min_type_char = ">="} else {min_type_char = ">"};
+                if (max_type == 'gte') {max_type_char = "<="} else {max_type_char = "<"};
+            }
+        });
         if (value == "" || value == null){
-            add_notification('please provide a value',3);
-            alert("A select is empty");
-            return;
-        };
+            $(tabselects[i]).parents(".input-group").addClass("has-error");
+            $(tabselects[i]).parents(".input-group").find('.help-block').remove()
+            $(tabselects[i]).parents(".input-group").append('<span id="helpBlock-' + id + '" class="help-block">Please provide a value !</span>');
+            err = true;
+        }else {
+            $(tabselects[i]).parents(".input-group").find('.help-block').remove()
+            check_mm = check_min_max(parseFloat(value), parseFloat(min), parseFloat(max), min_type, max_type)
+            if (check_mm == -1) {
+                $(tabselects[i]).parents(".input-group").addClass("has-error");
+                $(tabselects[i]).parents(".input-group").append('<span id="helpBlock-' + id + '" class="help-block">Enter a value ' + min_type_char + ' ' + min + '</span>');
+                err = true;
+            }else if (check_mm == 1) {
+                $(tabselects[i]).parents(".input-group").addClass("has-error");
+                $(tabselects[i]).parents(".input-group").append('<span id="helpBlock-' + id + '" class="help-block">Enter a value ' + max_type_char + ' ' + max + '</span>');
+                err = true;
+            }else if (check_mm == 0) {
+                $(tabselects[i]).parents(".input-group").removeClass("has-error")
+                if (isNaN(value)) {
+                    if (item_type == "variable_property" && value_class == 'STRING') {
+                    }else {
+                        $(tabselects[i]).parents(".input-group").addClass("has-error");
+                        $(tabselects[i]).parents(".input-group").append('<span id="helpBlock-' + id + '" class="help-block">The value must be a number ! Use dot not coma.</span>');
+                        err = true;
+                    }
+                }
+            }
+        }
     };
+    if (err) {return;}
 
     for (i=0;i<tabinputs.length;i++){
         value = $(tabinputs[i]).val();

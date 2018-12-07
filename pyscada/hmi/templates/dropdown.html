@@ -1,6 +1,6 @@
 <!-- Dropdown {{ dropdown.name }} -->
 {% if dropdown.active == 1 %}
-    <div class="hidden variable-config" data-name="{{ dropdown.name }}" data-key="{{ dropdown.key }}" data-init-type="0" data-type="{{ dropdown.item_type}}"></div>
+    <div class="hidden variable-config" data-name="{{ dropdown.name }}" data-key="{{ dropdown.key }}" data-init-type="0" data-type="{{ dropdown.item_type}}" data-min="{{ dropdown.min }}" data-max="{{ dropdown.max }}" data-value-class="{{ dropdown.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}"></div>
     <div class="input-group set_value">
         <span class="input-group-addon input-group-addon-label">{{ dropdown.title }}</span>
         {% if form == "0" %}
