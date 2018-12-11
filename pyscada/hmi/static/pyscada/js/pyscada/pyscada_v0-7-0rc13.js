@@ -799,6 +799,8 @@ function PyScadaPlot(id){
         // Subtract 20 to factor the chart's bottom margin into the centering.
         var chartTitle = $(chart_container_id + ' .chartTitle');
         chartTitle.css("margin-left", -chartTitle.width() / 2);
+        var xaxisLabel = $(chart_container_id + ' .axisLabel.xaxisLabel');
+        xaxisLabel.css("margin-left", -xaxisLabel.width() / 2);
         var yaxisLabel = $(chart_container_id + ' .axisLabel.yaxisLabel');
         yaxisLabel.css("margin-top", yaxisLabel.width() / 2 - 20);
         
@@ -1148,6 +1150,8 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         // Subtract 20 to factor the chart's bottom margin into the centering.
         var chartTitle = $(chart_container_id + ' .chartTitle');
         chartTitle.css("margin-left", -chartTitle.width() / 2);
+        var xaxisLabel = $(chart_container_id + ' .axisLabel.xaxisLabel');
+        xaxisLabel.css("margin-left", -xaxisLabel.width() / 2);
         var yaxisLabel = $(chart_container_id + ' .axisLabel.yaxisLabel');
         yaxisLabel.css("margin-top", yaxisLabel.width() / 2 - 20);
 
@@ -1418,11 +1422,6 @@ $.ajaxSetup({
 });
 
 function check_min_max(value, min, max, min_strict, max_strict) {
-    console.log(value);
-    console.log(min);
-    console.log(max);
-    console.log(min_strict);
-    console.log(max_strict);
     min_strict = typeof min_strict !== 'undefined' ? min_strict : "lte";
     max_strict = typeof max_strict !== 'undefined' ? max_strict : "gte";
     min = typeof min !== 'undefined' ? min : false;

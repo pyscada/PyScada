@@ -297,6 +297,11 @@ html,body {
 	font-size: 12px;
 }
 
+.xaxisLabel {
+    bottom: 3px;
+    left: 50%;
+}
+
 .yaxisLabel {
 	top: 50%;
 	left: 5px;
@@ -525,3 +530,12 @@ table.tablesorter thead tr .header.sorter-false {
 	border-top-left-radius: 0;
 	border-top-right-radius: 0;
 }
+
+/*form {
+    border-color: #ddd;
+    border-width: 1px;
+    border-radius: 4px 4px 0 0;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    border-style: solid;
+}*/
