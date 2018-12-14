@@ -8,11 +8,11 @@
     </div>
     <div style="margin-left:240px;">
 {% endif %}
-    {% for content in main_content %}
-        <div id="widget_{{content.widget.pk}}" class="widget {{ content.widget.css_class}}"> <!-- {{ content.widget.title }} -->
-            {{ content.html|safe }}
-        </div>
-    {% endfor %}
+{% for content in main_content %}
+    <div id="widget_{{content.widget.pk}}" class="widget {{ content.widget.css_class}}"> <!-- {{ content.widget.title }} -->
+        {{ content.html|safe }}
+    </div>
+{% endfor %}
 {%if sidebar_visible %}
     </div>
 {% endif %}

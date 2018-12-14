@@ -1005,12 +1005,16 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         if (yaxisUniqueScale == false) {
             options.yaxes[k-1].axisLabel = lb;
             //options.yaxes[k-1].axisLabelUseCanvas = true;
-            options.yaxes[k-1].axisLabelFontSizePixels = 12;
-            options.yaxes[k-1].axisLabelFontFamily = 'Verdana, Arial';
+            //options.yaxes[k-1].axisLabelFontSizePixels = 12;
+            //options.yaxes[k-1].axisLabelFontFamily = 'Verdana, Arial';
             options.yaxes[k-1].axisLabelPadding = 3;
-            options.yaxes[k-1].axisLabelColour = variables[variable_key]['color'];
+            //options.yaxes[k-1].axisLabelColour = variables[variable_key]['color'];
         }
-        options.yaxes[k-1].unit = unit;
+        if (yaxisUniqueScale == false || $(legend_table_id + ' .variable-config').length == 1) {
+            options.yaxes[k-1].unit = unit;
+        }else {
+            options.yaxes[k-1].unit = ""
+        }
         options.yaxes[k-1].labelWidth = null;
         options.yaxes[k-1].reserveSpace = true;
         k += 1;
@@ -1077,9 +1081,21 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
 	    }).appendTo("body");
 
         $(chart_container_id + ' .chart-placeholder').bind("plothover", function (event, pos, item) {
-            if (pos.x) {
-                    var str = "(" + pos.x.toFixed(0) + ", " + pos.y.toFixed(2) + ")";
+            str = "(";
+            a = 0;
+            for (axis in pos) {
+                if (axis == 'x') {
+                    if (a != 0) {str += ", "}
+                    str += "x=" + pos[axis].toFixed(2);
+                    a += 1;
                 }
+                if (axis.substring(0, 1) == "y" && axis.length == 2) {
+                    if (a != 0) {str += ", "}
+                    str +=  "y" + axis.substring(1, 2) + "=" + pos[axis].toFixed(2);
+                    a += 1;
+                }
+            }
+            str += ")";
             $("#hoverdata").text(str);
             if (item) {
                 var x = item.datapoint[0].toFixed(0),
@@ -1123,6 +1139,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             }
             pOpt = flotPlot.getOptions();
             if ($(chart_container_id + " .activate_zoom_x").is(':checked') && ranges.xaxis != null) {
+                /*
                 pData = flotPlot.getData();
                 tmin=0;
                 tmax=0;
@@ -1137,6 +1154,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                 DATA_DISPLAY_TO_TIMESTAMP = tmax;
                 DATA_DISPLAY_FROM_TIMESTAMP = tmin;
                 DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP-DATA_DISPLAY_FROM_TIMESTAMP;
+                */
                 pOpt.xaxes[0].min = ranges.xaxis.from;
                 pOpt.xaxes[0].max = ranges.xaxis.to;
                 flotPlot.setupGrid();
@@ -1157,10 +1175,10 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
 
 
         $(chart_container_id + " .btn.btn-default.chart-ResetSelection").click(function() {
-            DATA_DISPLAY_FROM_TIMESTAMP = -1;
-            DATA_DISPLAY_TO_TIMESTAMP = -1;
-            DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
-            set_x_axes();
+            //DATA_DISPLAY_FROM_TIMESTAMP = -1;
+            //DATA_DISPLAY_TO_TIMESTAMP = -1;
+            //DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
+            //set_x_axes();
             pOpt = flotPlot.getOptions();
             for (y in pOpt.yaxes){
                 pOpt.yaxes[y].min = pOpt.yaxes[y].chart_data_min;
@@ -1182,10 +1200,10 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             flotPlot.draw();
         });
         $(chart_container_id + " .btn.btn-default.chart-ZoomXToFit").click(function() {
-            DATA_DISPLAY_FROM_TIMESTAMP = -1;
-            DATA_DISPLAY_TO_TIMESTAMP = -1;
-            DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
-            set_x_axes();
+            //DATA_DISPLAY_FROM_TIMESTAMP = -1;
+            //DATA_DISPLAY_TO_TIMESTAMP = -1;
+            //DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
+            //set_x_axes();
             pOpt = flotPlot.getOptions();
             pOpt.xaxes[0].min = pOpt.xaxes[0].x_data_min;
             pOpt.xaxes[0].max = pOpt.xaxes[0].x_data_max;
@@ -1210,6 +1228,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             var series = [];
             start_id = 0;
             j=0;
+            jk=1;
             for (var key in keys){
                 key = keys[key];
                 xkey = xaxisVarId
@@ -1227,7 +1246,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                         chart_data = DATA[key].slice(0,stop_id+1);
                     }else {
                         chart_data = DATA[key].slice();
-                    }
+                    };
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
                         start_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
                         stop_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_TO_TIMESTAMP,0);
@@ -1241,7 +1260,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                         chart_x_data = DATA[xkey].slice(0,stop_fid+1);
                     }else {
                         chart_x_data = DATA[xkey].slice();
-                    }
+                    };
                     new_data=[];
                     if (chart_data.length > 0){
                         i = 0;
@@ -1259,9 +1278,9 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                                 x_data_min = Math.min(x_data_min, chart_x_data[i][1])
                                 x_data_max = Math.max(x_data_max, chart_x_data[i][1])
                                 i += 1;
-                            }
-                        }
-                    }
+                            };
+                        };
+                    };
                     $.each($(legend_table_id + ' .legendSeries'),function(kkey,val){
                         val_inst = $(val);
                         if (key == val_inst.find(".variable-config").data('key')){
@@ -1271,12 +1290,13 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                     });
                     if (new_data.length > 0){
                         j += 1;
-                        if (yaxisUniqueScale) {yj = 1} else {yj = j}
+                        if (yaxisUniqueScale) {yj = 1} else {yj = jk}
                         //plot Y with defferents axis
                         series.push({"data":new_data,"xdata":chart_x_data,"color":variables[key].color,"yaxis":yj,"label":label,"unit":unit,"chart_data_min":chart_data_min,"chart_data_max":chart_data_max,"x_data_min":x_data_min,"x_data_max":x_data_max});
-                    }
-                }
-            }
+                    };
+                };
+                jk += 1;
+            };
             // update flot plot
             flotPlot.setData(series);
 
@@ -1284,8 +1304,22 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             pOpt = flotPlot.getOptions();
             if (j != 0){
                 for (k = 1;k <= j;k++){
-                    pOpt.yaxes[k-1].chart_data_min = series[k-1]['chart_data_min'];
-                    pOpt.yaxes[k-1].chart_data_max = series[k-1]['chart_data_max'];
+                    S = series[k-1]
+                    if (typeof S !== 'undefined') {
+                        if (yaxisUniqueScale == false || $(legend_table_id + ' .variable-config').length == 1) {
+                            pOpt.yaxes[S['yaxis']-1].unit = S['unit'];
+                        }else {
+                            options.yaxes[S['yaxis']-1].unit = ""
+                        }
+                        pOpt.alignTicksWithAxis = 1;
+                        if (k==1) {
+                            pOpt.yaxes[S['yaxis']-1].chart_data_min = S['chart_data_min'];
+                            pOpt.yaxes[S['yaxis']-1].chart_data_max = S['chart_data_max'];
+                        }else {
+                            pOpt.yaxes[S['yaxis']-1].chart_data_min = Math.min(S['chart_data_min'],pOpt.yaxes[S['yaxis']-1].chart_data_min);
+                            pOpt.yaxes[S['yaxis']-1].chart_data_max = Math.max(S['chart_data_max'],pOpt.yaxes[S['yaxis']-1].chart_data_max);
+                        }
+                    }
                 }
             }
 
@@ -1323,22 +1357,24 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             flotPlot.draw();
 
             // Change the color of the axis
-            if (j != 0 && yaxisUniqueScale == false){
-                for (k = 1;k <= j;k++){
+            if (jk != 1 && yaxisUniqueScale == false){
+                for (k = 1;k <= jk;k++){
                     S = series[k-1]
-                    if (S['unit'] != "") {
-                        lb = S['label'].replace(/\s/g, '') + "(" + S['unit'] + ")";
-                    }else{
-                        lb = S['label'].replace(/\s/g, '');
-                    }
-                    if (k == 1){
-                        $(chart_container_id + ' .axisLabels.yaxisLabel')[0].innerHTML = lb
-                        $(chart_container_id + ' .axisLabels.yaxisLabel').css('color',S['color'])
-                        $(chart_container_id + ' .flot-y' + k + '-axis').css('color',S['color'])
-                    }else {
-                        $(chart_container_id + ' .axisLabels.y' + k + 'axisLabel')[0].innerHTML = lb
-                        $(chart_container_id + ' .axisLabels.y' + k + 'axisLabel').css('color',S['color'])
-                        $(chart_container_id + ' .flot-y' + k + '-axis').css('color',S['color'])
+                    if (typeof S !== 'undefined') {
+                        if (S['unit'] != "") {
+                            lb = S['label'].replace(/\s/g, '') + "(" + S['unit'] + ")";
+                        }else{
+                            lb = S['label'].replace(/\s/g, '');
+                        }
+                        if (S['yaxis'] == 1){
+                            $(chart_container_id + ' .axisLabels.yaxisLabel')[0].innerHTML = lb
+                            $(chart_container_id + ' .axisLabels.yaxisLabel').css('color',S['color'])
+                            $(chart_container_id + ' .flot-y' + S['yaxis'] + '-axis').css('color',S['color'])
+                        }else {
+                            $(chart_container_id + ' .axisLabels.y' + S['yaxis'] + 'axisLabel')[0].innerHTML = lb
+                            $(chart_container_id + ' .axisLabels.y' + S['yaxis'] + 'axisLabel').css('color',S['color'])
+                            $(chart_container_id + ' .flot-y' + S['yaxis'] + '-axis').css('color',S['color'])
+                        }
                     }
                 }
             }
