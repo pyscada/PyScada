@@ -1071,14 +1071,6 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
 
         //add info on mouse over a point and position of the mouse
         //add <span id="hoverdata"></span> to the html code to see the position of the mouse
-        $("<div id='tooltip'></div>").css({
-            position: "absolute",
-            display: "none",
-            border: "1px solid #fdd",
-            padding: "2px",
-            "background-color": "#fee",
-            opacity: 0.80
-	    }).appendTo("body");
 
         $(chart_container_id + ' .chart-placeholder').bind("plothover", function (event, pos, item) {
             str = "(";
@@ -1098,7 +1090,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             str += ")";
             $("#hoverdata").text(str);
             if (item) {
-                var x = item.datapoint[0].toFixed(0),
+                var x = item.datapoint[0].toFixed(2),
                     y = item.datapoint[1].toFixed(2);
                 $("#tooltip").html(item.series.label + "(" + x + ") = " + y)
                     .css({top: item.pageY+5, left: item.pageX+5})
@@ -1107,16 +1099,16 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                 $("#tooltip").hide();
             }
         });
-        $(chart_container_id + ' .chart-placeholder').bind("plotclick", function (event, pos, item) {
+        /*$(chart_container_id + ' .chart-placeholder').bind("plotclick", function (event, pos, item) {
 			if (item) {
 			    var x = item.datapoint[0].toFixed(0),
                     y = item.datapoint[1].toFixed(2);
 				$("#clickdata").text(" - click point " + item.dataIndex + " in " + item.series.label +
 				" - (x,y) = (" + x + ", " + y + ")");
 				//TODO highlight the point and remove on nextclick
-				//plot.highlight(item.series, item.datapoint);
+				plot.highlight(item.series, item.datapoint);
 			}
-		});
+		});*/
 
         // bind
         $(chart_container_id + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
@@ -1280,6 +1272,9 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                                 i += 1;
                             };
                         };
+                    }else {
+                        chart_data_min = null;
+                        chart_data_max = null;
                     };
                     $.each($(legend_table_id + ' .legendSeries'),function(kkey,val){
                         val_inst = $(val);
