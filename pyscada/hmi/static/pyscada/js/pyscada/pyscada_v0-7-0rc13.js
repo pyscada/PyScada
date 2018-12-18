@@ -1094,7 +1094,8 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                     y = item.datapoint[1].toFixed(2);
                 $("#tooltip").html(item.series.label + "(" + x + ") = " + y)
                     .css({top: item.pageY+5, left: item.pageX+5})
-                    .fadeIn(200);
+                    .show();
+                    //.fadeIn(200);
             } else {
                 $("#tooltip").hide();
             }

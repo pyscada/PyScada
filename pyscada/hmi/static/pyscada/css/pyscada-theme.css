@@ -495,7 +495,7 @@ table.tablesorter thead tr .header.sorter-false {
   font-size: 14px;
   caption-side: bottom;
   margin: 0px;
-
+}
 .form-signin {
 	max-width: 330px;
 	padding: 15px;
@@ -532,11 +532,11 @@ table.tablesorter thead tr .header.sorter-false {
 }
 
 #tooltip {
-    position: "absolute";
-    display: "none";
-    border: "1px solid #fdd";
-    padding: "2px";
-    "background-color": "#fee";
+    position: absolute;
+    display: none;
+    border: 1px solid #fdd;
+    padding: 2px;
+    background-color: #fee;
     opacity: 0.80;
 }
 
