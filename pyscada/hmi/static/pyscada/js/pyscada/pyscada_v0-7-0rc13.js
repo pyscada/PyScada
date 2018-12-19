@@ -1174,8 +1174,8 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             //set_x_axes();
             pOpt = flotPlot.getOptions();
             for (y in pOpt.yaxes){
-                pOpt.yaxes[y].min = pOpt.yaxes[y].chart_data_min;
-                pOpt.yaxes[y].max = pOpt.yaxes[y].chart_data_max;
+                pOpt.yaxes[y].min = null;
+                pOpt.yaxes[y].max = null;
             }
             pOpt.xaxes[0].min = pOpt.xaxes[0].x_data_min;
             pOpt.xaxes[0].max = pOpt.xaxes[0].x_data_max;
@@ -1186,8 +1186,8 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         $(chart_container_id + " .btn.btn-default.chart-ZoomYToFit").click(function() {
             pOpt = flotPlot.getOptions();
             for (y in pOpt.yaxes){
-                pOpt.yaxes[y].min = pOpt.yaxes[y].chart_data_min;
-                pOpt.yaxes[y].max = pOpt.yaxes[y].chart_data_max;
+                pOpt.yaxes[y].min = null;
+                pOpt.yaxes[y].max = null;
             }
             flotPlot.setupGrid();
             flotPlot.draw();

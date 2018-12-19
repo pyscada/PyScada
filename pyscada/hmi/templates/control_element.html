@@ -19,13 +19,17 @@
             <div class="input-group set_value">
                 <span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
                 <input type="text" class="form-control {{ item.web_class_str }}" id="{{ item.web_id }}-{{ uuid }}-value" placeholder="">
-                <span class="input-group-addon">{{ item.unit }}</span>
+                {% if item.unit %}<span class="input-group-addon">{{ item.unit }}</span>{% endif %}
                 <span class="input-group-btn">
                     <button class="btn btn-default write-task-set set-{{ item.key }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}" id="{{ item.web_id }}-{{ uuid }}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-value-class="{{ item.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}" type="button">set</button>
                 </span>
             </div>
         {% endif %}
     {% elif item.type == 6 %}<!-- display value -->
-        <div class="input-group control_label"><span class="type-label">{{ item.label }}<span class="type-unit"><span class="type-numeric {{ item.web_class_str }}">NaN</span> {{ item.unit }}</span></span></div>
+        <div class="input-group set_value">
+            <span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
+            <span class="input-group-addon input-group-addon-label type-numeric {{ item.web_class_str }}"></span>
+            {% if item.unit %}<span class="input-group-addon">{{ item.unit }}</span>{% endif %}
+        </div>
     {% endif %}
 {% endif %}
