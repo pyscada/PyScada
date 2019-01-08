@@ -316,7 +316,7 @@ function data_handler_done(fetched_data){
         }
         $.each(PyScadaPlots,function(plot_id){
             var self = this, doBind = function() {
-                PyScadaPlots[plot_id].update();
+                PyScadaPlots[plot_id].update(false);
             };
             $.browserQueue.add(doBind, this);
         });
@@ -565,7 +565,7 @@ function update_data_values(key,val){
 function set_x_axes(){
     if(!progressbar_resize_active){
         $.each(PyScadaPlots,function(plot_id){
-            PyScadaPlots[plot_id].update();
+            PyScadaPlots[plot_id].update(false);
         });
         // update the progressbar
         update_timeline();
@@ -606,7 +606,7 @@ function update_timeline(){
 
 function progressbarSetWindow( event, ui ) {
     $.each(PyScadaPlots,function(plot_id){
-            PyScadaPlots[plot_id].update();
+            PyScadaPlots[plot_id].update(false);
     });
 
     progressbar_resize_active = false;
@@ -835,7 +835,7 @@ function PyScadaPlot(id){
     }
 
 
-    function update(){
+    function update(force){
         if(!prepared ){
             if($(chart_container_id).is(":visible")){
                 prepared = true;
@@ -844,7 +844,7 @@ function PyScadaPlot(id){
                 return;
             }
         }
-        if($(chart_container_id).is(":visible")){
+        if($(chart_container_id).is(":visible") || force){
             // only update if plot is visible
             // add the selected data series to the "series" variable
             series = [];
@@ -1206,7 +1206,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
     }
 
 
-    function update(){
+    function update(force){
         if(!prepared ){
             if($(chart_container_id).is(":visible")){
                 prepared = true;
@@ -1225,7 +1225,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             for (var key in keys){
                 key = keys[key];
                 xkey = xaxisVarId
-                if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object' && typeof(DATA[xkey]) === 'object'){
+                if(($(legend_checkbox_id+key).is(':checked') || force) && typeof(DATA[key]) === 'object' && typeof(DATA[xkey]) === 'object'){
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
                         start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
                         stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
