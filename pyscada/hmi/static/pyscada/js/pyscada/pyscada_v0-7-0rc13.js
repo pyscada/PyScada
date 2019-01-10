@@ -731,7 +731,7 @@ function PyScadaPlot(id){
         // add onchange function to every checkbox in legend
         $.each(variables,function(key,val){
             $(legend_checkbox_id+key).change(function() {
-                plot.update();
+                plot.update(false);
                 if ($(legend_checkbox_id+key).is(':checked')){
                     $(legend_checkbox_status_id+key).html(1);
                 }else{
@@ -742,7 +742,7 @@ function PyScadaPlot(id){
         //
         $(legend_checkbox_id+'make_all_none').change(function() {
                 //console.log(legend_checkbox_id + 'changed');
-                plot.update();
+                plot.update(false);
                 if ($(legend_checkbox_id+'make_all_none').is(':checked')){
                     $.each(variables,function(key,val){
                         $(legend_checkbox_status_id+key).html(1);
@@ -770,7 +770,7 @@ function PyScadaPlot(id){
         flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series, options);
         set_chart_selection_mode();
         // update the plot
-        update();
+        update(false);
         // bind 
         $(chart_container_id + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
             pOpt = flotPlot.getOptions();
@@ -845,7 +845,7 @@ function PyScadaPlot(id){
 
     function update(force){
         if(!prepared ){
-            if($(chart_container_id).is(":visible")){
+            if($(chart_container_id).is(":visible") || force){
                 prepared = true;
                 prepare();
             }else{
@@ -1036,7 +1036,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         // add onchange function to every checkbox in legend
         $.each(variables,function(key,val){
             $(legend_checkbox_id+key).change(function() {
-                plot.update();
+                plot.update(false);
                 if ($(legend_checkbox_id+key).is(':checked')){
                     $(legend_checkbox_status_id+key).html(1);
                 }else{
@@ -1047,7 +1047,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         //
         $(legend_checkbox_id+'make_all_none').change(function() {
                 //console.log(legend_checkbox_id + 'changed');
-                plot.update();
+                plot.update(false);
                 if ($(legend_checkbox_id+'make_all_none').is(':checked')){
                     $.each(variables,function(key,val){
                         $(legend_checkbox_status_id+key).html(1);
@@ -1075,7 +1075,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series, options)
         set_chart_selection_mode();
         // update the plot
-        update();
+        update(false);
 
         //add info on mouse over a point and position of the mouse
         //add <span id="hoverdata"></span> to the html code to see the position of the mouse
@@ -1216,14 +1216,14 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
 
     function update(force){
         if(!prepared ){
-            if($(chart_container_id).is(":visible")){
+            if($(chart_container_id).is(":visible") || force){
                 prepared = true;
                 prepare();
             }else{
                 return;
             }
         }
-        if($(chart_container_id).is(":visible")){
+        if($(chart_container_id).is(":visible") || force){
             // only update if plot is visible
             // add the selected data series to the "series" variable
             var series = [];
@@ -1233,7 +1233,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             for (var key in keys){
                 key = keys[key];
                 xkey = xaxisVarId
-                if(($(legend_checkbox_id+key).is(':checked') || force) && typeof(DATA[key]) === 'object' && typeof(DATA[xkey]) === 'object'){
+                if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object' && typeof(DATA[xkey]) === 'object'){
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
                         start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
                         stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
