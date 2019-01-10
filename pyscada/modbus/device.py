@@ -315,6 +315,9 @@ class Device:
         """
         write value to single modbus register or coil
         """
+        if variable_id not in self.variables:
+            return False
+
         if not self.variables[variable_id].writeable:
             return False
 
