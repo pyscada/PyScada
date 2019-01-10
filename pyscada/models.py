@@ -377,6 +377,7 @@ class VariablePropertyManager(models.Manager):
         if vp:
             value_class = vp.value_class
             if value_class.upper() in ['STRING']:
+                value = "" if value is None else value
                 vp.value_string = value
             elif value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
                 vp.value_float64 = value
@@ -387,6 +388,7 @@ class VariablePropertyManager(models.Manager):
             elif value_class.upper() in ['INT16', 'INT8', 'UINT8']:
                 vp.value_int16 = value
             elif value_class.upper() in ['BOOL', 'BOOLEAN']:
+                value = False if value is None else value
                 vp.value_boolean = value
             vp.save()
             return vp
