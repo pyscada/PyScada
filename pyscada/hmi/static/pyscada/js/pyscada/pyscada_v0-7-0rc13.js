@@ -560,6 +560,14 @@ function update_data_values(key,val){
                 $('input.'+ key).attr("placeholder",1);
             }
         }
+        if (typeof(val)==="object" && val === null){
+            $(".type-numeric." + key).html(val);
+            $('input.'+ key).attr("placeholder",val);
+        }
+        if (typeof(val)==="string"){
+            $(".type-numeric." + key).html(val);
+            $('input.'+ key).attr("placeholder",val);
+        }
 }
 
 function set_x_axes(){
