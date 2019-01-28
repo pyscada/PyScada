@@ -6,7 +6,7 @@ Copyright (c) 2013-2018 Martin Schröder
 Licensed under the GPL.
 
 */
-var version = "0.7.0rc10"
+var version = "0.7.0rc13"
 var NOTIFICATION_COUNT = 0
 var UPDATE_STATUS_COUNT = 0;
 var INIT_STATUS_COUNT = 0;
@@ -671,6 +671,9 @@ function PyScadaPlot(id){
             timeformat: "%H:%M:%S",
             timezone:"browser"
         },
+        yaxis: {
+            position: "left"
+        },
         legend: {
             show: false
         },
@@ -683,11 +686,15 @@ function PyScadaPlot(id){
                 top: 20,
                 bottom: 8,
                 left: 20
-            }
+            },
+            hoverable: true,
         },
         lines: {
             steps:true
-            }
+        },
+        axisvalues: {
+            mode: "xy",
+        }
     },
     series = [],		// just the active data series
     keys   = [],		// list of variable keys (ids)
@@ -771,6 +778,62 @@ function PyScadaPlot(id){
         set_chart_selection_mode();
         // update the plot
         update(false);
+
+        //add info on mouse over a point and position of the mouse
+        //add <span id="hoverdata"></span> to the html code to see the position of the mouse
+
+        $(chart_container_id + ' .chart-placeholder').bind("plothover", function (event, pos, item) {
+            str = "(";
+            a = 0;
+            if(!pos) {
+                $(".axes-tooltips").hide();
+            }
+            for (axis in pos) {
+                if (!$("#" + axis + "-tooltip").length) {
+                    $("<div id='" + axis + "-tooltip' class='axes-tooltips'></div>").css({
+                        position: "absolute",
+                        display: "none",
+                        border: "1px solid #fdd",
+                        padding: "2px",
+                        "background-color": "#fee",
+                        opacity: 0.90,
+                        "z-index": 90
+                    }).appendTo("body");
+                }
+                if (axis == 'x') {
+                    if (a != 0) {str += ", "}
+                    str += "x=" + pos[axis].toFixed(2);
+                    a += 1;
+                }
+                if (axis.substring(0, 1) == "y" && axis.length == 2) {
+                    if (a != 0) {str += ", "}
+                    str +=  "y" + axis.substring(1, 2) + "=" + pos[axis].toFixed(2);
+                    a += 1;
+                }
+            }
+            str += ")";
+            $("#hoverdata").text(str);
+            if (item) {
+                opts = item.series.xaxis.options
+                if (opts.mode == "time") {
+                    dG = $.plot.dateGenerator(Number(item.datapoint[0].toFixed(0)), opts)
+                    dF = $.plot.formatDate(dG, opts.timeformat, opts.monthNames, opts.dayNames);
+                    var x = dF,
+                        y = item.datapoint[1].toFixed(2);
+                }else {
+                    var x = item.datapoint[0].toFixed(2),
+                        y = item.datapoint[1].toFixed(2);
+                }
+                x_label = (typeof item.series.label !== 'undefined') ? item.series.label : "T"
+                $("#tooltip").html(x_label + "(" + x + ") = " + y)
+                    .css({top: item.pageY+5, left: item.pageX+5, "z-index": 91})
+                    .show();
+                    //.fadeIn(200);
+            } else {
+                $("#tooltip").hide();
+            }
+        });
+
         // bind 
         $(chart_container_id + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
             pOpt = flotPlot.getOptions();
@@ -951,7 +1014,10 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             clickable: true
         },
         lines: { show: true },
-        points: { show: plotPoints }
+        points: { show: plotPoints },
+        axisvalues: {
+            mode: "xy",
+        }
     },
     series = [],		// just the active data series
     keys   = [],		// list of variable keys (ids)
@@ -1083,7 +1149,21 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         $(chart_container_id + ' .chart-placeholder').bind("plothover", function (event, pos, item) {
             str = "(";
             a = 0;
+            if(!pos) {
+                $(".axes-tooltips").hide();
+            }
             for (axis in pos) {
+                if (!$("#" + axis + "-tooltip").length) {
+                    $("<div id='" + axis + "-tooltip' class='axes-tooltips'></div>").css({
+                        position: "absolute",
+                        display: "none",
+                        border: "1px solid #fdd",
+                        padding: "2px",
+                        "background-color": "#fee",
+                        opacity: 0.90,
+                        "z-index": 90
+                    }).appendTo("body");
+                }
                 if (axis == 'x') {
                     if (a != 0) {str += ", "}
                     str += "x=" + pos[axis].toFixed(2);
@@ -1098,10 +1178,18 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             str += ")";
             $("#hoverdata").text(str);
             if (item) {
-                var x = item.datapoint[0].toFixed(2),
-                    y = item.datapoint[1].toFixed(2);
+                opts = item.series.xaxis.options
+                if (opts.mode == "time") {
+                    dG = $.plot.dateGenerator(Number(item.datapoint[0].toFixed(0)), opts)
+                    dF = $.plot.formatDate(dG, opts.timeformat, opts.monthNames, opts.dayNames);
+                    var x = dF,
+                        y = item.datapoint[1].toFixed(2);
+                }else {
+                    var x = item.datapoint[0].toFixed(2),
+                        y = item.datapoint[1].toFixed(2);
+                }
                 $("#tooltip").html(item.series.label + "(" + x + ") = " + y)
-                    .css({top: item.pageY+5, left: item.pageX+5})
+                    .css({top: item.pageY+5, left: item.pageX+5, "z-index": 91})
                     .show();
                     //.fadeIn(200);
             } else {
@@ -1371,7 +1459,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                             lb = S['label'].replace(/\s/g, '');
                         }
                         if (S['yaxis'] == 1){
-                            $(chart_container_id + ' .axisLabels.yaxisLabel')[0].innerHTML = lb
+                            if ($(chart_container_id + ' .axisLabels.yaxisLabel').length) {$(chart_container_id + ' .axisLabels.yaxisLabel')[0].innerHTML = lb}
                             $(chart_container_id + ' .axisLabels.yaxisLabel').css('color',S['color'])
                             $(chart_container_id + ' .flot-y' + S['yaxis'] + '-axis').css('color',S['color'])
                         }else {
