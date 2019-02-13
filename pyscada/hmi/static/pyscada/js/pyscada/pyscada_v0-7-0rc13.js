@@ -797,7 +797,8 @@ function PyScadaPlot(id){
                         padding: "2px",
                         "background-color": "#fee",
                         opacity: 0.90,
-                        "z-index": 90
+                        "z-index": 90,
+                        "font-size": "13px"
                     }).appendTo("body");
                 }
                 if (axis == 'x') {
@@ -824,7 +825,7 @@ function PyScadaPlot(id){
                     var x = item.datapoint[0].toFixed(2),
                         y = item.datapoint[1].toFixed(2);
                 }
-                x_label = (typeof item.series.label !== 'undefined') ? item.series.label : "T"
+                x_label = (typeof item.series.label !== 'undefined') ? item.series.label : "Time"
                 $("#tooltip").html(x_label + "(" + x + ") = " + y)
                     .css({top: item.pageY+5, left: item.pageX+5, "z-index": 91})
                     .show();
@@ -834,7 +835,7 @@ function PyScadaPlot(id){
             }
         });
 
-        // bind 
+        // bind
         $(chart_container_id + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
             pOpt = flotPlot.getOptions();
 
@@ -874,8 +875,8 @@ function PyScadaPlot(id){
         xaxisLabel.css("margin-left", -xaxisLabel.width() / 2);
         var yaxisLabel = $(chart_container_id + ' .axisLabel.yaxisLabel');
         yaxisLabel.css("margin-top", yaxisLabel.width() / 2 - 20);
-        
-        
+
+
         $(chart_container_id + " .btn.btn-default.chart-ResetSelection").click(function() {
             DATA_DISPLAY_FROM_TIMESTAMP = -1;
             DATA_DISPLAY_TO_TIMESTAMP = -1;
@@ -888,7 +889,7 @@ function PyScadaPlot(id){
             flotPlot.setupGrid();
             flotPlot.draw();
         });
-        
+
         $(chart_container_id + " .btn.btn-default.chart-ZoomYToFit").click(function() {
             pOpt = flotPlot.getOptions();
             aOpt = flotPlot.getYAxes();
@@ -1067,7 +1068,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         };
         if(k%2){pos="left";}else{pos="right";};
         tf = function (value, axis) {
-            return value.toFixed(axis.tickDecimals) + axis.options.unit;
+            return value.toFixed(axis.tickDecimals) + ((typeof axis.options.unit != "undefined") ? axis.options.unit : '');
         };
         if (unit != "") {
             lb = label.replace(/\s/g, '') + "(" + unit + ")";
@@ -1161,7 +1162,8 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                         padding: "2px",
                         "background-color": "#fee",
                         opacity: 0.90,
-                        "z-index": 90
+                        "z-index": 90,
+                        "font-size": "13px"
                     }).appendTo("body");
                 }
                 if (axis == 'x') {
