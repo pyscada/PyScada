@@ -133,7 +133,7 @@ The plugin also adds four public methods:
                 if (c.mode.indexOf("x") != -1) {
                     for (xaxis in xaxes) {
                         xaxisplusone = Number(xaxis) + 1;
-                        if (typeof xaxes[xaxis].box !== 'undefined' && typeof xaxes[xaxis].box.padding !== 'undefined' && typeof xaxes[xaxis].box.top !== 'undefined' && typeof xaxes[xaxis].box.height !== 'undefined') {
+                        if (xaxes[xaxis].used && typeof xaxes[xaxis].box !== 'undefined' && typeof xaxes[xaxis].box.padding !== 'undefined' && typeof xaxes[xaxis].box.top !== 'undefined' && typeof xaxes[xaxis].box.height !== 'undefined') {
                             var drawX = Math.floor(axisvalues.x);
                             if (xaxes[xaxis].options.mode == "time") {
                                 dG = $.plot.dateGenerator(Number(xaxes[xaxis].c2p(drawX).toFixed(0)), xaxes[xaxis].options)
@@ -159,7 +159,7 @@ The plugin also adds four public methods:
                         yaxisplusone = Number(yaxis) + 1;
                         var drawY = Math.floor(axisvalues.y);
                         y_value = tf(yaxes[yaxis].c2p(drawY), yaxes[yaxis]);
-                        if (typeof yaxes[yaxis].box !== 'undefined' && typeof yaxes[yaxis].box.padding !== 'undefined' && typeof yaxes[yaxis].box.left !== 'undefined' && typeof yaxes[yaxis].box.width !== 'undefined') {
+                        if (yaxes[yaxis].used && typeof yaxes[yaxis].box !== 'undefined' && typeof yaxes[yaxis].box.padding !== 'undefined' && typeof yaxes[yaxis].box.left !== 'undefined' && typeof yaxes[yaxis].box.width !== 'undefined') {
                             if (yaxes[yaxis].position == "left") {
                                 $("#y" + yaxisplusone + "-tooltip").html(y_value)
                                     .css({top: offset.top + drawY - yaxes[yaxis].box.padding, left: offset.left - yaxes[yaxis].box.padding - window.getComputedStyle($("#y" + yaxisplusone + "-tooltip")[0]).width.replace("px", "")})

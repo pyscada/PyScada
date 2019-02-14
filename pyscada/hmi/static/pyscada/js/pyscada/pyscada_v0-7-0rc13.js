@@ -728,6 +728,15 @@ function PyScadaPlot(id){
         variables[variable_key] = {'color':val_inst.data('color'),'yaxis':1}
         keys.push(variable_key);
         variable_names.push(variable_name);
+        unit = "";
+        label = "";
+        $.each($(legend_table_id + ' .legendSeries'),function(kkey,val){
+            val_inst = $(val);
+            if (variable_key == val_inst.find(".variable-config").data('key')){
+                variables[variable_key].label = val_inst.find(".legendLabel").text().replace(/\s/g, '');
+                variables[variable_key].unit = val_inst.find(".legendUnit").text().replace(/\s/g, '');
+            }
+        });
     });
     
     
@@ -814,7 +823,7 @@ function PyScadaPlot(id){
             }
             str += ")";
             $("#hoverdata").text(str);
-            if (item) {
+            if (item && typeof item.datapoint != 'undefined' && item.datapoint.length > 1) {
                 opts = item.series.xaxis.options
                 if (opts.mode == "time") {
                     dG = $.plot.dateGenerator(Number(item.datapoint[0].toFixed(0)), opts)
@@ -825,8 +834,9 @@ function PyScadaPlot(id){
                     var x = item.datapoint[0].toFixed(2),
                         y = item.datapoint[1].toFixed(2);
                 }
-                x_label = (typeof item.series.label !== 'undefined') ? item.series.label : "Time"
-                $("#tooltip").html(x_label + "(" + x + ") = " + y)
+                y_label = (typeof item.series.label !== 'undefined') ? item.series.label : "T"
+                y_unit = (typeof item.series.unit !== 'undefined') ? item.series.unit : ""
+                $("#tooltip").html(y_label + "(" + x + ") = " + y + " " + y_unit)
                     .css({top: item.pageY+5, left: item.pageX+5, "z-index": 91})
                     .show();
                     //.fadeIn(200);
@@ -960,8 +970,7 @@ function PyScadaPlot(id){
                             chart_data.push([DATA_DISPLAY_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
                         }
                     }
-
-                    series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis});
+                    series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":variables[key].label,"unit":variables[key].unit});
                 }
             }
             // update flot plot
@@ -1179,7 +1188,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             }
             str += ")";
             $("#hoverdata").text(str);
-            if (item) {
+            if (item && typeof item.datapoint != 'undefined' && item.datapoint.length > 1) {
                 opts = item.series.xaxis.options
                 if (opts.mode == "time") {
                     dG = $.plot.dateGenerator(Number(item.datapoint[0].toFixed(0)), opts)
@@ -1190,7 +1199,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                     var x = item.datapoint[0].toFixed(2),
                         y = item.datapoint[1].toFixed(2);
                 }
-                $("#tooltip").html(item.series.label + "(" + x + ") = " + y)
+                $("#tooltip").html(item.series.label + "(" + x + ") = " + y + " " + item.series.unit)
                     .css({top: item.pageY+5, left: item.pageX+5, "z-index": 91})
                     .show();
                     //.fadeIn(200);
@@ -1415,6 +1424,31 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                         }
                     }
                 }
+            }
+
+            // Reset min and max for xaxis and yaxes when no data
+            allYAxesEmpty = true;
+            for (y = 0;y < pOpt.yaxes.length;y++){
+                if (j != 0){
+                    yAxesEmpty = true;
+                    for (k = 1;k <= j;k++){
+                        S = series[k-1];
+                        if (S['yaxis']-1 == y) {yAxesEmpty = false;}
+                    }
+                    if (yAxesEmpty == true) {
+                        pOpt.yaxes[y].min = null;
+                        pOpt.yaxes[y].max = null;
+                    }else {allYAxesEmpty = false;}
+                }else {
+                    pOpt.yaxes[y].min = null;
+                    pOpt.yaxes[y].max = null;
+                    pOpt.xaxes[0].min = null;
+                    pOpt.xaxes[0].max = null;
+                }
+            }
+            if (allYAxesEmpty == true) {
+                pOpt.xaxes[0].min = null;
+                pOpt.xaxes[0].max = null;
             }
 
             // update x window
