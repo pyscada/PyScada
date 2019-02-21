@@ -148,7 +148,8 @@ The plugin also adds four public methods:
                                     .show();
                             }else if (xaxes[xaxis].position == "bottom") {
                                 $("#x" + xaxisplusone + "-tooltip").html(x_value)
-                                    .css({top: offset.top + xaxes[xaxis].box.top + xaxes[xaxis].box.padding - xaxes[xaxis].box.height, left: offset.left + drawX})
+                                    .css({top: offset.top + xaxes[xaxis].box.top + xaxes[xaxis].box.padding - xaxes[xaxis].box.height + 2, left: offset.left + drawX})
+//                                    .css({top: offset.top + xaxes[xaxis].box.top - xaxes[xaxis].box.height, left: offset.left + drawX})
                                     .show();
                             }
                         }
@@ -159,15 +160,16 @@ The plugin also adds four public methods:
                         yaxisplusone = Number(yaxis) + 1;
                         var drawY = Math.floor(axisvalues.y);
                         y_value = tf(yaxes[yaxis].c2p(drawY), yaxes[yaxis]);
-                        if (yaxes[yaxis].used && typeof yaxes[yaxis].box !== 'undefined' && typeof yaxes[yaxis].box.padding !== 'undefined' && typeof yaxes[yaxis].box.left !== 'undefined' && typeof yaxes[yaxis].box.width !== 'undefined') {
+                        if (yaxes[yaxis].used && typeof yaxes[yaxis].box !== 'undefined' && typeof yaxes[yaxis].box.padding !== 'undefined' && typeof yaxes[yaxis].box.left !== 'undefined' && typeof yaxes[yaxis].box.width !== 'undefined' && $("#y" + yaxisplusone + "-tooltip").length) {
                             if (yaxes[yaxis].position == "left") {
                                 $("#y" + yaxisplusone + "-tooltip").html(y_value)
-                                    .css({top: offset.top + drawY - yaxes[yaxis].box.padding, left: offset.left - yaxes[yaxis].box.padding - window.getComputedStyle($("#y" + yaxisplusone + "-tooltip")[0]).width.replace("px", "")})
+//                                    .css({top: offset.top + drawY - yaxes[yaxis].box.padding, left: offset.left - yaxes[yaxis].box.padding - window.getComputedStyle($("#y" + yaxisplusone + "-tooltip")[0]).width.replace("px", "")})
+                                    .css({top: offset.top + drawY - yaxes[yaxis].box.padding + yaxes[yaxis].labelHeight/2, left: offset.left + yaxes[yaxis].box.left - plotOffset.left + ((typeof yaxes[yaxis].options.axisLabel != "undefined") ? yaxes[yaxis].labelHeight : 0)})
                                     .show();
                             }else if (yaxes[yaxis].position == "right") {
                                 $("#y" + yaxisplusone + "-tooltip").html(y_value)
 //                                    .css({top: offset.top + drawY - yaxes[yaxis].box.padding, left: offset.left + yaxes[yaxis].box.left + yaxes[yaxis].box.padding - yaxes[yaxis].box.width})
-                                    .css({top: offset.top + drawY - yaxes[yaxis].box.padding, left: offset.left + yaxes[yaxis].box.left + yaxes[yaxis].box.padding - plotOffset.left})
+                                    .css({top: offset.top + drawY - yaxes[yaxis].box.padding + yaxes[yaxis].labelHeight/2, left: offset.left + yaxes[yaxis].box.left + yaxes[yaxis].box.padding - plotOffset.left})
                                     .show();
                             }
                         }

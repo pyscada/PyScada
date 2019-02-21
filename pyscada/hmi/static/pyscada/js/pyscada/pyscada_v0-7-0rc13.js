@@ -1105,6 +1105,13 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
     });
 
 
+    function linearInterpolation (x, x0, y0, x1, y1) {
+      var a = (y1 - y0) / (x1 - x0)
+      var b = -a * x0 + y0
+      return a * x + b
+    }
+
+
     function prepare(){
         // prepare legend table sorter
         $(legend_table_id).tablesorter({sortList: [[2,0]]});
@@ -1363,23 +1370,37 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                     };
                     new_data=[];
                     if (chart_data.length > 0){
-                        i = 0;
-                        if (chart_x_data.length < chart_data.length){
-                            console.log('X data smaller than Y data -> X : ' + chart_x_data + ' - Y : ' + chart_data);
-                        }else {
-                            chart_data_min = chart_data[0][1]
-                            chart_data_max = chart_data[0][1]
-                            x_data_min = chart_x_data[0][1]
-                            x_data_max = chart_x_data[0][1]
-                            while (i < chart_data.length) {
-                                new_data.push([chart_x_data[i][1],chart_data[i][1]]);
-                                chart_data_min = Math.min(chart_data_min, chart_data[i][1])
-                                chart_data_max = Math.max(chart_data_max, chart_data[i][1])
-                                x_data_min = Math.min(x_data_min, chart_x_data[i][1])
-                                x_data_max = Math.max(x_data_max, chart_x_data[i][1])
-                                i += 1;
-                            };
-                        };
+                        chart_data_min = chart_data[0][1]
+                        chart_data_max = chart_data[0][1]
+                        x_data_min = chart_x_data[0][1]
+                        x_data_max = chart_x_data[0][1]
+                        for (iy=0; iy < chart_data.length; iy++) {
+                            ix=0;
+                            xf=0;
+                            if (chart_x_data.length > 1){
+                                while (ix < chart_x_data.length && xf == 0) {
+                                    if (chart_x_data[ix][0] >= chart_data[iy][0]) {
+                                        if (ix == 0) {
+                                            fx = linearInterpolation(chart_data[iy][0], chart_x_data[ix][0], chart_x_data[ix][1], chart_x_data[ix+1][0], chart_x_data[ix+1][1]);
+                                        }else {
+                                            fx = linearInterpolation(chart_data[iy][0], chart_x_data[ix-1][0], chart_x_data[ix-1][1], chart_x_data[ix][0], chart_x_data[ix][1]);
+                                        }
+                                        new_data.push([fx,chart_data[iy][1]]);
+                                        chart_data_min = Math.min(chart_data_min, chart_data[iy][1])
+                                        chart_data_max = Math.max(chart_data_max, chart_data[iy][1])
+                                        x_data_min = Math.min(x_data_min, fx)
+                                        x_data_max = Math.max(x_data_max, fx)
+                                        xf=1;
+                                    }
+                                    ix+=1;
+                                }
+                            }else if (chart_x_data.length > 0){
+                                new_data.push([chart_x_data[0][1],chart_data[iy][1]]);
+                                chart_data_min = Math.min(chart_data_min, chart_data[iy][1])
+                                chart_data_max = Math.max(chart_data_max, chart_data[iy][1])
+                                iy = chart_data.length;
+                            }
+                        }
                     }else {
                         chart_data_min = null;
                         chart_data_max = null;
@@ -1499,7 +1520,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                             $(chart_container_id + ' .axisLabels.yaxisLabel').css('color',S['color'])
                             $(chart_container_id + ' .flot-y' + S['yaxis'] + '-axis').css('color',S['color'])
                         }else {
-                            $(chart_container_id + ' .axisLabels.y' + S['yaxis'] + 'axisLabel')[0].innerHTML = lb
+                            if ($(chart_container_id + ' .axisLabels.y' + S['yaxis'] + 'axisLabel').length) {$(chart_container_id + ' .axisLabels.y' + S['yaxis'] + 'axisLabel')[0].innerHTML = lb}
                             $(chart_container_id + ' .axisLabels.y' + S['yaxis'] + 'axisLabel').css('color',S['color'])
                             $(chart_container_id + ' .flot-y' + S['yaxis'] + '-axis').css('color',S['color'])
                         }
@@ -1971,7 +1992,7 @@ $( document ).ready(function() {
         xaxisLinLog = $(val).data('xaxis').linlog;
         if ($(val).data('yaxis').plotpoints == 'True') {plotPoints = true} else {plotPoints = false}
         if ($(val).data('yaxis').uniquescale == 'True') {yaxisUniqueScale = true} else {yaxisUniqueScale = false}
-        CHART_VARIABLE_KEYS[xaxisVarId]=1;
+        CHART_VARIABLE_KEYS[xaxisVarId]=0;
         X_AXIS = xaxisVarId;
         // add a new Plot
         PyScadaPlots.push(new XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale));
@@ -2059,6 +2080,7 @@ $( document ).ready(function() {
 		$('#PlusTwoHoursButton').addClass("disabled");
 		DATA_INIT_STATUS++;
 		DATA_BUFFER_SIZE = DATA_BUFFER_SIZE + 120*60*1000;
+		DATA_FROM_TIMESTAMP = DATA_FROM_TIMESTAMP - 120*60*1000;
 		INIT_CHART_VARIABLES_DONE = false;
 	}
     });
