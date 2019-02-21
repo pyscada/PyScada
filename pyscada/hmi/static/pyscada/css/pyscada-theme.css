@@ -548,3 +548,9 @@ table.tablesorter thead tr .header.sorter-false {
     box-shadow: none;
     border-style: solid;
 }*/
+
+.legendLayer .background {
+    fill: rgba(255, 255, 255, 0.85);
+    stroke: rgba(0, 0, 0, 0.85);
+    stroke-width: 1;
+}
