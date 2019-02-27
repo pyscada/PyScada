@@ -7,6 +7,8 @@ from pyscada.models import Variable
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Chart
 from pyscada.hmi.models import XYChart
+from pyscada.hmi.models import DropDown
+from pyscada.hmi.models import DropDownItem
 from pyscada.hmi.models import Form
 from pyscada.hmi.models import SlidingPanelMenu
 from pyscada.hmi.models import Page
@@ -74,12 +76,24 @@ class XYChartAdmin(admin.ModelAdmin):
         return instance.variables.name
 
 
+class DropDownAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'empty', 'empty_value', 'items_list')
+    filter_horizontal = ('items',)
+    list_filter = ('controlpanel', 'dropdowns_form',)
+
+
+class DropDownItemAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title',)
+    list_filter = ('dropdown',)
+
+
 class FormAdmin(admin.ModelAdmin):
-    filter_horizontal = ('control_items', 'hidden_control_items_to_true')
+    filter_horizontal = ('control_items', 'hidden_control_items_to_true', 'dropdowns')
+    list_filter = ('controlpanel',)
 
 
 class ControlItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'position', 'label', 'type', 'variable',)
+    list_display = ('id', 'position', 'label', 'type', 'variable', 'variable_property')
     list_filter = ('controlpanel',)
     raw_id_fields = ('variable',)
 
@@ -113,11 +127,11 @@ class WidgetAdmin(admin.ModelAdmin):
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
     filter_horizontal = (
         'pages', 'sliding_panel_menus', 'charts', 'xy_charts', 'control_items', 'widgets', 'views',
-        'custom_html_panels', 'process_flow_diagram', 'forms')
+        'custom_html_panels', 'process_flow_diagram', 'forms', 'dropdowns')
 
 
 class ControlPanelAdmin(admin.ModelAdmin):
-    filter_horizontal = ('items', 'forms')
+    filter_horizontal = ('items', 'forms', 'dropdowns')
 
 
 class ViewAdmin(admin.ModelAdmin):
@@ -146,11 +160,12 @@ class ProcessFlowDiagramAdmin(admin.ModelAdmin):
 admin_site.register(ControlItem, ControlItemAdmin)
 admin_site.register(Chart, ChartAdmin)
 admin_site.register(XYChart, XYChartAdmin)
+admin_site.register(DropDown, DropDownAdmin)
+admin_site.register(DropDownItem, DropDownItemAdmin)
 admin_site.register(Form, FormAdmin)
 admin_site.register(SlidingPanelMenu, SlidingPanelMenuAdmin)
 admin_site.register(Page, PageAdmin)
 admin_site.register(GroupDisplayPermission, GroupDisplayPermissionAdmin)
-
 admin_site.register(ControlPanel, ControlPanelAdmin)
 admin_site.register(CustomHTMLPanel, CustomHTMLPanelAdmin)
 admin_site.register(Widget, WidgetAdmin)

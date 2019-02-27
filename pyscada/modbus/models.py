@@ -18,10 +18,13 @@ class ModbusDevice(models.Model):
     modbus_device = models.OneToOneField(Device)
     protocol_choices = ((0, 'TCP'), (1, 'UDP'), (2, 'serial ASCII'), (3, 'serial RTU'), (4, 'serial Binary'),)
     protocol = models.PositiveSmallIntegerField(default=0, choices=protocol_choices)
+    framer_choices = ((0, 'Socket'), (1, 'RTU'), (2, 'ASCII'), (3, 'Binary'),)
+    framer = models.PositiveSmallIntegerField(null=True, blank=True, choices=framer_choices)
     ip_address = models.GenericIPAddressField(default='127.0.0.1')
     port = models.CharField(default='502',
                             max_length=400,
-                            help_text="for TCP and UDP enter network port as number (def. 502, for serial ASCII and RTU enter serial port (/dev/pts/13))")
+                            help_text="for TCP and UDP enter network port as number "
+                                      "(def. 502, for serial ASCII and RTU enter serial port (/dev/pts/13))")
     unit_id = models.PositiveSmallIntegerField(default=0)
     timeout = models.PositiveSmallIntegerField(default=0, help_text="0 use default, else value in seconds")
     stopbits_choices = ((0, 'default'), (1, 'one stopbit'), (2, '2 stopbits'),)
@@ -54,6 +57,7 @@ class ExtendedModbusDevice(Device):
         proxy = True
         verbose_name = 'Modbus Device'
         verbose_name_plural = 'Modbus Devices'
+
 
 class ExtendedModbusVariable(Variable):
     class Meta:

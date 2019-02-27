@@ -377,6 +377,7 @@ class VariablePropertyManager(models.Manager):
         if vp:
             value_class = vp.value_class
             if value_class.upper() in ['STRING']:
+                value = "" if value is None else value
                 vp.value_string = value
             elif value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
                 vp.value_float64 = value
@@ -387,6 +388,7 @@ class VariablePropertyManager(models.Manager):
             elif value_class.upper() in ['INT16', 'INT8', 'UINT8']:
                 vp.value_int16 = value
             elif value_class.upper() in ['BOOL', 'BOOLEAN']:
+                value = False if value is None else value
                 vp.value_boolean = value
             vp.save()
             return vp
@@ -569,6 +571,16 @@ class VariableProperty(models.Model):
     timestamp = models.DateTimeField(blank=True, null=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET(1), blank=True, null=True)
     objects = VariablePropertyManager()
+    value_min = models.FloatField(null=True, blank=True)
+    value_max = models.FloatField(null=True, blank=True)
+    min_type_choices = (('lte', '<='),
+                        ('lt', '<'),
+                        )
+    max_type_choices = (('gte', '>='),
+                        ('gt', '>'),
+                        )
+    min_type = models.CharField(max_length=4, default='lte', choices=min_type_choices)
+    max_type = models.CharField(max_length=4, default='gte', choices=max_type_choices)
 
     def __str__(self):
         return self.get_property_class_display() + ': ' + self.name
@@ -640,6 +652,16 @@ class Variable(models.Model):
     chart_line_color = models.ForeignKey(Color, null=True, default=None, blank=True)
     chart_line_thickness_choices = ((3, '3Px'),)
     chart_line_thickness = models.PositiveSmallIntegerField(default=3, choices=chart_line_thickness_choices)
+    value_min = models.FloatField(null=True, blank=True)
+    value_max = models.FloatField(null=True, blank=True)
+    min_type_choices = (('lte', '<='),
+                        ('lt', '<'),
+                        )
+    max_type_choices = (('gte', '>='),
+                        ('gt', '>'),
+                        )
+    min_type = models.CharField(max_length=4, default='lte', choices=min_type_choices)
+    max_type = models.CharField(max_length=4, default='gte', choices=max_type_choices)
 
     def hmi_name(self):
         if self.short_name and self.short_name != '-' and self.short_name != '':

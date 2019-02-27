@@ -148,7 +148,7 @@ def view(request, link_title):
         'version_string': core_version
     }
 
-    return TemplateResponse(request, 'view.html', c)
+    return TemplateResponse(request, 'view_flot.html', c)
 
 
 def log_data(request):

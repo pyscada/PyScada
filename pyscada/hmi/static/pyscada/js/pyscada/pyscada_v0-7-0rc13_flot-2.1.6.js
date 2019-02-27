@@ -665,17 +665,35 @@ function timeline_drag( event, ui ) {
 }
 function PyScadaPlot(id){
     var options = {
+        legend: {
+            position: "nw",
+            show: false,
+            container: null,
+            //container: document.getElementById("legendContainer"),
+            //container: $(".legendContainer")[0],
+            //container: $('#chart-legend-' + id + ' .legend')[0],
+        },
+        series: {
+            lines: {
+                show: true,
+                lineWidth: 3,
+                steps: true
+            }
+        },
         xaxis: {
             mode: "time",
             ticks: $('#chart-container-'+id).data('xaxisTicks'),
             timeformat: "%H:%M:%S",
-            timezone:"browser"
+            timezone: "browser",
+            timeBase: "milliseconds",
+            autoScale: "none"
         },
         yaxis: {
-            position: "left"
-        },
-        legend: {
-            show: false
+            position: "left",
+            autoScale: "loose",
+            autoScaleMargin: 0.1,
+            min: null,
+            max: null,
         },
         selection: {
             mode: "y"
@@ -687,10 +705,14 @@ function PyScadaPlot(id){
                 bottom: 8,
                 left: 20
             },
+            //backgroundColor: '#FFFFFF',
             hoverable: true,
         },
-        lines: {
-            steps:true
+        zoom: {
+            active: true,
+        },
+        pan: {
+            interactive: true,
         },
         axisvalues: {
             mode: "xy",
@@ -738,8 +760,8 @@ function PyScadaPlot(id){
             }
         });
     });
-    
-    
+
+
     function prepare(){
         // prepare legend table sorter
         $(legend_table_id).tablesorter({sortList: [[2,0]]});
@@ -782,7 +804,6 @@ function PyScadaPlot(id){
             main_chart_area.height(contentAreaHeight);
         }
 
-        //
         flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series, options);
         set_chart_selection_mode();
         // update the plot
@@ -807,7 +828,7 @@ function PyScadaPlot(id){
                         "background-color": "#fee",
                         opacity: 0.90,
                         "z-index": 90,
-                        "font-size": "13px"
+                        "font-size": "14px"
                     }).appendTo("body");
                 }
                 if (axis == 'x') {
@@ -848,7 +869,6 @@ function PyScadaPlot(id){
         // bind
         $(chart_container_id + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
             pOpt = flotPlot.getOptions();
-
             if ($(chart_container_id + " .activate_zoom_y").is(':checked')) {
                 for (range in ranges) {
                     if (~range.indexOf('y')) {
@@ -856,14 +876,15 @@ function PyScadaPlot(id){
                             y_number = range.match(/\d+/)[0];
                             pOpt.yaxes[y_number-1].min = ranges[range].from;
                             pOpt.yaxes[y_number-1].max = ranges[range].to;
-
+                            pOpt.yaxes[y_number-1].autoScale = "none";
                         }else {
                             pOpt.yaxes[0].min = ranges[range].from;
                             pOpt.yaxes[0].max = ranges[range].to;
+                            pOpt.yaxes[0].autoScale = "none";
                         }
                     }
                 }
-                flotPlot.setupGrid();
+                flotPlot.setupGrid(true);
                 flotPlot.draw();
             }
             flotPlot.clearSelection();
@@ -886,27 +907,89 @@ function PyScadaPlot(id){
         var yaxisLabel = $(chart_container_id + ' .axisLabel.yaxisLabel');
         yaxisLabel.css("margin-top", yaxisLabel.width() / 2 - 20);
 
+        // The download function takes a CSV string, the filename and mimeType as parameters
+        // Scroll/look down at the bottom of this snippet to see how download is called
+        var download = function(content, fileName, mimeType) {
+            var a = document.createElement('a');
+            mimeType = mimeType || 'application/octet-stream';
+
+            if (mimeType == 'image/png' && 'download' in a) {
+                a.href = content;
+                a.setAttribute('download', fileName);
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else if (navigator.msSaveBlob) { // IE10
+                navigator.msSaveBlob(new Blob([content], {
+                type: mimeType
+                }), fileName);
+            } else if (URL && 'download' in a) { //html5 A[download]
+                a.href = URL.createObjectURL(new Blob([content], {
+                  type: mimeType
+                }));
+                a.setAttribute('download', fileName);
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                location.href = 'data:application/octet-stream,' + encodeURIComponent(content); // only this mime type is supported
+            }
+        }
+
+        $(chart_container_id + " .btn.btn-default.chart-save-csv").click(function() {
+            // Example data given in question text
+            var data = [['Label'], ['Unité'], ['Couleur'], ['Données']];
+            mode = flotPlot.getXAxes()[0].options.mode;
+            for (s=0; s<series.length; s++){
+                data[0][s*2] = "x";
+                data[1][s*2] = (mode = "time") ? "ms" : "";
+                data[2][s*2] = "";
+                data[0][s*2+1] = series[s].label;
+                data[1][s*2+1] = series[s].unit;
+                data[2][s*2+1] = series[s].color;
+                for (l=0; l<series[s].data.length; l++) {
+                    data.push([]);
+                    data[3+l][s*2] = series[s].data[l][0]
+                    data[3+l][s*2+1] = series[s].data[l][1]
+                }
+            }
+
+            // Building the CSV from the Data two-dimensional array
+            // Each column is separated by ";" and new line "\n" for next row
+            var csvContent = '';
+            data.forEach(function(infoArray, index) {
+              dataString = infoArray.join(';');
+              csvContent += index < data.length ? dataString + '\n' : dataString;
+            });
+
+            download(csvContent, 'download.csv', 'text/csv;encoding:utf-8');
+        });
+
+        $(chart_container_id + " .btn.btn-default.chart-save-picture").click(function() {
+            var originalCanvas1 = $(chart_container_id + ' .flot-base')[0]
+            var originalCanvas2 = $(chart_container_id + ' .flot-overlay')[0]
+            var originalCanvas3 = $(chart_container_id + ' .flot-svg')[0].children[0]
+            var ctx = originalCanvas2.getContext("2d");
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, originalCanvas2.width, originalCanvas2.height);
+            var sources = [originalCanvas2, originalCanvas1, originalCanvas3]
+            var destinationCanvas = document.getElementById("myCanvas");
+            $.plot.composeImages(sources, destinationCanvas)
+            //setTimeout(function() {window.open($('#myCanvas')[0].toDataURL('image/png'));}, 500);
+            setTimeout(function() {download($('#myCanvas')[0].toDataURL('image/png'), 'image.png', 'image/png');}, 500);
+            ctx.fillRect(0, 0, 0, 0);
+        });
 
         $(chart_container_id + " .btn.btn-default.chart-ResetSelection").click(function() {
-            DATA_DISPLAY_FROM_TIMESTAMP = -1;
-            DATA_DISPLAY_TO_TIMESTAMP = -1;
-            DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
-            set_x_axes();
-            pOpt = flotPlot.getOptions();
-            aOpt = flotPlot.getYAxes();
-            pOpt.yaxes[0].min = aOpt.datamin;
-            pOpt.yaxes[0].max = aOpt.datamax;
-            flotPlot.setupGrid();
-            flotPlot.draw();
+            e = jQuery.Event( "click" );
+            jQuery(chart_container_id + " .btn.btn-default.chart-ZoomYToFit").trigger(e);
+            jQuery(chart_container_id + " .btn.btn-default.chart-ZoomXToFit").trigger(e);
         });
 
         $(chart_container_id + " .btn.btn-default.chart-ZoomYToFit").click(function() {
             pOpt = flotPlot.getOptions();
-            aOpt = flotPlot.getYAxes();
-            pOpt.yaxes[0].min = aOpt.datamin;
-            pOpt.yaxes[0].max = aOpt.datamax;
-            flotPlot.setupGrid();
-            flotPlot.draw();
+            pOpt.yaxes[0].autoScale = "loose";
+            update(false);
         });
         $(chart_container_id + " .btn.btn-default.chart-ZoomXToFit").click(function() {
             DATA_DISPLAY_FROM_TIMESTAMP = -1;
@@ -973,8 +1056,7 @@ function PyScadaPlot(id){
                     series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":variables[key].label,"unit":variables[key].unit});
                 }
             }
-            // update flot plot
-            flotPlot.setData(series);
+
             // update x window
             pOpt = flotPlot.getOptions();
 
@@ -992,9 +1074,11 @@ function PyScadaPlot(id){
                 pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
                 pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
             }
-
-            flotPlot.setupGrid();
+            // update flot plot
+            flotPlot.setData(series);
+            flotPlot.setupGrid(true);
             flotPlot.draw();
+            flotPlot.resize();
         }
     }
 }
@@ -1003,8 +1087,18 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
     var options = {
         yaxes: [],
         xaxis: {
-            ticks: 5,
-            mode: null
+            mode: (xaxisLinLog == "True" ? "log" : null),
+            autoScale: "exact",
+            showTickLabels: "all"
+        },
+        series: {
+            lines: {
+                show: true,
+                lineWidth: 3
+            },
+            points: {
+                show: plotPoints
+            }
         },
         legend: {
             show: false
@@ -1019,12 +1113,11 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                 bottom: 8,
                 left: 20
             },
+            borderWidth: 0,
             //to show points informations
             hoverable: true,
-            clickable: true
+            //clickable: true
         },
-        lines: { show: true },
-        points: { show: plotPoints },
         axisvalues: {
             mode: "xy",
         }
@@ -1068,8 +1161,8 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         $.each($(legend_table_id + ' .legendSeries'),function(kkey,val){
             val_inst = $(val);
             if (variable_key == val_inst.find(".variable-config").data('key')){
-                label = val_inst.find(".legendLabel").text();
-                unit = val_inst.find(".legendUnit").text();
+                variables[variable_key].label = val_inst.find(".legendLabel").text().replace(/\s/g, '');
+                variables[variable_key].unit = val_inst.find(".legendUnit").text().replace(/\s/g, '');
             }
         });
         if (options.yaxes[k-1] == null) {
@@ -1079,10 +1172,10 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         tf = function (value, axis) {
             return value.toFixed(axis.tickDecimals) + ((typeof axis.options.unit != "undefined") ? axis.options.unit : '');
         };
-        if (unit != "") {
-            lb = label.replace(/\s/g, '') + "(" + unit + ")";
+        if (variables[variable_key].unit != "") {
+            lb = variables[variable_key].label.replace(/\s/g, '') + " (" + variables[variable_key].unit + ")";
         }else{
-            lb = label.replace(/\s/g, '');
+            lb = variables[variable_key].label.replace(/\s/g, '');
         }
         options.yaxes[k-1].position = pos;
         options.yaxes[k-1].tickFormatter = tf;
@@ -1091,16 +1184,16 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             //options.yaxes[k-1].axisLabelUseCanvas = true;
             //options.yaxes[k-1].axisLabelFontSizePixels = 12;
             //options.yaxes[k-1].axisLabelFontFamily = 'Verdana, Arial';
-            options.yaxes[k-1].axisLabelPadding = 3;
+            //options.yaxes[k-1].axisLabelPadding = 3;
             //options.yaxes[k-1].axisLabelColour = variables[variable_key]['color'];
         }
         if (yaxisUniqueScale == false || $(legend_table_id + ' .variable-config').length == 1) {
-            options.yaxes[k-1].unit = unit;
+            options.yaxes[k-1].unit = variables[variable_key].unit;
         }else {
             options.yaxes[k-1].unit = ""
         }
         options.yaxes[k-1].labelWidth = null;
-        options.yaxes[k-1].reserveSpace = true;
+        options.yaxes[k-1].reserveSpace = false;
         k += 1;
     });
 
@@ -1179,7 +1272,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                         "background-color": "#fee",
                         opacity: 0.90,
                         "z-index": 90,
-                        "font-size": "13px"
+                        "font-size": "14px"
                     }).appendTo("body");
                 }
                 if (axis == 'x') {
@@ -1235,14 +1328,15 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                             y_number = range.match(/\d+/)[0];
                             pOpt.yaxes[y_number-1].min = ranges[range].from;
                             pOpt.yaxes[y_number-1].max = ranges[range].to;
+                            pOpt.yaxes[y_number-1].autoScale = "none";
                         }else {
                             pOpt.yaxes[0].min = ranges[range].from;
                             pOpt.yaxes[0].max = ranges[range].to;
+                            pOpt.yaxes[0].autoScale = "none";
                         }
                     }
                 }
-                flotPlot.setupGrid();
-                flotPlot.draw();
+                update(false);
             }
             pOpt = flotPlot.getOptions();
             if ($(chart_container_id + " .activate_zoom_x").is(':checked') && ranges.xaxis != null) {
@@ -1262,10 +1356,11 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                 DATA_DISPLAY_FROM_TIMESTAMP = tmin;
                 DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP-DATA_DISPLAY_FROM_TIMESTAMP;
                 */
+
                 pOpt.xaxes[0].min = ranges.xaxis.from;
                 pOpt.xaxes[0].max = ranges.xaxis.to;
-                flotPlot.setupGrid();
-                flotPlot.draw();
+                pOpt.xaxes[0].autoScale = "none";
+                update(false);
             }
             flotPlot.clearSelection();
         });
@@ -1280,42 +1375,75 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         var yaxisLabel = $(chart_container_id + ' .axisLabel.yaxisLabel');
         yaxisLabel.css("margin-top", yaxisLabel.width() / 2 - 20);
 
+        $(chart_container_id + " .btn.btn-default.chart-save-csv").click(function() {
+            console.log('start csv');
+            // Example data given in question text
+            var data = [
+              ['name1', 'city1', 'some other info'],
+              ['name2', 'city2', 'more info']
+            ];
+
+            // Building the CSV from the Data two-dimensional array
+            // Each column is separated by ";" and new line "\n" for next row
+            var csvContent = '';
+            data.forEach(function(infoArray, index) {
+              dataString = infoArray.join(';');
+              csvContent += index < data.length ? dataString + '\n' : dataString;
+            });
+
+            // The download function takes a CSV string, the filename and mimeType as parameters
+            // Scroll/look down at the bottom of this snippet to see how download is called
+            var download = function(content, fileName, mimeType) {
+              var a = document.createElement('a');
+              mimeType = mimeType || 'application/octet-stream';
+
+              if (navigator.msSaveBlob) { // IE10
+                navigator.msSaveBlob(new Blob([content], {
+                  type: mimeType
+                }), fileName);
+              } else if (URL && 'download' in a) { //html5 A[download]
+                a.href = URL.createObjectURL(new Blob([content], {
+                  type: mimeType
+                }));
+                a.setAttribute('download', fileName);
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              } else {
+                location.href = 'data:application/octet-stream,' + encodeURIComponent(content); // only this mime type is supported
+              }
+            }
+
+            download(csvContent, 'dowload.csv', 'text/csv;encoding:utf-8');
+        });
+
+        $(chart_container_id + " .btn.btn-default.chart-save-picture").click(function() {
+            originalCanvas1 = $(chart_container_id + ' .flot-base')[0]
+            originalCanvas2 = $(chart_container_id + ' .flot-overlay')[0]
+            originalCanvas3 = $(chart_container_id + ' .flot-svg')[0].children[0]
+            sources = [originalCanvas1, originalCanvas2, originalCanvas3]
+            destinationCanvas = document.getElementById("myCanvas");
+            $.plot.composeImages(sources, destinationCanvas)
+            setTimeout(function() {window.open($('#myCanvas')[0].toDataURL('image/png'));}, 500);
+        });
 
         $(chart_container_id + " .btn.btn-default.chart-ResetSelection").click(function() {
-            //DATA_DISPLAY_FROM_TIMESTAMP = -1;
-            //DATA_DISPLAY_TO_TIMESTAMP = -1;
-            //DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
-            //set_x_axes();
-            pOpt = flotPlot.getOptions();
-            for (y in pOpt.yaxes){
-                pOpt.yaxes[y].min = null;
-                pOpt.yaxes[y].max = null;
-            }
-            pOpt.xaxes[0].min = pOpt.xaxes[0].x_data_min;
-            pOpt.xaxes[0].max = pOpt.xaxes[0].x_data_max;
-            flotPlot.setupGrid();
-            flotPlot.draw();
+            e = jQuery.Event( "click" );
+            jQuery(chart_container_id + " .btn.btn-default.chart-ZoomYToFit").trigger(e);
+            jQuery(chart_container_id + " .btn.btn-default.chart-ZoomXToFit").trigger(e);
         });
 
         $(chart_container_id + " .btn.btn-default.chart-ZoomYToFit").click(function() {
             pOpt = flotPlot.getOptions();
             for (y in pOpt.yaxes){
-                pOpt.yaxes[y].min = null;
-                pOpt.yaxes[y].max = null;
+                pOpt.yaxes[y].autoScale = "loose";
             }
-            flotPlot.setupGrid();
-            flotPlot.draw();
+            update(false);
         });
         $(chart_container_id + " .btn.btn-default.chart-ZoomXToFit").click(function() {
-            //DATA_DISPLAY_FROM_TIMESTAMP = -1;
-            //DATA_DISPLAY_TO_TIMESTAMP = -1;
-            //DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
-            //set_x_axes();
             pOpt = flotPlot.getOptions();
-            pOpt.xaxes[0].min = pOpt.xaxes[0].x_data_min;
-            pOpt.xaxes[0].max = pOpt.xaxes[0].x_data_max;
-            flotPlot.setupGrid();
-            flotPlot.draw();
+            pOpt.xaxes[0].autoScale = "exact";
+            update(false);
         });
     }
 
@@ -1369,7 +1497,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                         chart_x_data = DATA[xkey].slice();
                     };
                     new_data=[];
-                    if (chart_data.length > 0){
+                    if (chart_data.length > 0 && chart_x_data.length > 0){
                         chart_data_min = chart_data[0][1]
                         chart_data_max = chart_data[0][1]
                         x_data_min = chart_x_data[0][1]
@@ -1416,13 +1544,11 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                         j += 1;
                         if (yaxisUniqueScale) {yj = 1} else {yj = jk}
                         //plot Y with defferents axis
-                        series.push({"data":new_data,"xdata":chart_x_data,"color":variables[key].color,"yaxis":yj,"label":label,"unit":unit,"chart_data_min":chart_data_min,"chart_data_max":chart_data_max,"x_data_min":x_data_min,"x_data_max":x_data_max});
+                        series.push({"data":new_data, "xdata":chart_x_data,"color":variables[key].color,"yaxis":yj,"label":label,"unit":unit,"chart_data_min":chart_data_min,"chart_data_max":chart_data_max,"x_data_min":x_data_min,"x_data_max":x_data_max});
                     };
                 };
                 jk += 1;
             };
-            // update flot plot
-            flotPlot.setData(series);
 
             //update y window
             pOpt = flotPlot.getOptions();
@@ -1474,7 +1600,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
 
             // update x window
             //pOpt = flotPlot.getOptions();
-            if (j != 0){
+            /*if (j != 0){
                 var xticks=[];
                 if (xaxisLinLog == "True"){
                     xticks=xticks.concat(chart_x_data[0][1]);
@@ -1501,29 +1627,22 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                     pOpt.xaxes[0].min = series[0]['x_data_min'];
                     pOpt.xaxes[0].max = series[0]['x_data_max'];
                 }
-            }
-            flotPlot.setupGrid();
+            }*/
+
+            // update flot plot
+            flotPlot.clearTextCache();
+            flotPlot.setData(series);
+            flotPlot.setupGrid(true);
             flotPlot.draw();
+            flotPlot.resize();
 
             // Change the color of the axis
             if (jk != 1 && yaxisUniqueScale == false){
                 for (k = 1;k <= jk;k++){
                     S = series[k-1]
                     if (typeof S !== 'undefined') {
-                        if (S['unit'] != "") {
-                            lb = S['label'].replace(/\s/g, '') + "(" + S['unit'] + ")";
-                        }else{
-                            lb = S['label'].replace(/\s/g, '');
-                        }
-                        if (S['yaxis'] == 1){
-                            if ($(chart_container_id + ' .axisLabels.yaxisLabel').length) {$(chart_container_id + ' .axisLabels.yaxisLabel')[0].innerHTML = lb}
-                            $(chart_container_id + ' .axisLabels.yaxisLabel').css('color',S['color'])
-                            $(chart_container_id + ' .flot-y' + S['yaxis'] + '-axis').css('color',S['color'])
-                        }else {
-                            if ($(chart_container_id + ' .axisLabels.y' + S['yaxis'] + 'axisLabel').length) {$(chart_container_id + ' .axisLabels.y' + S['yaxis'] + 'axisLabel')[0].innerHTML = lb}
-                            $(chart_container_id + ' .axisLabels.y' + S['yaxis'] + 'axisLabel').css('color',S['color'])
-                            $(chart_container_id + ' .flot-y' + S['yaxis'] + '-axis').css('color',S['color'])
-                        }
+                        $(chart_container_id + ' .axisLabels.y' + S['yaxis'] + 'Label').css('fill',S['color'])
+                        $(chart_container_id + ' .flot-y' + S['yaxis'] + '-axis text').css('fill',S['color'])
                     }
                 }
             }
@@ -2057,7 +2176,7 @@ $( document ).ready(function() {
         containment: "#timeline-border",
         drag: timeline_drag,
         start: function( event, ui ) {progressbar_resize_active = true;},
-        stop: function( event, ui ) {progressbar_resize_active = false;},
+        stop: progressbarSetWindow,
     });
     // auto update function
     $('#AutoUpdateButton').click(function(e) {

@@ -7,8 +7,21 @@
              data-yaxis='{"plotpoints":"{{xy_chart.y_axis_plotpoints}}","uniquescale":"{{xy_chart.y_axis_uniquescale}}"}'>
             <div class="chart-placeholder"></div>
             <div class="chartTitle">{{xy_chart.title}}</div>
+            <div class="chart-zoom-bar" >
+                <label>
+                    Zoom on axes :
+                    <input class="activate_zoom_x" type="checkbox" checked="checked">X
+                    <input class="activate_zoom_y" type="checkbox" checked="checked">Y
+                </label>
+            </div>
             <div class="chart-btn-bar" >
                 <div class="btn-group">
+                    <button type="button" class="btn btn-default chart-save-csv">
+                        <span class="glyphicon glyphicon-list-alt"></span>
+                    </button>
+                    <button type="button" class="btn btn-default chart-save-picture">
+                        <span class="glyphicon glyphicon-picture"></span>
+                    </button>
                     <button type="button" class="btn btn-default chart-ResetSelection">
                         <span class="glyphicon glyphicon-fullscreen"></span>
                     </button>
@@ -20,6 +33,7 @@
                     </button>
                 </div>
             </div>
+            <div class="axisLabel xaxisLabel">{{xy_chart.x_axis_label}}</div>
             <div class="axisLabel yaxisLabel">{{xy_chart.y_axis_label}}</div>
         </div>
     </div>

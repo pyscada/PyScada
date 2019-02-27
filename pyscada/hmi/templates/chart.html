@@ -3,8 +3,21 @@
         <div id="chart-container-{{ widget_pk }}-{{chart.pk}}" class="chart-container" style="width: 100%; height:100%;" data-xaxis-ticks='{{chart.x_axis_ticks}}' data-axes0-yaxis='{"min":{{chart.y_axis_min}},"max":{{chart.y_axis_max}},"label":"{{chart.y_axis_label}}"}'>
             <div class="chart-placeholder"></div>
             <div class="chartTitle">{{chart.title}}</div>
+            <div class="chart-zoom-bar" >
+                <label>
+                    Zoom on axes :
+                    <input class="activate_zoom_x" type="checkbox" checked="checked">X
+                    <input class="activate_zoom_y" type="checkbox" checked="checked">Y
+                </label>
+            </div>
             <div class="chart-btn-bar" >
                 <div class="btn-group">
+                    <button type="button" class="btn btn-default chart-save-csv">
+                        <span class="glyphicon glyphicon-list-alt"></span>
+                    </button>
+                    <button type="button" class="btn btn-default chart-save-picture">
+                        <span class="glyphicon glyphicon-picture"></span>
+                    </button>
                     <button type="button" class="btn btn-default chart-ResetSelection">
                         <span class="glyphicon glyphicon-fullscreen"></span>
                     </button>

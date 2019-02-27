@@ -221,13 +221,6 @@ html,body {
 	font: 12px/1em "proxima-nova", Helvetica, Arial, sans-serif;
 }
 
-.show_timeline_no{
-    display: none
-}
-.show_timeline_yes{
-    display: block
-}
-
 .main-chart-area{
 	position: relative;
 	min-height: 1px;
@@ -304,6 +297,11 @@ html,body {
 	font-size: 12px;
 }
 
+.xaxisLabel {
+    bottom: 3px;
+    left: 50%;
+}
+
 .yaxisLabel {
 	top: 50%;
 	left: 5px;
@@ -337,6 +335,16 @@ html,body {
 	padding:0px 12px;
 }
 
+.chart-zoom-bar {
+	position: absolute;
+	top:2px;
+	left:2px;
+}
+.chart-zoom-bar input{
+	padding:0px 12px;
+	vertical-align: middle;
+	margin: 1px;
+}
 
 table.tablesorter thead tr .header {
 	background-image: url(/static/pyscada/img/unsorted.gif);
@@ -482,7 +490,12 @@ table.tablesorter thead tr .header.sorter-false {
 	margin-bottom:5px;
 	margin-right:5px;
 }
-
+.input-group.set_value .help-block {
+  display: table-caption;
+  font-size: 14px;
+  caption-side: bottom;
+  margin: 0px;
+}
 .form-signin {
 	max-width: 330px;
 	padding: 15px;
@@ -516,4 +529,28 @@ table.tablesorter thead tr .header.sorter-false {
 	margin-bottom: 10px;
 	border-top-left-radius: 0;
 	border-top-right-radius: 0;
+}
+
+#tooltip {
+    position: absolute;
+    display: none;
+    border: 1px solid #fdd;
+    padding: 2px;
+    background-color: #fee;
+    opacity: 0.80;
+}
+
+/*form {
+    border-color: #ddd;
+    border-width: 1px;
+    border-radius: 4px 4px 0 0;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+    border-style: solid;
+}*/
+
+.legendLayer .background {
+    fill: rgba(255, 255, 255, 0.85);
+    stroke: rgba(0, 0, 0, 0.85);
+    stroke-width: 1;
 }
