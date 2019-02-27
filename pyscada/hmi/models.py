@@ -29,7 +29,7 @@ class WidgetContentModel(models.Model):
         # delete WidgetContent Entry
         wcs = WidgetContent.objects.filter(
             content_pk=self.pk,
-            content_model=('%s'%self.__class__).replace("<class '", '').replace("'>", ''))
+            content_model=('%s' % self.__class__).replace("<class '", '').replace("'>", ''))
         for wc in wcs:
             wc.delete()
 
@@ -82,9 +82,9 @@ class ControlItem(models.Model):
 
     def web_id(self):
         if self.variable_property:
-            return self.id.__str__() + "-" + self.variable_property.name.replace(' ', '_')
+            return "controlitem-" + self.id.__str__() + "-" + self.variable_property.name.replace(' ', '_')
         elif self.variable:
-            return self.id.__str__() + "-" + self.variable.name.replace(' ', '_')
+            return "controlitem-" + self.id.__str__() + "-" + self.variable.name.replace(' ', '_')
 
     def web_class_str(self):
         if self.variable_property:
@@ -119,9 +119,48 @@ class ControlItem(models.Model):
 
     def unit(self):
         if self.variable_property:
-            return ""  # todo
+            if self.variable_property.unit is not None:
+                return self.variable_property.unit.unit
+            else:
+                return ''
         elif self.variable:
             return self.variable.unit.unit
+
+    def min(self):
+        if self.variable_property:
+            return self.variable_property.value_min
+        elif self.variable:
+            return self.variable.value_min
+
+    def max(self):
+        if self.variable_property:
+            return self.variable_property.value_max
+        elif self.variable:
+            return self.variable.value_max
+
+    def value(self):
+        if self.variable_property:
+            return self.variable_property.value
+        elif self.variable:
+            return self.variable.value
+
+    def value_class(self):
+        if self.variable_property:
+            return self.variable_property.value_class
+        elif self.variable:
+            return self.variable.value_class
+
+    def min_type(self):
+        if self.variable_property:
+            return self.variable_property.min_type
+        elif self.variable:
+            return self.variable.min_type
+
+    def max_type(self):
+        if self.variable_property:
+            return self.variable_property.max_type
+        elif self.variable:
+            return self.variable.max_type
 
 
 @python_2_unicode_compatible
@@ -158,6 +197,187 @@ class Chart(WidgetContentModel):
 
 
 @python_2_unicode_compatible
+class XYChart(WidgetContentModel):
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=400, default='')
+    x_axis_label = models.CharField(max_length=400, default='', blank=True)
+    x_axis_var = models.ForeignKey(Variable, default=None, related_name='x_axis_var')
+    x_axis_linlog = models.BooleanField(default=False, help_text="False->Lin / True->Log")
+    y_axis_label = models.CharField(max_length=400, default='', blank=True)
+    y_axis_plotpoints = models.BooleanField(default=False, help_text="Show the plots points")
+    y_axis_uniquescale = models.BooleanField(default=True, help_text="To have a unique scale for all the y axis")
+    variables = models.ManyToManyField(Variable, related_name='variables_xy_chart')
+
+    def __str__(self):
+        return text_type(str(self.id) + ': ' + self.title)
+
+    def visible(self):
+        return True
+
+    def variables_list(self, exclude_list=[]):
+        return [item.pk for item in self.variables.exclude(pk__in=exclude_list)]
+
+    def gen_html(self, **kwargs):
+        """
+
+        :return: main panel html and sidebar html as
+        """
+        widget_pk = kwargs['widget_pk'] if 'widget_pk' in kwargs else 0
+        main_template = get_template('xy_chart.html')
+        sidebar_template = get_template('xy_chart_legend.html')
+        main_content = main_template.render(dict(xy_chart=self, widget_pk=widget_pk))
+        sidebar_content = sidebar_template.render(dict(xy_chart=self, widget_pk=widget_pk))
+        return main_content, sidebar_content
+
+
+@python_2_unicode_compatible
+class DropDownItem(models.Model):
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=400, default='')
+
+    def __str__(self):
+        return text_type(str(self.id) + ': ' + self.title)
+
+    def visible(self):
+        return True
+
+
+@python_2_unicode_compatible
+class DropDown(models.Model):
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=400, default='')
+    variable = models.ForeignKey(Variable, null=True, blank=True)
+    variable_property = models.ForeignKey(VariableProperty, null=True, blank=True)
+    empty = models.BooleanField(default=False)
+    empty_value = models.CharField(max_length=30, default='------')
+    items = models.ManyToManyField(DropDownItem)
+
+    def __str__(self):
+        return text_type(str(self.id) + ': ' + self.title)
+
+    def visible(self):
+        return True
+
+    def dropdown_items_list(self):
+        return [item.pk for item in self.items]
+
+    def items_list(self):
+        return ",\n".join([i.title for i in self.items.all()])
+
+    def web_id(self):
+        if self.variable_property:
+            return "dropdown-" + self.id.__str__() + "-" + self.variable_property.name.replace(' ', '_')
+        elif self.variable:
+            return "dropdown-" + self.id.__str__() + "-" + self.variable.name.replace(' ', '_')
+
+    def web_class_str(self):
+        if self.variable_property:
+            return 'prop-%d' % self.variable_property_id
+        elif self.variable:
+            return 'var-%d' % self.variable_id
+
+    def active(self):
+        if self.variable_property:
+            return self.variable_property.variable.active and self.variable_property.variable.device.active
+        elif self.variable:
+            return self.variable.active and self.variable.device.active
+        return False
+
+    def key(self):
+        if self.variable_property:
+            return self.variable_property_id
+        elif self.variable:
+            return self.variable_id
+
+    def name(self):
+        if self.variable_property:
+            return self.variable_property.name
+        elif self.variable:
+            return self.variable.name
+
+    def item_type(self):
+        if self.variable_property:
+            return "variable_property"
+        elif self.variable:
+            return "variable"
+
+    def unit(self):
+        if self.variable_property:
+            if self.variable_property.unit is not None:
+                return self.variable_property.unit.unit
+            else:
+                return ''
+        elif self.variable:
+            return self.variable.unit.unit
+
+    def min(self):
+        if self.variable_property:
+            return self.variable_property.value_min
+        elif self.variable:
+            return self.variable.value_min
+
+    def max(self):
+        if self.variable_property:
+            return self.variable_property.value_max
+        elif self.variable:
+            return self.variable.value_max
+
+    def value(self):
+        if self.variable_property:
+            return self.variable_property.value
+        elif self.variable:
+            return self.variable.value
+
+    def value_class(self):
+        if self.variable_property:
+            return self.variable_property.value_class
+        elif self.variable:
+            return self.variable.value_class
+
+    def min_type(self):
+        if self.variable_property:
+            return self.variable_property.min_type
+        elif self.variable:
+            return self.variable.min_type
+
+    def max_type(self):
+        if self.variable_property:
+            return self.variable_property.max_type
+        elif self.variable:
+            return self.variable.max_type
+
+
+@python_2_unicode_compatible
+class Form(models.Model):
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=400, default='')
+    button = models.CharField(max_length=50, default='Ok')
+    control_items = models.ManyToManyField(ControlItem, related_name='control_items_form',
+                                           limit_choices_to={'type': '5'}, blank=True)
+    dropdowns = models.ManyToManyField(DropDown, related_name='dropdowns_form', blank=True)
+    hidden_control_items_to_true = models.ManyToManyField(ControlItem, related_name='hidden_control_items_form',
+                                                          limit_choices_to={'type': '5'}, blank=True)
+
+    def __str__(self):
+        return text_type(str(self.id) + ': ' + self.title)
+
+    def visible(self):
+        return True
+
+    def web_id(self):
+        return "form-" + self.id.__str__()
+
+    def control_items_list(self):
+        return [item.pk for item in self.control_items]
+
+    def hidden_control_items_to_true_list(self):
+        return [item.pk for item in self.hidden_control_items_to_true]
+
+    def dropdown_list(self):
+        return [item.pk for item in self.dropdowns]
+
+
+@python_2_unicode_compatible
 class Page(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
@@ -176,6 +396,8 @@ class ControlPanel(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
     items = models.ManyToManyField(ControlItem, blank=True)
+    dropdowns = models.ManyToManyField(DropDown, blank=True)
+    forms = models.ManyToManyField(Form, blank=True)
 
     def __str__(self):
         return str(self.id) + ': ' + self.title
@@ -312,7 +534,7 @@ class WidgetContent(models.Model):
             return None
 
     def __str__(self):
-        return '%s [%d]'%(self.content_model, self.content_pk) # todo add more infos
+        return '%s [%d]' % (self.content_model, self.content_pk)  # todo add more infos
 
 
 @python_2_unicode_compatible
@@ -362,6 +584,7 @@ class View(models.Model):
     logo = models.ImageField(upload_to="img/", verbose_name="Overview Picture", blank=True)
     visible = models.BooleanField(default=True)
     position = models.PositiveSmallIntegerField(default=0)
+    show_timeline = models.BooleanField(default=True)
 
     def __str__(self):
         return self.title
@@ -376,7 +599,10 @@ class GroupDisplayPermission(models.Model):
     pages = models.ManyToManyField(Page, blank=True)
     sliding_panel_menus = models.ManyToManyField(SlidingPanelMenu, blank=True)
     charts = models.ManyToManyField(Chart, blank=True)
+    xy_charts = models.ManyToManyField(XYChart, blank=True)
     control_items = models.ManyToManyField(ControlItem, blank=True)
+    forms = models.ManyToManyField(Form, blank=True)
+    dropdowns = models.ManyToManyField(DropDown, blank=True)
     widgets = models.ManyToManyField(Widget, blank=True)
     custom_html_panels = models.ManyToManyField(CustomHTMLPanel, blank=True)
     views = models.ManyToManyField(View, blank=True)

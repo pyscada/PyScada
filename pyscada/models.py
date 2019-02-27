@@ -569,7 +569,18 @@ class VariableProperty(models.Model):
     value_float64 = models.FloatField(null=True, blank=True)  # float64
     value_string = models.CharField(default='', blank=True, max_length=255)
     timestamp = models.DateTimeField(blank=True, null=True)
+    unit = models.ForeignKey(Unit, on_delete=models.SET(1), blank=True, null=True)
     objects = VariablePropertyManager()
+    value_min = models.FloatField(null=True, blank=True)
+    value_max = models.FloatField(null=True, blank=True)
+    min_type_choices = (('lte', '<='),
+                        ('lt', '<'),
+                        )
+    max_type_choices = (('gte', '>='),
+                        ('gt', '>'),
+                        )
+    min_type = models.CharField(max_length=4, default='lte', choices=min_type_choices)
+    max_type = models.CharField(max_length=4, default='gte', choices=max_type_choices)
 
     def __str__(self):
         return self.get_property_class_display() + ': ' + self.name
@@ -641,6 +652,16 @@ class Variable(models.Model):
     chart_line_color = models.ForeignKey(Color, null=True, default=None, blank=True)
     chart_line_thickness_choices = ((3, '3Px'),)
     chart_line_thickness = models.PositiveSmallIntegerField(default=3, choices=chart_line_thickness_choices)
+    value_min = models.FloatField(null=True, blank=True)
+    value_max = models.FloatField(null=True, blank=True)
+    min_type_choices = (('lte', '<='),
+                        ('lt', '<'),
+                        )
+    max_type_choices = (('gte', '>='),
+                        ('gt', '>'),
+                        )
+    min_type = models.CharField(max_length=4, default='lte', choices=min_type_choices)
+    max_type = models.CharField(max_length=4, default='gte', choices=max_type_choices)
 
     def hmi_name(self):
         if self.short_name and self.short_name != '-' and self.short_name != '':

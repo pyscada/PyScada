@@ -28,16 +28,16 @@ class GenericDevice:
         establish a connection to the Instrument
         """
         if not driver_ok:
-            # todo add to log
+            logger.error("Visa driver NOT ok")
             return False
         visa_backend = '@py'  # use PyVISA-py as backend
         if hasattr(settings, 'VISA_BACKEND'):
             visa_backend = settings.VISA_BACKEND
-        
+
         try:
             self.rm = visa.ResourceManager(visa_backend)
         except:
-            # todo log
+            logger.error("Visa ResourceManager cannot load resources : %s" %self)
             return False
         try:
             resource_prefix = self._device.visadevice.resource_name.split('::')[0]
@@ -48,11 +48,11 @@ class GenericDevice:
             logger.debug('VISA_DEVICE_SETTINGS for %s: %r'%(resource_prefix,extras))
             self.inst = self.rm.open_resource(self._device.visadevice.resource_name, **extras)
         except:
-            # todo add log
+            logger.error("Visa ResourceManager cannot open resource : %s" %self._device.visadevice.resource_name)
             return False
         logger.debug('connected visa device')
         return True
-    
+
     def disconnect(self):
         if self.inst is not None:
             self.inst.close()
@@ -64,7 +64,7 @@ class GenericDevice:
         """
         read values from the device
         """
-        
+
         return None
 
     def write_data(self, variable_id, value, task):

@@ -6,6 +6,10 @@ try:
     from pymodbus.client.sync import ModbusSerialClient
     from pymodbus.client.sync import ModbusUdpClient
     from pymodbus.constants import Defaults
+    from pymodbus.transaction import ModbusBinaryFramer
+    from pymodbus.transaction import ModbusAsciiFramer
+    from pymodbus.transaction import ModbusRtuFramer
+    from pymodbus.transaction import ModbusSocketFramer
 
     driver_ok = True
 except ImportError:
@@ -72,7 +76,7 @@ class RegisterBlock:
         try:
             result = self._request_data(slave, unit, first_address, quantity)
         except:
-            # something went wrong (ie. Server/Slave is not excessible)
+            # something went wrong (ie. Server/Slave is not accessible)
             # todo add log for some specific errors
             # var = traceback.format_exc()
             # log.error("exeption while request_data of %s" % (var))
@@ -137,6 +141,7 @@ class Device:
         self._unit_id = device.modbusdevice.unit_id
         self._port = device.modbusdevice.port
         self._protocol = device.modbusdevice.protocol
+        self._framer = device.modbusdevice.framer
         self._stopbits = device.modbusdevice.stopbits
         self._bytesize = device.modbusdevice.bytesize
         self._parity = device.modbusdevice.parity
@@ -242,10 +247,25 @@ class Device:
         """
         connect to the modbus slave (server)
         """
+        framer = None
+        if self._framer == 0:  # Socket Framer
+            framer = ModbusSocketFramer
+        elif self._framer == 1:  # RTU Framer
+            framer = ModbusRtuFramer
+        elif self._framer == 2:  # ASCII Framer
+            framer = ModbusAsciiFramer
+        elif self._framer == 3:  # Binary Framer
+            framer = ModbusBinaryFramer
         if self._protocol == 0:  # TCP
-            self.slave = ModbusTcpClient(self._address, int(self._port))
+            if self._framer is None:  # No Framer
+                self.slave = ModbusTcpClient(self._address, int(self._port))
+            else:
+                self.slave = ModbusTcpClient(self._address, int(self._port), framer=framer)
         elif self._protocol == 1:  # UDP
-            self.slave = ModbusUdpClient(self._address, int(self._port))
+            if self._framer is None:  # No Framer
+                self.slave = ModbusUdpClient(self._address, int(self._port))
+            else:
+                self.slave = ModbusUdpClient(self._address, int(self._port), framer=framer)
         elif self._protocol in (2, 3, 4):  # serial
             method_list = {2: 'ascii', 3: 'rtu', 4: 'binary'}
             self.slave = ModbusSerialClient(
@@ -357,5 +377,6 @@ class Device:
             else:
                 logger.error('Modbus Address %d out of range' % self.variables[variable_id].modbusvariable.address)
         else:
-            logger.error('wrong type of function code %d' % self.variables[variable_id].modbusvariable.function_code_read)
+            logger.error('wrong type of function code %d' %
+                         self.variables[variable_id].modbusvariable.function_code_read)
             return False

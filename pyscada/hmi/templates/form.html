@@ -1,0 +1,45 @@
+<form name="{{ form.title }}" class="form" id="{{ form.web_id }}-{{ uuid }}">
+    {% for item in form.hidden_control_items_to_true.all %}
+        {% if item.active == 1 %}
+            {% if item.type == 5 %}<!-- hidden form input {{ item.key }} -->
+                <div class="hidden variable-config" data-name="{{ item.name }}" data-key="{{ item.key }}" data-init-type="0" data-type="{{ item.item_type}}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}"></div>
+                <input type="hidden" class="form-control {{ item.web_class_str }}" name="{{ item.name }}" id="{{ form.web_id }}-{{ uuid }}-{{ item.web_id }}-value" placeholder="" value="1">
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+    {% for item in form.control_items.all %}
+        {% if item.active == 1 %}
+            {% if item.type == 5 %}<!-- form input {{ item.key }} -->
+                <div class="hidden variable-config" data-name="{{ item.name }}" data-key="{{ item.key }}" data-init-type="0" data-type="{{ item.item_type}}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-value-class="{{ item.value_class }}" data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}"></div>
+                {% if item.value_class == 'BOOL' or item.value_class == 'BOOLEAN' %}
+                    <!-- control item value {{ item.value }} -->
+                    {% if item.value %}
+                        <div class="input-group set_value">
+                            <input type="button" class="btn btn-success update-able write-task-btn type-bool {{ item.web_class_str }}" name="{{ item.name }}" id="{{ form.web_id }}-{{ uuid }}-{{ item.web_id }}" placeholder="" value="{{ item.name }}">
+                        </div>
+                    {% else %}
+                        <div class="input-group set_value">
+                            <input type="button" class="btn btn-default update-able write-task-btn type-bool {{ item.web_class_str }}" name="{{ item.name }}" id="{{ form.web_id }}-{{ uuid }}-{{ item.web_id }}" placeholder="" value="{{ item.name }}">
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="input-group set_value">
+                        <span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
+                        <input type="text" class="form-control {{ item.web_class_str }}" name="{{ item.name }}" id="{{ form.web_id }}-{{ uuid }}-{{ item.web_id }}-value" placeholder="">
+                        {% if item.unit %}<span class="input-group-addon">{{ item.unit }}</span>{% endif %}
+                    </div>
+                {% endif %}
+                <br><br>
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+    {% for dropdown in form.dropdowns.all %}
+        {% include "dropdown.html" with dropdown=dropdown form=form %}
+    {% endfor %}
+
+    <div class="input-group set_value">
+        <span class="input-group-btn">
+            <button class="btn btn-primary write-task-form-set set-{{ form.pk }}" type="button" id="{{ form.web_id }}-{{ uuid }}-button">{{ form.button }}</button>
+        </span>
+    </div>
+</form>

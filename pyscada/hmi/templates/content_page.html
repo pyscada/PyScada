@@ -1,3 +1,6 @@
 <div id="{{page.link_title}}" class="sub-page" >
+    {% if has_chart %}
+        <div class="has_chart"></div>
+    {% endif %}
     {{ widget_rows_html|safe}}
 </div>

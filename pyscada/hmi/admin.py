@@ -6,6 +6,10 @@ from pyscada.admin import admin_site
 from pyscada.models import Variable
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Chart
+from pyscada.hmi.models import XYChart
+from pyscada.hmi.models import DropDown
+from pyscada.hmi.models import DropDownItem
+from pyscada.hmi.models import Form
 from pyscada.hmi.models import SlidingPanelMenu
 from pyscada.hmi.models import Page
 from pyscada.hmi.models import GroupDisplayPermission
@@ -48,8 +52,48 @@ class ChartAdmin(admin.ModelAdmin):
         return instance.variables.name
 
 
+class XYChartForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(XYChartForm, self).__init__(*args, **kwargs)
+        wtf = Variable.objects.all()
+        w = self.fields['variables'].widget
+        choices = []
+        for choice in wtf:
+            choices.append((choice.id, choice.name + '( ' + choice.unit.description + ' )'))
+        w.choices = choices
+
+
+class XYChartAdmin(admin.ModelAdmin):
+    list_per_page = 100
+    # ordering = ['position',]
+    search_fields = ['name', ]
+    filter_horizontal = ('variables',)
+    List_display_link = ('title',)
+    list_display = ('id', 'title', 'x_axis_label', 'x_axis_linlog', 'y_axis_label')
+    form = XYChartForm
+
+    def name(self, instance):
+        return instance.variables.name
+
+
+class DropDownAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'empty', 'empty_value', 'items_list')
+    filter_horizontal = ('items',)
+    list_filter = ('controlpanel', 'dropdowns_form',)
+
+
+class DropDownItemAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title',)
+    list_filter = ('dropdown',)
+
+
+class FormAdmin(admin.ModelAdmin):
+    filter_horizontal = ('control_items', 'hidden_control_items_to_true', 'dropdowns')
+    list_filter = ('controlpanel',)
+
+
 class ControlItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'position', 'label', 'type', 'variable',)
+    list_display = ('id', 'position', 'label', 'type', 'variable', 'variable_property')
     list_filter = ('controlpanel',)
     raw_id_fields = ('variable',)
 
@@ -82,12 +126,12 @@ class WidgetAdmin(admin.ModelAdmin):
 
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
     filter_horizontal = (
-        'pages', 'sliding_panel_menus', 'charts', 'control_items', 'widgets', 'views', 'custom_html_panels',
-        'process_flow_diagram')
+        'pages', 'sliding_panel_menus', 'charts', 'xy_charts', 'control_items', 'widgets', 'views',
+        'custom_html_panels', 'process_flow_diagram', 'forms', 'dropdowns')
 
 
 class ControlPanelAdmin(admin.ModelAdmin):
-    filter_horizontal = ('items',)
+    filter_horizontal = ('items', 'forms', 'dropdowns')
 
 
 class ViewAdmin(admin.ModelAdmin):
@@ -115,10 +159,13 @@ class ProcessFlowDiagramAdmin(admin.ModelAdmin):
 
 admin_site.register(ControlItem, ControlItemAdmin)
 admin_site.register(Chart, ChartAdmin)
+admin_site.register(XYChart, XYChartAdmin)
+admin_site.register(DropDown, DropDownAdmin)
+admin_site.register(DropDownItem, DropDownItemAdmin)
+admin_site.register(Form, FormAdmin)
 admin_site.register(SlidingPanelMenu, SlidingPanelMenuAdmin)
 admin_site.register(Page, PageAdmin)
 admin_site.register(GroupDisplayPermission, GroupDisplayPermissionAdmin)
-
 admin_site.register(ControlPanel, ControlPanelAdmin)
 admin_site.register(CustomHTMLPanel, CustomHTMLPanelAdmin)
 admin_site.register(Widget, WidgetAdmin)

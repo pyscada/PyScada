@@ -31,7 +31,7 @@ class PhantDeviceAdmin(DeviceAdmin):
         """Limit Pages to those that belong to the request's user."""
         qs = super(PhantDeviceAdmin, self).get_queryset(request)
         return qs.filter(protocol_id=PROTOCOL_ID)
-    
+
     inlines = [
         PhantDeviceAdminInline
     ]
