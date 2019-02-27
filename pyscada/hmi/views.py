@@ -3,12 +3,9 @@ from __future__ import unicode_literals
 
 from pyscada.core import version as core_version
 from pyscada.models import RecordedData, VariableProperty
-from pyscada.hmi.models import Chart
-from pyscada.hmi.models import XYChart
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Form
 from pyscada.hmi.models import DropDown
-from pyscada.hmi.models import CustomHTMLPanel
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
