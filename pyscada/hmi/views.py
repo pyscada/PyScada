@@ -19,16 +19,29 @@ from django.template.response import TemplateResponse
 from django.shortcuts import redirect
 from django.contrib.auth import logout
 from django.views.decorators.csrf import requires_csrf_token
+from django.conf import settings
+
 import time
 import json
 import logging
 
 logger = logging.getLogger(__name__)
 
+UNAUTHENTICATED_REDIRECT = settings.UNAUTHENTICATED_REDIRECT if hasattr(settings,
+                                                                        'UNAUTHENTICATED_REDIRECT') else '/accounts/login/'
 
+
+def unauthenticated_redirect(func):
+    def wrapper(*args, **kwargs):
+        if not args[0].user.is_authenticated():
+            return redirect('%s/?next=%s' % (UNAUTHENTICATED_REDIRECT, args[0].path))
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+@unauthenticated_redirect
 def index(request):
-    if not request.user.is_authenticated():
-        return redirect('/accounts/choose_login/?next=%s' % request.path)
     if GroupDisplayPermission.objects.count() == 0:
         view_list = View.objects.all()
     else:
@@ -41,11 +54,9 @@ def index(request):
     return TemplateResponse(request, 'view_overview.html', c)  # HttpResponse(t.render(c))
 
 
+@unauthenticated_redirect
 @requires_csrf_token
 def view(request, link_title):
-    if not request.user.is_authenticated():
-        return redirect('/accounts/choose_login/?next=%s' % request.path)
-
     page_template = get_template('content_page.html')
     widget_row_template = get_template('widget_row.html')
 
@@ -118,9 +129,9 @@ def view(request, link_title):
                 continue
             mc, sbc = widget.content.create_panel_html(widget_pk=widget.pk, user=request.user)
             if mc is not None:
-                main_content.append(dict(html=mc,widget=widget))
+                main_content.append(dict(html=mc, widget=widget))
             if sbc is not None:
-                sidebar_content.append(dict(html=sbc,widget=widget))
+                sidebar_content.append(dict(html=sbc, widget=widget))
             if widget.content.content_model == "pyscada.hmi.models.Chart":
                 has_chart = True
 
@@ -148,9 +159,8 @@ def view(request, link_title):
     return TemplateResponse(request, 'view.html', c)
 
 
+@unauthenticated_redirect
 def log_data(request):
-    if not request.user.is_authenticated():
-        return redirect('/accounts/choose_login/?next=%s' % request.path)
     if 'timestamp' in request.POST:
         timestamp = float(request.POST['timestamp'])
     else:
@@ -166,9 +176,8 @@ def log_data(request):
     return HttpResponse(jdata, content_type='application/json')
 
 
+@unauthenticated_redirect
 def form_write_task(request):
-    if not request.user.is_authenticated():
-        return redirect('/accounts/choose_login/?next=%s' % request.path)
     if 'key' in request.POST and 'value' in request.POST:
         key = int(request.POST['key'])
         item_type = request.POST['item_type']
@@ -209,9 +218,8 @@ def form_write_task(request):
     return HttpResponse(status=404)
 
 
+@unauthenticated_redirect
 def form_write_property2(request):
-    if not request.user.is_authenticated():
-        return redirect('/accounts/choose_login/?next=%s' % request.path)
     if 'variable_property' in request.POST and 'value' in request.POST:
         value = request.POST['value']
         try:
@@ -228,10 +236,8 @@ def form_write_property2(request):
     return HttpResponse(status=404)
 
 
+@unauthenticated_redirect
 def get_cache_data(request):
-    if not request.user.is_authenticated():
-        return redirect('/accounts/choose_login/?next=%s' % request.path)
-
     if 'init' in request.POST:
         init = bool(float(request.POST['init']))
     else:
@@ -265,16 +271,16 @@ def get_cache_data(request):
     timestamp_to = time.time()
 
     if 'timestamp_to' in request.POST:
-        timestamp_to = min(timestamp_to,float(request.POST['timestamp_to']) / 1000.0)
+        timestamp_to = min(timestamp_to, float(request.POST['timestamp_to']) / 1000.0)
 
     if timestamp_to == 0:
         timestamp_to = time.time()
 
     if timestamp_from == 0:
-        timestamp_from == time.time()-60
+        timestamp_from == time.time() - 60
 
-    if timestamp_to - timestamp_from > 120*60:
-        timestamp_from = timestamp_to - 120*60
+    if timestamp_to - timestamp_from > 120 * 60:
+        timestamp_from = timestamp_to - 120 * 60
 
     data = RecordedData.objects.get_values_in_time_range(
         time_min=timestamp_from,
@@ -304,8 +310,8 @@ def logout_view(request):
     logger.info('logout %s' % request.user)
     logout(request)
     # Redirect to a success page.
-    return redirect('/accounts/choose_login/?next=/')
+    return redirect('%s/?next=%s' % (UNAUTHENTICATED_REDIRECT, request.path))
 
 
 def user_profile_change(request):
-    return redirect('/accounts/choose_login/?next=/')
+    return redirect('%s/?next=%s' % (UNAUTHENTICATED_REDIRECT, request.path))

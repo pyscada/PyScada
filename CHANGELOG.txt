@@ -190,3 +190,13 @@
   - added date_saved field to the RecordedData Model, renamed the RecordedData model without the field to RecordedDataOld,
     migration #48 will copy some data to the new model, the rest can be copied by using the move_data.py script
 
+0.7.0rc14
+  - update to flot 2.1.6
+  - fixed process flow diagram value not displayed
+  - moved x y zoom selection in HMI to each Chart
+  - add option of redirecting to a custom login page
+  - add framer option for modbus communication
+  - add data courser in chart
+  - add XYChart
+  - add new form widget in HMI
+  - add new drop down control element in HMI

@@ -256,6 +256,7 @@ class Device:
             framer = ModbusAsciiFramer
         elif self._framer == 3:  # Binary Framer
             framer = ModbusBinaryFramer
+
         if self._protocol == 0:  # TCP
             if self._framer is None:  # No Framer
                 self.slave = ModbusTcpClient(self._address, int(self._port))
