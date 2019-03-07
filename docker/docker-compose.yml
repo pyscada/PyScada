@@ -9,6 +9,7 @@ services:
       - db
     volumes:
       - "http:/src/pyscada/http"
+      - "sock:/src/pyscada/tmp"
 
   nginx:
     image: nginx:latest
@@ -19,6 +20,7 @@ services:
       - "443:443"
     volumes:
       - "http:/var/www/http"
+      - "sock:/tmp"
     depends_on:
       - pyscada
 
@@ -35,3 +37,4 @@ services:
       MYSQL_PASSWORD: 'PyScada-user-password'
 volumes:
   http:
+  sock:

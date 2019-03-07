@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-while ! wget db:3306; do
+while ! wget --quiet db:3306; do
     sleep 1
 done
 python3 /src/pyscada/manage.py migrate
