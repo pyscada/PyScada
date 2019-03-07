@@ -1,47 +1,40 @@
-version: '2'
+version: '3'
 services:
+  pyscada:
+    build: pyscada
+    container_name: pyscada
+    #volumes:
+    tty: true
+    depends_on:
+      - db
+    volumes:
+      - "http:/src/pyscada/http"
+      - "sock:/src/pyscada/tmp"
+
   nginx:
     image: nginx:latest
-    container_name: ng01
+    build: nginx
+    container_name: nginx
     ports:
       - "80:80"
-      - "433:433"
-      - "8000:8000"
+      - "443:443"
     volumes:
-      - ./src:/src
-      - ./config/nginx:/etc/nginx/conf.d
-      - ./config/nginx/ssl:/eta/nging/ssl
+      - "http:/var/www/http"
+      - "sock:/tmp"
     depends_on:
-      - web
-  web:
-    build: .
-    container_name: dg01
-    command: bash -c "python manage.py makemigrations && python manage.py migrate && python managey.py collectstatic --noinput && python manage.py loaddata color && python manage.py loaddata units && gunicorn PyScadaServer.wsgi -b 0.0.0.0:8000"
-    depends_on:
-      - db
-    volumes:
-      - ./src:/src
-    expose:
-      - "8000"
-    links:
-      - db
-
-  pyscada:
-    build: .
-    container_name: pg01
-    command: bash -c "python manage.py pyscada_daemon start"
-    depends_on:
-      - web
-    volumes:
-      - ./src:/src
-
-
+      - pyscada
 
   db:
     image: mysql:latest
+    container_name: mysql
     restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    #build: mysql
     environment:
       MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
       MYSQL_DATABASE: 'PyScada_db'
       MYSQL_USER: 'PyScada-user'
       MYSQL_PASSWORD: 'PyScada-user-password'
+volumes:
+  http:
+  sock:

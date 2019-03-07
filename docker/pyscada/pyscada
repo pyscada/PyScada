@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+echo "Wait for MySQL to Start"
+while ! wget --quiet db:3306; do
+    sleep 1
+done
+echo "Start PyScada"
+python3 /src/pyscada/manage.py pyscada_daemon start
+#python3 /src/pyscada/manage.py runserver "0.0.0.0:8000" --insecure
+echo "Start Gunicorn"
+/usr/local/bin/gunicorn -b unix:/src/pyscada/tmp/gunicorn.sock -n PyScada -w 8 -- PyScadaServer.wsgi:application
