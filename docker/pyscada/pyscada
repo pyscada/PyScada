@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+while ! wget db:3306; do
+    sleep 1
+done
+python3 /src/pyscada/manage.py pyscada_daemon start
+python3 /src/pyscada/manage.py runserver "0.0.0.0:8000" --insecure
+#/usr/local/bin/gunicorn -- PyScadaServer.wsgi:application -n PyScada -w 8
