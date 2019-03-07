@@ -127,6 +127,9 @@ The plugin also adds four public methods:
             var xaxes = plot.getXAxes()
             var yaxes = plot.getYAxes()
             var offset = plot.offset();
+            tf = function (value, axis) {
+                return value.toFixed(axis.tickDecimals) + ((typeof axis.options.unit != "undefined") ? axis.options.unit : '');
+            };
 
             if (axisvalues.x != -1) {
 

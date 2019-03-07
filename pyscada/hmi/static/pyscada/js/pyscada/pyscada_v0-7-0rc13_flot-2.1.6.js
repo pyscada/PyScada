@@ -779,7 +779,6 @@ function PyScadaPlot(id){
         });
         //
         $(legend_checkbox_id+'make_all_none').change(function() {
-                //console.log(legend_checkbox_id + 'changed');
                 plot.update(false);
                 if ($(legend_checkbox_id+'make_all_none').is(':checked')){
                     $.each(variables,function(key,val){
@@ -941,16 +940,16 @@ function PyScadaPlot(id){
             var data = [['Label'], ['Unité'], ['Couleur'], ['Données']];
             mode = flotPlot.getXAxes()[0].options.mode;
             for (s=0; s<series.length; s++){
-                data[0][s*2] = "x";
-                data[1][s*2] = (mode = "time") ? "ms" : "";
-                data[2][s*2] = "";
-                data[0][s*2+1] = series[s].label;
-                data[1][s*2+1] = series[s].unit;
-                data[2][s*2+1] = series[s].color;
+                data[0][(s+1)*2-1] = "x";
+                data[1][(s+1)*2-1] = (mode = "time") ? "ms" : "";
+                data[2][(s+1)*2-1] = "";
+                data[0][(s+1)*2] = series[s].label;
+                data[1][(s+1)*2] = series[s].unit;
+                data[2][(s+1)*2] = series[s].color;
                 for (l=0; l<series[s].data.length; l++) {
                     data.push([]);
-                    data[3+l][s*2] = series[s].data[l][0]
-                    data[3+l][s*2+1] = series[s].data[l][1]
+                    data[3+l][(s+1)*2-1] = series[s].data[l][0]
+                    data[3+l][(s+1)*2] = series[s].data[l][1]
                 }
             }
 
@@ -1222,7 +1221,6 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         });
         //
         $(legend_checkbox_id+'make_all_none').change(function() {
-                //console.log(legend_checkbox_id + 'changed');
                 plot.update(false);
                 if ($(legend_checkbox_id+'make_all_none').is(':checked')){
                     $.each(variables,function(key,val){
@@ -1375,13 +1373,52 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         var yaxisLabel = $(chart_container_id + ' .axisLabel.yaxisLabel');
         yaxisLabel.css("margin-top", yaxisLabel.width() / 2 - 20);
 
+        // The download function takes a CSV string, the filename and mimeType as parameters
+        // Scroll/look down at the bottom of this snippet to see how download is called
+        var download = function(content, fileName, mimeType) {
+            var a = document.createElement('a');
+            mimeType = mimeType || 'application/octet-stream';
+
+            if (mimeType == 'image/png' && 'download' in a) {
+                a.href = content;
+                a.setAttribute('download', fileName);
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else if (navigator.msSaveBlob) { // IE10
+                navigator.msSaveBlob(new Blob([content], {
+                type: mimeType
+                }), fileName);
+            } else if (URL && 'download' in a) { //html5 A[download]
+                a.href = URL.createObjectURL(new Blob([content], {
+                  type: mimeType
+                }));
+                a.setAttribute('download', fileName);
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                location.href = 'data:application/octet-stream,' + encodeURIComponent(content); // only this mime type is supported
+            }
+        }
+
         $(chart_container_id + " .btn.btn-default.chart-save-csv").click(function() {
-            console.log('start csv');
             // Example data given in question text
-            var data = [
-              ['name1', 'city1', 'some other info'],
-              ['name2', 'city2', 'more info']
-            ];
+            var data = [['Label'], ['Unité'], ['Couleur'], ['Données']];
+            mode = flotPlot.getXAxes()[0].options.mode;
+            for (s=0; s<series.length; s++){
+                data[0][(s+1)*2-1] = "x";
+                data[1][(s+1)*2-1] = (mode = "time") ? "ms" : "";
+                data[2][(s+1)*2-1] = "";
+                data[0][(s+1)*2] = series[s].label;
+                data[1][(s+1)*2] = series[s].unit;
+                data[2][(s+1)*2] = series[s].color;
+                for (l=0; l<series[s].data.length; l++) {
+                    data.push([]);
+                    data[3+l][(s+1)*2-1] = series[s].data[l][0]
+                    data[3+l][(s+1)*2] = series[s].data[l][1]
+                }
+            }
 
             // Building the CSV from the Data two-dimensional array
             // Each column is separated by ";" and new line "\n" for next row
@@ -1391,40 +1428,22 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
               csvContent += index < data.length ? dataString + '\n' : dataString;
             });
 
-            // The download function takes a CSV string, the filename and mimeType as parameters
-            // Scroll/look down at the bottom of this snippet to see how download is called
-            var download = function(content, fileName, mimeType) {
-              var a = document.createElement('a');
-              mimeType = mimeType || 'application/octet-stream';
-
-              if (navigator.msSaveBlob) { // IE10
-                navigator.msSaveBlob(new Blob([content], {
-                  type: mimeType
-                }), fileName);
-              } else if (URL && 'download' in a) { //html5 A[download]
-                a.href = URL.createObjectURL(new Blob([content], {
-                  type: mimeType
-                }));
-                a.setAttribute('download', fileName);
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-              } else {
-                location.href = 'data:application/octet-stream,' + encodeURIComponent(content); // only this mime type is supported
-              }
-            }
-
-            download(csvContent, 'dowload.csv', 'text/csv;encoding:utf-8');
+            download(csvContent, 'download.csv', 'text/csv;encoding:utf-8');
         });
 
         $(chart_container_id + " .btn.btn-default.chart-save-picture").click(function() {
-            originalCanvas1 = $(chart_container_id + ' .flot-base')[0]
-            originalCanvas2 = $(chart_container_id + ' .flot-overlay')[0]
-            originalCanvas3 = $(chart_container_id + ' .flot-svg')[0].children[0]
-            sources = [originalCanvas1, originalCanvas2, originalCanvas3]
-            destinationCanvas = document.getElementById("myCanvas");
+            var originalCanvas1 = $(chart_container_id + ' .flot-base')[0]
+            var originalCanvas2 = $(chart_container_id + ' .flot-overlay')[0]
+            var originalCanvas3 = $(chart_container_id + ' .flot-svg')[0].children[0]
+            var ctx = originalCanvas2.getContext("2d");
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fillRect(0, 0, originalCanvas2.width, originalCanvas2.height);
+            var sources = [originalCanvas2, originalCanvas1, originalCanvas3]
+            var destinationCanvas = document.getElementById("myCanvas");
             $.plot.composeImages(sources, destinationCanvas)
-            setTimeout(function() {window.open($('#myCanvas')[0].toDataURL('image/png'));}, 500);
+            //setTimeout(function() {window.open($('#myCanvas')[0].toDataURL('image/png'));}, 500);
+            setTimeout(function() {download($('#myCanvas')[0].toDataURL('image/png'), 'image.png', 'image/png');}, 500);
+            ctx.fillRect(0, 0, 0, 0);
         });
 
         $(chart_container_id + " .btn.btn-default.chart-ResetSelection").click(function() {
@@ -1460,7 +1479,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         if($(chart_container_id).is(":visible") || force){
             // only update if plot is visible
             // add the selected data series to the "series" variable
-            var series = [];
+            series = [];
             start_id = 0;
             j=0;
             jk=1;
@@ -1544,7 +1563,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                         j += 1;
                         if (yaxisUniqueScale) {yj = 1} else {yj = jk}
                         //plot Y with defferents axis
-                        series.push({"data":new_data, "xdata":chart_x_data,"color":variables[key].color,"yaxis":yj,"label":label,"unit":unit,"chart_data_min":chart_data_min,"chart_data_max":chart_data_max,"x_data_min":x_data_min,"x_data_max":x_data_max});
+                        series.push({"data":new_data, "xdata":chart_x_data,"color":variables[key].color,"yaxis":yj,"label":variables[key].label,"unit":variables[key].unit,"chart_data_min":chart_data_min,"chart_data_max":chart_data_max,"x_data_min":x_data_min,"x_data_max":x_data_max});
                     };
                 };
                 jk += 1;
@@ -1630,7 +1649,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             }*/
 
             // update flot plot
-            flotPlot.clearTextCache();
+            //flotPlot.clearTextCache();
             flotPlot.setData(series);
             flotPlot.setupGrid(true);
             flotPlot.draw();
