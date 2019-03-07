@@ -108,13 +108,33 @@
 {% block include_bootom %}
 <script type="text/javascript" src="{% static "pyscada/js/jquery.mb.CSSAnimate.min.js" %}"></script>
 <script type="text/javascript" src="{% static "pyscada/js/jquery.tablesorter.min.js" %}"></script>
-<script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.min.js" %}"></script>
-<script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.resize.min.js" %}"></script>
-<script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.time.min.js" %}"></script>
-<script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.selection.min.js" %}"></script>
-<script type="text/javascript" src="{% static "pyscada/js/flot/jquery.flot.axisvalues.js" %}"></script>
-<!--<script type="text/javascript" src="{% static "pyscada/js/dexie/dexie.js" %}"></script>-->
-<script type="text/javascript" src="{% static "pyscada/js/pyscada/pyscada_v0-7-0rc13.js" %}"></script>
+
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/lib/jquery.mousewheel.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.canvaswrapper.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.colorhelpers.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.saturated.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.browser.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.drawSeries.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.errorbars.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.uiConstants.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.logaxis.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.symbol.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.flatdata.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.navigate.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.fillbetween.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.stack.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.touchNavigate.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.hover.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.touch.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.time.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.axislabels.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.selection.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.composeImages.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.legend.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/jquery.flot.axisvalues.js" %}"></script>
+
+<script type="text/javascript" src="{% static "pyscada/js/pyscada/pyscada_v0-7-0rc14.js" %}"></script>
 {% endblock %}        
 {% block script_bottom %}
         $( document ).ready(function() {
