@@ -28,7 +28,6 @@ class PhantDevice(models.Model):
         return self.phant_device.short_name
 
 
-
 class ExtendedPhantDevice(Device):
     class Meta:
         proxy = True

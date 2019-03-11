@@ -5,8 +5,6 @@ from pyscada.models import Device
 from pyscada.models import Variable
 
 from django.db import models
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.utils.encoding import python_2_unicode_compatible
 import logging
 
@@ -64,21 +62,3 @@ class ExtendedModbusVariable(Variable):
         proxy = True
         verbose_name = 'Modbus Variable'
         verbose_name_plural = 'Modbus Variables'
-
-
-@receiver(post_save, sender=ModbusDevice)
-@receiver(post_save, sender=ModbusVariable)
-@receiver(post_save, sender=ExtendedModbusDevice)
-@receiver(post_save, sender=ExtendedModbusVariable)
-def _reinit_daq_daemons(sender, instance, **kwargs):
-    """
-    update the daq daemon configuration when changes be applied in the models
-    """
-    if type(instance) is ModbusDevice:
-        post_save.send_robust(sender=Device, instance=instance.modbus_device)
-    elif type(instance) is ModbusVariable:
-        post_save.send_robust(sender=Variable, instance=instance.modbus_variable)
-    elif type(instance) is ExtendedModbusVariable:
-        post_save.send_robust(sender=Variable, instance=Variable.objects.get(pk=instance.pk))
-    elif type(instance) is ExtendedModbusDevice:
-        post_save.send_robust(sender=Device, instance=Device.objects.get(pk=instance.pk))

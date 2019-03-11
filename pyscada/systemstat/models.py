@@ -4,8 +4,6 @@ from __future__ import unicode_literals
 from pyscada.models import Variable, Device
 
 from django.db import models
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.utils.encoding import python_2_unicode_compatible
 import logging
 
@@ -48,7 +46,6 @@ class SystemStatVariable(models.Model):
         return self.system_stat_variable.name
 
 
-
 class ExtendedSystemStatDevice(Device):
     class Meta:
         proxy = True
@@ -61,18 +58,3 @@ class ExtendedSystemStatVariable(Variable):
         proxy = True
         verbose_name = 'SystemStat Variable'
         verbose_name_plural = 'SystemStat Variables'
-
-
-@receiver(post_save, sender=SystemStatVariable)
-@receiver(post_save, sender=ExtendedSystemStatVariable)
-@receiver(post_save, sender=ExtendedSystemStatDevice)
-def _reinit_daq_daemons(sender, instance, **kwargs):
-    """
-    update the daq daemon configuration when changes be applied in the models
-    """
-    if type(instance) is SystemStatVariable:
-        post_save.send_robust(sender=Variable, instance=instance.system_stat_variable)
-    elif type(instance) is ExtendedSystemStatVariable:
-        post_save.send_robust(sender=Variable, instance=Variable.objects.get(pk=instance.pk))
-    elif type(instance) is ExtendedSystemStatDevice:
-        post_save.send_robust(sender=Device, instance=Device.objects.get(pk=instance.pk))

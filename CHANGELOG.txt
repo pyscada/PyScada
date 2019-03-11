@@ -200,3 +200,6 @@
   - add XYChart
   - add new form widget in HMI
   - add new drop down control element in HMI
+  - fixed WidgetContent not being deleted
+  - moved signal related methods to dedicated signals.py
+  

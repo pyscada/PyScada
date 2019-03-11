@@ -8,6 +8,7 @@ from django.contrib.auth.models import Group
 from django.utils.encoding import python_2_unicode_compatible
 from django.template.loader import get_template
 
+
 from six import text_type
 import traceback
 from uuid import uuid4
@@ -17,23 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 class WidgetContentModel(models.Model):
-
-    def save(self, *args, **kwargs):
-        created = self.pk is None
-        super(WidgetContentModel, self).save(*args, **kwargs)  # Call the "real" save() method.
-        # create a WidgetContent Entry
-        if created:
-            self.create_widget_content_entry()
-
-    def delete(self, *args, **kwargs):
-        # delete WidgetContent Entry
-        wcs = WidgetContent.objects.filter(
-            content_pk=self.pk,
-            content_model=('%s' % self.__class__).replace("<class '", '').replace("'>", ''))
-        for wc in wcs:
-            wc.delete()
-
-        super(WidgetContentModel, self).delete(*args, **kwargs)  # Call the "real" save() method.
 
     def gen_html(self, **kwargs):
         """

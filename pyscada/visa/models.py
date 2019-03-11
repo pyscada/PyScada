@@ -4,8 +4,6 @@ from __future__ import unicode_literals
 from pyscada.models import Variable, Device
 
 from django.db import models
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.utils.encoding import python_2_unicode_compatible
 import logging
 
@@ -64,25 +62,3 @@ class ExtendedVISAVariable(Variable):
         proxy = True
         verbose_name = 'VISA Variable'
         verbose_name_plural = 'VISA Variable'
-
-
-@receiver(post_save, sender=VISAVariable)
-@receiver(post_save, sender=VISADevice)
-@receiver(post_save, sender=VISADeviceHandler)
-@receiver(post_save, sender=ExtendedVISAVariable)
-@receiver(post_save, sender=ExtendedVISADevice)
-def _reinit_daq_daemons(sender, instance, **kwargs):
-    """
-    update the daq daemon configuration when changes be applied in the models
-    """
-    if type(instance) is VISADevice:
-        post_save.send_robust(sender=Device, instance=instance.visa_device)
-    elif type(instance) is VISAVariable:
-        post_save.send_robust(sender=Variable, instance=instance.visa_variable)
-    elif type(instance) is VISADeviceHandler:
-        # todo
-        pass
-    elif type(instance) is ExtendedVISAVariable:
-        post_save.send_robust(sender=Variable, instance=Variable.objects.get(pk=instance.pk))
-    elif type(instance) is ExtendedVISADevice:
-        post_save.send_robust(sender=Device, instance=Device.objects.get(pk=instance.pk))

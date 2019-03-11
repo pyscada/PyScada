@@ -14,3 +14,5 @@ class PyScadaConfig(AppConfig):
     verbose_name = _("PyScada Core")
     path = os.path.dirname(os.path.realpath(__file__))
 
+    def ready(self):
+        import pyscada.signals
