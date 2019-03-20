@@ -38,7 +38,8 @@ setup(
         'psutil>=2.1.1',
         'pillow',
         'python-daemon>=2.0.0',
-        'pytz'
+        'pytz',
+        'pyserial'
     ],
     packages=find_packages(exclude=["project", "project.*"]),
     include_package_data=True,

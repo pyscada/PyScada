@@ -172,7 +172,6 @@ function add_fetched_data(key,value){
     }
 }
 
-
 function data_handler(){
     // call the data handler periodically
     if(!INIT_STATUS_VARIABLES_DONE || !INIT_CHART_VARIABLES_DONE){
@@ -187,7 +186,7 @@ function data_handler(){
         // fetch the SERVER_TIME
             data_handler_ajax(0,[],[],Date.now());
         }else{
-            if(FETCH_DATA_PENDING<=0){
+            if(FETCH_DATA_PENDING<=0 && INIT_STATUS_VARIABLES_DONE && INIT_CHART_VARIABLES_DONE){
             // fetch new data
                 data_handler_ajax(0, VARIABLE_KEYS, VARIABLE_PROPERTY_KEYS, LAST_QUERY_TIME);
             }
@@ -218,7 +217,13 @@ function data_handler(){
                     var var_count = 0;
                     var vars = [];
                     var props = [];
-                    var timestamp = DATA_FROM_TIMESTAMP;
+                    if (DATA_FROM_TIMESTAMP == -1){
+                        var timestamp = SERVER_TIME;
+                    }else{
+                        var timestamp = DATA_FROM_TIMESTAMP;
+                    }
+
+
                     for (var key in CHART_VARIABLE_KEYS){
                        if(CHART_VARIABLE_KEYS[key]<=DATA_INIT_STATUS){
                             CHART_VARIABLE_KEYS[key]++;
@@ -234,6 +239,9 @@ function data_handler(){
                     if(var_count>0){
                         if (timestamp === DATA_FROM_TIMESTAMP){
                             timestamp = DATA_DISPLAY_TO_TIMESTAMP;
+                        }
+                        if (timestamp == -1){
+                            var timestamp = SERVER_TIME;
                         }
                         data_handler_ajax(1,vars,props,timestamp-120*60*1000,timestamp);
                     }else{
@@ -619,6 +627,7 @@ function progressbarSetWindow( event, ui ) {
 
     progressbar_resize_active = false;
 }
+
 function timeline_resize( event, ui ) {
     var window_width = ui.size.width/($('#timeline-border').width()-10);
     var window_left = ui.position.left/($('#timeline-border').width()-10);
@@ -646,6 +655,7 @@ function timeline_resize( event, ui ) {
     }
     update_timeline();
 }
+
 function timeline_drag( event, ui ) {
     var window_left = ui.position.left/($('#timeline-border').width()-10);
     var min_full = (DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP);
@@ -663,6 +673,7 @@ function timeline_drag( event, ui ) {
     }
     update_timeline();
 }
+
 function PyScadaPlot(id){
     var options = {
         legend: {
@@ -1677,6 +1688,7 @@ function find_index(a,t){
         }
     }
 }
+
 function find_index_sub_lte(a,t,d){
     var i = a.length; //or 10
     while(i--){
@@ -1685,6 +1697,7 @@ function find_index_sub_lte(a,t,d){
         }
     }
 }
+
 function find_index_sub_gte(a,t,d){
     var i = 0; //or 10
     while(i++ < a.length){
@@ -2103,8 +2116,6 @@ function set_chart_selection_mode(){
         });
     });
 }
-
-
 
 // fix drop down problem
 $( document ).ready(function() {

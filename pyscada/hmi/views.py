@@ -242,9 +242,10 @@ def get_cache_data(request):
         init = bool(float(request.POST['init']))
     else:
         init = False
-
+    active_variables = []
     if 'variables[]' in request.POST:
         active_variables = request.POST.getlist('variables[]')
+    """
     else:
         active_variables = list(
             GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator()).values_list(
@@ -259,6 +260,7 @@ def get_cache_data(request):
             GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator()).values_list(
                 'custom_html_panels__variables', flat=True))
         active_variables = list(set(active_variables))
+    """
 
     active_variable_properties = []
     if 'variable_properties[]' in request.POST:
@@ -282,21 +284,22 @@ def get_cache_data(request):
     if timestamp_to - timestamp_from > 120 * 60:
         timestamp_from = timestamp_to - 120 * 60
 
-    data = RecordedData.objects.get_values_in_time_range(
-        time_min=timestamp_from,
-        time_max=timestamp_to,
-        query_first_value=init,
-        time_in_ms=True,
-        key_is_variable_name=False,
-        add_timestamp_field=True,
-        add_date_saved_max_field=True,
-        add_fake_data=False,
-        variable_id__in=active_variables,
-        add_latest_value=False,
-        use_date_saved=not init)
+    #if not init:
+        #timestamp_to = min(timestamp_from + 30, timestamp_to)
+
+    if len(active_variables) > 0:
+        data = RecordedData.objects.db_data(
+            variable_ids=active_variables,
+            time_min=timestamp_from,
+            time_max=timestamp_to,
+            time_in_ms=True,
+            query_first_value=init)
+    else:
+        data = None
 
     if data is None:
         data = {}
+
     data['variable_properties'] = {}
 
     for item in VariableProperty.objects.filter(pk__in=active_variable_properties):

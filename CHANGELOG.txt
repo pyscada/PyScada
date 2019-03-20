@@ -202,4 +202,5 @@
   - add new drop down control element in HMI
   - fixed WidgetContent not being deleted
   - moved signal related methods to dedicated signals.py
-  
+  - added pyserial to dependency list
+  - improved hmi <--> db communication to avoid data loss on slow connections

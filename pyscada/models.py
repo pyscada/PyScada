@@ -289,6 +289,75 @@ class RecordedDataValueManager(models.Manager):
             values['date_saved_max'] = date_saved_max * f_time_scale
         return values
 
+    def db_data(self, variable_ids, time_min, time_max, time_in_ms=True, query_first_value=False):
+        """
+
+        :return:
+        """
+
+        variable_ids = [int(pk) for pk in variable_ids]
+        tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
+            id__range=((time_min - 3660) * 2097152 * 1000, time_max * 2097152 * 1000),
+            date_saved__range=(timestamp_to_datetime(time_min - 3660 if query_first_value else time_min),
+                               timestamp_to_datetime(time_max)),
+            variable_id__in=variable_ids
+        ).values_list('variable_id', 'pk', 'value_float64',
+                      'value_int64', 'value_int32', 'value_int16',
+                      'value_boolean', 'date_saved'))
+
+        if time_in_ms:
+            f_time_scale = 1000
+        else:
+            f_time_scale = 1
+
+        values = dict()
+        first_value = dict()
+        date_saved_max = 0
+        tmp_time_max = 0
+        tmp_time_min = time_max
+
+        def get_rd_value(rd_resp):
+            # return the value from a RecordedData Responce
+            if rd_resp[2] is not None:  # float64
+                return rd_resp[2]  # time, value
+            elif rd_resp[3] is not None:  # int64
+                return rd_resp[3]  # time, value
+            elif rd_resp[4] is not None:  # int32
+                return rd_resp[4]  # time, value
+            elif rd_resp[5] is not None:  # int16
+                return rd_resp[5]  # time, value
+            elif rd_resp[6] is not None:  # boolean
+                return rd_resp[6]  # time, value
+            else:
+                return 0
+
+        for item in tmp:
+            if item[0] not in variable_ids:
+                continue
+            if not item[0] in values:
+                values[item[0]] = []
+            tmp_time = float(item[1] - item[0]) / (2097152.0 * 1000)  # calc the timestamp in seconds
+            date_saved_max = max(date_saved_max, time.mktime(item[7].utctimetuple()) + item[7].microsecond / 1e6)
+            tmp_time_max = max(tmp_time, tmp_time_max)
+            if tmp_time < time_min:
+                first_value[item[0]] = get_rd_value(item)
+                continue
+            tmp_time_min = min(tmp_time, tmp_time_min)
+            values[item[0]].append([tmp_time * f_time_scale, get_rd_value(item)])
+
+        if query_first_value:
+            for pk in variable_ids:
+                if not pk in values:
+                    values[pk] = []
+                if pk in first_value:
+                    values[pk].insert(0,[time_min*f_time_scale,first_value[pk]])
+                if len(values[pk]) > 1:
+                    values[pk].append([tmp_time_max*f_time_scale,values[pk][-1][1]])
+        values['timestamp'] = max(tmp_time_max,time_min) * f_time_scale
+        values['date_saved_max'] = date_saved_max * f_time_scale
+
+        return values
+
 
 class VariablePropertyManager(models.Manager):
     """
