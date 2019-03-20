@@ -66,7 +66,7 @@
 0.7.0b11
  - fixed Export without mean values
  - fixed managementcommand for Data Export
- - added lock for Exports to prevent running of more then one export at a time
+ - added lock for Exports to prevent running of more than one export at a time
 
 0.7.0b12
   - fixed export

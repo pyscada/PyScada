@@ -840,7 +840,7 @@ class Variable(models.Model):
             else:
                 if (self.timestamp - self.timestamp_old) >= 3600:
                     # store at least every hour one value
-                    # store Value if old Value is older then 1 hour
+                    # store Value if old Value is older than 1 hour
                     self.store_value = True
                     self.timestamp_old = self.timestamp
 
@@ -1018,7 +1018,7 @@ class DeviceWriteTask(models.Model):
 class RecordedDataOld(models.Model):
     """
     Big Int first 42 bits are used for the unixtime in ms, unsigned because we only
-    store time values that are later then 1970, rest 21 bits are used for the
+    store time values that are later than 1970, rest 21 bits are used for the
     variable id to have a uniqe primary key
     63 bit 111111111111111111111111111111111111111111111111111111111111111
     42 bit 111111111111111111111111111111111111111111000000000000000000000
@@ -1349,7 +1349,7 @@ class Event(models.Model):
     variable_limit = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
                                        related_name="variable_limit",
                                        help_text='''you can choose either an fixed limit or an variable limit that is
-                                        dependent on the current value of an variable, if you choose a value other then 
+                                        dependent on the current value of an variable, if you choose a value other than 
                                         none for variable limit the fixed limit would be ignored''')
     limit_type_choices = (
         (0, 'value is less than limit',),

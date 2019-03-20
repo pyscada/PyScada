@@ -28,13 +28,15 @@ def _delete_widget_content(sender, instance, **kwargs):
         wc.delete()
 
 
-@receiver(post_save, sender=WidgetContentModel)
+@receiver(post_save)
 def _create_widget_content(sender, instance, created=False, **kwargs):
     """
     create a widget content instance when a WidgetContentModel is deleted
     """
     if not issubclass(sender, WidgetContentModel):
         return
+
     # create a WidgetContent Entry
     if created:
         instance.create_widget_content_entry()
+        return

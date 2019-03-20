@@ -181,7 +181,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
     else:
         return
 
-    # less then 24
+    # less than 24
     # read everything
     bf.write_data('time', float64(out_timevalues),
                   id=0,
