@@ -38,6 +38,8 @@ from django import db
 from django.conf import settings
 from django.db import connection, connections
 from django.utils.termcolors import colorize
+from django.db.utils import OperationalError
+from django.db.transaction import TransactionManagementError
 
 
 from pyscada.models import BackgroundProcess, DeviceWriteTask, Device, RecordedData
@@ -329,6 +331,11 @@ class Scheduler(object):
             sys.exit(0)
         except SystemExit:
             raise
+        except OperationalError:
+            logger.debug('%s, DB connection lost in run' % self.label)
+            self.stop()
+            self.delete_pid()
+            sys.exit(0)
         except:
             logger.error('%s(%d), unhandled exception\n%s' % (self.label, getpid(), traceback.format_exc()))
 
@@ -667,6 +674,10 @@ class Process(object):
         except StopIteration:
             self.stop()
             sys.exit(0)
+        except OperationalError:
+            logger.debug('%s, DB connection lost' % self.label)
+            self.stop()
+            sys.exit(0)
         except:
             logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
             self.stop()
@@ -695,13 +706,20 @@ class Process(object):
         """
         handel's a termination signal
         """
-        BackgroundProcess.objects.filter(pk=self.process_id
-                                         ).update(pid=0, last_update=datetime_now(), message='stopping..')
-        # run the cleanup
-        self.cleanup()
-        BackgroundProcess.objects.filter(pk=self.process_id).update(pid=0,
-                                                                    last_update=datetime_now(),
-                                                                    message='stopped')
+        try:
+            BackgroundProcess.objects.filter(pk=self.process_id
+                                             ).update(pid=0, last_update=datetime_now(), message='stopping..')
+            # run the cleanup
+            self.cleanup()
+            BackgroundProcess.objects.filter(pk=self.process_id).update(pid=0,
+                                                                        last_update=datetime_now(),
+                                                                        message='stopped')
+        except OperationalError:
+            logger.debug('%s, DB connection lost in stop function' % self.label)
+            try:
+                self.cleanup()
+            except TransactionManagementError:
+                logger.debug('%s, TransactionManagementError in cleanup function' % self.label)
 
     def restart(self):
         """
