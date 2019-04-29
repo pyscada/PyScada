@@ -7,7 +7,7 @@ from pyscada.export.export import export_recordeddata_to_file
 from pyscada.export.models import ScheduledExportTask, ExportTask
 from pyscada.utils.scheduler import Process as BaseProcess
 from pyscada.models import BackgroundProcess
-from pyscada.utils import datetime_now
+from django.utils.timezone import now
 
 from time import time, gmtime, mktime
 from datetime import date, datetime, timedelta
@@ -79,7 +79,7 @@ class ExportProcess(BaseProcess):
 
         if bp:
             bp.done = True
-            bp.last_update = datetime_now()
+            bp.last_update = now()
             bp.message = 'stopped'
             bp.save()
 
@@ -176,7 +176,7 @@ class MasterProcess(BaseProcess):
                     job.save()
                     continue
 
-                if datetime_now() - timedelta(hours=1) > job.backgroundprocess.last_update:
+                if now() - timedelta(hours=1) > job.backgroundprocess.last_update:
                     # if the Background Process has been updated in the past 60s wait
                     continue
 

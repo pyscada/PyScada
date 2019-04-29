@@ -19,8 +19,8 @@ class Migration(migrations.Migration):
             name='PhantDevice',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('public_key', models.CharField(default=b'....................', max_length=20)),
-                ('private_key', models.CharField(default=b'....................', max_length=20)),
+                ('public_key', models.CharField(default='....................', max_length=20)),
+                ('private_key', models.CharField(default='....................', max_length=20)),
                 ('phant_device', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='pyscada.Device')),
             ],
         ),

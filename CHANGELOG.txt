@@ -204,3 +204,8 @@
   - moved signal related methods to dedicated signals.py
   - added pyserial to dependency list
   - improved hmi <--> db communication to avoid data loss on slow connections
+
+0.7.0rc15
+  - fixed zombi process problem
+  - fixed migrations with python3
+  - changed datetime_now to now from django timezone

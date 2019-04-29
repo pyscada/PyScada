@@ -19,24 +19,24 @@ class Migration(migrations.Migration):
             name='VISADevice',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('resource_name', models.CharField(default=b'GPIB0::22::INSTR', help_text=b" 'Examles for:\nGPIB0::22::INSTR' for GPIB Instrument\n 'TCPIP::192.168.228.104::INSTR' for TCPIP/LXI Intruments\n 'USB0::0x1AB1::0x4CE::DS1ZA181806919::INSTR'\n 'ASRL/dev/ttyUSB0::INSTR'\n http://pyvisa.readthedocs.io/en/stable/names.html", max_length=255)),
+                ('resource_name', models.CharField(default='GPIB0::22::INSTR', help_text=" 'Examles for:\nGPIB0::22::INSTR' for GPIB Instrument\n 'TCPIP::192.168.228.104::INSTR' for TCPIP/LXI Intruments\n 'USB0::0x1AB1::0x4CE::DS1ZA181806919::INSTR'\n 'ASRL/dev/ttyUSB0::INSTR'\n http://pyvisa.readthedocs.io/en/stable/names.html", max_length=255)),
             ],
         ),
         migrations.CreateModel(
             name='VISADeviceHandler',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(default=b'', max_length=255)),
-                ('handler_class', models.CharField(default=b'pyscada.visa.devices.HP3456A', help_text=b'a Base class to extend can be found at pyscada.visa.devices.GenericDevice', max_length=255)),
-                ('handler_path', models.CharField(default=None, help_text=b'', max_length=255, null=True)),
+                ('name', models.CharField(default='', max_length=255)),
+                ('handler_class', models.CharField(default='pyscada.visa.devices.HP3456A', help_text='a Base class to extend can be found at pyscada.visa.devices.GenericDevice', max_length=255)),
+                ('handler_path', models.CharField(default=None, help_text='', max_length=255, null=True)),
             ],
         ),
         migrations.CreateModel(
             name='VISAVariable',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('variable_type', models.SmallIntegerField(choices=[(0, b'configuration'), (1, b'acquisition'), (2, b'status')], default=1)),
-                ('device_property', models.CharField(default=b'present_value', help_text=b'name of the Property the variable be assigned to', max_length=255)),
+                ('variable_type', models.SmallIntegerField(choices=[(0, 'configuration'), (1, 'acquisition'), (2, 'status')], default=1)),
+                ('device_property', models.CharField(default='present_value', help_text='name of the Property the variable be assigned to', max_length=255)),
                 ('visa_variable', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='pyscada.Variable')),
             ],
         ),

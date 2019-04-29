@@ -7,8 +7,10 @@ from django.conf import settings
 
 from django.core.mail import send_mail
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.timezone import now
 
-from pyscada.utils import blow_up_data, datetime_now, timestamp_to_datetime
+
+from pyscada.utils import blow_up_data, timestamp_to_datetime
 
 import traceback
 import time
@@ -1226,7 +1228,7 @@ class RecordedData(models.Model):
 
     def save(self, *args, **kwargs):
         if self.date is None:
-            self.date = datetime_now()
+            self.date = now()
         super(RecordedData, self).save(*args, **kwargs)
 
 

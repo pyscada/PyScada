@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='exportjob',
             name='file_format',
-            field=models.CharField(default=b'hdf5', max_length=400, choices=[(b'hdf5', b'Hierarchical Data Format Version 5'), (b'mat', b'Matlab\xc2\xae mat v7.3 compatible file'), (b'CSV_EXCEL', b'Microsoft\xc2\xae Excel\xc2\xae compatible csv file')]),
+            field=models.CharField(default='hdf5', max_length=400, choices=[('hdf5', 'Hierarchical Data Format Version 5'), ('mat', 'Matlab\xc2\xae mat v7.3 compatible file'), ('CSV_EXCEL', 'Microsoft\xc2\xae Excel\xc2\xae compatible csv file')]),
             preserve_default=True,
         ),
     ]

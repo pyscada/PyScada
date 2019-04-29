@@ -20,6 +20,7 @@ from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.utils.translation import ugettext_lazy as _
 
 import datetime
+import signal
 import logging
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,42 @@ class PyScadaAdminSite(AdminSite):
     site_header = 'PyScada Administration'
 
 
-# Custom Filters
+## admin actions
+def restart_process(modeladmin, request, queryset):
+    """
+    restarts a dedicated process
+    :return:
+    """
+    for process in queryset:
+        process.restart()
+
+
+restart_process.short_description = "Restart Processes"
+
+def stop_process(modeladmin, request, queryset):
+    """
+    restarts a dedicated process
+    :return:
+    """
+    for process in queryset:
+        process.stop()
+
+
+stop_process.short_description = "Terminate Processes"
+
+
+def kill_process(modeladmin, request, queryset):
+    """
+    restarts a dedicated process
+    :return:
+    """
+    for process in queryset:
+        process.stop(signum=signal.SIGKILL)
+
+
+kill_process.short_description = "Kill Processes"
+
+## Custom Filters
 class BackgroundProcessFilter(admin.SimpleListFilter):
     # Human-readable title which will be displayed in the
     # right admin sidebar just above the filter options.
@@ -185,6 +221,7 @@ class BackgroundProcessAdmin(admin.ModelAdmin):
     list_filter = (BackgroundProcessFilter, 'enabled', 'done', 'failed')
     list_display_links = ('id', 'label', 'message')
     readonly_fields = ('message', 'last_update', 'running_since', 'done', 'failed')
+    actions = [restart_process, stop_process, kill_process]
 
 
 class RecordedEventAdmin(admin.ModelAdmin):

@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='device',
             name='device_type',
-            field=models.CharField(choices=[(b'generic', b'no Protocol'), (b'systemstat', b'Local System Monitoring'), (b'modbus', b'Modbus Device'), (b'smbus', b'SMBus/I2C Device'), (b'phant', b'Phant Device'), (b'visa', b'VISA Device'), (b'onewire', b'1-Wire Device')], default=b'generic', max_length=400),
+            field=models.CharField(choices=[('generic', 'no Protocol'), ('systemstat', 'Local System Monitoring'), ('modbus', 'Modbus Device'), ('smbus', 'SMBus/I2C Device'), ('phant', 'Phant Device'), ('visa', 'VISA Device'), ('onewire', '1-Wire Device')], default='generic', max_length=400),
         ),
     ]

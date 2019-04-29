@@ -39,8 +39,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(serialize=False, primary_key=True)),
                 ('short_name', models.CharField(default=b'', max_length=400)),
-                ('client_type', models.CharField(default=b'generic', max_length=400, choices=[(b'modbus', b'Modbus Client'), (b'systemstat', b'Monitor Local System')])),
-                ('description', models.TextField(default=b'', null=True, verbose_name=b'Description')),
+                ('client_type', models.CharField(default='generic', max_length=400, choices=[('modbus', 'Modbus Client'), ('systemstat', 'Monitor Local System')])),
+                ('description', models.TextField(default=b'', null=True, verbose_name='Description')),
                 ('active', models.BooleanField(default=True)),
             ],
             options={
@@ -67,10 +67,10 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(serialize=False, primary_key=True)),
                 ('label', models.CharField(default=b'', max_length=400)),
-                ('level', models.PositiveSmallIntegerField(default=0, choices=[(0, b'informative'), (1, b'ok'), (2, b'warning'), (3, b'alert')])),
+                ('level', models.PositiveSmallIntegerField(default=0, choices=[(0, 'informative'), (1, 'ok'), (2, 'warning'), (3, 'alert')])),
                 ('fixed_limit', models.FloatField(default=0, null=True, blank=True)),
-                ('limit_type', models.PositiveSmallIntegerField(default=0, choices=[(0, b'value is less than limit'), (1, b'value is less than or equal to the limit'), (2, b'value is greater than the limit'), (3, b'value is greater than or equal to the limit'), (4, b'value equals the limit')])),
-                ('action', models.PositiveSmallIntegerField(default=0, choices=[(0, b'just record'), (1, b'record and send mail only wenn event occurs'), (2, b'record and send mail'), (3, b'record, send mail and change variable')])),
+                ('limit_type', models.PositiveSmallIntegerField(default=0, choices=[(0, 'value is less than limit'), (1, 'value is less than or equal to the limit'), (2, 'value is greater than the limit'), (3, 'value is greater than or equal to the limit'), (4, 'value equals the limit')])),
+                ('action', models.PositiveSmallIntegerField(default=0, choices=[(0, 'just record'), (1, 'record and send mail only wenn event occurs'), (2, 'record and send mail'), (3, 'record, send mail and change variable')])),
                 ('new_value', models.FloatField(default=0, null=True, blank=True)),
             ],
             options={
@@ -81,10 +81,10 @@ class Migration(migrations.Migration):
             name='Log',
             fields=[
                 ('id', models.AutoField(serialize=False, primary_key=True)),
-                ('level', models.IntegerField(default=0, verbose_name=b'level')),
+                ('level', models.IntegerField(default=0, verbose_name='level')),
                 ('timestamp', models.FloatField()),
-                ('message_short', models.CharField(default=b'', max_length=400, verbose_name=b'short message')),
-                ('message', models.TextField(default=b'', verbose_name=b'message')),
+                ('message_short', models.CharField(default=b'', max_length=400, verbose_name='short message')),
+                ('message', models.TextField(default=b'', verbose_name='message')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL, null=True)),
             ],
             options={
@@ -97,7 +97,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(serialize=False, primary_key=True)),
                 ('subject', models.TextField(default=b'', blank=True)),
                 ('message', models.TextField(default=b'', blank=True)),
-                ('mail_from', models.TextField(default=b'pyscada@martin-schroeder.net', blank=True)),
+                ('mail_from', models.TextField(default='pyscada@martin-schroeder.net', blank=True)),
                 ('timestamp', models.FloatField(default=0, blank=True)),
                 ('done', models.BooleanField(default=False)),
                 ('send_fail_count', models.PositiveSmallIntegerField(default=0, blank=True)),
@@ -184,8 +184,8 @@ class Migration(migrations.Migration):
             name='Unit',
             fields=[
                 ('id', models.AutoField(serialize=False, primary_key=True)),
-                ('unit', models.CharField(max_length=80, verbose_name=b'Unit')),
-                ('description', models.TextField(default=b'', null=True, verbose_name=b'Description')),
+                ('unit', models.CharField(max_length=80, verbose_name='Unit')),
+                ('description', models.TextField(default=b'', null=True, verbose_name='Description')),
             ],
             options={
                 'managed': True,
@@ -196,12 +196,12 @@ class Migration(migrations.Migration):
             name='Variable',
             fields=[
                 ('id', models.AutoField(serialize=False, primary_key=True)),
-                ('name', models.SlugField(max_length=80, verbose_name=b'variable name')),
-                ('description', models.TextField(default=b'', verbose_name=b'Description')),
+                ('name', models.SlugField(max_length=80, verbose_name='variable name')),
+                ('description', models.TextField(default=b'', verbose_name='Description')),
                 ('active', models.BooleanField(default=True)),
                 ('writeable', models.BooleanField(default=False)),
                 ('record', models.BooleanField(default=True)),
-                ('value_class', models.CharField(default=b'FLOAT64', max_length=15, verbose_name=b'value_class', choices=[(b'FLOAT32', b'REAL'), (b'FLOAT32', b'SINGLE'), (b'FLOAT32', b'FLOAT32'), (b'FLOAT64', b'LREAL'), (b'FLOAT64', b'FLOAT'), (b'FLOAT64', b'FLOAT64'), (b'INT32', b'INT32'), (b'UINT32', b'UINT32'), (b'INT16', b'INT'), (b'INT16', b'INT16'), (b'UINT16', b'WORD'), (b'UINT16', b'UINT'), (b'UINT16', b'UINT16'), (b'BOOLEAN', b'BOOL'), (b'BOOLEAN', b'BOOLEAN')])),
+                ('value_class', models.CharField(default='FLOAT64', max_length=15, verbose_name='value_class', choices=[('FLOAT32', 'REAL'), ('FLOAT32', 'SINGLE'), ('FLOAT32', 'FLOAT32'), ('FLOAT64', 'LREAL'), ('FLOAT64', 'FLOAT'), ('FLOAT64', 'FLOAT64'), ('INT32', 'INT32'), ('UINT32', 'UINT32'), ('INT16', 'INT'), ('INT16', 'INT16'), ('UINT16', 'WORD'), ('UINT16', 'UINT'), ('UINT16', 'UINT16'), ('BOOLEAN', 'BOOL'), ('BOOLEAN', 'BOOLEAN')])),
                 ('client', models.ForeignKey(on_delete=django.db.models.deletion.SET_NULL, to='pyscada.Client', null=True)),
                 ('unit', models.ForeignKey(on_delete=django.db.models.deletion.SET_NULL, to='pyscada.Unit', null=True)),
             ],
@@ -213,7 +213,7 @@ class Migration(migrations.Migration):
             name='VariableChangeHistory',
             fields=[
                 ('id', models.AutoField(serialize=False, primary_key=True)),
-                ('field', models.PositiveSmallIntegerField(default=0, choices=[(0, b'active'), (1, b'writable'), (2, b'value_class'), (3, b'variable_name')])),
+                ('field', models.PositiveSmallIntegerField(default=0, choices=[(0, 'active'), (1, 'writable'), (2, 'value_class'), (3, 'variable_name')])),
                 ('old_value', models.TextField(default=b'')),
                 ('time', models.ForeignKey(on_delete=django.db.models.deletion.SET_NULL, to='pyscada.RecordedTime', null=True)),
                 ('variable', models.ForeignKey(on_delete=django.db.models.deletion.SET_NULL, to='pyscada.Variable', null=True)),
@@ -309,7 +309,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='event',
             name='variable_limit',
-            field=models.ForeignKey(related_name='variable_limit', on_delete=django.db.models.deletion.SET_NULL, default=None, blank=True, to='pyscada.Variable', help_text=b'you can choose either an fixed limit or an variable limit that is dependent on the current value of an variable, if you choose a value other then none for varieble limit the fixed limit would be ignored', null=True),
+            field=models.ForeignKey(related_name='variable_limit', on_delete=django.db.models.deletion.SET_NULL, default=None, blank=True, to='pyscada.Variable', help_text='you can choose either an fixed limit or an variable limit that is dependent on the current value of an variable, if you choose a value other then none for varieble limit the fixed limit would be ignored', null=True),
             preserve_default=True,
         ),
         migrations.AddField(

@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             name='VariableProperty',
             fields=[
                 ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('property_class', models.CharField(blank=True, choices=[(None, b'other or no Class specified'), (b'device', b'Device Property'), (b'data_record', b'Recorded Data'), (b'daemon', b'Daemon Property')], default=None, max_length=255, null=True)),
+                ('property_class', models.CharField(blank=True, choices=[(None, 'other or no Class specified'), ('device', 'Device Property'), ('data_record', 'Recorded Data'), ('daemon', 'Daemon Property')], default=None, max_length=255, null=True)),
                 ('name', models.CharField(blank=True, default=b'', max_length=255)),
                 ('value_boolean', models.BooleanField(default=False)),
                 ('value_int16', models.SmallIntegerField(blank=True, null=True)),
@@ -32,6 +32,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='device',
             name='polling_interval',
-            field=models.FloatField(choices=[(1.0, b'1 Second'), (5.0, b'5 Seconds'), (10.0, b'10 Seconds'), (15.0, b'15 Seconds'), (30.0, b'30 Seconds'), (60.0, b'1 Minute'), (150.0, b'2.5 Mintues'), (300.0, b'5 Minutes'), (360.0, b'6 Minutes (10 times per Hour)'), (600.0, b'10 Minutes'), (900.0, b'15 Minutes'), (1800.0, b'30 Minutes'), (3600.0, b'1 Hour')], default=5),
+            field=models.FloatField(choices=[(1.0, '1 Second'), (5.0, '5 Seconds'), (10.0, '10 Seconds'), (15.0, '15 Seconds'), (30.0, '30 Seconds'), (60.0, '1 Minute'), (150.0, '2.5 Mintues'), (300.0, '5 Minutes'), (360.0, '6 Minutes (10 times per Hour)'), (600.0, '10 Minutes'), (900.0, '15 Minutes'), (1800.0, '30 Minutes'), (3600.0, '1 Hour')], default=5),
         ),
     ]

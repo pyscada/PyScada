@@ -18,7 +18,7 @@ Dependencies
 ------------
 
 
-Debian 8/9, Raspbian
+Debian 9, Raspbian
 ^^^^^^^^^^^^^^^^^^^^
 
 ::

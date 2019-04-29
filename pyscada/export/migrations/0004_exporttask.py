@@ -19,9 +19,9 @@ class Migration(migrations.Migration):
             name='ExportTask',
             fields=[
                 ('id', models.AutoField(serialize=False, primary_key=True)),
-                ('label', models.CharField(default=b'', max_length=400)),
-                ('mean_value_period', models.PositiveSmallIntegerField(default=0, help_text=b'in Seconds (0 = no mean value)')),
-                ('file_format', models.CharField(default=b'hdf5', max_length=400, choices=[(b'hdf5', b'Hierarchical Data Format Version 5'), (b'mat', b'Matlab\xc2\xae mat v7.3 compatible file'), (b'CSV_EXCEL', b'Microsoft\xc2\xae Excel\xc2\xae compatible csv file')])),
+                ('label', models.CharField(default='', max_length=400)),
+                ('mean_value_period', models.PositiveSmallIntegerField(default=0, help_text='in Seconds (0 = no mean value)')),
+                ('file_format', models.CharField(default='hdf5', max_length=400, choices=[('hdf5', 'Hierarchical Data Format Version 5'), ('mat', 'Matlab\xc2\xae mat v7.3 compatible file'), ('CSV_EXCEL', 'Microsoft\xc2\xae Excel\xc2\xae compatible csv file')])),
                 ('time_min', models.FloatField(default=None, null=True, blank=True)),
                 ('time_max', models.FloatField(default=None, null=True, blank=True)),
                 ('start', models.FloatField(default=0)),

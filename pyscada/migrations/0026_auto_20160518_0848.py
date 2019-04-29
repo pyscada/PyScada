@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
             name='Color',
             fields=[
                 ('id', models.AutoField(serialize=False, primary_key=True)),
-                ('name', models.SlugField(max_length=80, verbose_name=b'variable name')),
+                ('name', models.SlugField(max_length=80, verbose_name='variable name')),
                 ('R', models.PositiveSmallIntegerField(default=0)),
                 ('G', models.PositiveSmallIntegerField(default=0)),
                 ('B', models.PositiveSmallIntegerField(default=0)),
@@ -60,27 +60,27 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='device',
             name='byte_order',
-            field=models.CharField(default=b'1-0-3-2', max_length=15, choices=[(b'1-0-3-2', b'1-0-3-2'), (b'0-1-2-3', b'0-1-2-3'), (b'2-3-0-1', b'2-3-0-1'), (b'3-2-1-0', b'3-2-1-0')]),
+            field=models.CharField(default='1-0-3-2', max_length=15, choices=[('1-0-3-2', '1-0-3-2'), ('0-1-2-3', '0-1-2-3'), ('2-3-0-1', '2-3-0-1'), ('3-2-1-0', '3-2-1-0')]),
         ),
         migrations.AddField(
             model_name='variable',
             name='chart_line_thickness',
-            field=models.PositiveSmallIntegerField(default=3, choices=[(3, b'3Px')]),
+            field=models.PositiveSmallIntegerField(default=3, choices=[(3, '3Px')]),
         ),
         migrations.AddField(
             model_name='variable',
             name='short_name',
-            field=models.CharField(default=b'', max_length=80, verbose_name=b'variable short name'),
+            field=models.CharField(default=b'', max_length=80, verbose_name='variable short name'),
         ),
         migrations.AlterField(
             model_name='variable',
             name='byte_order',
-            field=models.CharField(default=b'default', max_length=15, choices=[(b'default', b'default (specified by device byte order)'), (b'1-0-3-2', b'1-0-3-2'), (b'0-1-2-3', b'0-1-2-3'), (b'2-3-0-1', b'2-3-0-1'), (b'3-2-1-0', b'3-2-1-0')]),
+            field=models.CharField(default='default', max_length=15, choices=[('default', 'default (specified by device byte order)'), ('1-0-3-2', '1-0-3-2'), ('0-1-2-3', '0-1-2-3'), ('2-3-0-1', '2-3-0-1'), ('3-2-1-0', '3-2-1-0')]),
         ),
         migrations.AlterField(
             model_name='variable',
             name='value_class',
-            field=models.CharField(default=b'FLOAT64', max_length=15, verbose_name=b'value_class', choices=[(b'FLOAT32', b'REAL (FLOAT32)'), (b'FLOAT32', b'SINGLE (FLOAT32)'), (b'FLOAT32', b'FLOAT32'), (b'UNIXTIMEF32', b'UNIXTIMEF32'), (b'FLOAT64', b'LREAL (FLOAT64)'), (b'FLOAT64', b'FLOAT  (FLOAT64)'), (b'FLOAT64', b'DOUBLE (FLOAT64)'), (b'FLOAT64', b'FLOAT64'), (b'UNIXTIMEF64', b'UNIXTIMEF64'), (b'INT64', b'INT64'), (b'UINT64', b'UINT64'), (b'UNIXTIMEI64', b'UNIXTIMEI64'), (b'UNIXTIMEI32', b'UNIXTIMEI32'), (b'INT32', b'INT32'), (b'UINT32', b'DWORD (UINT32)'), (b'UINT32', b'UINT32'), (b'INT16', b'INT (INT16)'), (b'INT16', b'INT16'), (b'UINT16', b'WORD (UINT16)'), (b'UINT16', b'UINT (UINT16)'), (b'UINT16', b'UINT16'), (b'BOOLEAN', b'BOOL (BOOLEAN)'), (b'BOOLEAN', b'BOOLEAN')]),
+            field=models.CharField(default='FLOAT64', max_length=15, verbose_name='value_class', choices=[('FLOAT32', 'REAL (FLOAT32)'), ('FLOAT32', 'SINGLE (FLOAT32)'), ('FLOAT32', 'FLOAT32'), ('UNIXTIMEF32', 'UNIXTIMEF32'), ('FLOAT64', 'LREAL (FLOAT64)'), ('FLOAT64', 'FLOAT  (FLOAT64)'), ('FLOAT64', 'DOUBLE (FLOAT64)'), ('FLOAT64', 'FLOAT64'), ('UNIXTIMEF64', 'UNIXTIMEF64'), ('INT64', 'INT64'), ('UINT64', 'UINT64'), ('UNIXTIMEI64', 'UNIXTIMEI64'), ('UNIXTIMEI32', 'UNIXTIMEI32'), ('INT32', 'INT32'), ('UINT32', 'DWORD (UINT32)'), ('UINT32', 'UINT32'), ('INT16', 'INT (INT16)'), ('INT16', 'INT16'), ('UINT16', 'WORD (UINT16)'), ('UINT16', 'UINT (UINT16)'), ('UINT16', 'UINT16'), ('BOOLEAN', 'BOOL (BOOLEAN)'), ('BOOLEAN', 'BOOLEAN')]),
         ),
         migrations.DeleteModel(
             name='RecordedDataBoolean',

@@ -14,6 +14,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='variable',
             name='short_name',
-            field=models.CharField(default=b'', max_length=80, verbose_name=b'variable short name', blank=True),
+            field=models.CharField(default=b'', max_length=80, verbose_name='variable short name', blank=True),
         ),
     ]

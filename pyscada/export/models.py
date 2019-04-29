@@ -19,10 +19,7 @@ logger = logging.getLogger(__name__)
 #
 # Model
 #
-
-
-def datetime_now():
-    return datetime.now(UTC)
+from django.utils.timezone import now
 
 
 @python_2_unicode_compatible
@@ -64,7 +61,7 @@ class ExportTask(models.Model):
     datetime_min = models.DateTimeField(default=None, null=True)
     datetime_max = models.DateTimeField(default=None, null=True)
     user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
-    datetime_start = models.DateTimeField(default=datetime_now)
+    datetime_start = models.DateTimeField(default=now)
     datetime_finished = models.DateTimeField(null=True, blank=True)
     done = models.BooleanField(default=False, blank=True)  # label task has been done
     busy = models.BooleanField(default=False, blank=True)  # label task is in operation done

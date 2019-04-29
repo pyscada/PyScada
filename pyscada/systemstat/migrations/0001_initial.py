@@ -15,8 +15,8 @@ class Migration(migrations.Migration):
             name='SystemStatVariable',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('information', models.PositiveSmallIntegerField(default=0, choices=[(0, b'cpu_percent'), (1, b'phymem_usage_total'), (2, b'phymem_usage_available'), (3, b'phymem_usage_percent'), (4, b'phymem_usage_used'), (5, b'phymem_usage_free'), (6, b'phymem_usage_active'), (7, b'phymem_usage_inactive'), (8, b'phymem_usage_buffers'), (9, b'phymem_usage_cached'), (10, b'swap_memory_total'), (11, b'swap_memory_used'), (12, b'swap_memory_free'), (13, b'swap_memory_percent'), (14, b'swap_memory_sin'), (15, b'swap_memory_sout'), (16, b'cached_phymem'), (17, b'disk_usage_systemdisk'), (18, b'disk_usage')])),
-                ('parameter', models.CharField(default=b'', max_length=400, null=True, blank=True)),
+                ('information', models.PositiveSmallIntegerField(default=0, choices=[(0, 'cpu_percent'), (1, 'phymem_usage_total'), (2, 'phymem_usage_available'), (3, 'phymem_usage_percent'), (4, 'phymem_usage_used'), (5, 'phymem_usage_free'), (6, 'phymem_usage_active'), (7, 'phymem_usage_inactive'), (8, 'phymem_usage_buffers'), (9, 'phymem_usage_cached'), (10, 'swap_memory_total'), (11, 'swap_memory_used'), (12, 'swap_memory_free'), (13, 'swap_memory_percent'), (14, 'swap_memory_sin'), (15, 'swap_memory_sout'), (16, 'cached_phymem'), (17, 'disk_usage_systemdisk'), (18, 'disk_usage')])),
+                ('parameter', models.CharField(default='', max_length=400, null=True, blank=True)),
                 ('system_stat_variable', models.OneToOneField(to='pyscada.Variable')),
             ],
         ),

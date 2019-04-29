@@ -21,12 +21,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='exporttask',
             name='filename_suffix',
-            field=models.CharField(default=b'', max_length=400, blank=True),
+            field=models.CharField(default='', max_length=400, blank=True),
         ),
         migrations.AlterField(
             model_name='exporttask',
             name='label',
-            field=models.CharField(default=b'', max_length=400, blank=True),
+            field=models.CharField(default='', max_length=400, blank=True),
         ),
         migrations.AlterField(
             model_name='exporttask',
