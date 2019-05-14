@@ -723,11 +723,11 @@ class Process(object):
         """
         try:
             BackgroundProcess.objects.filter(pk=self.process_id
-                                             ).update(pid=0, last_update=datetime_now(), message='stopping..')
+                                             ).update(pid=0, last_update=now(), message='stopping..')
             # run the cleanup
             self.cleanup()
             BackgroundProcess.objects.filter(pk=self.process_id).update(pid=0,
-                                                                        last_update=datetime_now(),
+                                                                        last_update=now(),
                                                                         message='stopped')
         except OperationalError:
             logger.debug('%s, DB connection lost in stop function' % self.label)
