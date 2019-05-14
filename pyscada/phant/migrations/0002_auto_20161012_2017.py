@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='phantdevice',
             name='public_key',
-            field=models.SlugField(default=b'....................', max_length=20, unique=True),
+            field=models.SlugField(default='....................', max_length=20, unique=True),
         ),
     ]

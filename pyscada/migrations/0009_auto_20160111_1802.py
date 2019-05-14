@@ -19,6 +19,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='variable',
             name='name',
-            field=models.SlugField(unique=True, max_length=80, verbose_name=b'variable name'),
+            field=models.SlugField(unique=True, max_length=80, verbose_name='variable name'),
         ),
     ]

@@ -39,7 +39,7 @@ def add(message, level=0, user=None, message_short=None,log_file_name='%s/pyscad
     #    log_ob.user = user
     #log_ob.save()
     stdout = open(log_file_name, "a+")
-    stdout.write("%s (%s,%d):%s\n" % (datetime.now().isoformat(b' '),'none',level,message))
+    stdout.write("%s (%s,%d):%s\n" % (datetime.now().isoformat(' '),'none',level,message))
     stdout.flush()
 
 def debug(message, level=1, user=None, message_short=None):

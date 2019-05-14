@@ -16,8 +16,8 @@ class Migration(migrations.Migration):
             name='ProcessFlowDiagram',
             fields=[
                 ('id', models.AutoField(serialize=False, primary_key=True)),
-                ('title', models.CharField(default=b'', max_length=400, blank=True)),
-                ('background_image', models.ImageField(upload_to=b'img/', verbose_name=b'background image', blank=True)),
+                ('title', models.CharField(default='', max_length=400, blank=True)),
+                ('background_image', models.ImageField(upload_to='img/', verbose_name='background image', blank=True)),
             ],
             options={
             },
@@ -27,8 +27,8 @@ class Migration(migrations.Migration):
             name='ProcessFlowDiagramItem',
             fields=[
                 ('id', models.AutoField(serialize=False, primary_key=True)),
-                ('label', models.CharField(default=b'', max_length=400, blank=True)),
-                ('type', models.PositiveSmallIntegerField(default=0, choices=[(0, b'label blue'), (1, b'label light blue'), (2, b'label ok'), (3, b'label warning'), (4, b'label alarm'), (7, b'label alarm inverted'), (5, b'Control Element'), (6, b'Display Value')])),
+                ('label', models.CharField(default='', max_length=400, blank=True)),
+                ('type', models.PositiveSmallIntegerField(default=0, choices=[(0, 'label blue'), (1, 'label light blue'), (2, 'label ok'), (3, 'label warning'), (4, 'label alarm'), (7, 'label alarm inverted'), (5, 'Control Element'), (6, 'Display Value')])),
                 ('top', models.PositiveIntegerField(default=0)),
                 ('left', models.PositiveIntegerField(default=0)),
                 ('width', models.PositiveIntegerField(default=0)),

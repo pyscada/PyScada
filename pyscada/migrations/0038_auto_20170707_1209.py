@@ -26,11 +26,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='backgroundprocess',
             name='process_class',
-            field=models.CharField(blank=True, default=b'pyscada.utils.scheduler.Process', help_text=b'from pyscada.utils.scheduler import Process', max_length=400),
+            field=models.CharField(blank=True, default='pyscada.utils.scheduler.Process', help_text='from pyscada.utils.scheduler import Process', max_length=400),
         ),
         migrations.AlterField(
             model_name='backgroundprocess',
             name='process_class_kwargs',
-            field=models.CharField(blank=True, default=b'{}', help_text=b'arguments in json format will be passed as kwargs while the init of the process instance, example: {"keywordA":"value1", "keywordB":7}', max_length=400),
+            field=models.CharField(blank=True, default='{}', help_text='arguments in json format will be passed as kwargs while the init of the process instance, example: {"keywordA":"value1", "keywordB":7}', max_length=400),
         ),
     ]

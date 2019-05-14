@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 from django.db import migrations, models
 import pyscada.export.models
+from django.utils.timezone import now
 
 
 class Migration(migrations.Migration):
@@ -16,6 +17,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='exporttask',
             name='datetime_start',
-            field=models.DateTimeField(default=pyscada.export.models.datetime_now),
+            field=models.DateTimeField(default=now),
         ),
     ]

@@ -19,8 +19,8 @@ class Migration(migrations.Migration):
             name='OneWireVariable',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('address', models.CharField(default=b'', help_text=b'64bit Sensor Address', max_length=400)),
-                ('sensor_type', models.CharField(choices=[(b'DS18B20', b'DS18B20 Temperature Sensor')], default=b'', max_length=10)),
+                ('address', models.CharField(default='', help_text='64bit Sensor Address', max_length=400)),
+                ('sensor_type', models.CharField(choices=[('DS18B20', 'DS18B20 Temperature Sensor')], default='', max_length=10)),
                 ('onewire_variable', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='pyscada.Variable')),
             ],
         ),

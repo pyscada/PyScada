@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='unit',
             name='udunit',
-            field=models.CharField(max_length=500, verbose_name=b'udUnit',default=''),
+            field=models.CharField(max_length=500, verbose_name='udUnit',default=''),
             preserve_default=True,
         ),
     ]

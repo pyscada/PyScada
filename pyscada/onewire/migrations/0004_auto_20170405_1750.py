@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='onewiredevice',
             name='adapter_type',
-            field=models.CharField(choices=[(b'owserver', b'OWFS owserver'), (b'rpi_gpio4', b'RPi GPIO 4')], default=b'', max_length=400),
+            field=models.CharField(choices=[('owserver', 'OWFS owserver'), ('rpi_gpio4', 'RPi GPIO 4')], default='', max_length=400),
         ),
     ]

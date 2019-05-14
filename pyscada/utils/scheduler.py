@@ -43,7 +43,7 @@ from django.db.transaction import TransactionManagementError
 
 
 from pyscada.models import BackgroundProcess, DeviceWriteTask, Device, RecordedData
-from pyscada.utils import datetime_now
+from django.utils.timezone import now
 import logging
 
 logger = logging.getLogger(__name__)
@@ -109,7 +109,7 @@ class Scheduler(object):
                 if e.errno == errno.ESRCH:  # no such process
                     process.message = 'stopped'
                     process.pid = 0
-                    process.last_update = datetime_now()
+                    process.last_update = now()
                     process.save()
                 elif e.errno == errno.EPERM:  # Operation not permitted
                     self.stderr.write("can't stop process %d: %s with pid %d, 'Operation not permitted'\n" % (
@@ -263,13 +263,27 @@ class Scheduler(object):
 
         self.process_id = master_process.pk
         master_process.pid = self.pid
-        master_process.last_update = datetime_now()
-        master_process.running_since = datetime_now()
+        master_process.last_update = now()
+        master_process.running_since = now()
         master_process.done = False
         master_process.failed = False
         master_process.message = 'init master process'
         master_process.save()
         BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False).update(message='stopped')
+        for parent_process in BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False):
+            for process in BackgroundProcess.objects.filter(parent_process__pk=parent_process.pk, done=False):
+                try:
+                    kill(process.pid, 0)
+                except OSError as e:
+                    if e.errno == errno.ESRCH:
+                        process.delete()
+                        continue
+                logger.debug('process %d is alive' % process.pk)
+                process.stop()
+
+            # clean up
+            BackgroundProcess.objects.filter(parent_process__pk=parent_process.pk, done=False).delete()
+
         # register signals
         [signal.signal(s, self.signal) for s in self.SIGNALS]
         #signal.signal(signal.SIGCHLD, self.handle_chld)
@@ -285,7 +299,7 @@ class Scheduler(object):
         try:
             master_process = BackgroundProcess.objects.filter(pk=self.process_id).first()
             if master_process:
-                master_process.last_update = datetime_now()
+                master_process.last_update = now()
                 master_process.message = 'init child processes'
                 master_process.save()
             else:
@@ -303,7 +317,7 @@ class Scheduler(object):
 
                 # update the P
                 BackgroundProcess.objects.filter(pk=self.process_id).update(
-                    last_update=datetime_now(),
+                    last_update=now(),
                     message='running..')
                 if sig is None:
                     self.manage_processes()
@@ -381,6 +395,7 @@ class Scheduler(object):
         for process in process_list:
             try:
                 kill(process.pid, 0)
+                waitpid(process.pid, WNOHANG)
             except OSError as e:
                 if e.errno == errno.ESRCH:
                     logger.debug('process %d is dead' % process.process_id)
@@ -394,7 +409,7 @@ class Scheduler(object):
                         p = BackgroundProcess.objects.filter(pk=process.process_id).first()
                         if p:
                             p.pid = 0
-                            p.last_update = datetime_now()
+                            p.last_update = now()
                             p.failed = True
                             p.save()
                     else:
@@ -422,7 +437,7 @@ class Scheduler(object):
         restart all child processes
         """
         BackgroundProcess.objects.filter(pk=self.process_id).update(
-            last_update=datetime_now(),
+            last_update=now(),
             message='restarting..')
         timeout = time() + 60  # wait max 60 seconds
         self.kill_processes(signal.SIGTERM)
@@ -460,7 +475,7 @@ class Scheduler(object):
 
         logger.debug('start termination of the daemon')
         BackgroundProcess.objects.filter(pk=self.process_id).update(
-            last_update=datetime_now(),
+            last_update=now(),
             message='stopping..')
 
         timeout = time() + 60  # wait max 60 seconds
@@ -470,7 +485,7 @@ class Scheduler(object):
             sleep(1)
         self.kill_processes(signal.SIGKILL)
         BackgroundProcess.objects.filter(pk=self.process_id).update(
-            last_update=datetime_now(),
+            last_update=now(),
             message='stopped')
         logger.debug('termination of the daemon done')
         return True
@@ -544,7 +559,7 @@ class Scheduler(object):
             if sp:
                 self.pid = sp.pid
         if self.pid is None or self.pid == 0:
-            self.stderr.write("%s: can't determine process id exiting.\n" % datetime.now().isoformat(b' '))
+            self.stderr.write("%s: can't determine process id exiting.\n" % datetime.now().isoformat(' '))
             return False
         if self.pid != getpid():
             # calling from outside the daemon instance
@@ -595,8 +610,8 @@ class Process(object):
         # update process info
         BackgroundProcess.objects.filter(pk=self.process_id).update(
             pid=self.pid,
-            last_update=datetime_now(),
-            running_since=datetime_now(),
+            last_update=now(),
+            running_since=now(),
             done=False,
             failed=False,
             message='init process..',
@@ -612,7 +627,7 @@ class Process(object):
         return True
 
     def run(self):
-        BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=datetime_now(), message='running..')
+        BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=now(), message='running..')
         exec_loop = True
         try:
             while True:
@@ -624,7 +639,7 @@ class Process(object):
                 check_db_connection()
 
                 # update progress
-                BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=datetime_now())
+                BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=now())
                 if sig is None and exec_loop:
                     # run loop action
                     status, data = self.loop()
@@ -632,7 +647,7 @@ class Process(object):
                         # write data to the database
                         for item in data:
                             for r in item:
-                                r.date_saved = datetime_now()
+                                r.date_saved = now()
                             # todo add date field value
                             RecordedData.objects.bulk_create(item)
                     if status == 1: # Process OK
@@ -641,12 +656,12 @@ class Process(object):
                         # some thing went wrong
                         # todo handle
                         # raise StopIteration
-                        BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=datetime_now(),
+                        BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=now(),
                                                                                     failed=True)
                         exec_loop = False
                     elif status == 0:
                         # loop is done exit
-                        BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=datetime_now(),
+                        BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=now(),
                                                                                     done=True)
                         #raise StopIteration
                         exec_loop = False

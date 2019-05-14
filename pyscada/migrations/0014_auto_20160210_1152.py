@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='scaling',
             name='description',
-            field=models.TextField(default=b'', null=True, verbose_name=b'Description', blank=True),
+            field=models.TextField(default=b'', null=True, verbose_name='Description', blank=True),
         ),
         migrations.AlterField(
             model_name='variable',

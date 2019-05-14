@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
             name='Scaling',
             fields=[
                 ('id', models.AutoField(serialize=False, primary_key=True)),
-                ('description', models.TextField(default=b'', null=True, verbose_name=b'Description')),
+                ('description', models.TextField(default=b'', null=True, verbose_name='Description')),
                 ('input_low', models.FloatField()),
                 ('input_high', models.FloatField()),
                 ('output_low', models.FloatField()),

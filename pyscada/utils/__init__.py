@@ -8,7 +8,7 @@ import re
 from datetime import datetime
 from pytz import UTC
 import numpy as np
-
+from django.utils.timezone import now
 import logging
 logger = logging.getLogger(__name__)
 
@@ -88,7 +88,7 @@ def _cast(value, class_str):
 
 
 def datetime_now():
-    return datetime.now(UTC)
+    return now()
 
 
 def timestamp_to_datetime(timestamp, tz=UTC):

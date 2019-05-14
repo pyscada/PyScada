@@ -18,8 +18,8 @@ class Migration(migrations.Migration):
             name='OneWireDevice',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('adapter_type', models.CharField(default=b'', max_length=400)),
-                ('config', models.CharField(blank=True, default=b'', help_text=b'for OWFS owserver: hostname:port, default is localhost:4304', max_length=400)),
+                ('adapter_type', models.CharField(default='', max_length=400)),
+                ('config', models.CharField(blank=True, default='', help_text='for OWFS owserver: hostname:port, default is localhost:4304', max_length=400)),
                 ('onewire_device', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='pyscada.Device')),
             ],
         ),

@@ -1,7 +1,8 @@
 # PyScada
 from __future__ import unicode_literals
 
-from pyscada.utils import validate_value_class, datetime_now
+from pyscada.utils import validate_value_class
+
 from pyscada.models import Variable, RecordedData, BackgroundProcess
 from pyscada.export.hdf5_file import MatCompatibleH5
 from pyscada.export.hdf5_file import unix_time_stamp_to_matlab_datenum
@@ -12,6 +13,7 @@ from six import string_types
 
 # Django
 from django.conf import settings
+from django.utils.timezone import now
 
 # other
 from datetime import datetime
@@ -34,7 +36,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
     if backgroundprocess_id is not None:
         tp = BackgroundProcess.objects.get(id=backgroundprocess_id)
         tp.message = 'init'
-        tp.last_update = datetime_now()
+        tp.last_update = now()
         tp.save()
     else:
         tp = None
@@ -60,7 +62,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
     # validate file type
     if file_extension not in ['.h5', '.mat', '.csv']:
         if tp is not None:
-            tp.last_update = datetime_now()
+            tp.last_update = now()
             tp.message = 'failed wrong file type'
             tp.failed = 1
             tp.save()
@@ -89,7 +91,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
         db_time_min = RecordedData.objects.first()  # todo add RecordedDataOld
         if not db_time_min:
             if tp is not None:
-                tp.last_update = datetime_now()
+                tp.last_update = now()
                 tp.message = 'no data to export'
                 tp.failed = 1
                 tp.save()
@@ -99,7 +101,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
         db_time_max = RecordedData.objects.last()  # todo add RecordedDataOld
         if not db_time_max:
             if tp is not None:
-                tp.last_update = datetime_now()
+                tp.last_update = now()
                 tp.message = 'no data to export'
                 tp.failed = 1
                 tp.save()
@@ -195,7 +197,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
 
     for var_idx in range(0, active_vars.count(), 10):
         if tp is not None:
-            tp.last_update = datetime_now()
+            tp.last_update = now()
             tp.message = 'reading values from database (%d)' % var_idx
             tp.save()
         # query data
@@ -209,7 +211,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
         for var in var_slice:
             # write background task info
             if tp is not None:
-                tp.last_update = datetime_now()
+                tp.last_update = now()
                 tp.message = 'writing values for %s (%d) to file' % (var.name, var.pk)
                 tp.save()
             # check if variable is scalled 
@@ -299,7 +301,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
 
     bf.close_file()
     if tp is not None:
-        tp.last_update = datetime_now()
+        tp.last_update = now()
         tp.message = 'done'
         tp.done = True
         tp.save()

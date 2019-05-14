@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='exporttask',
             name='label',
-            field=models.CharField(default=b'None', max_length=400, blank=True),
+            field=models.CharField(default='None', max_length=400, blank=True),
         ),
         migrations.AlterField(
             model_name='exporttask',

@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from pyscada.models import RecordedData
 from pyscada.phant.models import PhantDevice
-from pyscada.utils import extract_numbers_from_str, datetime_now
+from pyscada.utils import extract_numbers_from_str
 
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
@@ -65,7 +65,7 @@ def phant_input(request, public_key=None, json_response=False):
 
     if isinstance(output, list):
         for r in output:
-            r.date_saved = datetime_now()
+            r.date_saved = now()
         RecordedData.objects.bulk_create(output)
 
     return do_response(True, 'success')
