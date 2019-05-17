@@ -215,6 +215,35 @@ class XYChart(WidgetContentModel):
 
 
 @python_2_unicode_compatible
+class Pie(WidgetContentModel):
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=400, default='')
+    radius = models.CharField(max_length=10, default='auto', help_text="auto or between 0 and 1 or value in pixel")
+    innerRadius = models.PositiveSmallIntegerField(default=0, help_text="between 0 and 1 or value in pixel")
+    variables = models.ManyToManyField(Variable)
+
+    def __str__(self):
+        return text_type(str(self.id) + ': ' + self.title)
+
+    def visible(self):
+        return True
+
+    def variables_list(self, exclude_list=[]):
+        return [item.pk for item in self.variables.exclude(pk__in=exclude_list)]
+
+    def gen_html(self, **kwargs):
+        """
+        :return: main panel html and sidebar html as
+        """
+        widget_pk = kwargs['widget_pk'] if 'widget_pk' in kwargs else 0
+        main_template = get_template('pie.html')
+        sidebar_template = get_template('chart_legend.html')
+        main_content = main_template.render(dict(pie=self, widget_pk=widget_pk))
+        sidebar_content = sidebar_template.render(dict(chart=self, widget_pk=widget_pk))
+        return main_content, sidebar_content
+
+
+@python_2_unicode_compatible
 class DropDownItem(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')

@@ -1680,6 +1680,158 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
     }
 }
 
+function Pie(id){
+    var options = {
+        series: {
+            pie: {
+                show: true,
+                innerRadius: 0.4,
+                label: {
+                    show: true,
+                    //radius: 1,
+                    //formatter: labelFormatter,
+                    //threshold: 0.05
+                }
+            }
+        },
+        legend: {
+            show: false
+        },
+        grid: {
+            hoverable: true,
+            clickable: true
+        },
+    },
+    series = [],		// just the active data series
+    keys   = [],		// list of variable keys (ids)
+    variable_names = [], // list of all variable names
+    flotPlot,			// handle to plot
+    prepared = false,	//
+    chart_container_id = '#chart-container-'+id,
+    legend_table_id = '#chart-legend-table-' + id,
+    legend_checkbox_id = '#chart-legend-checkbox-' + id + '-',
+    legend_checkbox_status_id = '#chart-legend-checkbox-status-' + id + '-',
+    variables = {},
+    plot = this;
+
+    // public functions
+    plot.update 			= update;
+    plot.prepare 			= prepare;
+    plot.getSeries 			= function () { return series };
+    plot.getFlotObject		= function () { return flotPlot};
+    plot.getKeys			= function (){ return keys};
+    plot.getVariableNames	= function (){ return variable_names};
+
+    plot.getInitStatus		= function () { if(InitDone){return InitRetry}else{return false}};
+    plot.getId				= function () {return id};
+    plot.getChartContainerId= function () {return chart_container_id};
+
+    // init data
+    $.each($(legend_table_id + ' .variable-config'),function(key,val){
+        val_inst = $(val);
+        variable_name = val_inst.data('name');
+        variable_key = val_inst.data('key');
+        variables[variable_key] = {'color':val_inst.data('color'),'yaxis':1}
+        keys.push(variable_key);
+        variable_names.push(variable_name);
+        unit = "";
+        label = "";
+        $.each($(legend_table_id + ' .legendSeries'),function(kkey,val){
+            val_inst = $(val);
+            if (variable_key == val_inst.find(".variable-config").data('key')){
+                variables[variable_key].label = val_inst.find(".legendLabel").text().replace(/\s/g, '');
+                variables[variable_key].unit = val_inst.find(".legendUnit").text().replace(/\s/g, '');
+            }
+        });
+    });
+
+    function labelFormatter(label, series) {
+		return "<div style='font-size:8pt; text-align:center; padding:2px; color:white;'>" + label + "<br/>" + Math.round(series.percent) + "%</div>";
+	}
+
+    function prepare(){
+        // prepare legend table sorter
+        $(legend_table_id).tablesorter({sortList: [[2,0]]});
+
+        // add onchange function to every checkbox in legend
+        $.each(variables,function(key,val){
+            $(legend_checkbox_id+key).change(function() {
+                plot.update(false);
+                if ($(legend_checkbox_id+key).is(':checked')){
+                    $(legend_checkbox_status_id+key).html(1);
+                }else{
+                    $(legend_checkbox_status_id+key).html(0);
+                }
+            });
+        });
+        //
+        $(legend_checkbox_id+'make_all_none').change(function() {
+                plot.update(false);
+                if ($(legend_checkbox_id+'make_all_none').is(':checked')){
+                    $.each(variables,function(key,val){
+                        $(legend_checkbox_status_id+key).html(1);
+                        $(legend_checkbox_id+key)[0].checked = true;
+                    });
+                }else{
+                    $.each(variables,function(key,val){
+                        $(legend_checkbox_status_id+key).html(0);
+                        $(legend_checkbox_id+key)[0].checked = false;
+                     });
+                }
+        });
+        // expand the pie to the maximum width
+        main_chart_area = $(chart_container_id).closest('.main-chart-area');
+
+
+        contentAreaHeight = main_chart_area.parent().height();
+        mainChartAreaHeight = main_chart_area.height();
+
+        if (contentAreaHeight>mainChartAreaHeight){
+            main_chart_area.height(contentAreaHeight);
+        }
+
+        if (series.length > 0) {
+            flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series, options)
+        }
+        // update the plot
+        update(false);
+
+    };
+
+    function update(force){
+        if(!prepared ){
+            if($(chart_container_id).is(":visible") || force){
+                prepared = true;
+                prepare();
+            }else{
+                return;
+            }
+        }
+        if($(chart_container_id).is(":visible") || force){
+            // only update if plot is visible
+            // add the selected data series to the "series" variable
+            series = [];
+            for (var key in keys){
+                console.log
+                key = keys[key];
+                if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object'){
+                    series.push({"data":DATA[key][DATA[key].length - 1], "label":variables[key].label,"unit":variables[key].unit, "color":variables[key].color});
+                };
+            };
+            if (series.length > 0) {
+                if (typeof flotPlot !== 'undefined') {
+                    // update flot plot
+                    flotPlot.setData(series);
+                    flotPlot.setupGrid(true);
+                    flotPlot.draw();
+                }else {
+                    flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series, options)
+                }
+            }
+        }
+    }
+}
+
 function find_index(a,t){
     var i = a.length; //or 10
     while(i--){
@@ -2145,6 +2297,12 @@ $( document ).ready(function() {
         X_AXIS = xaxisVarId;
         // add a new Plot
         PyScadaPlots.push(new XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale));
+    });
+    $.each($('.pie-container'),function(key,val){
+        // get identifier of the chart
+        id = val.id.substring(16);
+        // add a new Plot
+        PyScadaPlots.push(new Pie(id));
     });
 
     $.each($('.variable-config'),function(key,val){

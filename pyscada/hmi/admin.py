@@ -19,6 +19,7 @@ from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
 from pyscada.hmi.models import ProcessFlowDiagram
 from pyscada.hmi.models import ProcessFlowDiagramItem
+from pyscada.hmi.models import Pie
 
 from django.contrib import admin
 from django import forms
@@ -71,6 +72,30 @@ class XYChartAdmin(admin.ModelAdmin):
     List_display_link = ('title',)
     list_display = ('id', 'title', 'x_axis_label', 'x_axis_linlog', 'y_axis_label')
     form = XYChartForm
+
+    def name(self, instance):
+        return instance.variables.name
+
+
+class PieForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(PieForm, self).__init__(*args, **kwargs)
+        wtf = Variable.objects.all()
+        w = self.fields['variables'].widget
+        choices = []
+        for choice in wtf:
+            choices.append((choice.id, choice.name + '( ' + choice.unit.description + ' )'))
+        w.choices = choices
+
+
+class PieAdmin(admin.ModelAdmin):
+    list_per_page = 100
+    # ordering = ['position',]
+    search_fields = ['name', ]
+    filter_horizontal = ('variables',)
+    List_display_link = ('title',)
+    list_display = ('id', 'title')
+    form = PieForm
 
     def name(self, instance):
         return instance.variables.name
@@ -160,6 +185,7 @@ class ProcessFlowDiagramAdmin(admin.ModelAdmin):
 admin_site.register(ControlItem, ControlItemAdmin)
 admin_site.register(Chart, ChartAdmin)
 admin_site.register(XYChart, XYChartAdmin)
+admin_site.register(Pie, PieAdmin)
 admin_site.register(DropDown, DropDownAdmin)
 admin_site.register(DropDownItem, DropDownItemAdmin)
 admin_site.register(Form, FormAdmin)

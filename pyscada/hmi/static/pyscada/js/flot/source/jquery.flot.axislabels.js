@@ -135,7 +135,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
         var layer = this.surface.getSVGLayer(layerId);
         var transforms = this.transforms(offsets.degrees, offsets.x, offsets.y, layer.parentNode);
-
+        //console.log(layerId);
+        console.log(this.surface);
+        console.log(transforms);
         this.surface.addText(layerId, 0, 0, this.axisLabel, className, undefined, undefined, undefined, undefined, transforms);
         this.surface.render();
         Object.keys(style).forEach(function(key) {
@@ -186,11 +188,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             plot.hooks.draw.push(function(plot, ctx) {
                 $.each(plot.getAxes(), function(flotAxisName, axis) {
                     var opts = axis.options;
+                    var axisName = axis.direction + axis.n;
                     if (!opts || !opts.axisLabel || !axis.show) {
+                        if (typeof axisLabels[axisName] !== 'undefined') {axisLabels[axisName].cleanup();}
                         return;
                     }
-
-                    var axisName = axis.direction + axis.n;
                     axisLabels[axisName].draw(axis.box);
                 });
             });
