@@ -139,6 +139,11 @@ Append to the end of the `settings.py`:
         'file_prefix':'PREFIX_',
         'output_folder':'~/measurement_data_dumps',
     }
+
+    # View Options
+    #
+    LINK_TARGET = '_blank' # '_blank' for new tab or '_self' for opening it in the same window
+
     LOGGING = {
         'version': 1,
         'disable_existing_loggers': False,
