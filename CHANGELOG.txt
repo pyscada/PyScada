@@ -209,3 +209,6 @@
   - fixed zombi process problem
   - fixed migrations with python3
   - changed datetime_now to now from django timezone
+
+0.7.0rc16
+  - fixed re-login after logout (#22)

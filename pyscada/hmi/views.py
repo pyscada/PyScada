@@ -313,7 +313,7 @@ def logout_view(request):
     logger.info('logout %s' % request.user)
     logout(request)
     # Redirect to a success page.
-    return redirect('%s?next=%s' % (UNAUTHENTICATED_REDIRECT, request.path))
+    return redirect('%s?next=%s' % (UNAUTHENTICATED_REDIRECT, '/'))
 
 
 def user_profile_change(request):
