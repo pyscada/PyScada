@@ -213,4 +213,4 @@
 0.7.0rc16
   - fixed re-login after logout (#22)
   - added LINK_TARGET option to change the default behaviour of links in view overview (#23)
-
+  - Catching exceptions if DB close while pyscada is running
