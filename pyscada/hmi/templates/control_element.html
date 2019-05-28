@@ -1,5 +1,5 @@
 {% if item.active == 1 %}
-        <div class="hidden variable-config" data-name="{{ item.name }}" data-key="{{ item.key }}" data-init-type="0" data-type="{{ item.item_type}}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-value-class="{{ item.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}"></div>
+        <div class="hidden variable-config" data-name="{{ item.name }}" data-key="{{ item.key }}" data-color="{{ var.chart_line_color_code }}" data-init-type="0" data-type="{{ item.item_type}}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-value-class="{{ item.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}"></div>
     {% if item.type == 0 %}<!-- label blue -->
         <div class="input-group control_label"><span class="label label-default type-bool status-green {{ item.web_class_str }}">{{ item.label }}</span></div>
     {% elif item.type == 1 %}<!-- label light blue -->

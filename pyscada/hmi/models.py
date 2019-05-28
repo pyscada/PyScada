@@ -434,7 +434,8 @@ class CustomHTMLPanel(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='', blank=True)
     html = models.TextField()
-    variables = models.ManyToManyField(Variable)
+    variables = models.ManyToManyField(Variable, blank=True)
+    variable_properties = models.ManyToManyField(VariableProperty, blank=True)
 
     def __str__(self):
         return str(self.id) + ': ' + self.title

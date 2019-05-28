@@ -674,6 +674,10 @@ class VariableProperty(models.Model):
     def web_key(self):
         return '%d-%s' % (self.variable.pk, self.name.upper().replace(':', '-'))
 
+    def item_type(self):
+        return "variable_property"
+
+
 
 @python_2_unicode_compatible
 class Variable(models.Model):
@@ -777,6 +781,9 @@ class Variable(models.Model):
     def add_attr(self, **kwargs):
         for key in kwargs:
             setattr(self, key, kwargs[key])
+
+    def item_type(self):
+        return "variable"
 
     def get_bits_by_class(self):
         """
