@@ -98,7 +98,7 @@ class BackgroundProcessFilter(admin.SimpleListFilter):
         `self.value()`.
         """
         if self.value() is not None:
-            if self.value() > 0:
+            if int(self.value()) > 0:
                 return queryset.filter(parent_process_id=self.value())
 
 
