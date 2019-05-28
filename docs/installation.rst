@@ -223,6 +223,9 @@ add gunicorn and pyscada unit files:
     sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/systemd/gunicorn.service -O /etc/systemd/system/gunicorn.service
     sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/systemd/pyscada_daemon.service -O /etc/systemd/system/pyscada.service
 
+    # in some installations gunicorn is not at /usr/local/bin/gunicorn but at /usr/bin/gunicorn
+    # in this case you have to change the pat in the file /etc/systemd/system/gunicorn.service accordingly
+
     # enable the services for autostart
     sudo systemctl enable gunicorn
     sudo systemctl start gunicorn

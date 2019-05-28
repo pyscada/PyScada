@@ -49,7 +49,8 @@ def index(request):
     c = {
         'user': request.user,
         'view_list': view_list,
-        'version_string': core_version
+        'version_string': core_version,
+        'link_target': settings.LINK_TARGET if hasattr(settings, 'LINK_TARGET') else '_blank'
     }
     return TemplateResponse(request, 'view_overview.html', c)  # HttpResponse(t.render(c))
 
@@ -153,7 +154,8 @@ def view(request, link_title):
         'visible_dropdown_list': visible_dropdown_list,
         'view_title': v.title,
         'view_show_timeline': v.show_timeline,
-        'version_string': core_version
+        'version_string': core_version,
+        'link_target': settings.LINK_TARGET if hasattr(settings, 'LINK_TARGET') else '_blank'
     }
 
     return TemplateResponse(request, 'view.html', c)
@@ -313,7 +315,7 @@ def logout_view(request):
     logger.info('logout %s' % request.user)
     logout(request)
     # Redirect to a success page.
-    return redirect('%s?next=%s' % (UNAUTHENTICATED_REDIRECT, request.path))
+    return redirect('%s?next=%s' % (UNAUTHENTICATED_REDIRECT, '/'))
 
 
 def user_profile_change(request):
