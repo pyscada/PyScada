@@ -1790,6 +1790,16 @@ function Pie(id){
             main_chart_area.height(contentAreaHeight);
         }
 
+        // Since CSS transforms use the top-left corner of the label as the transform origin,
+        // we need to center the y-axis label by shifting it down by half its width.
+        // Subtract 20 to factor the chart's bottom margin into the centering.
+        var chartTitle = $(chart_container_id + ' .chartTitle');
+        chartTitle.css("margin-left", -chartTitle.width() / 2);
+        var xaxisLabel = $(chart_container_id + ' .axisLabel.xaxisLabel');
+        xaxisLabel.css("margin-left", -xaxisLabel.width() / 2);
+        var yaxisLabel = $(chart_container_id + ' .axisLabel.yaxisLabel');
+        yaxisLabel.css("margin-top", yaxisLabel.width() / 2 - 20);
+
         if (series.length > 0) {
             flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series, options)
         }
