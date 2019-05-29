@@ -167,7 +167,7 @@ function add_fetched_data(key,value){
                 }
             }
         }else{
-            console.log(key + ' : value.length==0')
+            //console.log(key + ' : value.length==0')
         }
     }
 }
@@ -790,18 +790,18 @@ function PyScadaPlot(id){
         });
         //
         $(legend_checkbox_id+'make_all_none').change(function() {
-                plot.update(false);
-                if ($(legend_checkbox_id+'make_all_none').is(':checked')){
-                    $.each(variables,function(key,val){
-                        $(legend_checkbox_status_id+key).html(1);
-                        $(legend_checkbox_id+key)[0].checked = true;
-                    });
-                }else{
-                    $.each(variables,function(key,val){
-                        $(legend_checkbox_status_id+key).html(0);
-                        $(legend_checkbox_id+key)[0].checked = false;
-                     });
-                }
+            if ($(legend_checkbox_id+'make_all_none').is(':checked')){
+                $.each(variables,function(key,val){
+                    $(legend_checkbox_status_id+key).html(1);
+                    $(legend_checkbox_id+key)[0].checked = true;
+                });
+            }else{
+                $.each(variables,function(key,val){
+                    $(legend_checkbox_status_id+key).html(0);
+                    $(legend_checkbox_id+key)[0].checked = false;
+                 });
+            }
+            plot.update(false);
          });
         // expand the chart to the maximum width
         main_chart_area  = $(chart_container_id).closest('.main-chart-area');
@@ -1222,6 +1222,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         // add onchange function to every checkbox in legend
         $.each(variables,function(key,val){
             $(legend_checkbox_id+key).change(function() {
+                flotPlot.clearTextCache();
                 plot.update(false);
                 if ($(legend_checkbox_id+key).is(':checked')){
                     $(legend_checkbox_status_id+key).html(1);
@@ -1232,18 +1233,19 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         });
         //
         $(legend_checkbox_id+'make_all_none').change(function() {
-                plot.update(false);
-                if ($(legend_checkbox_id+'make_all_none').is(':checked')){
-                    $.each(variables,function(key,val){
-                        $(legend_checkbox_status_id+key).html(1);
-                        $(legend_checkbox_id+key)[0].checked = true;
-                    });
-                }else{
-                    $.each(variables,function(key,val){
-                        $(legend_checkbox_status_id+key).html(0);
-                        $(legend_checkbox_id+key)[0].checked = false;
-                     });
-                }
+            if ($(legend_checkbox_id+'make_all_none').is(':checked')){
+                $.each(variables,function(key,val){
+                    $(legend_checkbox_status_id+key).html(1);
+                    $(legend_checkbox_id+key)[0].checked = true;
+                });
+            }else{
+                $.each(variables,function(key,val){
+                    $(legend_checkbox_status_id+key).html(0);
+                    $(legend_checkbox_id+key)[0].checked = false;
+                 });
+            }
+            flotPlot.clearTextCache();
+            plot.update(false);
          });
         // expand the chart to the maximum width
         main_chart_area  = $(chart_container_id).closest('.main-chart-area');
@@ -1664,7 +1666,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             flotPlot.setData(series);
             flotPlot.setupGrid(true);
             flotPlot.draw();
-            flotPlot.resize();
+            //flotPlot.resize();
 
             // Change the color of the axis
             if (jk != 1 && yaxisUniqueScale == false){
@@ -1766,18 +1768,18 @@ function Pie(id){
         });
         //
         $(legend_checkbox_id+'make_all_none').change(function() {
-                plot.update(false);
-                if ($(legend_checkbox_id+'make_all_none').is(':checked')){
-                    $.each(variables,function(key,val){
-                        $(legend_checkbox_status_id+key).html(1);
-                        $(legend_checkbox_id+key)[0].checked = true;
-                    });
-                }else{
-                    $.each(variables,function(key,val){
-                        $(legend_checkbox_status_id+key).html(0);
-                        $(legend_checkbox_id+key)[0].checked = false;
-                     });
-                }
+            if ($(legend_checkbox_id+'make_all_none').is(':checked')){
+                $.each(variables,function(key,val){
+                    $(legend_checkbox_status_id+key).html(1);
+                    $(legend_checkbox_id+key)[0].checked = true;
+                });
+            }else{
+                $.each(variables,function(key,val){
+                    $(legend_checkbox_status_id+key).html(0);
+                    $(legend_checkbox_id+key)[0].checked = false;
+                 });
+            }
+            plot.update(false);
         });
         // expand the pie to the maximum width
         main_chart_area = $(chart_container_id).closest('.main-chart-area');
