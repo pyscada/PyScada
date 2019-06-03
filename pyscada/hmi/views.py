@@ -238,6 +238,15 @@ def form_write_property2(request):
     return HttpResponse(status=404)
 
 
+def int_filter(someList):
+    for v in someList:
+        try:
+            int(v)
+            yield v  # Keep these
+        except ValueError:
+            continue  # Skip these
+
+
 @unauthenticated_redirect
 def get_cache_data(request):
     if 'init' in request.POST:
@@ -247,6 +256,7 @@ def get_cache_data(request):
     active_variables = []
     if 'variables[]' in request.POST:
         active_variables = request.POST.getlist('variables[]')
+        active_variables = list(int_filter(active_variables))
     """
     else:
         active_variables = list(
