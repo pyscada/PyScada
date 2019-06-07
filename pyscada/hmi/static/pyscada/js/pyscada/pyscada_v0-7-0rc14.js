@@ -1041,20 +1041,6 @@ function PyScadaPlot(id){
                     }else {
                         chart_data = DATA[key].slice();
                     }
-                    // add data for step display
-                    /*
-                    if (chart_data.length > 2){
-                        i = 1;
-                        while (i < chart_data.length) {
-                             if (chart_data[i][0] - chart_data[i - 1][0] > 1000.0 && chart_data[i][1] != chart_data[i - 1][1]){
-                                chart_data.splice(i,0, [chart_data[i][0], chart_data[i - 1][1]]);
-                                i += 2;
-                            }else{
-                                i += 1;
-                            }
-                        }
-                    }
-                    */
                     // append last value
                     if (chart_data.length >= 1){
                         if (DATA_DISPLAY_TO_TIMESTAMP < 0){
@@ -1088,7 +1074,6 @@ function PyScadaPlot(id){
             flotPlot.setData(series);
             flotPlot.setupGrid(true);
             flotPlot.draw();
-            flotPlot.resize();
         }
     }
 }
@@ -1351,23 +1336,6 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             }
             pOpt = flotPlot.getOptions();
             if ($(chart_container_id + " .activate_zoom_x").is(':checked') && ranges.xaxis != null) {
-                /*
-                pData = flotPlot.getData();
-                tmin=0;
-                tmax=0;
-                for (x in pData[0].xdata) {
-                    if (pData[0].xdata[x][1] >= ranges.xaxis.from && tmin == 0) {
-                        tmin = pData[0].xdata[x][0] - 1000;
-                    }
-                    if (pData[0].xdata[x][1] >= ranges.xaxis.to && tmax == 0) {
-                        tmax = pData[0].xdata[x][0] + 1000;
-                    }
-                }
-                DATA_DISPLAY_TO_TIMESTAMP = tmax;
-                DATA_DISPLAY_FROM_TIMESTAMP = tmin;
-                DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP-DATA_DISPLAY_FROM_TIMESTAMP;
-                */
-
                 pOpt.xaxes[0].min = ranges.xaxis.from;
                 pOpt.xaxes[0].max = ranges.xaxis.to;
                 pOpt.xaxes[0].autoScale = "none";
@@ -1630,43 +1598,10 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                 pOpt.xaxes[0].max = null;
             }
 
-            // update x window
-            //pOpt = flotPlot.getOptions();
-            /*if (j != 0){
-                var xticks=[];
-                if (xaxisLinLog == "True"){
-                    xticks=xticks.concat(chart_x_data[0][1]);
-                    for (i=parseInt(Math.round(Math.log(chart_x_data[0][1])/Math.log(10)));i<=parseInt(Math.round(Math.log(chart_x_data[chart_x_data.length-1][1])/Math.log(10)));i++){
-                        xticks=xticks.concat(Math.pow(10,i)/2);
-                        xticks=xticks.concat(Math.pow(10,i));
-                    xticks=xticks.concat(chart_x_data[chart_x_data.length-1][1]);
-                    pOpt.xaxes[0].ticks = xticks;
-                    pOpt.xaxes[0].transform = function (v) { return Math.log(v); };
-                    pOpt.xaxes[0].inverseTransform = function (v) { return Math.exp(v); };
-                    }
-                }else {
-                    pOpt.xaxes[0].ticks = Math.min(chart_x_data.length,11);
-                }
-                pOpt.xaxes[0].x_data_min = series[0]['x_data_min'];
-                pOpt.xaxes[0].x_data_max = series[0]['x_data_max'];
-
-                if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
-                }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
-                    pOpt.xaxes[0].max = series[0]['x_data_max'];
-                }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
-                    pOpt.xaxes[0].min = series[0]['x_data_min'];
-                }else{
-                    pOpt.xaxes[0].min = series[0]['x_data_min'];
-                    pOpt.xaxes[0].max = series[0]['x_data_max'];
-                }
-            }*/
-
             // update flot plot
-            //flotPlot.clearTextCache();
             flotPlot.setData(series);
             flotPlot.setupGrid(true);
             flotPlot.draw();
-            //flotPlot.resize();
 
             // Change the color of the axis
             if (jk != 1 && yaxisUniqueScale == false){
@@ -1824,7 +1759,6 @@ function Pie(id){
             // add the selected data series to the "series" variable
             series = [];
             for (var key in keys){
-                console.log
                 key = keys[key];
                 if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object'){
                     series.push({"data":DATA[key][DATA[key].length - 1], "label":variables[key].label,"unit":variables[key].unit, "color":variables[key].color});

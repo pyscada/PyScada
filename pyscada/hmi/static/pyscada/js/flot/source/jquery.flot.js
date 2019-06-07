@@ -2502,7 +2502,7 @@ Licensed under the MIT license.
             if (item) {
                 i = item[0];
                 j = item[1];
-                var ps = series[i].datapoints.pointsize;
+                var ps = series[i].datapoints.pointsize ? series[i].datapoints.pointsize : 2;
 
                 return {
                     datapoint: series[i].datapoints.points.slice(j * ps, (j + 1) * ps),
@@ -2521,7 +2521,7 @@ Licensed under the MIT license.
                 maxx = maxDistance / series.xaxis.scale,
                 maxy = maxDistance / series.yaxis.scale,
                 points = series.datapoints.points,
-                ps = series.datapoints.pointsize;
+                ps = series.datapoints.pointsize ? series.datapoints.pointsize : 2;
 
             // with inverse transforms, we can't use the maxx/maxy
             // optimization, sadly

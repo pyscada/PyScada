@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 from pyscada.visa.devices import GenericDevice
-from pyscada.models import DeviceWriteTask, Variable, Device
-from pyscada.models import RecordedData
+from pyscada.models import VariableProperty
+
 import time
-import math
-from math import log10, exp
 
 import logging
 logger = logging.getLogger(__name__)
@@ -13,6 +11,7 @@ try:
     import numpy as np
 except:
     logger.error("Need to install numpy : pip install numpy")
+
 
 class Handler(GenericDevice):
     """
@@ -30,154 +29,25 @@ class Handler(GenericDevice):
             return self.parse_value(self.inst.query(':READ?'))
         else:
             value = self.inst.query(device_property)
-            logger.info("Visa-MDO3014-read data-property : %s - value : %s" %(device_property, value))
+            logger.info("Visa-MDO3014-read data-property : %s - value : %s" % (device_property, value))
             return self.parse_value(value)
         return None
 
-    def write_data(self, variable_id, value):
+    def write_data(self, variable_id, value, task):
         """
         write values to the device
         """
-        i = 0
-        j = 0
-        while i < 10:
-            try:
-                self.inst.query('*IDN?')
-                logger.info("Visa-MDO3014-Write- variable_id : %s et value : %s" %(variable_id, value))
-                i = 12
-                j = 1
-            except:
-                self.connect()
-                time.sleep(1)
-                i += 1
-                logger.error("MDO3014 connect error i : %s" % i)
-        if j == 0:
-            logger.error("MDO3014-Instrument not connected")
-            return None
-        if variable_id == 'init_BODE':
-            self.inst.read_termination = '\n'
-            # Reset and init Osc
-            Vepp = RecordedData.objects.last_element(variable__name='BODE_Vpp')
-            # self.inst.write('*CLS')
-            self.inst.write('*RST;:SEL:CH1 1;:SEL:CH2 1;:HORIZONTAL:POSITION 0;:CH1:YUN "V";:CH1:SCALE '
-                            + str(1.2*float(Vepp.value())/(2*4))+';:CH2:YUN "V";:CH2:BANdwidth 10000000;:'
-                                                                 'CH1:BANdwidth 10000000;:TRIG:A:TYP EDGE;'
-                                                                 ':TRIG:A:EDGE:COUPLING DC;:TRIG:A:EDGE:SOU CH1;'
-                                                                 ':TRIG:A:EDGE:SLO FALL;:TRIG:A:MODE NORM')
+        variable = self._variables[variable_id]
+        if task.property_name != '':
+            # write the freq property to VariableProperty use that for later read
+            VariableProperty.objects.update_or_create_property(variable=variable, name=task.property_name.upper(),
+                                                               value=value, value_class='FLOAT64')
             return True
-        elif variable_id == 'find_phase':
-            # N = int(RecordedData.objects.last_element(variable__name='BODE_n').value())
-            # if N == 1:
-            #     time.sleep(1)
-            i = 0
-            F = RecordedData.objects.last_element(variable__name='BODE_F')
-            while F is None and i<10:
-                F = RecordedData.objects.last_element(variable__name='BODE_F')
-                i += 1
-            Vsff = value
-            Vsmax = float(Vsff)*float(math.sqrt(2))
-            CMD = str(':HORIZONTAL:SCALE '+str(round(float(float(4)/(float(10)*float(F.value()))), 6))+';:CH2:SCALE '
-                      + str(1.4*float(Vsmax)/4)+';:TRIG:A:LEV:CH1 '+str(0.8*float(Vsmax)) +
-                      ';:MEASUrement:IMMed:SOUrce1 CH1;:MEASUrement:IMMed:SOUrce2 CH2;:MEASUREMENT:IMMED:TYPE PHASE')
-            self.inst.write(CMD)
-            time.sleep(20/F.value())
-            CMD = str(':MEASUREMENT:IMMED:VALUE?')
-            Phase = []
-            for k in range(1, 4):
-                # TODO : put a try to prevent if the read is not a float
-                Phase.append(float(self.inst.query(CMD)))
-                time.sleep(0.1)
-            MeanPhase = np.mean(Phase)
-            StDevPhase = np.std(Phase)
-            logger.info("Phase : %s - Mean : %s - StDev : %s" %(Phase, MeanPhase, StDevPhase))
-            i=0
-            while (float(MeanPhase) > 100000 or StDevPhase > 3) and i<10:
-                logger.info("Calculate Phase again")
-                Phase = []
-                for k in range(1,4):
-                    Phase.append(float(self.inst.query(CMD)))
-                    time.sleep(0.1)
-                MeanPhase = np.mean(Phase)
-                StDevPhase = np.std(Phase)
-                logger.info("Phase : %s - Mean : %s - StDev : %s" %(Phase,MeanPhase,StDevPhase))
-                i += 1
-                time.sleep((1+i)/10)
-            cwt = DeviceWriteTask(variable__name='Find_Gain_Osc', value=1, start=time.time())
-            cwt.save()
-#            self.write_data("find_gain", 1)
-            return self.parse_value(MeanPhase)
-        elif variable_id == 'find_gain':
-            CMD = str(':MEASUrement:IMMed:SOUrce1 CH1;:MEASUREMENT:IMMED:TYPE PK2PK;:MEASUREMENT:IMMED:VALUE?')
-            P2P1 = self.inst.query(CMD)
-            try:
-                float(P2P1)
-                i = 12
-            except:
-                i = 0
-                logger.error("i : %s" % i)
-            while i < 10:
-                try:
-                    P2P1 = self.inst.query('MEASUREMENT:IMMED:VALUE?')
-                    logger.info("P2P1 : %s" % P2P2)
-                    float(P2P1)
-                    i =12
-                except:
-                    i += 1
-                    logger.error("P2P1 - i : %s" % i)
-
-            CMD = str(':MEASUrement:IMMed:SOUrce1 CH2;:MEASUREMENT:IMMED:TYPE PK2PK;:MEASUREMENT:IMMED:VALUE?')
-            P2P2 = self.inst.query(CMD)
-            try:
-                float(P2P2)
-                i = 12
-            except:
-                i = 0
-                logger.error("i : %s" %(i))
-            while i < 10:
-                try:
-                    P2P2 = self.inst.query('MEASUREMENT:IMMED:VALUE?')
-                    logger.info("P2P2 : %s" % P2P2)
-                    float(P2P2)
-                    i =12
-                except:
-                    i += 1
-                    logger.error("P2P2 - i : %s" % i)
-
-            try:
-                float(P2P2)
-                float(P2P1)
-            except:
-                return None
-            G = 20*log10(float(P2P2)/float(P2P1))
-            # self.inst.write('SELect:CH1 0')
-            # self.inst.write('SELect:CH2 0')
-            N = RecordedData.objects.last_element(variable__name='BODE_n').id
-            N_new = N.value() + 1
-            F = RecordedData.objects.last_element(variable__name='BODE_F').id
-            Fmin = RecordedData.objects.last_element(variable__name='BODE_Fmin').id
-            Fmax = RecordedData.objects.last_element(variable__name='BODE_Fmax').id
-            nb_points = RecordedData.objects.last_element(variable__name='BODE_nb_points').id
-            # Variation de F en log
-            k=pow(Fmax.value()/Fmin.value(),(N_new-11)/(nb_points.value()-1))
-            F_new = Fmin.value()*pow(Fmax.value()/Fmin.value(),(N_new-1)/(nb_points.value()-1))
-            F_new = int(F_new)
-#            logger.info("N_new : %s - k : %s - F : %s" %(N_new, k, F_new))
-            # Variation F linéaire
-            # F_new = F.value() + (Fmax.value() - Fmin.value())/nb_points.value()
-            if F_new > Fmax.value():
-                logger.info("BODE terminé")
-            else:
-                cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='BODE_F').id, value=F_new,
-                                      start=time.time())
-                cwt.save()
-                cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='BODE_n').id, value=N_new,
-                                      start=time.time())
-                cwt.save()
-                cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='Set_Freq_GBF').id, value=F_new,
-                                      start=time.time())
-                cwt.save()
-            return self.parse_value(G)
-        return self.parse_value(self.inst.query(str(variable_id)+' '+str(value)))
+        if variable.visavariable.variable_type == 0:  # configuration
+            # only write to configuration variables
+            pass
+        else:
+            return False
 
     def parse_value(self, value):
         """
@@ -187,3 +57,178 @@ class Handler(GenericDevice):
             return float(value)
         except:
             return None
+
+    # MDO functions
+    def reset_instrument(self):
+        return self.inst.query('*RST;*OPC?')
+
+    def mdo_horizontal_scale_in_period(self, period=1.0, frequency=1000):
+        mdo_horiz_scale = str(round(float(period / (10.0 * float(frequency))), 6))
+        self.inst.query(':HORIZONTAL:SCALE %s;*OPC?' % mdo_horiz_scale)
+
+    def mdo_find_vertical_scale(self, ch=1, frequency=1000, range_i=None):
+        vranges = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10]
+        if range_i is None:
+            range_i = int(np.ceil(len(vranges) / 2.0))
+        self.mdo_horizontal_scale_in_period(period=1.0, frequency=frequency)
+
+        failed = 0
+        mdo_div_quantity = 8.0
+        range_i_min = 0
+        while range_i < len(vranges):
+            logger.debug(range_i)
+            self.inst.query(':CH%d:SCALE %s;*OPC?' % (ch, str(vranges[range_i])))
+            data = self.mdo_query_waveform(ch=ch, frequency=frequency, refresh=True)
+            if data is None:
+                failed += 1
+                if failed > 3:
+                    logger.debug('data is None more than 3 times')
+                    break
+                continue
+            failed = 0
+            if np.max(abs(data)) > (mdo_div_quantity * 0.9 * vranges[range_i] / 2.0):
+                range_i_min = range_i + 1
+                range_i += 3
+                range_i = min(len(vranges) - 1, range_i)
+            if range_i == 0:
+                if np.max(abs(data)) < (mdo_div_quantity * 0.9 * vranges[range_i] / 2.0):
+                    break
+                range_i = 1
+                continue
+            if (mdo_div_quantity * 0.9 * vranges[range_i - 1] / 2.0) <= np.max(abs(data)) \
+                    < (mdo_div_quantity * 0.9 * vranges[range_i] / 2.0):
+                break
+            range_i = max(range_i_min, np.where(vranges > 2.0 * np.max(abs(data)) / mdo_div_quantity * 0.9)[0][0])
+
+        logger.debug(range_i)
+        mdo_ch2_scale = str(vranges[range_i])
+        logger.debug("Freq = %s - horiz scale = %s - ch2 scale = %s"
+                     % (int(frequency), str(round(float(1.0 / (10.0 * float(frequency))), 6)), mdo_ch2_scale))
+        return range_i
+
+    def mdo_query_peak_to_peak(self, ch=1):
+        return float(self.inst.query((':MEASUrement:IMMed:SOUrce1 CH%d;:MEASUREMENT:IMMED:TYPE PK2PK;'
+                                      ':MEASUREMENT:IMMED:VALUE?' % ch)))
+
+    def mdo_gain(self, source1=1, source2=2):
+        return 20 * np.log10(self.mdo_query_peak_to_peak(ch=source2) / self.mdo_query_peak_to_peak(ch=source1))
+
+    def mdo_prepare_for_bode(self, vpp):
+        self.inst.query(':SEL:CH1 1;:SEL:CH2 1;:HORIZONTAL:POSITION 0;:CH1:YUN "V";:CH1:SCALE %s;:CH2:YUN "V";'
+                        ':CH2:BANdwidth 10000000;:CH1:BANdwidth 10000000;:TRIG:A:TYP EDGE;:TRIG:A:EDGE:COUPLING AC;'
+                        ':TRIG:A:EDGE:SOU CH1;:TRIG:A:EDGE:SLO FALL;:TRIG:A:MODE NORM;:CH1:COUP AC;:CH2:COUP AC;'
+                        ':TRIG:A:LEV:CH1 0;*OPC?;' % str(1.2 * float(vpp) / (2 * 4)))
+
+    def mdo_query_waveform(self, ch=1, points_resolution=100, frequency=1000, refresh=False):
+        self.inst.query(':SEL:CH%d 1;:HORIZONTAL:POSITION 0;:CH%d:YUN "V";'
+                        ':CH%d:BANdwidth 10000000;:TRIG:A:TYP EDGE;:TRIG:A:EDGE:COUPLING AC;:TRIG:A:EDGE:SOU CH%d;'
+                        ':TRIG:A:EDGE:SLO FALL;:TRIG:A:MODE NORM;*OPC?' % (ch, ch, ch, ch))
+
+        # io config
+        self.inst.write('header 0')
+        self.inst.write('data:encdg SRIBINARY')
+        self.inst.write('data:source CH%d' % ch)  # channel
+        self.inst.write('data:snap')  # last sample
+        self.inst.write('wfmoutpre:byt_n 1')  # 1 byte per sample
+
+        if refresh:
+            # acq config
+            self.inst.write('acquire:state 0')  # stop
+            self.inst.write('acquire:stopafter SEQUENCE')  # single
+            self.inst.write('acquire:state 1')  # run
+
+        # data query
+        self.inst.query('*OPC?')
+        bin_wave = self.inst.query_binary_values('curve?', datatype='b', container=np.array, delay=2 * 10 / frequency)
+
+        # retrieve scaling factors
+        # tscale = float(self.inst_mdo.query('wfmoutpre:xincr?'))
+        vscale = float(self.inst.query('wfmoutpre:ymult?'))  # volts / level
+        voff = float(self.inst.query('wfmoutpre:yzero?'))  # reference voltage
+        vpos = float(self.inst.query('wfmoutpre:yoff?'))  # reference position (level)
+
+        # create scaled vectors
+        # horizontal (time)
+        # total_time = tscale * record
+        # tstop = tstart + total_time
+        # scaled_time = np.linspace(tstart, tstop, num=record, endpoint=False)
+        # vertical (voltage)
+        unscaled_wave = np.array(bin_wave, dtype='double')  # data type conversion
+        scaled_wave = (unscaled_wave - vpos) * vscale + voff
+        scaled_wave = scaled_wave.tolist()
+
+        scaled_wave_mini = list()
+        for i in range(0, points_resolution):
+            scaled_wave_mini.append(scaled_wave[i * int(len(scaled_wave) / points_resolution)])
+
+        return np.asarray(scaled_wave_mini)
+
+    def mdo_get_phase(self, source1=1, source2=2, frequency=1000):
+        self.mdo_horizontal_scale_in_period(period=4.0, frequency=frequency)
+        self.inst.write(':MEASUrement:IMMed:SOUrce1 CH%d;:MEASUrement:IMMed:SOUrce2 CH%d;'
+                        ':MEASUREMENT:IMMed:TYPE PHASE' % (source1, source2))
+
+        # Start reading the phase
+        retries = 0
+        while retries < 3:
+            self.inst.write('acquire:state 0')  # stop
+            self.inst.write('acquire:stopafter SEQUENCE')  # single
+            self.inst.write('acquire:state 1')  # run
+            self.inst.query('*OPC?')
+            phase = float(self.inst.query(':MEASUREMENT:IMMED:VALUE?;'))
+            retries += 1
+            if -360 < phase < 360:
+                break
+            if retries >= 3:
+                phase = None
+                break
+            logger.debug('Wrong phase = %s' % phase)
+            time.sleep(1)
+        if phase < -180 and phase is not None:
+            phase += 360
+        self.mdo_horizontal_scale_in_period(period=4.0, frequency=frequency)
+
+        a = self.mdo_query_waveform(ch=1, frequency=frequency, refresh=True, points_resolution=10000)
+        b = self.mdo_query_waveform(ch=2, frequency=frequency, refresh=False, points_resolution=10000)
+        phase2 = self.find_phase_2_signals(a, b, frequency, self.mdo_horizontal_time())
+        logger.debug('phase oscillo = %s - phase scipy = %s' % (phase, phase2))
+        return phase, phase2
+
+    def mdo_horizontal_time(self):
+        record = int(self.inst.query('horizontal:recordlength?'))
+        tscale = float(self.inst.query('wfmoutpre:xincr?'))
+        return tscale * record
+
+    def fft(self, eta):
+        nfft = len(eta)
+        hanning = np.hanning(nfft) * eta
+        spectrum_hanning = abs(np.fft.fft(hanning))
+        spectrum_hanning = spectrum_hanning * 2 * 2 / nfft  # also correct for Hann filter
+        return spectrum_hanning
+
+    def find_phase_2_signals(self, a, b, frequency, tmax):
+        period = 1 / frequency  # period of oscillations (seconds)
+        tmax = float(tmax)
+        nsamples = int(a.size)
+        logger.debug('tmax = %s - nsamples = %s' % (tmax, nsamples))  # length of time series (seconds)
+
+        # construct time array
+        t = np.linspace(0.0, tmax, nsamples, endpoint=False)
+
+        # calculate cross correlation of the two signals
+        xcorr = np.correlate(a, b, "full")
+
+        # The peak of the cross-correlation gives the shift between the two signals
+        # The xcorr array goes from -nsamples to nsamples
+        dt = np.linspace(-t[-1], t[-1], 2 * nsamples - 1)
+        recovered_time_shift = dt[np.argmax(xcorr)]
+
+        # force the phase shift to be in [-pi:pi]
+        recovered_phase_shift = -1 * 2 * np.pi * (((0.5 + recovered_time_shift / period) % 1.0) - 0.5)
+        recovered_phase_shift_before = -1 * 2 * np.pi * (((0.5 + dt[np.argmax(xcorr) - 1] / period) % 1.0) - 0.5)
+        recovered_phase_shift_after = -1 * 2 * np.pi * (((0.5 + dt[np.argmax(xcorr) + 1] / period) % 1.0) - 0.5)
+        logger.debug('phase - 1 = %s - phase = %s - phase + 1 = %s' %
+                     (recovered_phase_shift_before * 180 / np.pi, recovered_phase_shift * 180 / np.pi,
+                      recovered_phase_shift_after * 180 / np.pi))
+
+        return recovered_phase_shift * 180 / np.pi
