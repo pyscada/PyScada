@@ -1265,7 +1265,7 @@ class Log(models.Model):
 @python_2_unicode_compatible
 class BackgroundProcess(models.Model):
     id = models.AutoField(primary_key=True)
-    pid = models.IntegerField(default=0, blank=True)
+    pid = models.IntegerField(default=0)
     label = models.CharField(max_length=400, default='')
     message = models.CharField(max_length=400, default='')
     enabled = models.BooleanField(default=False, blank=True)
@@ -1390,7 +1390,7 @@ class Event(models.Model):
         (4, 'value equals the limit'),
     )
     limit_type = models.PositiveSmallIntegerField(default=0, choices=limit_type_choices)
-    hysteresis = models.FloatField(default=0, blank=True)
+    hysteresis = models.FloatField(default=0)
     action_choices = (
         (0, 'just record'),
         (1, 'record and send mail only when event occurs'),
@@ -1545,9 +1545,9 @@ class Mail(models.Model):
     subject = models.TextField(default='', blank=True)
     message = models.TextField(default='', blank=True)
     to_email = models.EmailField(max_length=254)
-    timestamp = models.FloatField(default=0, blank=True)  # TODO DateTimeField
+    timestamp = models.FloatField(default=0)  # TODO DateTimeField
     done = models.BooleanField(default=False, blank=True)
-    send_fail_count = models.PositiveSmallIntegerField(default=0, blank=True)
+    send_fail_count = models.PositiveSmallIntegerField(default=0)
 
     def send_mail(self):
         # TODO check email limit
