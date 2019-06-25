@@ -21,7 +21,7 @@ A Open Source SCADA System with HTML5 HMI, build using the Django framework. If 
    frontend
    backend
    phant
-
+   device_protocol
 
 
 
