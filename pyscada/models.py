@@ -652,6 +652,9 @@ class VariableProperty(models.Model):
     min_type = models.CharField(max_length=4, default='lte', choices=min_type_choices)
     max_type = models.CharField(max_length=4, default='gte', choices=max_type_choices)
 
+    class Meta:
+        verbose_name_plural = "variable properties"
+
     def __str__(self):
         return self.get_property_class_display() + ': ' + self.name
 
@@ -711,7 +714,7 @@ class Variable(models.Model):
     scaling = models.ForeignKey(Scaling, null=True, blank=True, on_delete=models.SET_NULL)
     value_class = models.CharField(max_length=15, default='FLOAT64', verbose_name="value_class",
                                    choices=value_class_choices)
-    cov_increment = models.FloatField(default=0, blank=True)
+    cov_increment = models.FloatField(default=0, verbose_name="COV")
     byte_order_choices = (('default', 'default (specified by device byte order)',),
                           ('1-0-3-2', '1-0-3-2'),
                           ('0-1-2-3', '0-1-2-3'),
@@ -1277,6 +1280,9 @@ class BackgroundProcess(models.Model):
                                             {"keywordA":"value1", "keywordB":7}''')
     last_update = models.DateTimeField(null=True, blank=True)
     running_since = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name_plural = "Background Processes"
 
     def __str__(self):
         return self.label + ': ' + self.message
