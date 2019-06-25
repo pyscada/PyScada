@@ -16,7 +16,7 @@ import traceback
 import time
 import json
 import signal
-from os import kill
+from os import kill, waitpid, WNOHANG
 from struct import *
 from os import getpid
 import errno
@@ -1317,7 +1317,7 @@ class BackgroundProcess(models.Model):
             except OSError as e:
                 return False
 
-    def stop(self, signum=signal.SIGTERM):
+    def _stop(self, signum=signal.SIGTERM):
         """
         stops the process and all its child's
 
@@ -1327,12 +1327,35 @@ class BackgroundProcess(models.Model):
             logger.debug('send sigterm to daemon')
             try:
                 kill(self.pid, signum)
-                return True
             except OSError as e:
                 if e.errno == errno.ESRCH:
-                    return False
-                else:
-                    return False
+                    try:
+                        logger.debug('%s: process id %d is terminated' % self.pid)
+                        return True
+                    except:
+                        return False
+            try:
+                while True:
+                    wpid, status = waitpid(self.pid, WNOHANG)
+                    if not wpid:
+                        break
+            except:
+                pass
+            return False
+
+    def stop(self, signum=signal.SIGTERM, cleanup=False):
+        if cleanup:
+            self.done = True
+            self.save()
+            timeout = time.time() + 30  # 30s timeout
+            while time.time() < timeout:
+                if not self._stop(signum=signum):
+                    return True
+                time.sleep(1)
+            if not self._stop(signum=signal.SIGKILL):
+                self.delete()
+        else:
+            return self._stop(signum=signum)
 
 
 @python_2_unicode_compatible
