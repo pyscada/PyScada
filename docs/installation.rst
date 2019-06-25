@@ -65,8 +65,7 @@ all
     # for smbus Protocol, install libffi-dev first!
     apt-get install libffi-dev
     pip3 install smbus-cffi
-    # systemstat (monitor system statistics)
-    pip3 install psutil
+
 
 
 
