@@ -44,6 +44,7 @@ def restart_process(modeladmin, request, queryset):
 
 restart_process.short_description = "Restart Processes"
 
+
 def stop_process(modeladmin, request, queryset):
     """
     restarts a dedicated process
@@ -66,6 +67,7 @@ def kill_process(modeladmin, request, queryset):
 
 
 kill_process.short_description = "Kill Processes"
+
 
 ## Custom Filters
 class BackgroundProcessFilter(admin.SimpleListFilter):
@@ -148,7 +150,7 @@ class VariableAdminFrom(forms.ModelForm):
                                        attrs={'style': 'background: %s; color: #%s' % (label, font_color)})
 
         import types
-        #from django.forms.widgets import Select
+        # from django.forms.widgets import Select
         w.widget._create_option = w.widget.create_option  # copy old method
         w.widget.create_option = types.MethodType(create_option_color, w.widget)  # replace old with new
 
@@ -217,7 +219,7 @@ class LogAdmin(admin.ModelAdmin):
 
 
 class BackgroundProcessAdmin(admin.ModelAdmin):
-    list_display = ('id','pid', 'label', 'message', 'last_update', 'running_since', 'enabled', 'done', 'failed')
+    list_display = ('id', 'pid', 'label', 'message', 'last_update', 'running_since', 'enabled', 'done', 'failed')
     list_filter = (BackgroundProcessFilter, 'enabled', 'done', 'failed')
     list_display_links = ('id', 'label', 'message')
     readonly_fields = ('message', 'last_update', 'running_since', 'done', 'failed')
@@ -250,8 +252,8 @@ class EventAdmin(admin.ModelAdmin):
 
 
 class VariablePropertyAdmin(admin.ModelAdmin):
-    list_display = ('id','variable','name','property_class', 'value','timestamp')
-    list_display_links = ('id','variable','name','property_class')
+    list_display = ('id', 'variable', 'name', 'property_class', 'value', 'timestamp')
+    list_display_links = ('id', 'variable', 'name', 'property_class')
     list_filter = ('variable', 'name', 'property_class',)
     raw_id_fields = ('variable',)
 

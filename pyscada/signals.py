@@ -20,12 +20,14 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
     """
     if type(instance) is Device:
         try:
+            #todo select only one device not all for that protocol
             bp = BackgroundProcess.objects.get(pk=instance.protocol_id)
         except:
             return False
         bp.restart()
     elif type(instance) is Variable:
         try:
+            # todo select only one device not all for that protocol
             bp = BackgroundProcess.objects.get(pk=instance.device.protocol_id)
         except:
             return False

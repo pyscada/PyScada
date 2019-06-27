@@ -16,7 +16,7 @@ import traceback
 import time
 import json
 import signal
-from os import kill
+from os import kill, waitpid, WNOHANG
 from struct import *
 from os import getpid
 import errno
@@ -652,6 +652,9 @@ class VariableProperty(models.Model):
     min_type = models.CharField(max_length=4, default='lte', choices=min_type_choices)
     max_type = models.CharField(max_length=4, default='gte', choices=max_type_choices)
 
+    class Meta:
+        verbose_name_plural = "variable properties"
+
     def __str__(self):
         return self.get_property_class_display() + ': ' + self.name
 
@@ -715,7 +718,7 @@ class Variable(models.Model):
     scaling = models.ForeignKey(Scaling, null=True, blank=True, on_delete=models.SET_NULL)
     value_class = models.CharField(max_length=15, default='FLOAT64', verbose_name="value_class",
                                    choices=value_class_choices)
-    cov_increment = models.FloatField(default=0, blank=True)
+    cov_increment = models.FloatField(default=0, verbose_name="COV")
     byte_order_choices = (('default', 'default (specified by device byte order)',),
                           ('1-0-3-2', '1-0-3-2'),
                           ('0-1-2-3', '0-1-2-3'),
@@ -1269,7 +1272,7 @@ class Log(models.Model):
 @python_2_unicode_compatible
 class BackgroundProcess(models.Model):
     id = models.AutoField(primary_key=True)
-    pid = models.IntegerField(default=0, blank=True)
+    pid = models.IntegerField(default=0)
     label = models.CharField(max_length=400, default='')
     message = models.CharField(max_length=400, default='')
     enabled = models.BooleanField(default=False, blank=True)
@@ -1284,6 +1287,9 @@ class BackgroundProcess(models.Model):
                                             {"keywordA":"value1", "keywordB":7}''')
     last_update = models.DateTimeField(null=True, blank=True)
     running_since = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name_plural = "Background Processes"
 
     def __str__(self):
         return self.label + ': ' + self.message
@@ -1324,7 +1330,7 @@ class BackgroundProcess(models.Model):
             except OSError as e:
                 return False
 
-    def stop(self, signum=signal.SIGTERM):
+    def _stop(self, signum=signal.SIGTERM):
         """
         stops the process and all its child's
 
@@ -1334,12 +1340,35 @@ class BackgroundProcess(models.Model):
             logger.debug('send sigterm to daemon')
             try:
                 kill(self.pid, signum)
-                return True
             except OSError as e:
                 if e.errno == errno.ESRCH:
-                    return False
-                else:
-                    return False
+                    try:
+                        logger.debug('%s: process id %d is terminated' % self.pid)
+                        return True
+                    except:
+                        return False
+            try:
+                while True:
+                    wpid, status = waitpid(self.pid, WNOHANG)
+                    if not wpid:
+                        break
+            except:
+                pass
+            return False
+
+    def stop(self, signum=signal.SIGTERM, cleanup=False):
+        if cleanup:
+            self.done = True
+            self.save()
+            timeout = time.time() + 30  # 30s timeout
+            while time.time() < timeout:
+                if not self._stop(signum=signum):
+                    return True
+                time.sleep(1)
+            if not self._stop(signum=signal.SIGKILL):
+                self.delete()
+        else:
+            return self._stop(signum=signum)
 
 
 @python_2_unicode_compatible
@@ -1368,7 +1397,7 @@ class Event(models.Model):
         (4, 'value equals the limit'),
     )
     limit_type = models.PositiveSmallIntegerField(default=0, choices=limit_type_choices)
-    hysteresis = models.FloatField(default=0, blank=True)
+    hysteresis = models.FloatField(default=0)
     action_choices = (
         (0, 'just record'),
         (1, 'record and send mail only when event occurs'),
@@ -1523,9 +1552,9 @@ class Mail(models.Model):
     subject = models.TextField(default='', blank=True)
     message = models.TextField(default='', blank=True)
     to_email = models.EmailField(max_length=254)
-    timestamp = models.FloatField(default=0, blank=True)  # TODO DateTimeField
+    timestamp = models.FloatField(default=0)  # TODO DateTimeField
     done = models.BooleanField(default=False, blank=True)
-    send_fail_count = models.PositiveSmallIntegerField(default=0, blank=True)
+    send_fail_count = models.PositiveSmallIntegerField(default=0)
 
     def send_mail(self):
         # TODO check email limit

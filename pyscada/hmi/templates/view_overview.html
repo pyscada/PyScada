@@ -24,18 +24,6 @@
     </div><div class="row">
         {% endif %}
     {% endfor %}
-    {% if user.is_staff %}
-        <div class="col-sm-3">
-        <div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3 class="panel-title"><a href="{% url 'pyscada_admin:index' %}" target="{{ link_target }}">Admin</a></h3>
-                </div>
-                <div class="panel-body">
-                <a href="{% url 'pyscada_admin:index' %}" class="thumbnail" target="{{ link_target }}"><img src="{% static "pyscada/img/admin_logo.jpg" %}" alt="The Admin Panel"  width="100%"></a>
-            </div>
-           </div>
-        </div>
-    {% endif %}
     </div>
 {% endblock %}
 {% block script_bottom %}

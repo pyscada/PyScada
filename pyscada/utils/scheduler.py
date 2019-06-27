@@ -33,6 +33,7 @@ import sys
 import traceback
 from time import time, sleep
 from datetime import datetime
+import json
 
 from django import db
 from django.conf import settings
@@ -678,7 +679,9 @@ class Process(object):
                     raise StopIteration
                 elif sig == signal.SIGUSR1:
                     logger.debug('PID %d, process SIGUSR1 (%d) signal' % (self.pid, sig))
-                    self.restart()
+                    if not self.restart():
+                        logger.debug("restart failed")
+                        #raise StopIteration
                 elif sig == signal.SIGUSR2:
                     # todo handle restart
                     pass
@@ -741,6 +744,183 @@ class Process(object):
         override this
         """
         return None
+
+
+class SingleDeviceDAQProcessWorker(Process):
+    processes = []
+    device_filter = dict(daqdevice__isnull=False)
+    process_class = 'pyscada.utils.scheduler.SingleDeviceDAQProcess'
+    bp_label = 'pyscada.device_class-%s'
+
+    def __init__(self, dt=5, **kwargs):
+        super(Process, self).__init__(dt=dt, **kwargs)
+
+    def init_process(self):
+        self.processes = []
+        for process in BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False):
+            try:
+                kill(process.pid, 0)
+            except OSError as e:
+                if e.errno == errno.ESRCH:
+                    process.delete()
+                    continue
+            logger.debug('process %d is alive' % process.pk)
+            process.stop(cleanup=True)
+
+        # clean up
+        BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False).delete()
+
+        grouped_ids = {}
+        for item in Device.objects.filter(active=True, **self.device_filter):
+            bp = BackgroundProcess(label=self.bp_label % item.pk,
+                                   message='waiting..',
+                                   enabled=True,
+                                   parent_process_id=self.process_id,
+                                   process_class=self.process_class,
+                                   process_class_kwargs=json.dumps(
+                                       {'device_id': item.pk}))
+            bp.save()
+            self.processes.append({'id': bp.id,
+                                   'key': item.pk,
+                                   'device_id': item.pk,
+                                   'failed': 0})
+
+    def loop(self):
+        """
+
+        """
+        # check if all processes are running
+        for process in self.processes:
+            try:
+                BackgroundProcess.objects.get(pk=process['id'])
+            except BackgroundProcess.DoesNotExist or BackgroundProcess.MultipleObjectsReturned:
+
+                # Process is dead, spawn new instance
+                if process['failed'] < 3:
+                    bp = BackgroundProcess(label=self.bp_label % process['id'],
+                                           message='waiting..',
+                                           enabled=True,
+                                           parent_process_id=self.process_id,
+                                           process_class=self.process_class,
+                                           process_class_kwargs=json.dumps(
+                                               {'device_id': process['device_id']}))
+                    bp.save()
+                    process['id'] = bp.id
+                    process['failed'] += 1
+                else:
+                    logger.error('process %s failed more then 3 times' % (self.bp_label % process['key']))
+            except:
+                logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
+
+        return 1, None
+
+    def cleanup(self):
+        # todo cleanup
+        pass
+
+    def restart(self):
+        for process in self.processes:
+            try:
+                bp = BackgroundProcess.objects.get(pk=process['id'])
+                if bp.stop(cleanup=True):
+                    self.processes.remove(process)
+            except:
+                logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
+        self.init_process()
+        return True
+
+
+class MultiDeviceDAQProcessWorker(Process):
+    processes = []
+    device_filter = dict(daqdevice__isnull=False)
+    process_class = 'pyscada.utils.scheduler.MultiDeviceDAQProcess'
+    bp_label = 'pyscada.device_class-%s'
+
+    def __init__(self, dt=5, **kwargs):
+        super(Process, self).__init__(dt=dt, **kwargs)
+
+    def init_process(self):
+        self.processes = []
+        for process in BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False):
+            try:
+                kill(process.pid, 0)
+            except OSError as e:
+                if e.errno == errno.ESRCH:
+                    process.delete()
+                    continue
+            logger.debug('process %d is alive' % process.pk)
+            process.stop()
+
+        # clean up
+        BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False).delete()
+
+        grouped_ids = {}
+        for item in Device.objects.filter(active=True, **self.device_filter):
+            grouped_ids[self.gen_group_id(item)] = [item]
+
+        for key, values in grouped_ids.items():
+            bp = BackgroundProcess(label=self.bp_label % key,
+                                   message='waiting..',
+                                   enabled=True,
+                                   parent_process_id=self.process_id,
+                                   process_class=self.process_class,
+                                   process_class_kwargs=json.dumps(
+                                       {'device_ids': [i.pk for i in values]}))
+            bp.save()
+            self.processes.append({'id': bp.id,
+                                   'key': key,
+                                   'device_ids': [i.pk for i in values],
+                                   'failed': 0})
+
+    def loop(self):
+        """
+
+        """
+        # check if all processes are running
+        for process in self.processes:
+            try:
+                BackgroundProcess.objects.get(pk=process['id'])
+            except BackgroundProcess.DoesNotExist or BackgroundProcess.MultipleObjectsReturned:
+
+                # Process is dead, spawn new instance
+                if process['failed'] < 3:
+                    bp = BackgroundProcess(label=self.bp_label % process['key'],
+                                           message='waiting..',
+                                           enabled=True,
+                                           parent_process_id=self.process_id,
+                                           process_class=self.process_class,
+                                           process_class_kwargs=json.dumps(
+                                               {'device_ids': process['device_ids']}))
+                    bp.save()
+                    process['id'] = bp.id
+                    process['failed'] += 1
+                else:
+                    logger.error('process %s failed more then 3 times' % (self.bp_label % process['key']))
+            except:
+                logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
+
+        return 1, None
+
+    def cleanup(self):
+        # todo cleanup
+        pass
+
+    def restart(self):
+        for process in self.processes:
+            try:
+                bp = BackgroundProcess.objects.get(pk=process['id'])
+                if bp.stop(cleanup=True):
+                    self.processes.remove(process)
+            except:
+                logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
+        self.init_process()
+        return True
+
+    def gen_group_id(self, item):
+        """
+        override this
+        """
+        return '%d' % (item.pk)
 
 
 class SingleDeviceDAQProcess(Process):
@@ -821,8 +1001,7 @@ class SingleDeviceDAQProcess(Process):
         """
         just re-init
         """
-        self.init_process()
-        return True
+        return self.init_process()
 
 
 class MultiDeviceDAQProcess(Process):
@@ -837,7 +1016,7 @@ class MultiDeviceDAQProcess(Process):
         """
         init a standard daq process for multiple devices
         """
-
+        self.devices = {}
         for item in Device.objects.filter(protocol__daq_daemon=1, active=1, id__in=self.device_ids):
             try:
                 tmp_device = item.get_device_instance()
@@ -849,7 +1028,8 @@ class MultiDeviceDAQProcess(Process):
                 var = traceback.format_exc()
                 logger.error("exception while initialisation of DAQ Process for Device %d %s %s" % (
                     item.pk, linesep, var))
-
+        if len(self.devices.items()) == 0:
+            return False
         return True
 
     def loop(self):
@@ -895,5 +1075,4 @@ class MultiDeviceDAQProcess(Process):
         """
         just re-init
         """
-        self.init_process()
-        return True
+        return self.init_process()
