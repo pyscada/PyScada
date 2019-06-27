@@ -716,7 +716,6 @@ function PyScadaPlot(id){
                 bottom: 8,
                 left: 20
             },
-            //backgroundColor: '#FFFFFF',
             hoverable: true,
         },
         zoom: {
@@ -753,6 +752,7 @@ function PyScadaPlot(id){
 
     plot.getInitStatus		= function () { if(InitDone){return InitRetry}else{return false}};
     plot.getId				= function () {return id};
+    plot.getChartContainerId= function () {return chart_container_id};
     // init data
     $.each($(legend_table_id + ' .variable-config'),function(key,val){
         val_inst = $(val);
@@ -820,13 +820,9 @@ function PyScadaPlot(id){
         update(false);
 
         //add info on mouse over a point and position of the mouse
-        //add <span id="hoverdata"></span> to the html code to see the position of the mouse
-
         $(chart_container_id + ' .chart-placeholder').bind("plothover", function (event, pos, item) {
-            str = "(";
-            a = 0;
             if(!pos) {
-                $(".axes-tooltips").hide();
+                //$(".axes-tooltips").hide();
             }
             for (axis in pos) {
                 if (!$("#" + axis + "-tooltip").length) {
@@ -841,19 +837,7 @@ function PyScadaPlot(id){
                         "font-size": "14px"
                     }).appendTo("body");
                 }
-                if (axis == 'x') {
-                    if (a != 0) {str += ", "}
-                    str += "x=" + pos[axis].toFixed(2);
-                    a += 1;
-                }
-                if (axis.substring(0, 1) == "y" && axis.length == 2) {
-                    if (a != 0) {str += ", "}
-                    str +=  "y" + axis.substring(1, 2) + "=" + pos[axis].toFixed(2);
-                    a += 1;
-                }
             }
-            str += ")";
-            $("#hoverdata").text(str);
             if (item && typeof item.datapoint != 'undefined' && item.datapoint.length > 1) {
                 opts = item.series.xaxis.options
                 if (opts.mode == "time") {
@@ -1012,7 +996,7 @@ function PyScadaPlot(id){
 
     function update(force){
         if(!prepared ){
-            if($(chart_container_id).is(":visible") || force){
+            if($(chart_container_id).is(":visible")){
                 prepared = true;
                 prepare();
             }else{
@@ -1250,13 +1234,9 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         update(false);
 
         //add info on mouse over a point and position of the mouse
-        //add <span id="hoverdata"></span> to the html code to see the position of the mouse
-
         $(chart_container_id + ' .chart-placeholder').bind("plothover", function (event, pos, item) {
-            str = "(";
-            a = 0;
             if(!pos) {
-                $(".axes-tooltips").hide();
+                //$(".axes-tooltips").hide();
             }
             for (axis in pos) {
                 if (!$("#" + axis + "-tooltip").length) {
@@ -1271,19 +1251,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                         "font-size": "14px"
                     }).appendTo("body");
                 }
-                if (axis == 'x') {
-                    if (a != 0) {str += ", "}
-                    str += "x=" + pos[axis].toFixed(2);
-                    a += 1;
-                }
-                if (axis.substring(0, 1) == "y" && axis.length == 2) {
-                    if (a != 0) {str += ", "}
-                    str +=  "y" + axis.substring(1, 2) + "=" + pos[axis].toFixed(2);
-                    a += 1;
-                }
             }
-            str += ")";
-            $("#hoverdata").text(str);
             if (item && typeof item.datapoint != 'undefined' && item.datapoint.length > 1) {
                 opts = item.series.xaxis.options
                 if (opts.mode == "time") {
@@ -1303,16 +1271,6 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
                 $("#tooltip").hide();
             }
         });
-        /*$(chart_container_id + ' .chart-placeholder').bind("plotclick", function (event, pos, item) {
-			if (item) {
-			    var x = item.datapoint[0].toFixed(0),
-                    y = item.datapoint[1].toFixed(2);
-				$("#clickdata").text(" - click point " + item.dataIndex + " in " + item.series.label +
-				" - (x,y) = (" + x + ", " + y + ")");
-				//TODO highlight the point and remove on nextclick
-				plot.highlight(item.series, item.datapoint);
-			}
-		});*/
 
         // bind
         $(chart_container_id + ' .chart-placeholder').bind("plotselected", function(event, ranges) {
@@ -1450,7 +1408,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
 
     function update(force){
         if(!prepared ){
-            if($(chart_container_id).is(":visible") || force){
+            if($(chart_container_id).is(":visible")){
                 prepared = true;
                 prepare();
             }else{
@@ -1739,22 +1697,23 @@ function Pie(id){
 
         if (series.length > 0) {
             flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series, options)
+            // update the plot
+            update(false);
+        }else {
+            prepared = false;
         }
-        // update the plot
-        update(false);
-
     };
 
     function update(force){
         if(!prepared ){
-            if($(chart_container_id).is(":visible") || force){
+            if($(chart_container_id).is(":visible")){
                 prepared = true;
                 prepare();
             }else{
                 return;
             }
         }
-        if($(chart_container_id).is(":visible") || force){
+        if(prepared && ($(chart_container_id).is(":visible") || force)){
             // only update if plot is visible
             // add the selected data series to the "series" variable
             series = [];

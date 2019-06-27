@@ -25,65 +25,51 @@ API.txt for details.
 
     var floorInBase = $.plot.saturated.floorInBase;
 
-    // A mix-in to provide microsecond support to Date like classes.
-    var MicroSecondSupportMixIn = (function(){
+    // Method to provide microsecond support to Date like classes.
+    var CreateMicroSecondDate = function(dateType, microEpoch) {
+        var newDate = new dateType(microEpoch);
 
-        var MixIn = function(Base) {
-            return class extends Base {
+        var oldSetTime = newDate.setTime.bind(newDate);
+        newDate.update = function(microEpoch) {
+            oldSetTime(microEpoch);
 
-                constructor(microEpoch) {
-                    super(microEpoch);
-                    this.microseconds = null;
-                    this.microEpoch = null;
-                    this.update(microEpoch);
-                }
+            // Round epoch to 3 decimal accuracy
+            microEpoch = Math.round(microEpoch*1000)/1000;
 
-                update(microEpoch) {
-                    super.setTime(microEpoch);
-
-                    // Round epoch to 3 decimal accuracy
-                    microEpoch = Math.round(microEpoch*1000)/1000;
-                    this.microEpoch = microEpoch;
-
-                    // Microseconds are stored as integers
-                    var seconds = microEpoch/1000;
-                    this.microseconds = 1000000 * (seconds - Math.floor(seconds));
-                }
-
-                getTime() {
-                    return this.microEpoch;
-                }
-
-                setTime(microEpoch) {
-                    this.update(microEpoch);
-                }
-
-                getMicroseconds() {
-                    return this.microseconds;
-                };
-
-                setMicroseconds(microseconds) {
-                    // Replace the microsecond part (6 last digits) in microEpoch
-                    var epochWithoutMicroseconds = 1000*Math.floor(this.microEpoch/1000);
-                    var newEpoch = epochWithoutMicroseconds + microseconds/1000;
-                    this.update(newEpoch);
-                };
-
-                setUTCMicroseconds(microseconds) { this.setMicroseconds(microseconds); }
-
-                getUTCMicroseconds() { return this.getMicroseconds(); }
-            };
+            // Microseconds are stored as integers
+            var seconds = microEpoch/1000;
+            this.microseconds = 1000000 * (seconds - Math.floor(seconds));
         };
 
-        return MixIn;
-    })();
+        var oldGetTime = newDate.getTime.bind(newDate);
+        newDate.getTime = function () {
+            var microEpoch = oldGetTime() + this.microseconds / 1000;
+            return microEpoch;
+        };
 
-    // Extend Date and timezoneJS.Date (if found) with microsecond support.
-    var MicroDate = class extends MicroSecondSupportMixIn(Date) {};
-    var MicroTimezoneJS;
+        newDate.setTime = function (microEpoch) {
+            this.update(microEpoch);
+        };
 
-    if (typeof timezoneJS !== "undefined" && typeof timezoneJS.Date !== "undefined") {
-        MicroTimezoneJS = class extends MicroSecondSupportMixIn(timezoneJS.Date) {}
+        newDate.getMicroseconds = function() {
+            return this.microseconds;
+        };
+
+        newDate.setMicroseconds = function(microseconds) {
+            // Replace the microsecond part (6 last digits) in microEpoch
+            var epochWithoutMicroseconds = oldGetTime();
+            var newEpoch = epochWithoutMicroseconds + microseconds/1000;
+            this.update(newEpoch);
+        };
+
+        newDate.setUTCMicroseconds = function(microseconds) { this.setMicroseconds(microseconds); }
+
+        newDate.getUTCMicroseconds = function() { return this.getMicroseconds(); }
+
+        newDate.microseconds = null;
+        newDate.microEpoch = null;
+        newDate.update(microEpoch);
+        return newDate;
     }
 
     // Returns a string with the date d formatted according to fmt.
@@ -102,7 +88,7 @@ API.txt for details.
 
 		var formatMicroseconds = function(n, dec) {
 			if (dec < 6 && dec > 0) {
-				var magnitude = Math.pow(10,dec-6);
+				var magnitude = parseFloat('1e' + (dec-6));
 				n = Math.round(Math.round(n*magnitude)/magnitude);
 				n = ('00000' + n).slice(-6,-(6 - dec));
 			} else {
@@ -229,18 +215,18 @@ API.txt for details.
         }
 
         if (opts.timezone === "browser") {
-            return new MicroDate(ts);
+            return CreateMicroSecondDate(Date, ts);
         } else if (!opts.timezone || opts.timezone === "utc") {
-            return makeUtcWrapper(new MicroDate(ts));
+            return makeUtcWrapper(CreateMicroSecondDate(Date, ts));
         } else if (typeof timezoneJS !== "undefined" && typeof timezoneJS.Date !== "undefined") {
-            var d = new MicroTimezoneJS(ts);
+            var d = CreateMicroSecondDate(timezoneJS.Date, ts);
             // timezone-js is fickle, so be sure to set the time zone before
             // setting the time.
             d.setTimezone(opts.timezone);
             d.setTime(ts);
             return d;
         } else {
-            return makeUtcWrapper(new MicroDate(ts));
+            return makeUtcWrapper(CreateMicroSecondDate(Date, ts));
         }
     }
 
@@ -359,7 +345,7 @@ API.txt for details.
             if (opts.minTickSize !== null && opts.minTickSize !== undefined && opts.minTickSize[1] === "year") {
                 size = Math.floor(opts.minTickSize[0]);
             } else {
-                var magn = Math.pow(10, Math.floor(Math.log(axis.delta / timeUnitSize.year) / Math.LN10));
+                var magn = parseFloat('1e' + Math.floor(Math.log(axis.delta / timeUnitSize.year) / Math.LN10));
                 var norm = (axis.delta / timeUnitSize.year) / magn;
 
                 if (norm < 1.5) {

@@ -85,7 +85,7 @@ The plugin also adds four public methods:
             if (axisvalues.locked)
                 return;
 
-            if (axisvalues.x != -1) {
+            if (axisvalues.x !== -1) {
                 axisvalues.x = -1;
                 plot.triggerRedrawOverlay();
             }
@@ -131,9 +131,9 @@ The plugin also adds four public methods:
                 return value.toFixed(axis.tickDecimals) + ((typeof axis.options.unit != "undefined") ? axis.options.unit : '');
             };
 
-            if (axisvalues.x != -1) {
+            if (axisvalues.x !== -1) {
 
-                if (c.mode.indexOf("x") != -1) {
+                if (c.mode.indexOf("x") !== -1) {
                     for (xaxis in xaxes) {
                         xaxisplusone = Number(xaxis) + 1;
                         if (xaxes[xaxis].used && typeof xaxes[xaxis].box !== 'undefined' && typeof xaxes[xaxis].box.padding !== 'undefined' && typeof xaxes[xaxis].box.top !== 'undefined' && typeof xaxes[xaxis].box.height !== 'undefined') {
@@ -158,7 +158,7 @@ The plugin also adds four public methods:
                         }
                     }
                 }
-                if (c.mode.indexOf("y") != -1) {
+                if (c.mode.indexOf("y") !== -1) {
                     for (yaxis in yaxes) {
                         yaxisplusone = Number(yaxis) + 1;
                         var drawY = Math.floor(axisvalues.y);
@@ -178,7 +178,9 @@ The plugin also adds four public methods:
                         }
                     }
                 }
-            }else {$(".axes-tooltips").hide();}
+            }else {
+                //$(".axes-tooltips").hide();
+            }
         });
 
         plot.hooks.shutdown.push(function (plot, eventHolder) {

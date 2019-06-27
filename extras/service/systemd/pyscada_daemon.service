@@ -8,8 +8,10 @@ PIDFile=/tmp/pyscada_daemon.pid
 User=pyscada
 Group=pyscada
 WorkingDirectory=/var/www/pyscada/PyScadaServer/
+#ExecStartPre=/home/pyscada/pre_start_pyscada.sh
 ExecStart=/usr/bin/python3 /var/www/pyscada/PyScadaServer/manage.py pyscada_daemon start
 ExecStop=/usr/bin/python3 /var/www/pyscada/PyScadaServer/manage.py pyscada_daemon stop
+#ExecStopPost=/home/pyscada/post_stop_pyscada.sh
 Restart=always
 RestartSec=60
 

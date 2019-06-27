@@ -199,6 +199,9 @@ class Handler(GenericDevice):
         tscale = float(self.inst.query('wfmoutpre:xincr?'))
         return tscale * record
 
+    def mdo_xincr(self):
+        return float(self.inst.query('wfmoutpre:xincr?'))
+
     def fft(self, eta):
         nfft = len(eta)
         hanning = np.hanning(nfft) * eta

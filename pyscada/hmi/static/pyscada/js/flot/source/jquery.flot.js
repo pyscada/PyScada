@@ -1,4 +1,4 @@
-/* Javascript plotting library for jQuery, version 1.0.3.
+/* Javascript plotting library for jQuery, version 3.0.0.
 
 Copyright (c) 2007-2014 IOLA and Ole Laursen.
 Licensed under the MIT license.
@@ -46,7 +46,7 @@ Licensed under the MIT license.
             axis.tickDecimals = precision;
         }
 
-        var factor = axis.tickDecimals ? Math.pow(10, axis.tickDecimals) : 1,
+        var factor = axis.tickDecimals ? parseFloat('1e' + axis.tickDecimals) : 1,
             formatted = "" + Math.round(value * factor) / factor;
 
         // If tickDecimals was specified, ensure that we have exactly that
@@ -68,7 +68,7 @@ Licensed under the MIT license.
         var expPosition = ("" + value).indexOf("e"),
             exponentValue = parseInt(("" + value).substr(expPosition + 1)),
             tenExponent = expPosition !== -1 ? exponentValue : (value > 0 ? Math.floor(Math.log(value) / Math.LN10) : 0),
-            roundWith = Math.pow(10, tenExponent),
+            roundWith = parseFloat('1e' + tenExponent),
             x = value / roundWith;
 
         if (precision) {
@@ -1338,7 +1338,7 @@ Licensed under the MIT license.
                     // make the ticks
                     setupTickGeneration(axis);
                     setMajorTicks(axis);
-                    snapRangeToTicks(axis, axis.ticks);
+                    snapRangeToTicks(axis, axis.ticks, series);
 
                     //for computing the endpoints precision, transformationHelpers are needed
                     setTransformationHelpers(axis);
@@ -1517,7 +1517,7 @@ Licensed under the MIT license.
                 dec = tickDecimals;
             }
 
-            var magn = Math.pow(10, -dec),
+            var magn = parseFloat('1e' + (-dec)),
                 norm = delta / magn;
 
             if (norm > 2.25 && norm < 3 && (dec + 1) <= tickDecimals) {
@@ -1537,7 +1537,7 @@ Licensed under the MIT license.
                 dec = tickDecimals;
             }
 
-            var magn = Math.pow(10, -dec),
+            var magn = parseFloat('1e' + (-dec)),
                 norm = delta / magn, // norm is between 1.0 and 10.0
                 size;
 
@@ -1726,8 +1726,12 @@ Licensed under the MIT license.
             };
         }
 
-        function snapRangeToTicks(axis, ticks) {
-            if (axis.options.autoScale === "loose" && ticks.length > 0) {
+        function snapRangeToTicks(axis, ticks, series) {
+            var anyDataInSeries = function(series) {
+                return series.some(e => e.datapoints.points.length > 0);
+            }
+
+            if (axis.options.autoScale === "loose" && ticks.length > 0 && anyDataInSeries(series)) {
                 // snap to ticks
                 axis.min = Math.min(axis.min, ticks[0].v);
                 axis.max = Math.max(axis.max, ticks[ticks.length - 1].v);
@@ -2453,14 +2457,29 @@ Licensed under the MIT license.
         };
 
         function computeBarWidth(series) {
+            var xValues = [];
             var pointsize = series.datapoints.pointsize, minDistance = Number.MAX_VALUE,
                 distance = series.datapoints.points[pointsize] - series.datapoints.points[0] || 1;
 
             if (isFinite(distance)) {
                 minDistance = distance;
             }
-            for (var j = pointsize; j < series.datapoints.points.length - pointsize; j += pointsize) {
-                distance = Math.abs(series.datapoints.points[pointsize + j] - series.datapoints.points[j]);
+
+            for (var j = 0; j < series.datapoints.points.length; j += pointsize) {
+                if (isFinite(series.datapoints.points[j]) && series.datapoints.points[j] !== null) {
+                    xValues.push(series.datapoints.points[j]);
+                }
+            }
+
+            function onlyUnique(value, index, self) {
+                return self.indexOf(value) === index;
+            }
+
+            xValues = xValues.filter( onlyUnique );
+            xValues.sort(function(a, b){return a - b});
+
+            for (var j = 1; j < xValues.length; j++) {
+                distance = Math.abs(xValues[j] - xValues[j - 1]);
                 if (distance < minDistance && isFinite(distance)) {
                     minDistance = distance;
                 }
@@ -2495,7 +2514,7 @@ Licensed under the MIT license.
 
                 if (s.bars.show && !item) { // no other point can be nearby
                     var foundIndex = findNearbyBar(s, mouseX, mouseY);
-                    if (foundIndex) item = [i, foundIndex];
+                    if (foundIndex !== null) item = [i, foundIndex];
                 }
             }
 
@@ -2709,6 +2728,7 @@ Licensed under the MIT license.
             executeHooks(hooks.drawOverlay, [octx, overlay]);
             var event = new CustomEvent('onDrawingDone');
             plot.getEventHolder().dispatchEvent(event);
+            plot.getPlaceholder().trigger('drawingdone');
         }
 
         function getColorOrGradient(spec, bottom, top, defaultColor) {
@@ -2749,7 +2769,7 @@ Licensed under the MIT license.
         return plot;
     };
 
-    $.plot.version = "1.0.3";
+    $.plot.version = "3.0.0";
 
     $.plot.plugins = [];
 
