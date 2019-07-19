@@ -62,11 +62,11 @@ class Handler(GenericDevice):
     def reset_instrument(self):
         return self.inst.query('*RST;*OPC?')
 
-    def mdo_horizontal_scale_in_period(self, period=1.0, frequency=1000):
+    def mdo_horizontal_scale_in_period(self, period=1.0, frequency=1000, **kwargs):
         mdo_horiz_scale = str(round(float(period / (10.0 * float(frequency))), 6))
         self.inst.query(':HORIZONTAL:SCALE %s;*OPC?' % mdo_horiz_scale)
 
-    def mdo_find_vertical_scale(self, ch=1, frequency=1000, range_i=None):
+    def mdo_find_vertical_scale(self, ch=1, frequency=1000, range_i=None, **kwargs):
         vranges = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10]
         if range_i is None:
             range_i = int(np.ceil(len(vranges) / 2.0))
@@ -106,20 +106,20 @@ class Handler(GenericDevice):
                      % (int(frequency), str(round(float(1.0 / (10.0 * float(frequency))), 6)), mdo_ch2_scale))
         return range_i
 
-    def mdo_query_peak_to_peak(self, ch=1):
+    def mdo_query_peak_to_peak(self, ch=1, **kwargss):
         return float(self.inst.query((':MEASUrement:IMMed:SOUrce1 CH%d;:MEASUREMENT:IMMED:TYPE PK2PK;'
                                       ':MEASUREMENT:IMMED:VALUE?' % ch)))
 
-    def mdo_gain(self, source1=1, source2=2):
+    def mdo_gain(self, source1=1, source2=2, **kwargs):
         return 20 * np.log10(self.mdo_query_peak_to_peak(ch=source2) / self.mdo_query_peak_to_peak(ch=source1))
 
-    def mdo_prepare_for_bode(self, vpp):
+    def mdo_prepare_for_bode(self, vpp, **kwargs):
         self.inst.query(':SEL:CH1 1;:SEL:CH2 1;:HORIZONTAL:POSITION 0;:CH1:YUN "V";:CH1:SCALE %s;:CH2:YUN "V";'
                         ':CH2:BANdwidth 10000000;:CH1:BANdwidth 10000000;:TRIG:A:TYP EDGE;:TRIG:A:EDGE:COUPLING AC;'
                         ':TRIG:A:EDGE:SOU CH1;:TRIG:A:EDGE:SLO FALL;:TRIG:A:MODE NORM;:CH1:COUP AC;:CH2:COUP AC;'
                         ':TRIG:A:LEV:CH1 0;*OPC?;' % str(1.2 * float(vpp) / (2 * 4)))
 
-    def mdo_query_waveform(self, ch=1, points_resolution=100, frequency=1000, refresh=False):
+    def mdo_query_waveform(self, ch=1, points_resolution=100, frequency=1000, refresh=False, **kwargs):
         self.inst.query(':SEL:CH%d 1;:HORIZONTAL:POSITION 0;:CH%d:YUN "V";'
                         ':CH%d:BANdwidth 10000000;:TRIG:A:TYP EDGE;:TRIG:A:EDGE:COUPLING AC;:TRIG:A:EDGE:SOU CH%d;'
                         ':TRIG:A:EDGE:SLO FALL;:TRIG:A:MODE NORM;*OPC?' % (ch, ch, ch, ch))
@@ -163,7 +163,7 @@ class Handler(GenericDevice):
 
         return np.asarray(scaled_wave_mini)
 
-    def mdo_get_phase(self, source1=1, source2=2, frequency=1000):
+    def mdo_get_phase(self, source1=1, source2=2, frequency=1000, **kwargs):
         self.mdo_horizontal_scale_in_period(period=4.0, frequency=frequency)
         self.inst.write(':MEASUrement:IMMed:SOUrce1 CH%d;:MEASUrement:IMMed:SOUrce2 CH%d;'
                         ':MEASUREMENT:IMMed:TYPE PHASE' % (source1, source2))

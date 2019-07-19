@@ -55,16 +55,16 @@ class Handler(GenericDevice):
 
     # AFG functions
     def afg_prepare_for_bode(self, ch=1):
-        return self.inst.query('OUTPut:LOAD MAX;AM:STAT OFF;*OPC?;' % (ch, ch, ch))
+        return self.inst.query(':OUTPut:LOAD MAX;:AM:STAT OFF;*OPC?;')
 
     def afg_set_vpp(self, ch=1, vpp=1):
-        return self.inst.query('*VOLT %s;*OPC?;' % (ch, str(vpp)))
+        return self.inst.query(':VOLT %s;*OPC?;' % str(vpp))
 
     def afg_set_function_shape(self, ch=1, function_shape='SIN'):
-        return self.inst.query('*FUNC:SHAP %s;*OPC?;' % (ch, function_shape))
+        return self.inst.query(':FUNC:SHAP %s;*OPC?;' % function_shape)
 
     def afg_set_frequency(self, ch=1, frequency=1000):
-        return self.inst.query('*FREQ %s;*OPC?;' % (ch, str(frequency)))
+        return self.inst.query(':FREQ %s;*OPC?;' % str(frequency))
 
     def reset_instrument(self):
         return self.inst.query('*RST;*OPC?')
