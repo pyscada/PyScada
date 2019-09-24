@@ -28,7 +28,7 @@ class Device:
             driver_handler_ok = True
         except ImportError:
             driver_handler_ok = False
-            logger.error("Handler error : %s" % self.device.short_name)
+            logger.error("Handler import error : %s" % self.device.short_name)
 
         for var in self.device.variable_set.filter(active=1):
             if not hasattr(var, 'visavariable'):

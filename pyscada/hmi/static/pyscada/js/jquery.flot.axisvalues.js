@@ -58,9 +58,9 @@ The plugin also adds four public methods:
         var axisvalues = { x: -1, y: -1, locked: false };
 
         plot.setAxisValues = function setAxisValues(pos) {
-            if (!pos)
+            if (!pos) {
                 axisvalues.x = -1;
-            else {
+            }else {
                 var o = plot.p2c(pos);
                 axisvalues.x = Math.max(0, Math.min(o.left, plot.width()));
                 axisvalues.y = Math.max(0, Math.min(o.top, plot.height()));
@@ -84,6 +84,8 @@ The plugin also adds four public methods:
         function onMouseOut(e) {
             if (axisvalues.locked)
                 return;
+
+            $(".axes-tooltips").hide();
 
             if (axisvalues.x !== -1) {
                 axisvalues.x = -1;
@@ -135,7 +137,9 @@ The plugin also adds four public methods:
 
                 if (c.mode.indexOf("x") !== -1) {
                     for (xaxis in xaxes) {
-                        xaxisplusone = Number(xaxis) + 1;
+                        var xaxisplusone = Number(xaxis) + 1;
+                        var fontSize = $("#y" + xaxisplusone + "-tooltip").css("font-size")
+                        fontSize = fontSize ? +fontSize.replace("px", "") : 13;
                         if (xaxes[xaxis].used && typeof xaxes[xaxis].box !== 'undefined' && typeof xaxes[xaxis].box.padding !== 'undefined' && typeof xaxes[xaxis].box.top !== 'undefined' && typeof xaxes[xaxis].box.height !== 'undefined') {
                             var drawX = Math.floor(axisvalues.x);
                             if (xaxes[xaxis].options.mode == "time") {
@@ -145,13 +149,14 @@ The plugin also adds four public methods:
                             }else {
                                 x_value = tf(xaxes[xaxis].c2p(drawX), xaxes[xaxis]);
                             }
+                            x_length = x_value.includes(":") ? x_value.replace(":", "").length - 1 : x_value.length;
                             if (xaxes[xaxis].position == "top") {
                                 $("#x" + xaxisplusone + "-tooltip").html(x_value)
-                                    .css({top: offset.top - xaxes[xaxis].box.top - xaxes[xaxis].box.padding, left: offset.left + drawX})
+                                    .css({top: offset.top - xaxes[xaxis].box.top - xaxes[xaxis].box.padding, left: offset.left + drawX - fontSize * x_length * 0.8 / 2})
                                     .show();
                             }else if (xaxes[xaxis].position == "bottom") {
                                 $("#x" + xaxisplusone + "-tooltip").html(x_value)
-                                    .css({top: offset.top + xaxes[xaxis].box.top + xaxes[xaxis].box.padding - xaxes[xaxis].box.height + 2, left: offset.left + drawX})
+                                    .css({top: offset.top + xaxes[xaxis].box.top + xaxes[xaxis].box.padding - xaxes[xaxis].box.height + 2, left: offset.left + drawX - fontSize * x_length * 0.8 / 2})
 //                                    .css({top: offset.top + xaxes[xaxis].box.top - xaxes[xaxis].box.height, left: offset.left + drawX})
                                     .show();
                             }
@@ -160,9 +165,9 @@ The plugin also adds four public methods:
                 }
                 if (c.mode.indexOf("y") !== -1) {
                     for (yaxis in yaxes) {
+                        var drawY = Math.floor(axisvalues.y),
+                        y_value = tf(yaxes[yaxis].c2p(drawY), yaxes[yaxis]),
                         yaxisplusone = Number(yaxis) + 1;
-                        var drawY = Math.floor(axisvalues.y);
-                        y_value = tf(yaxes[yaxis].c2p(drawY), yaxes[yaxis]);
                         if (yaxes[yaxis].used && typeof yaxes[yaxis].box !== 'undefined' && typeof yaxes[yaxis].box.padding !== 'undefined' && typeof yaxes[yaxis].box.left !== 'undefined' && typeof yaxes[yaxis].box.width !== 'undefined' && $("#y" + yaxisplusone + "-tooltip").length) {
                             if (yaxes[yaxis].position == "left") {
                                 $("#y" + yaxisplusone + "-tooltip").html(y_value)

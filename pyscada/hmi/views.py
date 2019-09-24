@@ -129,8 +129,10 @@ def view(request, link_title):
             if not widget.visible:
                 continue
             mc, sbc = widget.content.create_panel_html(widget_pk=widget.pk, user=request.user)
-            if mc is not None:
+            if mc is not None and mc is not "":
                 main_content.append(dict(html=mc, widget=widget))
+            else:
+                logger.info("main_content of widget : %s is %s !" % (widget, mc))
             if sbc is not None:
                 sidebar_content.append(dict(html=sbc, widget=widget))
             if widget.content.content_model == "pyscada.hmi.models.Chart":

@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import numpy as np
-except:
+except ImportError:
     logger.error("Need to install numpy : pip install numpy")
 
 
@@ -184,7 +184,7 @@ class Handler(GenericDevice):
                 break
             logger.debug('Wrong phase = %s' % phase)
             time.sleep(1)
-        if phase < -180 and phase is not None:
+        if phase is not None and phase < -180:
             phase += 360
         self.mdo_horizontal_scale_in_period(period=4.0, frequency=frequency)
 

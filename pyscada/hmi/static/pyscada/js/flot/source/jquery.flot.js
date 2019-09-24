@@ -2458,14 +2458,14 @@ Licensed under the MIT license.
 
         function computeBarWidth(series) {
             var xValues = [];
-            var pointsize = series.datapoints.pointsize, minDistance = Number.MAX_VALUE,
-                distance = series.datapoints.points[pointsize] - series.datapoints.points[0] || 1;
+            var pointsize = series.datapoints.pointsize, minDistance = Number.MAX_VALUE;
 
-            if (isFinite(distance)) {
-                minDistance = distance;
+            if (series.datapoints.points.length <= pointsize) {
+                minDistance = 1;
             }
 
-            for (var j = 0; j < series.datapoints.points.length; j += pointsize) {
+            var start = series.bars.horizontal ? 1 : 0;
+            for (var j = start; j < series.datapoints.points.length; j += pointsize) {
                 if (isFinite(series.datapoints.points[j]) && series.datapoints.points[j] !== null) {
                     xValues.push(series.datapoints.points[j]);
                 }
@@ -2479,7 +2479,7 @@ Licensed under the MIT license.
             xValues.sort(function(a, b){return a - b});
 
             for (var j = 1; j < xValues.length; j++) {
-                distance = Math.abs(xValues[j] - xValues[j - 1]);
+                var distance = Math.abs(xValues[j] - xValues[j - 1]);
                 if (distance < minDistance && isFinite(distance)) {
                     minDistance = distance;
                 }
@@ -2514,14 +2514,14 @@ Licensed under the MIT license.
 
                 if (s.bars.show && !item) { // no other point can be nearby
                     var foundIndex = findNearbyBar(s, mouseX, mouseY);
-                    if (foundIndex !== null) item = [i, foundIndex];
+                    if (foundIndex >= 0) item = [i, foundIndex];
                 }
             }
 
             if (item) {
                 i = item[0];
                 j = item[1];
-                var ps = series[i].datapoints.pointsize ? series[i].datapoints.pointsize : 2;
+                var ps = series[i].datapoints.pointsize;
 
                 return {
                     datapoint: series[i].datapoints.points.slice(j * ps, (j + 1) * ps),
@@ -2540,7 +2540,7 @@ Licensed under the MIT license.
                 maxx = maxDistance / series.xaxis.scale,
                 maxy = maxDistance / series.yaxis.scale,
                 points = series.datapoints.points,
-                ps = series.datapoints.pointsize ? series.datapoints.pointsize : 2;
+                ps = series.datapoints.pointsize;
 
             // with inverse transforms, we can't use the maxx/maxy
             // optimization, sadly
@@ -2606,7 +2606,7 @@ Licensed under the MIT license.
             var fillTowards = series.bars.fillTowards || 0;
             var bottom = fillTowards > series.yaxis.min ? Math.min(series.yaxis.max, fillTowards) : series.yaxis.min;
 
-            var foundIndex = null;
+            var foundIndex = -1;
             for (var j = 0; j < points.length; j += ps) {
                 var x = points[j], y = points[j + 1];
                 if (x == null)
