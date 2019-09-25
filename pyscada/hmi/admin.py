@@ -164,7 +164,7 @@ class ViewAdmin(admin.ModelAdmin):
 
 
 class CustomHTMLPanelAdmin(admin.ModelAdmin):
-    filter_horizontal = ('variables',)
+    filter_horizontal = ('variables', 'variable_properties')
 
 
 class PageAdmin(admin.ModelAdmin):
