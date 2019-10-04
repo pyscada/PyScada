@@ -52,8 +52,8 @@ class ControlItem(models.Model):
         (5, 'Control Element'),
         (6, 'Display Value'),)
     type = models.PositiveSmallIntegerField(default=0, choices=type_choices)
-    variable = models.ForeignKey(Variable, null=True, blank=True)
-    variable_property = models.ForeignKey(VariableProperty, null=True, blank=True)
+    variable = models.ForeignKey(Variable, null=True, blank=True, on_delete=models.SET_NULL)
+    variable_property = models.ForeignKey(VariableProperty, null=True, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
         ordering = ['position']
@@ -185,7 +185,8 @@ class XYChart(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
     x_axis_label = models.CharField(max_length=400, default='', blank=True)
-    x_axis_var = models.ForeignKey(Variable, default=None, related_name='x_axis_var')
+    x_axis_var = models.ForeignKey(Variable, default=None, related_name='x_axis_var', null=True,
+                                   on_delete=models.SET_NULL)
     x_axis_linlog = models.BooleanField(default=False, help_text="False->Lin / True->Log")
     y_axis_label = models.CharField(max_length=400, default='', blank=True)
     y_axis_plotpoints = models.BooleanField(default=False, help_text="Show the plots points")
@@ -259,8 +260,8 @@ class DropDownItem(models.Model):
 class DropDown(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
-    variable = models.ForeignKey(Variable, null=True, blank=True)
-    variable_property = models.ForeignKey(VariableProperty, null=True, blank=True)
+    variable = models.ForeignKey(Variable, null=True, blank=True, on_delete=models.SET_NULL)
+    variable_property = models.ForeignKey(VariableProperty, null=True, blank=True, on_delete=models.SET_NULL)
     empty = models.BooleanField(default=False)
     empty_value = models.CharField(max_length=30, default='------')
     items = models.ManyToManyField(DropDownItem)
@@ -465,7 +466,7 @@ class ProcessFlowDiagramItem(models.Model):
         (5, 'Control Element'),
         (6, 'Display Value'),)
     type = models.PositiveSmallIntegerField(default=0, choices=type_choices)
-    variable = models.ForeignKey(Variable, default=None, blank=True, null=True)
+    variable = models.ForeignKey(Variable, default=None, blank=True, null=True, on_delete=models.SET_NULL)
     top = models.PositiveIntegerField(blank=True, default=0)
     left = models.PositiveIntegerField(blank=True, default=0)
     width = models.PositiveIntegerField(blank=True, default=0)
@@ -509,7 +510,7 @@ class SlidingPanelMenu(models.Model):
     title = models.CharField(max_length=400, default='')
     position_choices = ((0, 'Control Menu'), (1, 'left'), (2, 'right'))
     position = models.PositiveSmallIntegerField(default=0, choices=position_choices)
-    control_panel = models.ForeignKey(ControlPanel, blank=True, null=True, default=None)
+    control_panel = models.ForeignKey(ControlPanel, blank=True, null=True, default=None, on_delete=models.SET_NULL)
     visible = models.BooleanField(default=True)
 
     def __str__(self):
@@ -555,7 +556,7 @@ class WidgetContent(models.Model):
 class Widget(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='', blank=True)
-    page = models.ForeignKey(Page, null=True, default=None, blank=True)
+    page = models.ForeignKey(Page, null=True, default=None, blank=True, on_delete=models.SET_NULL)
     row_choices = (
         (0, "1. row"), (1, "2. row"), (2, "3. row"), (3, "4. row"), (4, "5. row"), (5, "6. row"), (6, "7. row"),
         (7, "8. row"), (8, "9. row"), (9, "10. row"), (10, "11. row"), (11, "12. row"),)
@@ -565,7 +566,7 @@ class Widget(models.Model):
     size_choices = ((4, 'page width'), (3, '3/4 page width'), (2, '1/2 page width'), (1, '1/4 page width'))
     size = models.PositiveSmallIntegerField(default=4, choices=size_choices)
     visible = models.BooleanField(default=True)
-    content = models.ForeignKey(WidgetContent, null=True, default=None)
+    content = models.ForeignKey(WidgetContent, null=True, default=None, on_delete=models.SET_NULL)
 
     class Meta:
         ordering = ['row', 'col']
@@ -609,7 +610,7 @@ class View(models.Model):
 
 @python_2_unicode_compatible
 class GroupDisplayPermission(models.Model):
-    hmi_group = models.OneToOneField(Group)
+    hmi_group = models.OneToOneField(Group, null=True, on_delete=models.SET_NULL)
     pages = models.ManyToManyField(Page, blank=True)
     sliding_panel_menus = models.ManyToManyField(SlidingPanelMenu, blank=True)
     charts = models.ManyToManyField(Chart, blank=True)

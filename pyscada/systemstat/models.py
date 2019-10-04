@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @python_2_unicode_compatible
 class SystemStatVariable(models.Model):
-    system_stat_variable = models.OneToOneField(Variable)
+    system_stat_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
     information_choices = (
         (0, 'cpu_percent'),
         (1, 'virtual_memory_usage_total'),

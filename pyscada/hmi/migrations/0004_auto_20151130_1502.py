@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='controlitem',
             name='variable',
-            field=models.ForeignKey(to='pyscada.Variable', null=True),
+            field=models.ForeignKey(to='pyscada.Variable', null=True, on_delete=models.SET_NULL),
         ),
         # migrations.AlterField(
         #     model_name='hmivariable',

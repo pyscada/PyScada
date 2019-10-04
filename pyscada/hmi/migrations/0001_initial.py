@@ -34,8 +34,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(serialize=False, primary_key=True)),
                 ('distribution', models.PositiveSmallIntegerField(default=0, choices=[(0, 'side by side (1/2)'), (1, 'side by side (2/3|1/3)'), (2, 'side by side (1/3|2/3)')])),
-                ('chart_1', models.ForeignKey(related_name='chart_1', verbose_name='left Chart', blank=True, to='hmi.Chart', null=True)),
-                ('chart_2', models.ForeignKey(related_name='chart_2', verbose_name='right Chart', blank=True, to='hmi.Chart', null=True)),
+                ('chart_1', models.ForeignKey(related_name='chart_1', verbose_name='left Chart', blank=True, to='hmi.Chart', null=True, on_delete=models.SET_NULL)),
+                ('chart_2', models.ForeignKey(related_name='chart_2', verbose_name='right Chart', blank=True, to='hmi.Chart', null=True, on_delete=models.SET_NULL)),
             ],
             options={
             },
@@ -98,7 +98,7 @@ class Migration(migrations.Migration):
                 ('charts', models.ManyToManyField(to='hmi.Chart', blank=True)),
                 ('control_items', models.ManyToManyField(to='hmi.ControlItem', blank=True)),
                 ('custom_html_panels', models.ManyToManyField(to='hmi.CustomHTMLPanel', blank=True)),
-                ('hmi_group', models.OneToOneField(to='auth.Group')),
+                ('hmi_group', models.OneToOneField(to='auth.Group', on_delete=models.SET_NULL)),
             ],
             options={
             },
@@ -111,7 +111,7 @@ class Migration(migrations.Migration):
                 ('short_name', models.CharField(default='', max_length=80, verbose_name='variable short name')),
                 ('chart_line_thickness', models.PositiveSmallIntegerField(default=3, choices=[(3, '3Px')])),
                 ('chart_line_color', models.ForeignKey(on_delete=django.db.models.deletion.SET_NULL, default=None, to='hmi.Color', null=True)),
-                ('hmi_variable', models.OneToOneField(to='pyscada.Variable')),
+                ('hmi_variable', models.OneToOneField(to='pyscada.Variable', on_delete=models.SET_NULL)),
             ],
             options={
             },
@@ -137,7 +137,7 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(default='', max_length=400)),
                 ('position', models.PositiveSmallIntegerField(default=0, choices=[(0, 'Control Menu'), (1, 'left'), (2, 'right')])),
                 ('visable', models.BooleanField(default=True)),
-                ('control_panel', models.ForeignKey(default=None, blank=True, to='hmi.ControlPanel', null=True)),
+                ('control_panel', models.ForeignKey(default=None, blank=True, to='hmi.ControlPanel', null=True, on_delete=models.SET_NULL)),
             ],
             options={
             },
@@ -170,10 +170,10 @@ class Migration(migrations.Migration):
                 ('col', models.PositiveSmallIntegerField(default=0, choices=[(0, '1. col'), (1, '2. col'), (2, '3. col'), (3, '4. col')])),
                 ('size', models.PositiveSmallIntegerField(default=4, choices=[(4, 'page width'), (3, '3/4 page width'), (2, '1/2 page width'), (1, '1/4 page width')])),
                 ('visable', models.BooleanField(default=True)),
-                ('chart', models.ForeignKey(default=None, blank=True, to='hmi.Chart', null=True)),
-                ('chart_set', models.ForeignKey(default=None, blank=True, to='hmi.ChartSet', null=True)),
-                ('control_panel', models.ForeignKey(default=None, blank=True, to='hmi.ControlPanel', null=True)),
-                ('custom_html_panel', models.ForeignKey(default=None, blank=True, to='hmi.CustomHTMLPanel', null=True)),
+                ('chart', models.ForeignKey(default=None, blank=True, to='hmi.Chart', null=True, on_delete=models.SET_NULL)),
+                ('chart_set', models.ForeignKey(default=None, blank=True, to='hmi.ChartSet', null=True, on_delete=models.SET_NULL)),
+                ('control_panel', models.ForeignKey(default=None, blank=True, to='hmi.ControlPanel', null=True, on_delete=models.SET_NULL)),
+                ('custom_html_panel', models.ForeignKey(default=None, blank=True, to='hmi.CustomHTMLPanel', null=True, on_delete=models.SET_NULL)),
                 ('page', models.ForeignKey(on_delete=django.db.models.deletion.SET_NULL, default=None, to='hmi.Page', null=True)),
             ],
             options={
