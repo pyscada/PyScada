@@ -98,7 +98,7 @@ class Handler(GenericDevice):
                 continue
             failed = 0
             if np.max(abs(data)) > (mdo_div_quantity * 0.9 * vranges[range_i] / 2.0):
-                logger.debug("Cas > 90% ecran")
+                #logger.debug("Cas > 90% ecran")
                 range_i_min = range_i + 1
                 range_i_min = min(len(vranges) - 1, range_i_min)
                 range_i += 1
@@ -106,25 +106,25 @@ class Handler(GenericDevice):
                 continue
             if range_i == 0:
                 if np.max(abs(data)) < (mdo_div_quantity * 0.9 * vranges[range_i] / 2.0):
-                    logger.debug("Cas on ne peut pas aller plus bas")
+                    #logger.debug("Cas on ne peut pas aller plus bas")
                     break
-                logger.debug("Cas 0 donc 1")
+                #logger.debug("Cas 0 donc 1")
                 range_i = 1
                 continue
             if (mdo_div_quantity * 0.9 * vranges[range_i - 1] / 2.0) <= np.max(abs(data)) \
                     < (mdo_div_quantity * 0.9 * vranges[range_i] / 2.0):
-                logger.debug("Cas trouve")
+                #logger.debug("Cas trouve")
                 break
             if np.where(vranges > 2.0 * np.max(abs(data)) / mdo_div_quantity * 0.9)[0].size == 0:
                 continue
             range_i = np.where(vranges > 2.0 * np.max(abs(data)) / mdo_div_quantity * 0.9)[0][0]
-            logger.debug("Cas where")
+            #logger.debug("Cas where")
 
         self.inst.query(':CHAN%d:RANGe %s;*OPC?' % (ch, str(np.max(abs(data)) * 2 / 0.7)))
         self.inst.query(':RUN;*OPC?')
         time.sleep(2*period/frequency)
         self.inst.query(':STOP;*OPC?')
-        logger.debug(range_i)
+        #logger.debug(range_i)
 
         return range_i
 
@@ -170,7 +170,7 @@ class Handler(GenericDevice):
             bin_wave = self.inst.query_binary_values(':WAVeform:DATA?', datatype='b', container=np.array,
                                                      delay=2 * 10 / frequency)
             if np.std(bin_wave) == 0:
-                logger.debug("np.std(bin_wave) == 0 : %s" % i)
+                #logger.debug("np.std(bin_wave) == 0 : %s" % i)
                 self.inst.query(':RUN;*OPC?')
                 time.sleep(2*period/frequency+(i+1)/10)
                 self.inst.query(':STOP;*OPC?')

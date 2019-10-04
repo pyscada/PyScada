@@ -92,6 +92,8 @@ The plugin also adds four public methods:
             var c = plot.getOptions().crosshair;
             if (pos) {
                 plot.setCrosshair(pos);
+            }else if (c.lastPosition.x !== -1) {
+                plot.setCrosshair(plot.c2p({left:c.lastPosition.x,top:c.lastPosition.y}));
             }
 
             c.locked = true;

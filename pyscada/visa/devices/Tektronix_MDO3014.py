@@ -76,7 +76,7 @@ class Handler(GenericDevice):
         mdo_div_quantity = 8.0
         range_i_min = 0
         while range_i < len(vranges):
-            logger.debug(range_i)
+            #logger.debug(range_i)
             self.inst.query(':CH%d:SCALE %s;*OPC?' % (ch, str(vranges[range_i])))
             data = self.mdo_query_waveform(ch=ch, frequency=frequency, refresh=True)
             if data is None:
@@ -100,10 +100,10 @@ class Handler(GenericDevice):
                 break
             range_i = max(range_i_min, np.where(vranges > 2.0 * np.max(abs(data)) / mdo_div_quantity * 0.9)[0][0])
 
-        logger.debug(range_i)
+        #logger.debug(range_i)
         mdo_ch2_scale = str(vranges[range_i])
-        logger.debug("Freq = %s - horiz scale = %s - ch2 scale = %s"
-                     % (int(frequency), str(round(float(1.0 / (10.0 * float(frequency))), 6)), mdo_ch2_scale))
+        #logger.debug("Freq = %s - horiz scale = %s - ch2 scale = %s"
+        #             % (int(frequency), str(round(float(1.0 / (10.0 * float(frequency))), 6)), mdo_ch2_scale))
         return range_i
 
     def mdo_query_peak_to_peak(self, ch=1, **kwargss):
@@ -191,7 +191,7 @@ class Handler(GenericDevice):
         a = self.mdo_query_waveform(ch=1, frequency=frequency, refresh=True, points_resolution=10000)
         b = self.mdo_query_waveform(ch=2, frequency=frequency, refresh=False, points_resolution=10000)
         phase2 = self.find_phase_2_signals(a, b, frequency, self.mdo_horizontal_time())
-        logger.debug('phase oscillo = %s - phase scipy = %s' % (phase, phase2))
+        #logger.debug('phase oscillo = %s - phase scipy = %s' % (phase, phase2))
         return phase, phase2
 
     def mdo_horizontal_time(self):
@@ -213,7 +213,7 @@ class Handler(GenericDevice):
         period = 1 / frequency  # period of oscillations (seconds)
         tmax = float(tmax)
         nsamples = int(a.size)
-        logger.debug('tmax = %s - nsamples = %s' % (tmax, nsamples))  # length of time series (seconds)
+        #logger.debug('tmax = %s - nsamples = %s' % (tmax, nsamples))  # length of time series (seconds)
 
         # construct time array
         t = np.linspace(0.0, tmax, nsamples, endpoint=False)
@@ -230,8 +230,8 @@ class Handler(GenericDevice):
         recovered_phase_shift = -1 * 2 * np.pi * (((0.5 + recovered_time_shift / period) % 1.0) - 0.5)
         recovered_phase_shift_before = -1 * 2 * np.pi * (((0.5 + dt[np.argmax(xcorr) - 1] / period) % 1.0) - 0.5)
         recovered_phase_shift_after = -1 * 2 * np.pi * (((0.5 + dt[np.argmax(xcorr) + 1] / period) % 1.0) - 0.5)
-        logger.debug('phase - 1 = %s - phase = %s - phase + 1 = %s' %
-                     (recovered_phase_shift_before * 180 / np.pi, recovered_phase_shift * 180 / np.pi,
-                      recovered_phase_shift_after * 180 / np.pi))
+        #logger.debug('phase - 1 = %s - phase = %s - phase + 1 = %s' %
+        #             (recovered_phase_shift_before * 180 / np.pi, recovered_phase_shift * 180 / np.pi,
+        #              recovered_phase_shift_after * 180 / np.pi))
 
         return recovered_phase_shift * 180 / np.pi
