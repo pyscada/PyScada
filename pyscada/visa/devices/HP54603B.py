@@ -155,7 +155,7 @@ class Handler(GenericDevice):
     def mdo_set_trigger_level(self, ch=1, level=0, **kwargs):
         self.inst.query(':TRIGger:SOURce CHAN%d;:TRIGger:LEVel %s;*OPC?;' % (ch, str(level)))
 
-    def mdo_prepare(self, level, **kwargs):
+    def mdo_prepare(self, **kwargs):
         logger.debug("IDN : %s" % self.inst.query('*IDN?'))
         self.inst.query(':RUN;*OPC?')  # run
         self.inst.query(':ACQuire:TYPE NORM;:TRIGger:COUPling DC;:TRIGger:MODE NORM;'

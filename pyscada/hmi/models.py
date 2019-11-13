@@ -248,6 +248,7 @@ class Pie(WidgetContentModel):
 class DropDownItem(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
+    value = models.CharField(max_length=400, default='')
 
     def __str__(self):
         return text_type(str(self.id) + ': ' + self.title)

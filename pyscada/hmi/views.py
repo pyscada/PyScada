@@ -27,8 +27,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-UNAUTHENTICATED_REDIRECT = settings.UNAUTHENTICATED_REDIRECT if hasattr(settings,
-                                                                        'UNAUTHENTICATED_REDIRECT') else '/accounts/login/'
+UNAUTHENTICATED_REDIRECT = settings.UNAUTHENTICATED_REDIRECT \
+    if hasattr(settings, 'UNAUTHENTICATED_REDIRECT') else '/accounts/login/'
 
 
 def unauthenticated_redirect(func):
@@ -204,21 +204,20 @@ def form_write_task(request):
                 cwt.save()
                 return HttpResponse(status=200)
         else:
-            for group_user in request.user.groups.iterator():
-                if item_type == 'variable':
-                    for group in GroupDisplayPermission.objects.filter(hmi_group=group_user, control_items__type=5,
-                                                                       control_items__variable__pk=key):
-                        cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
-                                              user=request.user)
-                        cwt.save()
-                        return HttpResponse(status=200)
-                elif item_type == 'variable_property':
-                    for group in GroupDisplayPermission.objects.filter(hmi_group=group_user, control_items__type=5,
-                                                                       control_items__variable_property__pk=key):
-                        cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
-                                              user=request.user)
-                        cwt.save()
-                        return HttpResponse(status=200)
+            if item_type == 'variable':
+                if GroupDisplayPermission(hmi_group__in=request.user.groups.iterator(), control_items__type=5,
+                                          control_items__variable__pk=key):
+                    cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
+                                          user=request.user)
+                    cwt.save()
+                    return HttpResponse(status=200)
+            elif item_type == 'variable_property':
+                if GroupDisplayPermission(hmi_group__in=request.user.groups.iterator(), control_items__type=5,
+                                          control_items__variable_property__pk=key):
+                    cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
+                                          user=request.user)
+                    cwt.save()
+                    return HttpResponse(status=200)
     return HttpResponse(status=404)
 
 
@@ -295,7 +294,7 @@ def get_cache_data(request):
     if timestamp_from == 0:
         timestamp_from == time.time() - 60
 
-    if timestamp_to - timestamp_from > 120 * 60:
+    if timestamp_to - timestamp_from > 120 * 60 and not init:
         timestamp_from = timestamp_to - 120 * 60
 
     #if not init:

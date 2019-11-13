@@ -120,12 +120,12 @@ class Handler(GenericDevice):
         return 20 * np.log10(self.mdo_query_peak_to_peak(ch=source2) / self.mdo_query_peak_to_peak(ch=source1))
 
     def mdo_set_trigger_level(self, ch=1, level=0.0, **kwargs):
-        self.inst.query(':TRIG:A:LEV:CH%d %s;*OPC?;' % (ch, str(level)))
+        self.inst.query(':TRIG:A:LEV:CH%s %s;*OPC?;' % (ch, str(level)))
 
     def mdo_prepare(self, **kwargs):
         self.inst.query(':SEL:CH1 1;:SEL:CH2 1;:HORIZONTAL:POSITION 0;:CH1:YUN "V";:CH2:YUN "V";'
                         ':CH2:BANdwidth 10000000;:CH1:BANdwidth 10000000;:TRIG:A:TYP EDGE;:TRIG:A:EDGE:COUPLING AC;'
-                        ':TRIG:A:EDGE:SOU CH1;:TRIG:A:EDGE:SLO FALL;:TRIG:A:MODE NORM;:CH1:COUP AC;:CH2:COUP AC;')
+                        ':TRIG:A:EDGE:SOU CH1;:TRIG:A:EDGE:SLO RIS;:TRIG:A:MODE NORM;:CH1:COUP AC;:CH2:COUP AC;*OPC?')
 
     def mdo_query_waveform(self, ch=1, points_resolution=100, frequency=1000, refresh=False, **kwargs):
         self.inst.query(':SEL:CH%d 1;:HORIZONTAL:POSITION 0;:CH%d:YUN "V";'

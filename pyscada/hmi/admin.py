@@ -108,7 +108,7 @@ class DropDownAdmin(admin.ModelAdmin):
 
 
 class DropDownItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title',)
+    list_display = ('id', 'title', 'value')
     list_filter = ('dropdown',)
 
 
