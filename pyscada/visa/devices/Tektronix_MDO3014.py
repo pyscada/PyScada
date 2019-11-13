@@ -62,9 +62,15 @@ class Handler(GenericDevice):
     def reset_instrument(self):
         return self.inst.query('*RST;*OPC?')
 
+    def mdo_set_horizontal_scale(self, time_per_div, **kwargs):
+        self.inst.query(':HORIZONTAL:SCALE %s;*OPC?' % str(time_per_div))
+
     def mdo_horizontal_scale_in_period(self, period=1.0, frequency=1000, **kwargs):
         mdo_horiz_scale = str(round(float(period / (10.0 * float(frequency))), 6))
-        self.inst.query(':HORIZONTAL:SCALE %s;*OPC?' % mdo_horiz_scale)
+        self.mdo_set_horizontal_scale(mdo_horiz_scale)
+
+    def mdo_set_vertical_scale(self, ch=1, value=1.0, **kwargs):
+        self.inst.query(':CH%d:SCALE %s;*OPC?' % (ch, str(value)))
 
     def mdo_find_vertical_scale(self, ch=1, frequency=1000, range_i=None, **kwargs):
         vranges = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10]
@@ -76,8 +82,8 @@ class Handler(GenericDevice):
         mdo_div_quantity = 8.0
         range_i_min = 0
         while range_i < len(vranges):
-            #logger.debug(range_i)
-            self.inst.query(':CH%d:SCALE %s;*OPC?' % (ch, str(vranges[range_i])))
+            # logger.debug(range_i)
+            self.mdo_set_vertical_scale(ch, vranges[range_i])
             data = self.mdo_query_waveform(ch=ch, frequency=frequency, refresh=True)
             if data is None:
                 failed += 1
@@ -106,18 +112,20 @@ class Handler(GenericDevice):
         #             % (int(frequency), str(round(float(1.0 / (10.0 * float(frequency))), 6)), mdo_ch2_scale))
         return range_i
 
-    def mdo_query_peak_to_peak(self, ch=1, **kwargss):
+    def mdo_query_peak_to_peak(self, ch=1, **kwargs):
         return float(self.inst.query((':MEASUrement:IMMed:SOUrce1 CH%d;:MEASUREMENT:IMMED:TYPE PK2PK;'
                                       ':MEASUREMENT:IMMED:VALUE?' % ch)))
 
     def mdo_gain(self, source1=1, source2=2, **kwargs):
         return 20 * np.log10(self.mdo_query_peak_to_peak(ch=source2) / self.mdo_query_peak_to_peak(ch=source1))
 
-    def mdo_prepare_for_bode(self, vpp, **kwargs):
-        self.inst.query(':SEL:CH1 1;:SEL:CH2 1;:HORIZONTAL:POSITION 0;:CH1:YUN "V";:CH1:SCALE %s;:CH2:YUN "V";'
+    def mdo_set_trigger_level(self, ch=1, level=0.0, **kwargs):
+        self.inst.query(':TRIG:A:LEV:CH%d %s;*OPC?;' % (ch, str(level)))
+
+    def mdo_prepare(self, **kwargs):
+        self.inst.query(':SEL:CH1 1;:SEL:CH2 1;:HORIZONTAL:POSITION 0;:CH1:YUN "V";:CH2:YUN "V";'
                         ':CH2:BANdwidth 10000000;:CH1:BANdwidth 10000000;:TRIG:A:TYP EDGE;:TRIG:A:EDGE:COUPLING AC;'
-                        ':TRIG:A:EDGE:SOU CH1;:TRIG:A:EDGE:SLO FALL;:TRIG:A:MODE NORM;:CH1:COUP AC;:CH2:COUP AC;'
-                        ':TRIG:A:LEV:CH1 0;*OPC?;' % str(1.2 * float(vpp) / (2 * 4)))
+                        ':TRIG:A:EDGE:SOU CH1;:TRIG:A:EDGE:SLO FALL;:TRIG:A:MODE NORM;:CH1:COUP AC;:CH2:COUP AC;')
 
     def mdo_query_waveform(self, ch=1, points_resolution=100, frequency=1000, refresh=False, **kwargs):
         self.inst.query(':SEL:CH%d 1;:HORIZONTAL:POSITION 0;:CH%d:YUN "V";'

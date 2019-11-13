@@ -12,6 +12,7 @@ try:
 except ImportError:
     logger.error("Need to install numpy : pip install numpy")
 
+mdo_horiz_div_quantity = 8.0
 
 class Handler(GenericDevice):
     """
@@ -63,11 +64,20 @@ class Handler(GenericDevice):
         self.inst.read_termination = '\n'
         return self.inst.query('*RST;*OPC?')
 
-    def mdo_horizontal_scale_in_period(self, period=1.0, frequency=1000, **kwargs):
-        mdo_horiz_scale = str(round(float(period / float(frequency)), 6))
-        self.inst.query(':TIMEBASE:MODE NORM;:TIMebase:RANGe %s;*OPC?' % mdo_horiz_scale)
+    def mdo_set_horizontal_scale(self, time_per_div, **kwargs):
+        self.inst.query(':TIMEBASE:MODE NORM;:TIMebase:RANGe %s;*OPC?' % str(time_per_div * 10))
         self.inst.query(':RUN;*OPC?')
-        time.sleep(2*period/frequency)
+        time.sleep(2*kwargs.get("period", 1)/kwargs.get("frequency", 1000))
+        self.inst.query(':STOP;*OPC?')
+
+    def mdo_horizontal_scale_in_period(self, period=1.0, frequency=1000, **kwargs):
+        mdo_horiz_scale = str(round(float(period / (10.0 * float(frequency))), 6))
+        self.mdo_set_horizontal_scale(mdo_horiz_scale, period=period, frequency=frequency)
+
+    def mdo_set_vertical_scale(self, ch=1, value=1.0, **kwargs):
+        self.inst.query(':CHAN%d:RANGe %s;*OPC?' % (ch, str(value * mdo_horiz_div_quantity)))
+        self.inst.query(':RUN;*OPC?')
+        time.sleep(2*kwargs.get("period", 1)/kwargs.get("frequency", 1000))
         self.inst.query(':STOP;*OPC?')
 
     def mdo_find_vertical_scale(self, ch=1, frequency=1000, range_i=None, period=4.0, **kwargs):
@@ -77,18 +87,14 @@ class Handler(GenericDevice):
         self.mdo_horizontal_scale_in_period(period=period, frequency=frequency)
 
         failed = 0
-        mdo_div_quantity = 8.0
         range_i_min = 0
         range_i_old = -1
         while range_i < len(vranges):
             if range_i == range_i_old:
                 break
             range_i_old = range_i
-            logger.debug(range_i)
-            self.inst.query(':CHAN%d:RANGe %s;*OPC?' % (ch, str(vranges[range_i]*mdo_div_quantity)))
-            self.inst.query(':RUN;*OPC?')
-            time.sleep(2*period/frequency)
-            self.inst.query(':STOP;*OPC?')
+            # logger.debug(range_i)
+            self.mdo_set_vertical_scale(ch, vranges[range_i], period=period, frequency=frequency)
             data = self.mdo_query_waveform(ch=ch, frequency=frequency, refresh=True, period=period)
             if data is None:
                 failed += 1
@@ -97,7 +103,7 @@ class Handler(GenericDevice):
                     break
                 continue
             failed = 0
-            if np.max(abs(data)) > (mdo_div_quantity * 0.9 * vranges[range_i] / 2.0):
+            if np.max(abs(data)) > (mdo_horiz_div_quantity * 0.9 * vranges[range_i] / 2.0):
                 #logger.debug("Cas > 90% ecran")
                 range_i_min = range_i + 1
                 range_i_min = min(len(vranges) - 1, range_i_min)
@@ -105,19 +111,19 @@ class Handler(GenericDevice):
                 range_i = min(len(vranges) - 1, range_i)
                 continue
             if range_i == 0:
-                if np.max(abs(data)) < (mdo_div_quantity * 0.9 * vranges[range_i] / 2.0):
+                if np.max(abs(data)) < (mdo_horiz_div_quantity * 0.9 * vranges[range_i] / 2.0):
                     #logger.debug("Cas on ne peut pas aller plus bas")
                     break
                 #logger.debug("Cas 0 donc 1")
                 range_i = 1
                 continue
-            if (mdo_div_quantity * 0.9 * vranges[range_i - 1] / 2.0) <= np.max(abs(data)) \
-                    < (mdo_div_quantity * 0.9 * vranges[range_i] / 2.0):
+            if (mdo_horiz_div_quantity * 0.9 * vranges[range_i - 1] / 2.0) <= np.max(abs(data)) \
+                    < (mdo_horiz_div_quantity * 0.9 * vranges[range_i] / 2.0):
                 #logger.debug("Cas trouve")
                 break
-            if np.where(vranges > 2.0 * np.max(abs(data)) / mdo_div_quantity * 0.9)[0].size == 0:
+            if np.where(vranges > 2.0 * np.max(abs(data)) / mdo_horiz_div_quantity * 0.9)[0].size == 0:
                 continue
-            range_i = np.where(vranges > 2.0 * np.max(abs(data)) / mdo_div_quantity * 0.9)[0][0]
+            range_i = np.where(vranges > 2.0 * np.max(abs(data)) / mdo_horiz_div_quantity * 0.9)[0][0]
             #logger.debug("Cas where")
 
         self.inst.query(':CHAN%d:RANGe %s;*OPC?' % (ch, str(np.max(abs(data)) * 2 / 0.7)))
@@ -146,11 +152,14 @@ class Handler(GenericDevice):
         return 20 * np.log10(self.mdo_query_peak_to_peak(ch=source2, frequency=frequency, period=period) /
                              self.mdo_query_peak_to_peak(ch=source1, frequency=frequency, period=period))
 
-    def mdo_prepare_for_bode(self, vpp, **kwargs):
+    def mdo_set_trigger_level(self, ch=1, level=0, **kwargs):
+        self.inst.query(':TRIGger:SOURce CHAN%d;:TRIGger:LEVel %s;*OPC?;' % (ch, str(level)))
+
+    def mdo_prepare(self, level, **kwargs):
         logger.debug("IDN : %s" % self.inst.query('*IDN?'))
         self.inst.query(':RUN;*OPC?')  # run
-        self.inst.query(':CHAN1:RANGe %s;:ACQuire:TYPE NORM;:TRIGger:COUPling DC;:TRIGger:MODE NORM;:TRIGger:LEVel 0;'
-                        ':TRIGger:SOURce CHAN1;:CHAN1:OFFSet 0;:CHAN2:OFFSet 0;*OPC?' % (str(1.2 * float(vpp))))
+        self.inst.query(':ACQuire:TYPE NORM;:TRIGger:COUPling DC;:TRIGger:MODE NORM;'
+                        ':CHAN1:OFFSet 0;:CHAN2:OFFSet 0;*OPC?')
         self.inst.query(':CHANnel1:COUPling AC;:CHANnel2:COUPling AC;:VIEW CHAN1;:VIEW CHAN2;*OPC?')
 
     def mdo_query_waveform(self, ch=1, points_resolution=100, frequency=1000, period=4.0, **kwargs):
