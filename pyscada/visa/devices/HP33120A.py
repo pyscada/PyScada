@@ -60,8 +60,13 @@ class Handler(GenericDevice):
     def afg_set_vpp(self, ch=1, vpp=1):
         return self.inst.query(':VOLT %s;*OPC?;' % str(vpp))
 
-    def afg_set_function_shape(self, ch=1, function_shape='SIN'):
-        return self.inst.query(':FUNC:SHAP %s;*OPC?;' % function_shape)
+    def afg_set_function_shape(self, ch=1, function_shape=0):
+        shape_list = {
+            0: "SIN",
+            1: "RAMP",
+            2: "SQUARE",
+        }
+        return self.inst.query(':FUNC:SHAP %s;*OPC?;' % shape_list.get(function_shape, "SIN"))
 
     def afg_set_frequency(self, ch=1, frequency=1000):
         return self.inst.query(':FREQ %s;*OPC?;' % str(frequency))
