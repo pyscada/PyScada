@@ -186,6 +186,7 @@ def form_write_task(request):
         key = int(request.POST['key'])
         item_type = request.POST['item_type']
         value = request.POST['value']
+        #logger.debug("key : %s - value %s - type %s" % (key, value, item_type))
         # check if float as DeviceWriteTask doesn't support string values
         try:
             float(value)
@@ -205,19 +206,32 @@ def form_write_task(request):
                 return HttpResponse(status=200)
         else:
             if item_type == 'variable':
-                if GroupDisplayPermission(hmi_group__in=request.user.groups.iterator(), control_items__type=5,
-                                          control_items__variable__pk=key):
+                if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
+                                                         control_items__type=5, control_items__variable__pk=key):
+                    cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
+                                          user=request.user)
+                    cwt.save()
+                    return HttpResponse(status=200)
+                elif GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
+                                                           dropdowns__variable__pk=key):
                     cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
                                           user=request.user)
                     cwt.save()
                     return HttpResponse(status=200)
             elif item_type == 'variable_property':
-                if GroupDisplayPermission(hmi_group__in=request.user.groups.iterator(), control_items__type=5,
-                                          control_items__variable_property__pk=key):
+                if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
+                                                         control_items__type=5,
+                                                         control_items__variable_property__pk=key):
                     cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
                                           user=request.user)
                     cwt.save()
                     return HttpResponse(status=200)
+                elif GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
+                                                           dropdowns__variable_property__pk=key):
+                    cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
+                                          user=request.user)
+                    cwt.save()
+                return HttpResponse(status=200)
     return HttpResponse(status=404)
 
 
