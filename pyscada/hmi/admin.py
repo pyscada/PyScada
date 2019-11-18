@@ -119,7 +119,7 @@ class FormAdmin(admin.ModelAdmin):
 
 class ControlItemAdmin(admin.ModelAdmin):
     list_display = ('id', 'position', 'label', 'type', 'variable', 'variable_property')
-    list_filter = ('controlpanel',)
+    list_filter = ('controlpanel', 'control_items_form',)
     raw_id_fields = ('variable',)
 
 

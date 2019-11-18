@@ -57,8 +57,14 @@ class Handler(GenericDevice):
     def afg_prepare_for_bode(self, ch=1):
         return self.inst.query(':OUTPut:LOAD MAX;:AM:STAT OFF;*OPC?;')
 
+    def afg_set_output_state(self, ch=1, state=True):
+        return False
+
+    def afg_set_offset(self, ch=1, offset=0):
+        return self.inst.query(':VOLTage:OFFSet %s' % offset)
+
     def afg_set_vpp(self, ch=1, vpp=1):
-        return self.inst.query(':VOLT %s;*OPC?;' % str(vpp))
+        return self.inst.query(':VOLT %s;:VOLT:UNIT VPP;*OPC?;' % str(vpp))
 
     def afg_set_function_shape(self, ch=1, function_shape=0):
         shape_list = {
