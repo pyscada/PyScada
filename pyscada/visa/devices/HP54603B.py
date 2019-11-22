@@ -153,7 +153,10 @@ class Handler(GenericDevice):
                              self.mdo_query_peak_to_peak(ch=source1, frequency=frequency, period=period))
 
     def mdo_set_trigger_level(self, ch=1, level=0, **kwargs):
-        self.inst.query(':TRIGger:SOURce CHAN%d;:TRIGger:LEVel %s;*OPC?;' % (ch, str(level)))
+        self.inst.query(':TRIGger:LEVel %s;*OPC?;' % str(level))
+
+    def mdo_set_trigger_source(self, ch=1, **kwargs):
+        self.inst.query(':TRIGger:SOURce CHAN%d;*OPC?;' % ch)
 
     def mdo_prepare(self, **kwargs):
         logger.debug("IDN : %s" % self.inst.query('*IDN?'))

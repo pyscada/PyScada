@@ -55,7 +55,7 @@ class Handler(GenericDevice):
 
     # AFG functions
     def afg_prepare_for_bode(self, ch=1):
-        return self.inst.query('OUTP%d:IMP MAX;SOUR%d:AM:STAT OFF;*OPC?;' % (ch, ch))
+        return self.inst.query('OUTP%d:IMP MAX;SOUR%d:AM:STAT OFF;DISP:SAV:STAT OFF;*OPC?;' % (ch, ch))
 
     def afg_set_output_state(self, ch=1, state=True):
         if state:
