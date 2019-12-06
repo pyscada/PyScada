@@ -71,7 +71,7 @@ class Handler(GenericDevice):
         self.inst.query(':STOP;*OPC?')
 
     def mdo_horizontal_scale_in_period(self, period=1.0, frequency=1000, **kwargs):
-        mdo_horiz_scale = str(round(float(period / (10.0 * float(frequency))), 6))
+        mdo_horiz_scale = str(round(float(period / (10.0 * float(frequency))), 15))
         self.mdo_set_horizontal_scale(mdo_horiz_scale, period=period, frequency=frequency)
 
     def mdo_set_vertical_scale(self, ch=1, value=1.0, **kwargs):

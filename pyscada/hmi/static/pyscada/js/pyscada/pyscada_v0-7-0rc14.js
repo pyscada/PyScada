@@ -2201,6 +2201,7 @@ $('button.write-task-form-set').click(function(){
     };
     if (err) {return;}
 
+    tabinputs = $.merge(tabinputs,$('#'+id_form+ ' :input:button.type-bool'));
     for (i=0;i<tabinputs.length;i++){
         value = $(tabinputs[i]).val();
         var_name = $(tabinputs[i]).attr("name");
