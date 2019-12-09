@@ -100,6 +100,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='variable',
             name='chart_line_color',
-            field=models.ForeignKey(default=None, blank=True, to='pyscada.Color', null=True),
+            field=models.ForeignKey(default=None, blank=True, to='pyscada.Color', null=True, on_delete=models.CASCADE),
         ),
     ]

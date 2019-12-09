@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 ('value_int32', models.IntegerField(null=True, blank=True)),
                 ('value_int64', models.BigIntegerField(null=True, blank=True)),
                 ('value_float64', models.FloatField(null=True, blank=True)),
-                ('variable', models.ForeignKey(to='pyscada.Variable')),
+                ('variable', models.ForeignKey(to='pyscada.Variable', on_delete=models.CASCADE)),
             ],
         ),
     ]

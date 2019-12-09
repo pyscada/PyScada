@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @python_2_unicode_compatible
 class VISAVariable(models.Model):
-    visa_variable = models.OneToOneField(Variable)
+    visa_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
     variable_type_choices = ((0, 'configuration'), (1, 'acquisition'), (2, 'status'))
     variable_type = models.SmallIntegerField(choices=variable_type_choices)
     device_property = models.CharField(default='present_value', max_length=255,
@@ -24,7 +24,7 @@ class VISAVariable(models.Model):
 
 @python_2_unicode_compatible
 class VISADevice(models.Model):
-    visa_device = models.OneToOneField(Device)
+    visa_device = models.OneToOneField(Device, on_delete=models.CASCADE)
     resource_name = models.CharField(max_length=255,
                                      default='GPIB0::22::INSTR',
                                      help_text=""" 'Examles for:\nGPIB0::22::INSTR' for GPIB Instrument\n
@@ -33,7 +33,7 @@ class VISADevice(models.Model):
                                       'ASRL/dev/ttyUSB0::INSTR'\n 
                                       http://pyvisa.readthedocs.io/en/stable/names.html""")
 
-    instrument = models.ForeignKey('VISADeviceHandler')
+    instrument = models.ForeignKey('VISADeviceHandler', null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return self.visa_device.short_name
