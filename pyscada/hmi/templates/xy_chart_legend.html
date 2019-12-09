@@ -37,6 +37,7 @@
                     <td class="legendLabel" style="text-align:center;word-wrap: break-word;">
                         {{ var.hmi_name }}
                     </td>
+                    <td class="legendValue chart-legend-value-{{widget_pk}}-{{xy_chart.pk}} var-{{ var.pk }}" id="chart-legend-value-{{widget_pk}}-{{xy_chart.pk}}-{{var.pk}}" style="text-align:right"></td>
                     <td class="legendUnit" style="text-align:center;">{{ var.unit.unit }}</td>
                 </tr>
                 {% endif %}

@@ -15,11 +15,11 @@
                     <!-- control item value {{ item.value }} -->
                     {% if item.value %}
                         <div class="input-group set_value">
-                            <input type="button" class="btn btn-success update-able write-task-btn type-bool {{ item.web_class_str }}" name="{{ item.name }}" id="{{ form.web_id }}-{{ uuid }}-{{ item.web_id }}" placeholder="" value="{{ item.name }}">
+                            <input type="button" class="btn btn-success update-able write-task-btn type-bool {{ item.web_class_str }}" name="{{ item.name }}" id="{{ form.web_id }}-{{ uuid }}-{{ item.web_id }}" placeholder="" value="{{ item.label }}">
                         </div>
                     {% else %}
                         <div class="input-group set_value">
-                            <input type="button" class="btn btn-default update-able write-task-btn type-bool {{ item.web_class_str }}" name="{{ item.name }}" id="{{ form.web_id }}-{{ uuid }}-{{ item.web_id }}" placeholder="" value="{{ item.name }}">
+                            <input type="button" class="btn btn-default update-able write-task-btn type-bool {{ item.web_class_str }}" name="{{ item.name }}" id="{{ form.web_id }}-{{ uuid }}-{{ item.web_id }}" placeholder="" value="{{ item.label }}">
                         </div>
                     {% endif %}
                 {% else %}

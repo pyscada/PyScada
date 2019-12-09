@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @python_2_unicode_compatible
 class OneWireVariable(models.Model):
-    onewire_variable = models.OneToOneField(Variable)
+    onewire_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
     address = models.CharField(default='', max_length=400, help_text='64bit Sensor Address')
     sensor_type_choices = (('DS18B20', 'DS18B20 Temperature Sensor'),)
     sensor_type = models.CharField(default='', max_length=10, choices=sensor_type_choices)
@@ -23,7 +23,7 @@ class OneWireVariable(models.Model):
 
 @python_2_unicode_compatible
 class OneWireDevice(models.Model):
-    onewire_device = models.OneToOneField(Device)
+    onewire_device = models.OneToOneField(Device, on_delete=models.CASCADE)
     adapter_type_choices = (('owserver', 'OWFS owserver'), ('rpi_gpio4', 'RPi GPIO 4'),)
     adapter_type = models.CharField(default='', max_length=400, choices=adapter_type_choices)
     config = models.CharField(default='', max_length=400, blank=True,

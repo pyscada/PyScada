@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @python_2_unicode_compatible
 class SMbusDevice(models.Model):
-    smbus_device = models.OneToOneField(Device)
+    smbus_device = models.OneToOneField(Device, on_delete=models.CASCADE)
     device_type_choices = (('ups_pico', 'UPS PIco'),)
     device_type = models.CharField(max_length=400, choices=device_type_choices)
     port = models.CharField(default='1', max_length=400, )
@@ -25,7 +25,7 @@ class SMbusDevice(models.Model):
 
 @python_2_unicode_compatible
 class SMbusVariable(models.Model):
-    smbus_variable = models.OneToOneField(Variable)
+    smbus_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
     information = models.CharField(default='None', max_length=400, )
 
     def __str__(self):

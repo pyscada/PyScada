@@ -506,7 +506,7 @@ class DeviceProtocol(models.Model):
 class Device(models.Model):
     id = models.AutoField(primary_key=True)
     short_name = models.CharField(max_length=400, default='')
-    protocol = models.ForeignKey(DeviceProtocol, null=True)
+    protocol = models.ForeignKey(DeviceProtocol, null=True, on_delete=models.SET_NULL)
     description = models.TextField(default='', verbose_name="Description", null=True)
     active = models.BooleanField(default=True)
     byte_order_choices = (
@@ -596,7 +596,7 @@ class Scaling(models.Model):
 @python_2_unicode_compatible
 class VariableProperty(models.Model):
     id = models.AutoField(primary_key=True)
-    variable = models.ForeignKey('Variable')
+    variable = models.ForeignKey('Variable', null=True, on_delete=models.SET_NULL)
     property_class_choices = ((None, 'other or no Class specified'),
                               ('device', 'Device Property'),
                               ('data_record', 'Recorded Data'),
@@ -677,13 +677,17 @@ class VariableProperty(models.Model):
     def web_key(self):
         return '%d-%s' % (self.variable.pk, self.name.upper().replace(':', '-'))
 
+    def item_type(self):
+        return "variable_property"
+
+
 
 @python_2_unicode_compatible
 class Variable(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.SlugField(max_length=80, verbose_name="variable name", unique=True)
     description = models.TextField(default='', verbose_name="Description")
-    device = models.ForeignKey(Device)
+    device = models.ForeignKey(Device, null=True, on_delete=models.SET_NULL)
     active = models.BooleanField(default=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET(1))
     writeable = models.BooleanField(default=False)
@@ -696,9 +700,11 @@ class Variable(models.Model):
                            ('FLOAT64', 'DOUBLE (FLOAT64)'),
                            ('FLOAT64', 'FLOAT64'),
                            ('UNIXTIMEF64', 'UNIXTIMEF64'),
+                           ('FLOAT48', 'FLOAT48'),
                            ('INT64', 'INT64'),
                            ('UINT64', 'UINT64'),
                            ('UNIXTIMEI64', 'UNIXTIMEI64'),
+                           ('INT48', 'INT48'),
                            ('UNIXTIMEI32', 'UNIXTIMEI32'),
                            ('INT32', 'INT32'),
                            ('UINT32', 'DWORD (UINT32)'),
@@ -722,7 +728,7 @@ class Variable(models.Model):
                           ('3-2-1-0', '3-2-1-0'),
                           )
     short_name = models.CharField(default='', max_length=80, verbose_name="variable short name", blank=True)
-    chart_line_color = models.ForeignKey(Color, null=True, default=None, blank=True)
+    chart_line_color = models.ForeignKey(Color, null=True, default=None, blank=True, on_delete=models.SET_NULL)
     chart_line_thickness_choices = ((3, '3Px'),)
     chart_line_thickness = models.PositiveSmallIntegerField(default=3, choices=chart_line_thickness_choices)
     value_min = models.FloatField(null=True, blank=True)
@@ -781,6 +787,9 @@ class Variable(models.Model):
         for key in kwargs:
             setattr(self, key, kwargs[key])
 
+    def item_type(self):
+        return "variable"
+
     def get_bits_by_class(self):
         """
         `BOOLEAN`							1	1/16 WORD
@@ -791,10 +800,13 @@ class Variable(models.Model):
         `UINT32` `DWORD`					32	2 WORD
         `INT32`								32	2 WORD
         `FLOAT32` `REAL` `SINGLE` 			32	2 WORD
+        `FLOAT48` 'INT48'                  	48	3 WORD
         `FLOAT64` `LREAL` `FLOAT` `DOUBLE`	64	4 WORD
         """
         if self.value_class.upper() in ['FLOAT64', 'DOUBLE', 'FLOAT', 'LREAL', 'UNIXTIMEI64', 'UNIXTIMEF64']:
             return 64
+        if self.value_class.upper() in ['FLOAT48', 'INT48']:
+            return 48
         if self.value_class.upper() in ['FLOAT32', 'SINGLE', 'INT32', 'UINT32', 'DWORD', 'BCD32', 'BCD24', 'REAL',
                                         'UNIXTIMEI32', 'UNIXTIMEF32']:
             return 32
@@ -872,6 +884,12 @@ class Variable(models.Model):
         elif self.value_class.upper() in ['INT32']:
             target_format = 'i'
             source_format = '2H'
+        elif self.value_class.upper() in ['FLOAT48']:
+            target_format = 'f'
+            source_format = '3H'
+        elif self.value_class.upper() in ['INT48']:
+            target_format = 'q'
+            source_format = '3H'
         elif self.value_class.upper() in ['FLOAT64', 'DOUBLE', 'FLOAT', 'LREAL', 'UNIXTIMEF64']:
             target_format = 'd'
             source_format = '4H'
@@ -907,6 +925,21 @@ class Variable(models.Model):
             if byte_order == '2-3-0-1':
                 return unpack(target_format, pack(source_format, unpack('>H', pack('<H', value[1]))[0],
                                                   unpack('>H', pack('<H', value[0]))[0]))[0]
+        elif source_format == '3H':
+            source_format = '4H'
+            if byte_order == '1-0-3-2':
+                return unpack(target_format, pack(source_format, 0, value[0], value[1], value[2]))[0]
+            if byte_order == '3-2-1-0':
+                return unpack(target_format, pack(source_format, value[2], value[1], value[0], 0))[0]
+            if byte_order == '0-1-2-3':
+                return unpack(target_format, pack(source_format, 0, unpack('>H', pack('<H', value[0]))[0],
+                                                  unpack('>H', pack('<H', value[1]))[0],
+                                                  unpack('>H', pack('<H', value[2]))[0]))[0]
+            if byte_order == '2-3-0-1':
+                return unpack(target_format, pack(source_format, 0, unpack('>H', pack('<H', value[2]))[0],
+                                                  unpack('>H', pack('<H', value[1]))[0],
+                                                  unpack('>H', pack('<H', value[0]))[0]))[0]
+            source_format = '3H'
         else:
             if byte_order == '1-0-3-2':
                 return unpack(target_format, pack(source_format, value[0], value[1], value[2], value[3]))[0]
@@ -933,7 +966,12 @@ class Variable(models.Model):
         elif self.value_class.upper() in ['INT32']:
             source_format = 'i'
             target_format = '2H'
-
+        elif self.value_class.upper() in ['FLOAT48']:
+            source_format = 'f'
+            target_format = '3H'
+        elif self.value_class.upper() in ['INT48']:
+            source_format = 'q'
+            target_format = '3H'
         elif self.value_class.upper() in ['FLOAT64', 'DOUBLE', 'FLOAT', 'LREAL', 'UNIXTIMEF64']:
             source_format = 'd'
             target_format = '4H'
@@ -965,6 +1003,17 @@ class Variable(models.Model):
                 return [unpack('>H', pack('<H', output[0])), unpack('>H', pack('<H', output[1]))]
             if byte_order == '2-3-0-1':
                 return [unpack('>H', pack('<H', output[1])), unpack('>H', pack('<H', output[0]))]
+        elif target_format == '3H':
+                if byte_order == '1-0-3-2':
+                    return output
+                if byte_order == '3-2-1-0':
+                    return [output[2], output[1], output[0]]
+                if byte_order == '0-1-2-3':
+                    return [unpack('>H', pack('<H', output[0]))[0], unpack('>H', pack('<H', output[1]))[0],
+                            unpack('>H', pack('<H', output[2]))[0]]
+                if byte_order == '2-3-0-1':
+                    return [unpack('>H', pack('<H', output[2]))[0],
+                            unpack('>H', pack('<H', output[1]))[0], unpack('>H', pack('<H', output[0]))[0]]
         else:
             if byte_order == '1-0-3-2':
                 return output
@@ -1003,8 +1052,8 @@ class Variable(models.Model):
 @python_2_unicode_compatible
 class DeviceWriteTask(models.Model):
     id = models.AutoField(primary_key=True)
-    variable = models.ForeignKey('Variable', blank=True, null=True)
-    variable_property = models.ForeignKey('VariableProperty', blank=True, null=True)
+    variable = models.ForeignKey('Variable', blank=True, null=True, on_delete=models.SET_NULL)
+    variable_property = models.ForeignKey('VariableProperty', blank=True, null=True, on_delete=models.SET_NULL)
     value = models.FloatField()
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     start = models.FloatField(default=0)  # TODO DateTimeField
@@ -1036,7 +1085,7 @@ class RecordedDataOld(models.Model):
     value_int32 = models.IntegerField(null=True, blank=True)  # uint8, int16, uint16, int32
     value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64
     value_float64 = models.FloatField(null=True, blank=True)  # float64
-    variable = models.ForeignKey('Variable')
+    variable = models.ForeignKey('Variable', null=True, on_delete=models.SET_NULL)
     objects = RecordedDataValueManager()
 
     def __init__(self, *args, **kwargs):
@@ -1140,9 +1189,9 @@ class RecordedData(models.Model):
     value_boolean = models.BooleanField(default=False, blank=True)  # boolean
     value_int16 = models.SmallIntegerField(null=True, blank=True)  # int16, uint8, int8
     value_int32 = models.IntegerField(null=True, blank=True)  # uint8, int16, uint16, int32
-    value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64
-    value_float64 = models.FloatField(null=True, blank=True)  # float64
-    variable = models.ForeignKey('Variable')
+    value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64, int48
+    value_float64 = models.FloatField(null=True, blank=True)  # float64, float48
+    variable = models.ForeignKey('Variable', null=True, on_delete=models.SET_NULL)
     objects = RecordedDataValueManager()
 
     #
@@ -1163,11 +1212,12 @@ class RecordedData(models.Model):
         if variable_id is not None and 'id' not in kwargs:
             kwargs['id'] = int(int(int(timestamp * 1000) * 2097152) + variable_id)
         if 'variable' in kwargs and 'value' in kwargs:
-            if kwargs['variable'].value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
+            if kwargs['variable'].value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL',
+                                                          'FLOAT48']:
                 kwargs['value_float64'] = float(kwargs.pop('value'))
             elif kwargs['variable'].scaling and not kwargs['variable'].value_class.upper() in ['BOOL', 'BOOLEAN']:
                 kwargs['value_float64'] = float(kwargs.pop('value'))
-            elif kwargs['variable'].value_class.upper() in ['INT64', 'UINT32', 'DWORD']:
+            elif kwargs['variable'].value_class.upper() in ['INT64', 'UINT32', 'DWORD', 'INT48']:
                 kwargs['value_int64'] = int(kwargs.pop('value'))
                 if kwargs['value_int64'].bit_length() > 64:
                     # todo throw exeption or do anything
@@ -1214,11 +1264,11 @@ class RecordedData(models.Model):
         if value_class is None:
             value_class = self.variable.value_class
 
-        if value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
+        if value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL', 'FLOAT48']:
             return self.value_float64
         elif self.variable.scaling and not value_class.upper() in ['BOOL', 'BOOLEAN']:
             return self.value_float64
-        elif value_class.upper() in ['INT64', 'UINT32', 'DWORD']:
+        elif value_class.upper() in ['INT64', 'UINT32', 'DWORD', 'INT48']:
             return self.value_int64
         elif value_class.upper() in ['WORD', 'UINT', 'UINT16', 'INT32']:
             return self.value_int32
@@ -1368,7 +1418,7 @@ class BackgroundProcess(models.Model):
 class Event(models.Model):
     id = models.AutoField(primary_key=True)
     label = models.CharField(max_length=400, default='')
-    variable = models.ForeignKey(Variable)
+    variable = models.ForeignKey(Variable, null=True, on_delete=models.SET_NULL)
     level_choices = (
         (0, 'informative'),
         (1, 'ok'),
@@ -1530,7 +1580,7 @@ class Event(models.Model):
 @python_2_unicode_compatible
 class RecordedEvent(models.Model):
     id = models.AutoField(primary_key=True)
-    event = models.ForeignKey(Event)
+    event = models.ForeignKey(Event, null=True, on_delete=models.SET_NULL)
     time_begin = models.FloatField(default=0)  # TODO DateTimeField
     time_end = models.FloatField(null=True, blank=True)  # TODO DateTimeField
     active = models.BooleanField(default=False, blank=True)

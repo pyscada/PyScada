@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 @python_2_unicode_compatible
 class ModbusDevice(models.Model):
-    modbus_device = models.OneToOneField(Device)
+    modbus_device = models.OneToOneField(Device, on_delete=models.CASCADE)
     protocol_choices = ((0, 'TCP'), (1, 'UDP'), (2, 'serial ASCII'), (3, 'serial RTU'), (4, 'serial Binary'),)
     protocol = models.PositiveSmallIntegerField(default=0, choices=protocol_choices)
     framer_choices = ((0, 'Socket'), (1, 'RTU'), (2, 'ASCII'), (3, 'Binary'),)
@@ -39,7 +39,7 @@ class ModbusDevice(models.Model):
 
 @python_2_unicode_compatible
 class ModbusVariable(models.Model):
-    modbus_variable = models.OneToOneField(Variable)
+    modbus_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
     address = models.PositiveIntegerField()
     function_code_read_choices = (
         (0, 'not selected'), (1, 'coils (FC1)'), (2, 'discrete inputs (FC2)'), (3, 'holding registers (FC3)'),

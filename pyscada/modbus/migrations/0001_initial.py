@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
                 ('ip_address', models.GenericIPAddressField(default='127.0.0.1')),
                 ('port', models.CharField(default='502', help_text='for TCP and UDP enter network port as number (def. 502, for serial ASCII and RTU enter serial port (/dev/pts/13))', max_length=400)),
                 ('unit_id', models.PositiveSmallIntegerField(default=0)),
-                ('modbus_client', models.OneToOneField(to='pyscada.Client')),
+                ('modbus_client', models.OneToOneField(to='pyscada.Client', on_delete=models.CASCADE)),
             ],
             options={
             },
@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('address', models.PositiveIntegerField()),
                 ('function_code_read', models.PositiveSmallIntegerField(default=0, help_text=b'', choices=[(0, 'not selected'), (1, 'coils (FC1)'), (2, 'discrete inputs (FC2)'), (3, 'holding registers (FC3)'), (4, 'input registers (FC4)')])),
-                ('modbus_variable', models.OneToOneField(to='pyscada.Variable')),
+                ('modbus_variable', models.OneToOneField(to='pyscada.Variable', on_delete=models.CASCADE)),
             ],
             options={
             },

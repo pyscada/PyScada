@@ -12,7 +12,7 @@
                 <option disabled selected value> {{ dropdown.empty_value }} </option>
             {% endif %}
             {% for dropdown_item in dropdown.items.all %}
-                <option class="select-item {{ dropdown.web_class_str }}" id="{{ dropdown_item.pk }}" data-value="{{ dropdown_item.title }}" value="{{ dropdown_item.title }}">{{ dropdown_item.title }}</option>
+                <option class="select-item {{ dropdown.web_class_str }}" id="{{ dropdown_item.pk }}" data-value="{{ dropdown_item.value }}" value="{{ dropdown_item.value }}">{{ dropdown_item.title }}</option>
             {% endfor %}
         </select>
         {% if dropdown.unit %}

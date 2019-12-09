@@ -34,7 +34,7 @@ class Migration(migrations.Migration):
                 ('width', models.PositiveIntegerField(default=0)),
                 ('height', models.PositiveIntegerField(default=0)),
                 ('visible', models.BooleanField(default=True)),
-                ('variable', models.ForeignKey(default=None, to='pyscada.Variable')),
+                ('variable', models.ForeignKey(default=None, to='pyscada.Variable', on_delete=models.SET_NULL)),
             ],
             options={
             },
@@ -55,7 +55,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='widget',
             name='process_flow_diagram',
-            field=models.ForeignKey(default=None, blank=True, to='hmi.ProcessFlowDiagram', null=True),
+            field=models.ForeignKey(default=None, blank=True, to='hmi.ProcessFlowDiagram', null=True, on_delete=models.SET_NULL),
             preserve_default=True,
         ),
     ]

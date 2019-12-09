@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='processflowdiagramitem',
             name='variable',
-            field=models.ForeignKey(default=None, blank=True, to='pyscada.Variable', null=True),
+            field=models.ForeignKey(default=None, blank=True, to='pyscada.Variable', null=True, on_delete=models.SET_NULL),
         ),
     ]

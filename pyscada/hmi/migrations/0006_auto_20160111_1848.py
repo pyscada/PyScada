@@ -14,11 +14,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='hmivariable',
             name='chart_line_color',
-            field=models.ForeignKey(default=None, blank=True, to='hmi.Color', null=True),
+            field=models.ForeignKey(default=None, blank=True, to='hmi.Color', null=True, on_delete=models.SET_NULL),
         ),
         migrations.AlterField(
             model_name='widget',
             name='page',
-            field=models.ForeignKey(default=None, blank=True, to='hmi.Page', null=True),
+            field=models.ForeignKey(default=None, blank=True, to='hmi.Page', null=True, on_delete=models.SET_NULL),
         ),
     ]

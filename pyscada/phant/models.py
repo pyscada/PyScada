@@ -20,7 +20,7 @@ def gen_random_key(n=20):
 
 @python_2_unicode_compatible
 class PhantDevice(models.Model):
-    phant_device = models.OneToOneField(Device)
+    phant_device = models.OneToOneField(Device, on_delete=models.CASCADE)
     public_key = models.SlugField(max_length=20, default=gen_random_key, unique=True)
     private_key = models.CharField(max_length=20, default=gen_random_key)
 
