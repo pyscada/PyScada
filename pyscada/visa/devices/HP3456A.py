@@ -9,7 +9,7 @@ class Handler(GenericDevice):
     """
     HP3456A and other Devices with the same command set
     """
-    
+
     def read_data(self,variable_instance):
         """
         read values from the device
