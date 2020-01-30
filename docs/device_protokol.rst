@@ -13,6 +13,7 @@ Device Protocol IDs
 - 9: Reserved (Jofra350)
 - 10: GPIO
 - 11: PT104
+- 13: `SML (Smart Meter Language) <https://github.com/gkend/PyScada-SML>`_ 
 - 8X: Custom Worker
 - 95: Reserved (Scripting)
 - 96: Reserved (Event)
