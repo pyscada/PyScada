@@ -52,8 +52,8 @@ class ControlItem(models.Model):
         (5, 'Control Element'),
         (6, 'Display Value'),)
     type = models.PositiveSmallIntegerField(default=0, choices=type_choices)
-    variable = models.ForeignKey(Variable, null=True, blank=True, on_delete=models.SET_NULL)
-    variable_property = models.ForeignKey(VariableProperty, null=True, blank=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey(Variable, null=True, blank=True, on_delete=models.CASCADE)
+    variable_property = models.ForeignKey(VariableProperty, null=True, blank=True, on_delete=models.CASCADE)
 
     class Meta:
         ordering = ['position']

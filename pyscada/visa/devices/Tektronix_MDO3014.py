@@ -81,7 +81,9 @@ class Handler(GenericDevice):
         failed = 0
         mdo_div_quantity = 8.0
         range_i_min = 0
-        while range_i < len(vranges):
+        stop_iter = 15
+        while range_i < len(vranges) and stop_iter > 0:
+            stop_iter -= 1
             # logger.debug(range_i)
             self.mdo_set_vertical_scale(ch, vranges[range_i])
             data = self.mdo_query_waveform(ch=ch, frequency=frequency, refresh=True)
