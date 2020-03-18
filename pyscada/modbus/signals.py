@@ -11,6 +11,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 @receiver(post_save, sender=ModbusDevice)
 @receiver(post_save, sender=ModbusVariable)
 @receiver(post_save, sender=ExtendedModbusDevice)

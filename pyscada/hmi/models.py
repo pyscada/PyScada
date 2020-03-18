@@ -581,11 +581,11 @@ class Widget(models.Model):
     def css_class(self):
         widget_size = "col-xs-12 col-sm-12 col-md-12 col-lg-12"
         if self.size == 3:
-            widget_size = "col-xs-8 col-sm-8 col-md-8 col-lg-8"
+            widget_size = "col-xs-9 col-sm-9 col-md-9 col-lg-9"
         elif self.size == 2:
             widget_size = "col-xs-6 col-sm-6 col-md-6 col-lg-6"
         elif self.size == 1:
-            widget_size = "col-xs-4 col-sm-4 col-md-4 col-lg-4"
+            widget_size = "col-xs-3 col-sm-3 col-md-3 col-lg-3"
         return 'widget_row_' + str(self.row) + ' widget_col_' + str(self.col) + ' ' + widget_size
 
 

@@ -506,7 +506,7 @@ class DeviceProtocol(models.Model):
 class Device(models.Model):
     id = models.AutoField(primary_key=True)
     short_name = models.CharField(max_length=400, default='')
-    protocol = models.ForeignKey(DeviceProtocol, null=True, on_delete=models.SET_NULL)
+    protocol = models.ForeignKey(DeviceProtocol, null=True, on_delete=models.CASCADE)
     description = models.TextField(default='', verbose_name="Description", null=True)
     active = models.BooleanField(default=True)
     byte_order_choices = (
@@ -596,7 +596,7 @@ class Scaling(models.Model):
 @python_2_unicode_compatible
 class VariableProperty(models.Model):
     id = models.AutoField(primary_key=True)
-    variable = models.ForeignKey('Variable', null=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey('Variable', null=True, on_delete=models.CASCADE)
     property_class_choices = ((None, 'other or no Class specified'),
                               ('device', 'Device Property'),
                               ('data_record', 'Recorded Data'),
@@ -681,13 +681,12 @@ class VariableProperty(models.Model):
         return "variable_property"
 
 
-
 @python_2_unicode_compatible
 class Variable(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.SlugField(max_length=80, verbose_name="variable name", unique=True)
     description = models.TextField(default='', verbose_name="Description")
-    device = models.ForeignKey(Device, null=True, on_delete=models.SET_NULL)
+    device = models.ForeignKey(Device, null=True, on_delete=models.CASCADE)
     active = models.BooleanField(default=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET(1))
     writeable = models.BooleanField(default=False)
@@ -1052,8 +1051,8 @@ class Variable(models.Model):
 @python_2_unicode_compatible
 class DeviceWriteTask(models.Model):
     id = models.AutoField(primary_key=True)
-    variable = models.ForeignKey('Variable', blank=True, null=True, on_delete=models.SET_NULL)
-    variable_property = models.ForeignKey('VariableProperty', blank=True, null=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey('Variable', blank=True, null=True, on_delete=models.CASCADE)
+    variable_property = models.ForeignKey('VariableProperty', blank=True, null=True, on_delete=models.CASCADE)
     value = models.FloatField()
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     start = models.FloatField(default=0)  # TODO DateTimeField
@@ -1085,7 +1084,7 @@ class RecordedDataOld(models.Model):
     value_int32 = models.IntegerField(null=True, blank=True)  # uint8, int16, uint16, int32
     value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64
     value_float64 = models.FloatField(null=True, blank=True)  # float64
-    variable = models.ForeignKey('Variable', null=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey('Variable', null=True, on_delete=models.CASCADE)
     objects = RecordedDataValueManager()
 
     def __init__(self, *args, **kwargs):
@@ -1191,7 +1190,7 @@ class RecordedData(models.Model):
     value_int32 = models.IntegerField(null=True, blank=True)  # uint8, int16, uint16, int32
     value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64, int48
     value_float64 = models.FloatField(null=True, blank=True)  # float64, float48
-    variable = models.ForeignKey('Variable', null=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey('Variable', null=True, on_delete=models.CASCADE)
     objects = RecordedDataValueManager()
 
     #
@@ -1418,7 +1417,7 @@ class BackgroundProcess(models.Model):
 class Event(models.Model):
     id = models.AutoField(primary_key=True)
     label = models.CharField(max_length=400, default='')
-    variable = models.ForeignKey(Variable, null=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey(Variable, null=True, on_delete=models.CASCADE)
     level_choices = (
         (0, 'informative'),
         (1, 'ok'),
@@ -1580,7 +1579,7 @@ class Event(models.Model):
 @python_2_unicode_compatible
 class RecordedEvent(models.Model):
     id = models.AutoField(primary_key=True)
-    event = models.ForeignKey(Event, null=True, on_delete=models.SET_NULL)
+    event = models.ForeignKey(Event, null=True, on_delete=models.CASCADE)
     time_begin = models.FloatField(default=0)  # TODO DateTimeField
     time_end = models.FloatField(null=True, blank=True)  # TODO DateTimeField
     active = models.BooleanField(default=False, blank=True)

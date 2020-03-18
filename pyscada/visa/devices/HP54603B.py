@@ -65,7 +65,7 @@ class Handler(GenericDevice):
         return self.inst.query('*RST;*OPC?')
 
     def mdo_set_horizontal_scale(self, time_per_div, **kwargs):
-        self.inst.query(':TIMEBASE:MODE NORM;:TIMebase:RANGe %s;*OPC?' % str(time_per_div * 10))
+        self.inst.query(':TIMEBASE:MODE NORM;:TIMebase:RANGe %s;*OPC?' % str(float(time_per_div) * 10.0))
         self.inst.query(':RUN;*OPC?')
         time.sleep(2*kwargs.get("period", 1)/kwargs.get("frequency", 1000))
         self.inst.query(':STOP;*OPC?')

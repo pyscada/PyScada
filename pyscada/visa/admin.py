@@ -56,7 +56,7 @@ class VISAVariableAdmin(VariableAdmin):
         VISAVariableAdminInline
     ]
 
+
 admin_site.register(ExtendedVISADevice, VISADeviceAdmin)
 admin_site.register(ExtendedVISAVariable, VISAVariableAdmin)
-
 admin_site.register(VISADeviceHandler)

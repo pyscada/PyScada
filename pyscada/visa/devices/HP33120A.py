@@ -61,7 +61,7 @@ class Handler(GenericDevice):
         return False
 
     def afg_set_offset(self, ch=1, offset=0):
-        return self.inst.query(':VOLTage:OFFSet %s' % offset)
+        return self.inst.query(':VOLTage:OFFSet %s;*OPC?' % offset)
 
     def afg_set_vpp(self, ch=1, vpp=1):
         return self.inst.query(':VOLT %s;:VOLT:UNIT VPP;*OPC?;' % str(vpp))
