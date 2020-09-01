@@ -129,8 +129,8 @@ class Handler(GenericDevice):
 
     def mdo_prepare(self, **kwargs):
         self.inst.query(':SEL:CH1 1;:SEL:CH2 1;:HORIZONTAL:POSITION 0;:CH1:YUN "V";:CH2:YUN "V";'
-                        ':CH2:BANdwidth 10000000;:CH1:BANdwidth 10000000;:TRIG:A:TYP EDGE;:TRIG:A:EDGE:COUPLING AC;'
-                        ':TRIG:A:EDGE:SOU CH1;:TRIG:A:EDGE:SLO RIS;:TRIG:A:MODE NORM;:CH1:COUP AC;:CH2:COUP AC;*OPC?')
+                        ':CH2:BANdwidth 10000000;:CH1:BANdwidth 10000000;:TRIG:A:TYP EDGE;:TRIG:A:EDGE:COUPLING DC;'
+                        ':TRIG:A:EDGE:SOU CH1;:TRIG:A:EDGE:SLO RIS;:TRIG:A:MODE NORM;:CH1:COUP DC;:CH2:COUP DC;*OPC?')
 
     def mdo_query_waveform(self, ch=1, points_resolution=100, frequency=1000, refresh=False, **kwargs):
         self.inst.query(':SEL:CH%d 1;:HORIZONTAL:POSITION 0;:CH%d:YUN "V";'

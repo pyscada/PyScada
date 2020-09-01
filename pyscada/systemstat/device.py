@@ -42,6 +42,7 @@ class Device:
         (15,'swap_memory_sout'),
         (17,'disk_usage_systemdisk_percent'),
         (18,'disk_usage_disk_percent'),
+        (19,'network_ip_address'),
         ### APCUPSD Status
         (100, 'STATUS'), # True/False
         (101, 'LINEV'), # Volts
@@ -150,6 +151,11 @@ class Device:
                 # disk_usage_disk_percent
                 if hasattr(psutil, 'disk_usage'):
                     value = psutil.disk_usage(item.systemstatvariable.parameter).percent
+                    timestamp = time()
+            elif item.systemstatvariable.information == 19:
+                # disk_usage_disk_percent
+                if hasattr(psutil, 'net_if_addrs'):
+                    value = psutil.net_if_addrs()[item.systemstatvariable.parameter][0][1]
                     timestamp = time()
             elif 100 <= item.systemstatvariable.information <= 105:
                 # APCUPSD Status

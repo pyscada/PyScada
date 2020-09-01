@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
+from django.utils.safestring import mark_safe
 
 import os
 import time
@@ -90,7 +91,5 @@ class ExportTask(models.Model):
         if hasattr(settings, 'PYSCADA_EXPORT'):
             if 'output_folder' in settings.PYSCADA_EXPORT:
                 backup_file_path = os.path.expanduser(settings.PYSCADA_EXPORT['output_folder'])
-        return '<a href="%s">%s</a>' % (self.filename.replace(backup_file_path, '/measurement'),
-                                        self.filename.replace(backup_file_path, '/measurement'))
-
-    downloadlink.allow_tags = True
+        return mark_safe('<a href="%s">%s</a>' % (self.filename.replace(backup_file_path, '/measurement'),
+                                                  self.filename.replace(backup_file_path, '/measurement')))

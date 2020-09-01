@@ -32,6 +32,7 @@ class SystemStatVariable(models.Model):
         (15, 'swap_memory_sout'),
         (17, 'disk_usage_systemdisk_percent'),
         (18, 'disk_usage_percent'),
+        (19, 'network_ip_address'),
         (100, 'APCUPSD Online Status (True/False)'),
         (101, 'APCUPSD Line Voltage'),  # Volts
         (102, 'APCUPSD Battery Voltage'),  # Volts

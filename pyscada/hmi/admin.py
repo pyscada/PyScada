@@ -42,7 +42,7 @@ class ChartForm(forms.ModelForm):
 class ChartAdmin(admin.ModelAdmin):
     list_per_page = 100
     # ordering = ['position',]
-    search_fields = ['name', ]
+    search_fields = ['title', ]
     filter_horizontal = ('variables',)
     List_display_link = ('title',)
     list_display = ('id', 'title',)

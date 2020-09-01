@@ -10,6 +10,7 @@ try:
     from pymodbus.transaction import ModbusAsciiFramer
     from pymodbus.transaction import ModbusRtuFramer
     from pymodbus.transaction import ModbusSocketFramer
+    from pymodbus.exceptions import ConnectionException
 
     driver_ok = True
 except ImportError:
@@ -17,6 +18,7 @@ except ImportError:
 
 from math import isnan, isinf
 from time import time
+import traceback
 import logging
 
 logger = logging.getLogger(__name__)
@@ -75,17 +77,23 @@ class RegisterBlock:
 
         try:
             result = self._request_data(slave, unit, first_address, quantity)
+        except ConnectionException as e:
+            logger.info(e)
+            return None
         except:
             # something went wrong (ie. Server/Slave is not accessible)
             # todo add log for some specific errors
-            # var = traceback.format_exc()
-            # log.error("exeption while request_data of %s" % (var))
+            var = traceback.format_exc()
+            logger.error("exeption while request_data of %s" % var)
             return None
         if hasattr(result, 'registers'):
             return self.decode_data(result.registers)
         elif hasattr(result, 'bits'):
             return self.decode_data(result.bits)
         else:
+            logger.error("Modbus requested data has no bits nor registers, it's : %s" % result)
+            logger.error(self.__dict__)
+            logger.error("Modbus requested data has no bits nor registers, it's : %s %s" % (first_address, quantity))
             return None
 
     def decode_data(self, result):
@@ -259,14 +267,14 @@ class Device:
 
         if self._protocol == 0:  # TCP
             if self._framer is None:  # No Framer
-                self.slave = ModbusTcpClient(self._address, int(self._port))
+                self.slave = ModbusTcpClient(self._address, int(self._port), timeout=self._timeout)
             else:
-                self.slave = ModbusTcpClient(self._address, int(self._port), framer=framer)
+                self.slave = ModbusTcpClient(self._address, int(self._port), timeout=self._timeout, framer=framer)
         elif self._protocol == 1:  # UDP
             if self._framer is None:  # No Framer
-                self.slave = ModbusUdpClient(self._address, int(self._port))
+                self.slave = ModbusUdpClient(self._address, int(self._port), timeout=self._timeout)
             else:
-                self.slave = ModbusUdpClient(self._address, int(self._port), framer=framer)
+                self.slave = ModbusUdpClient(self._address, int(self._port), timeout=self._timeout, framer=framer)
         elif self._protocol in (2, 3, 4):  # serial
             method_list = {2: 'ascii', 3: 'rtu', 4: 'binary'}
             self.slave = ModbusSerialClient(
@@ -359,7 +367,7 @@ class Device:
                     self._disconnect()
                     return True
                 else:
-                    logger.info("device with id: %d is now accessible" % self.device.pk)
+                    logger.info("device with id: %d is not accessible" % self.device.pk)
                     return False
             else:
                 logger.error('Modbus Address %d out of range' % self.variables[variable_id].modbusvariable.address)
@@ -373,7 +381,7 @@ class Device:
                     self._disconnect()
                     return True
                 else:
-                    logger.info("device with id: %d is now accessible" % self.device.pk)
+                    logger.info("device with id: %d is not accessible" % self.device.pk)
                     return False
             else:
                 logger.error('Modbus Address %d out of range' % self.variables[variable_id].modbusvariable.address)

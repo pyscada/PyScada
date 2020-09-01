@@ -193,7 +193,7 @@ class DeviceWriteTaskAdmin(admin.ModelAdmin):
         return datetime.datetime.fromtimestamp(int(instance.start)).strftime('%Y-%m-%d %H:%M:%S')
 
     def has_delete_permission(self, request, obj=None):
-        return False
+        return True
 
 
 class LogAdmin(admin.ModelAdmin):

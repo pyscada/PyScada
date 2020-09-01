@@ -27,4 +27,4 @@ class Process(MultiDeviceDAQProcessWorker):
                                     item.modbusdevice.unit_id)
         else:
             # every port gets its own process
-            return '%d' % item.modbusdevice.port
+            return '%s' % item.modbusdevice.port

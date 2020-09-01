@@ -156,14 +156,17 @@ class Handler(GenericDevice):
         self.inst.query(':TRIGger:LEVel %s;*OPC?;' % str(level))
 
     def mdo_set_trigger_source(self, ch=1, **kwargs):
-        self.inst.query(':TRIGger:SOURce CHAN%d;*OPC?;' % ch)
+        if ch == 0:
+            self.inst.query(':TRIGger:SOURce EXT;*OPC?;')
+        else:
+            self.inst.query(':TRIGger:SOURce CHAN%d;*OPC?;' % ch)
 
     def mdo_prepare(self, **kwargs):
         logger.debug("IDN : %s" % self.inst.query('*IDN?'))
         self.inst.query(':RUN;*OPC?')  # run
         self.inst.query(':ACQuire:TYPE NORM;:TRIGger:COUPling DC;:TRIGger:MODE NORM;'
                         ':CHAN1:OFFSet 0;:CHAN2:OFFSet 0;*OPC?')
-        self.inst.query(':CHANnel1:COUPling AC;:CHANnel2:COUPling AC;:VIEW CHAN1;:VIEW CHAN2;*OPC?')
+        self.inst.query(':CHANnel1:COUPling DC;:CHANnel2:COUPling DC;:VIEW CHAN1;:VIEW CHAN2;*OPC?')
 
     def mdo_query_waveform(self, ch=1, points_resolution=100, frequency=1000, period=4.0, **kwargs):
 
