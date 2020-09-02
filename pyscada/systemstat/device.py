@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from pyscada.models import VariableProperty
 
 try:
     import psutil
@@ -150,12 +151,22 @@ class Device:
             elif item.systemstatvariable.information == 18:
                 # disk_usage_disk_percent
                 if hasattr(psutil, 'disk_usage'):
-                    value = psutil.disk_usage(item.systemstatvariable.parameter).percent
+                    try:
+                        value = psutil.disk_usage(item.systemstatvariable.parameter).percent
+                    except OSError:
+                        value = None
                     timestamp = time()
             elif item.systemstatvariable.information == 19:
                 # disk_usage_disk_percent
                 if hasattr(psutil, 'net_if_addrs'):
-                    value = psutil.net_if_addrs()[item.systemstatvariable.parameter][0][1]
+                    for vp in VariableProperty.objects.filter(variable=item):
+                        try:
+                            VariableProperty.objects.update_property(variable_property=vp,
+                                                                     value=psutil.net_if_addrs()[vp.name][0][1])
+                        except KeyError:
+                            VariableProperty.objects.update_property(variable_property=vp,
+                                                                     value="None")
+                    value = None
                     timestamp = time()
             elif 100 <= item.systemstatvariable.information <= 105:
                 # APCUPSD Status
