@@ -19,7 +19,8 @@ class Device:
     def __init__(self, device):
         self.variables = {}
         self.device = device
-        if self.device.visadevice.instrument.handler_path is not None:
+        if self.device.visadevice.instrument is not None \
+                and self.device.visadevice.instrument.handler_path is not None:
             sys.path.append(self.device.visadevice.instrument.handler_path)
         try:
             mod = __import__(self.device.visadevice.instrument.handler_class, fromlist=['Handler'])
@@ -44,7 +45,7 @@ class Device:
         """
         output = []
         if not driver_visa_ok:
-            logger.info("Visa-device-write data-visa NOT ok")
+            logger.info("Cannot import visa")
             return output
         for item in self.variables.values():
             if not (item.visavariable.variable_type == 0 and item.id == variable_id):
@@ -64,7 +65,7 @@ class Device:
         """
         output = []
         if not driver_visa_ok:
-            logger.info('Request Data Visa Driver Not Ok')
+            logger.info('Cannot import visa')
             return output
         
         for item in self.variables.values():

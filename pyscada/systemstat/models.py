@@ -40,8 +40,12 @@ class SystemStatVariable(models.Model):
         (104, 'APCUPSD Battery Time Left in Minutes'),  # Minutes
         (105, 'APCUPSD Load in %'),  # %
     )
-    information = models.PositiveSmallIntegerField(choices=information_choices)
-    parameter = models.CharField(default='', max_length=400, blank=True, null=True)
+    information = models.PositiveSmallIntegerField(choices=information_choices,
+                                                   help_text="For 'network_ip_address' create a variable property "
+                                                             "attached to this variable with the interface in the name "
+                                                             "of the VP")
+    parameter = models.CharField(default='', max_length=400, blank=True, null=True,
+                                 help_text="For 'disk_usage' insert the path")
 
     def __str__(self):
         return self.system_stat_variable.name
