@@ -30,7 +30,8 @@ class WidgetContentModel(models.Model):
         def fullname(o):
             return o.__module__ + "." + o.__class__.__name__
         wc = WidgetContent(content_pk=self.pk,
-                           content_model=fullname(self))
+                           content_model=fullname(self),
+                           content_str=self.__str__())
         wc.save()
 
     class Meta:
@@ -522,6 +523,7 @@ class SlidingPanelMenu(models.Model):
 class WidgetContent(models.Model):
     content_model = models.CharField(max_length=400)
     content_pk = models.PositiveIntegerField()
+    content_str = models.CharField(default="", max_length=400)
 
     def create_panel_html(self, **kwargs):
         content_model = self._import_content_model()
@@ -550,7 +552,7 @@ class WidgetContent(models.Model):
             return None
 
     def __str__(self):
-        return '%s [%d]' % (self.content_model, self.content_pk)  # todo add more infos
+        return '%s [%d] %s' % (self.content_model.split('.')[-1], self.content_pk, self.content_str)  # todo add more infos
 
 
 @python_2_unicode_compatible

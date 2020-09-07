@@ -5,6 +5,8 @@ from pyscada.models import Variable, Device
 
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
+from django.db.models.signals import post_save
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -48,6 +50,11 @@ class VISADeviceHandler(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        # TODO : select only devices of selected variables
+        post_save.send_robust(sender=VISADeviceHandler, instance=VISADevice.objects.first())
+        super(VISADeviceHandler, self).save(*args, **kwargs)
 
 
 class ExtendedVISADevice(Device):
