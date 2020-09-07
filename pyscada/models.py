@@ -780,7 +780,7 @@ class Variable(models.Model):
     timestamp = None
 
     def __str__(self):
-        return self.id + " - " + self.name
+        return str(self.id) + " - " + self.name
 
     def add_attr(self, **kwargs):
         for key in kwargs:
