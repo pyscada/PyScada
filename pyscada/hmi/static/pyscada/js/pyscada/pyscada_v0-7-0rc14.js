@@ -331,12 +331,12 @@ function data_handler_done(fetched_data){
         for (var key in VARIABLE_KEYS) {
             key = VARIABLE_KEYS[key];
             if (typeof(DATA[key]) == 'object'){
-                update_data_values('var-' + key,DATA[key][DATA[key].length-1][1]);
+                update_data_values('var-' + key,DATA[key][DATA[key].length-1][1],DATA[key][DATA[key].length-1][0]);
             }
         }
         for (var key in VARIABLE_PROPERTIES_DATA) {
             value = VARIABLE_PROPERTIES_DATA[key];
-            update_data_values('prop-' + key,value);
+            update_data_values('prop-' + key,value,null);
         }
         /*
         DATA_OUT_OF_DATE = (SERVER_TIME - timestamp  > CACHE_TIMEOUT);
@@ -507,7 +507,7 @@ function add_notification(message, level,timeout,clearable) {
     NOTIFICATION_COUNT = NOTIFICATION_COUNT + 1;
 }
 
-function update_data_values(key,val){
+function update_data_values(key,val,time){
         if (typeof(val)==="number"){
             var r_val = Number(val);
             if(Math.abs(r_val) == 0 ){
@@ -527,6 +527,19 @@ function update_data_values(key,val){
             }
             $(".type-numeric." + key).html(r_val + " " + $(".type-numeric." + key).attr("data-unit"));
             $('input.'+ key).attr("placeholder",r_val);
+            if (time != null) {
+                polling_interval = $(".type-numeric." + key).parent().find('[data-device-polling_interval]').attr('data-device-polling_interval')
+                if (time < SERVER_TIME - 10 * 1000 * polling_interval) {
+                    polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-alert').removeClass("hidden")
+                    polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').addClass("hidden")
+                }else if (time < SERVER_TIME - 3 * 1000 * polling_interval) {
+                    polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-alert').addClass("hidden")
+                    polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').removeClass("hidden")
+                }else {
+                    polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-alert').addClass("hidden")
+                    polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').addClass("hidden")
+                }
+            }
             // unixtime
             var date = new Date(val*1000);
             $(".type-numeric.unixtime_local_date_time." + key).html(date.toLocaleString());
@@ -2376,6 +2389,9 @@ function set_chart_selection_mode(){
 
 // fix drop down problem
 $( document ).ready(function() {
+    // Activate tooltips
+    $('[data-toggle="tooltip"]').tooltip()
+
     // Setup drop down menu
     $('.dropdown-toggle').dropdown();
 

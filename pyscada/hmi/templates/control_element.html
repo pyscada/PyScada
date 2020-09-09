@@ -27,7 +27,11 @@
         {% endif %}
     {% elif item.type == 6 %}<!-- display value -->
         <div class="input-group set_value">
-            <span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
+            <span class="input-group-addon input-group-addon-label" data-device-polling_interval="{{ item.variable.device.polling_interval }}">
+                <span style="color:red;height:14px;" data-toggle="tooltip" data-placement="top" title="" data-original-title="Very old value (>10 polling interval)" class="glyphicon glyphicon-alert hidden"></span>
+                <span style="color:orange;height:14px;" data-toggle="tooltip" data-placement="top" title="" data-original-title="Old value (between 3 and 10 polling interval)" class="glyphicon glyphicon-exclamation-sign hidden"></span>
+                {{ item.label }}
+            </span>
             <span class="input-group-addon input-group-addon-label type-numeric {{ item.web_class_str }}" data-unit="{% if item.unit %}{{ item.unit }}{% endif %}">Loading...</span>
         </div>
     {% endif %}

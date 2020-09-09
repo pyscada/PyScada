@@ -319,7 +319,7 @@ class RecordedDataValueManager(models.Manager):
         tmp_time_min = time_max
 
         def get_rd_value(rd_resp):
-            # return the value from a RecordedData Responce
+            # return the value from a RecordedData Response
             if rd_resp[2] is not None:  # float64
                 return rd_resp[2]  # time, value
             elif rd_resp[3] is not None:  # int64
