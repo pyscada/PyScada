@@ -525,7 +525,7 @@ function update_data_values(key,val){
             }else{
                 r_val = r_val.toPrecision(4);
             }
-            $(".type-numeric." + key).html(r_val);
+            $(".type-numeric." + key).html(r_val + " " + $(".type-numeric." + key).attr("data-unit"));
             $('input.'+ key).attr("placeholder",r_val);
             // unixtime
             var date = new Date(val*1000);

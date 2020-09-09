@@ -28,8 +28,7 @@
     {% elif item.type == 6 %}<!-- display value -->
         <div class="input-group set_value">
             <span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
-            <span class="input-group-addon input-group-addon-label type-numeric {{ item.web_class_str }}"></span>
-            {% if item.unit %}<span class="input-group-addon">{{ item.unit }}</span>{% endif %}
+            <span class="input-group-addon input-group-addon-label type-numeric {{ item.web_class_str }}" data-unit="{% if item.unit %}{{ item.unit }}{% endif %}">Loading...</span>
         </div>
     {% endif %}
 {% endif %}

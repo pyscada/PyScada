@@ -450,17 +450,25 @@ table.tablesorter thead tr .header.sorter-false {
 .control-panel .input-group {
 	float:left;
 	position:relative;
+	width: 100%;
+    display: inline-block;
 }
 
 .control-panel .input-group-addon.input-group-addon-label {
-	width:270px;
+	width:50%;
 	text-align:left;
+	text-overflow:ellipsis;
+	overflow:hidden;
+	display:inline-block;
 }
 
 .control-panel .btn {
 	margin-bottom:5px;
 	margin-right:5px;
-	width :220px;
+	width :100%;
+	text-overflow:ellipsis;
+	overflow:hidden;
+	display:inline-block;
 }
 
 .control-panel .input-group-btn .btn {
@@ -505,9 +513,11 @@ table.tablesorter thead tr .header.sorter-false {
 	content: " ";
 }
 .input-group.set_value {
-	width: 445px;
+	width: 100%;
 	margin-bottom:5px;
 	margin-right:5px;
+	font-size:0;
+	display:inline-block;
 }
 .input-group.set_value .help-block {
   display: table-caption;
@@ -572,4 +582,8 @@ table.tablesorter thead tr .header.sorter-false {
     fill: rgba(255, 255, 255, 0.85);
     stroke: rgba(0, 0, 0, 0.85);
     stroke-width: 1;
+}
+
+.widget .panel-body {
+  border-style: dashed;
 }
