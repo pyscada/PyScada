@@ -67,7 +67,7 @@ class RecordedDataValueManager(models.Manager):
                                  key_is_variable_name=False, add_timestamp_field=False, add_fake_data=False,
                                  add_latest_value=True, blow_up=False, use_date_saved=False,
                                  use_recorded_data_old=False, add_date_saved_max_field=False, **kwargs):
-        #logger.debug('%r' % [time_min, time_max])
+        # logger.debug('%r' % [time_min, time_max])
         if time_min is None:
             time_min = 0
         else:
@@ -84,7 +84,7 @@ class RecordedDataValueManager(models.Manager):
         else:
             time_max = min(time_max, time.time())
 
-        #logger.debug('%r' % [time_min, time_max])
+        # logger.debug('%r' % [time_min, time_max])
         date_saved_max = time_min
         values = {}
         var_filter = True
@@ -122,7 +122,7 @@ class RecordedDataValueManager(models.Manager):
         time_slice = 60 * max(60, min(24 * 60, -3 * len(variable_ids) + 1440))
         query_time_min = time_min
         query_time_max = min(time_min + time_slice, time_max)
-        #logger.debug('%r'%[time_min,time_max,query_time_min,query_time_max,time_slice])
+        # logger.debug('%r'%[time_min,time_max,query_time_min,query_time_max,time_slice])
 
         while query_time_min < time_max:
             if use_date_saved:
@@ -265,8 +265,9 @@ class RecordedDataValueManager(models.Manager):
                 no_mean_value = kwargs['no_mean_value']
             else:
                 no_mean_value = True
-            timevalues = np.arange(np.ceil((time_min) / mean_value_period) * mean_value_period*f_time_scale,
-                                   np.floor((time_max) / mean_value_period) * mean_value_period*f_time_scale, mean_value_period*f_time_scale)
+            timevalues = np.arange(np.ceil(time_min / mean_value_period) * mean_value_period*f_time_scale,
+                                   np.floor(time_max / mean_value_period) * mean_value_period*f_time_scale,
+                                   mean_value_period * f_time_scale)
 
             for key in values:
                 values[key] = blow_up_data(values[key], timevalues, mean_value_period*f_time_scale, no_mean_value)
@@ -342,20 +343,21 @@ class RecordedDataValueManager(models.Manager):
             date_saved_max = max(date_saved_max, time.mktime(item[7].utctimetuple()) + item[7].microsecond / 1e6)
             tmp_time_max = max(tmp_time, tmp_time_max)
             if tmp_time < time_min:
-                first_value[item[0]] = get_rd_value(item)
+                if item[0] not in first_value:
+                    first_value[item[0]] = [tmp_time * f_time_scale, get_rd_value(item)]
                 continue
             tmp_time_min = min(tmp_time, tmp_time_min)
             values[item[0]].append([tmp_time * f_time_scale, get_rd_value(item)])
 
         if query_first_value:
             for pk in variable_ids:
-                if not pk in values:
+                if pk not in values:
                     values[pk] = []
                 if pk in first_value:
-                    values[pk].insert(0,[time_min*f_time_scale,first_value[pk]])
+                    values[pk].insert(0, first_value[pk])
                 if len(values[pk]) > 1:
-                    values[pk].append([tmp_time_max*f_time_scale,values[pk][-1][1]])
-        values['timestamp'] = max(tmp_time_max,time_min) * f_time_scale
+                    values[pk].append([tmp_time_max*f_time_scale, values[pk][-1][1]])
+        values['timestamp'] = max(tmp_time_max, time_min) * f_time_scale
         values['date_saved_max'] = date_saved_max * f_time_scale
 
         return values

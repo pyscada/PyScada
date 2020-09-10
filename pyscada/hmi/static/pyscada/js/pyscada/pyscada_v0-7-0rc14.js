@@ -509,7 +509,7 @@ function add_notification(message, level,timeout,clearable) {
 
 function update_data_values(key,val,time){
         if (time != null) {
-            t = SERVER_TIME - time
+            t = new Date() - time
             $(".type-numeric." + key).attr('data-original-title','last update ' + msToTime(t) + ' ago')
             polling_interval = $(".type-numeric." + key).parent().find('[data-device-polling_interval]').attr('data-device-polling_interval')
             if (time < SERVER_TIME - 10 * 1000 * polling_interval) {
@@ -540,7 +540,11 @@ function update_data_values(key,val,time){
             }else{
                 r_val = r_val.toPrecision(4);
             }
-            $(".type-numeric." + key).html(r_val + " " + $(".type-numeric." + key).attr("data-unit"));
+            console.log($(key));
+            console.log($(".type-numeric." + key));
+            console.log($(".type-numeric." + key).attr("data-unit"));
+            $(".input-group-addon-label.type-numeric." + key).html(r_val + " " + $(".input-group-addon-label.type-numeric." + key).attr("data-unit"));
+            $(".legendValue.type-numeric." + key).html(r_val);
             $('input.'+ key).attr("placeholder",r_val);
             // unixtime
             var date = new Date(val*1000);
@@ -594,7 +598,7 @@ function update_data_values(key,val,time){
 }
 
 function msToTime(duration) {
-  var milliseconds = parseInt((duration % 1000) / 100),
+  var milliseconds = parseInt(duration % 1000),
     seconds = Math.floor((duration / 1000) % 60),
     minutes = Math.floor((duration / (1000 * 60)) % 60),
     hours = Math.floor((duration / (1000 * 60 * 60)) % 24);
@@ -607,7 +611,7 @@ function msToTime(duration) {
   }else if (minutes != 0) {
     return minutes + "m " + seconds + "s";
   }else {
-    return seconds + "s";
+    return seconds + "." + milliseconds + "s";
   }
 
 }
