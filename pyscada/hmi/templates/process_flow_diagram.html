@@ -12,12 +12,12 @@
                     <div class="hidden variable-config init-group" data-name="{{ item.variable.name }}" data-key="{{ item.variable.id }}"></div>
                     {% if item.type == 0 %}<!-- label blue -->
                         <div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
-                            <div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-green {{ item.web_class_str }}">{{ item.label }}</div></div></br>
+                            <div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-blue {{ item.web_class_str }}">{{ item.label }}</div></div></br>
                         </div>
                         
                     {% elif item.type == 1 %}<!-- label light blue -->
                         <div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
-                            <div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-green {{ item.web_class_str }}">{{ item.label }}</div></div></br>
+                            <div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-info {{ item.web_class_str }}">{{ item.label }}</div></div></br>
                         </div>
                     {% elif item.type == 2 %}<!-- label ok -->
                         <div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
@@ -25,7 +25,7 @@
                         </div>
                     {% elif item.type == 3 %}<!-- label warning -->
                         <div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
-                            <div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-yello {{ item.web_class_str }}">{{ item.label }}</div></div></br>
+                            <div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-yellow {{ item.web_class_str }}">{{ item.label }}</div></div></br>
                         </div>
                     {% elif item.type == 4 %}<!-- label alarm -->
                         <div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">

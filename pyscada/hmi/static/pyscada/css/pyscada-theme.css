@@ -462,6 +462,10 @@ table.tablesorter thead tr .header.sorter-false {
 	display:inline-block;
 }
 
+.control-panel .input-group-addon {
+	line-height:unset;
+}
+
 .control-panel .btn {
 	margin-bottom:5px;
 	margin-right:5px;

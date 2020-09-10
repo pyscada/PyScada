@@ -8,7 +8,7 @@
     {% elif item.type == 2 or item.type == 5 %}<!-- label ok -->
 		<span class="label label-default type-bool status-green var-{{ item.variable.pk }}">{{ item.label }}</span>
     {% elif item.type == 3 %}<!-- label warning -->
-		<span class="label label-default type-bool status-yello var-{{ item.variable.pk }}">{{ item.label }}</span>
+		<span class="label label-default type-bool status-yellow var-{{ item.variable.pk }}">{{ item.label }}</span>
     {% elif item.type == 4 %}<!-- label alarm -->
 		<span class="label label-default type-bool status-red var-{{ item.variable.pk }}">{{ item.label }}</span>
     {% elif item.type == 7 %}<!-- label alarm inverted -->

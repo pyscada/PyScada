@@ -508,6 +508,21 @@ function add_notification(message, level,timeout,clearable) {
 }
 
 function update_data_values(key,val,time){
+        if (time != null) {
+            t = SERVER_TIME - time
+            $(".type-numeric." + key).attr('data-original-title','last update ' + msToTime(t) + ' ago')
+            polling_interval = $(".type-numeric." + key).parent().find('[data-device-polling_interval]').attr('data-device-polling_interval')
+            if (time < SERVER_TIME - 10 * 1000 * polling_interval) {
+                polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-alert').removeClass("hidden")
+                polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').addClass("hidden")
+            }else if (time < SERVER_TIME - 3 * 1000 * polling_interval) {
+                polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-alert').addClass("hidden")
+                polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').removeClass("hidden")
+            }else {
+                polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-alert').addClass("hidden")
+                polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').addClass("hidden")
+            }
+        }
         if (typeof(val)==="number"){
             var r_val = Number(val);
             if(Math.abs(r_val) == 0 ){
@@ -527,19 +542,6 @@ function update_data_values(key,val,time){
             }
             $(".type-numeric." + key).html(r_val + " " + $(".type-numeric." + key).attr("data-unit"));
             $('input.'+ key).attr("placeholder",r_val);
-            if (time != null) {
-                polling_interval = $(".type-numeric." + key).parent().find('[data-device-polling_interval]').attr('data-device-polling_interval')
-                if (time < SERVER_TIME - 10 * 1000 * polling_interval) {
-                    polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-alert').removeClass("hidden")
-                    polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').addClass("hidden")
-                }else if (time < SERVER_TIME - 3 * 1000 * polling_interval) {
-                    polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-alert').addClass("hidden")
-                    polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').removeClass("hidden")
-                }else {
-                    polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-alert').addClass("hidden")
-                    polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').addClass("hidden")
-                }
-            }
             // unixtime
             var date = new Date(val*1000);
             $(".type-numeric.unixtime_local_date_time." + key).html(date.toLocaleString());
@@ -571,7 +573,7 @@ function update_data_values(key,val,time){
                 $(".label.type-bool.status-blue." + key).addClass("label-primary");
                 $(".label.type-bool.status-info." + key).addClass("label-info");
                 $(".label.type-bool.status-green." + key).addClass("label-success");
-                $(".label.type-bool.status-yello." + key).addClass("label-warning");
+                $(".label.type-bool.status-yellow." + key).addClass("label-warning");
                 $(".label.type-bool.status-red." + key).addClass("label-danger");
                 $(".label.type-bool.status-red-inv." + key).addClass("label-default");
                 $('button.btn-success.write-task-btn.' + key).addClass("update-able");
@@ -589,6 +591,25 @@ function update_data_values(key,val,time){
             $(".type-numeric." + key).html(val);
             $('input.'+ key).attr("placeholder",val);
         }
+}
+
+function msToTime(duration) {
+  var milliseconds = parseInt((duration % 1000) / 100),
+    seconds = Math.floor((duration / 1000) % 60),
+    minutes = Math.floor((duration / (1000 * 60)) % 60),
+    hours = Math.floor((duration / (1000 * 60 * 60)) % 24);
+
+  //hours = (hours < 10) ? "0" + hours : hours;
+  //minutes = (minutes < 10) ? "0" + minutes : minutes;
+  //seconds = (seconds < 10) ? "0" + seconds : seconds;
+  if (hours != 0) {
+    return hours + "h " + minutes + "m " + seconds + "s";
+  }else if (minutes != 0) {
+    return minutes + "m " + seconds + "s";
+  }else {
+    return seconds + "s";
+  }
+
 }
 
 function set_x_axes(){
