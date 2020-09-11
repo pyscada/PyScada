@@ -540,9 +540,7 @@ function update_data_values(key,val,time){
             }else{
                 r_val = r_val.toPrecision(4);
             }
-            console.log($(key));
-            console.log($(".type-numeric." + key));
-            console.log($(".type-numeric." + key).attr("data-unit"));
+            
             $(".input-group-addon-label.type-numeric." + key).html(r_val + " " + $(".input-group-addon-label.type-numeric." + key).attr("data-unit"));
             $(".legendValue.type-numeric." + key).html(r_val);
             $('input.'+ key).attr("placeholder",r_val);
@@ -849,7 +847,9 @@ function PyScadaPlot(id){
             } else {
                 y = p1[1] + (p2[1] - p1[1]) * (pos.x - p1[0]) / (p2[0] - p1[0]);
             }
-            $(legend_value_id+key).text(y.toFixed(2));
+            if (typeof(y) === "number") {
+                $(legend_value_id+key).text(y.toFixed(2));
+            }
         }
     }
 
