@@ -128,7 +128,8 @@ class VariableStateAdmin(admin.ModelAdmin):
 
 
 class DeviceAdmin(admin.ModelAdmin):
-    list_display = ('id', 'short_name', 'description', 'active',)
+    list_display = ('id', 'short_name', 'description', 'protocol', 'active', 'polling_interval')
+    list_editable = ('active', 'polling_interval')
     list_display_links = ('short_name', 'description')
 
 

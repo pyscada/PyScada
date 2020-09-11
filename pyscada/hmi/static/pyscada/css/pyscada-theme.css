@@ -591,3 +591,8 @@ table.tablesorter thead tr .header.sorter-false {
 .widget .panel-body {
   border-style: dashed;
 }
+
+.control-panel .form {
+  display: inline-block;
+  border-style: dotted;
+}

@@ -18,7 +18,7 @@
         {% else %}
             <div class="input-group set_value">
                 <span class="input-group-addon input-group-addon-label" style="width:40%;height:34px;">{{ item.label }}</span>
-                <span class="input-group-addon input-group-addon-label" style="width:40%;padding:0;border:0;">
+                <span class="input-group-addon input-group-addon-label" style="{% if item.unit %}width:40%;{% else %}width:50%;{% endif %}padding:0;border:0;">
                     <input type="text" class="form-control {{ item.web_class_str }}" id="{{ item.web_id }}-{{ uuid }}-value" placeholder="">
                 </span>
                 {% if item.unit %}<span class="input-group-addon" style="width: 10%;display: inline-block;height: 34px;">{{ item.unit }}</span>{% endif %}

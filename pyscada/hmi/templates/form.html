@@ -1,4 +1,4 @@
-<form name="{{ form.title }}" class="form" id="{{ form.web_id }}-{{ uuid }}">
+<form name="{{ form.title }}" class="form" id="{{ form.web_id }}-{{ uuid }}" style="width:100%;">
     {% for item in form.hidden_control_items_to_true.all %}
         {% if item.active == 1 %}
             {% if item.type == 5 %}<!-- hidden form input {{ item.key }} -->
@@ -24,9 +24,11 @@
                     {% endif %}
                 {% else %}
                     <div class="input-group set_value">
-                        <span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
-                        <input type="text" class="form-control {{ item.web_class_str }}" name="{{ item.name }}" id="{{ form.web_id }}-{{ uuid }}-{{ item.web_id }}-value" placeholder="">
-                        {% if item.unit %}<span class="input-group-addon">{{ item.unit }}</span>{% endif %}
+                        <span class="input-group-addon input-group-addon-label" style="width:40%;height:34px;">{{ item.label }}</span>
+                        <span class="input-group-addon input-group-addon-label" style="{% if item.unit %}width:50%;{% else %}width:60%;{% endif %}padding:0;border:0;">
+                            <input type="text" class="form-control {{ item.web_class_str }}" name="{{ item.name }}" id="{{ form.web_id }}-{{ uuid }}-{{ item.web_id }}-value" placeholder="">
+                        </span>
+                        {% if item.unit %}<span class="input-group-addon" style="width: 10%;display: inline-block;height: 34px;">{{ item.unit }}</span>{% endif %}
                     </div>
                 {% endif %}
                 <br><br>
