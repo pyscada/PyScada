@@ -394,7 +394,7 @@ class VariablePropertyManager(models.Manager):
         if property_class is not None:
             kwargs['property_class'] = property_class
         if value_class.upper() in ['STRING']:
-            kwargs['value_string'] = value
+            kwargs['value_string'] = value[:VariableProperty._meta.get_field('value_string').max_length]
         elif value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
             kwargs['value_float64'] = value
         elif value_class.upper() in ['INT64', 'UINT32', 'DWORD']:
@@ -450,7 +450,7 @@ class VariablePropertyManager(models.Manager):
             value_class = vp.value_class
             if value_class.upper() in ['STRING']:
                 value = "" if value is None else value
-                vp.value_string = value
+                vp.value_string = value[:VariableProperty._meta.get_field('value_string').max_length]
             elif value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
                 vp.value_float64 = value
             elif value_class.upper() in ['INT64', 'UINT32', 'DWORD']:
@@ -639,7 +639,7 @@ class VariableProperty(models.Model):
     value_int32 = models.IntegerField(null=True, blank=True)  # uint8, int16, uint16, int32
     value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64
     value_float64 = models.FloatField(null=True, blank=True)  # float64
-    value_string = models.CharField(default='', blank=True, max_length=255)
+    value_string = models.CharField(default='', blank=True, max_length=1000)
     timestamp = models.DateTimeField(blank=True, null=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET(1), blank=True, null=True)
     objects = VariablePropertyManager()
