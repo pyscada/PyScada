@@ -808,7 +808,7 @@ class SingleDeviceDAQProcessWorker(Process):
                     process['id'] = bp.id
                     process['failed'] += 1
                 else:
-                    logger.error('process %s failed more then 3 times' % (self.bp_label % process['key']))
+                    logger.error('process %s failed more than 3 times' % (self.bp_label % process['key']))
             except:
                 logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
 

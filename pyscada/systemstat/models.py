@@ -39,6 +39,7 @@ class SystemStatVariable(models.Model):
         (103, 'APCUPSD Battery Charge in %'),  # %
         (104, 'APCUPSD Battery Time Left in Minutes'),  # Minutes
         (105, 'APCUPSD Load in %'),  # %
+        (200, 'List first X/last X/all items of a directory'),
     )
     information = models.PositiveSmallIntegerField(choices=information_choices,
                                                    help_text="For 'network_ip_address' create a variable property "

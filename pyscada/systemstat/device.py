@@ -8,6 +8,8 @@ try:
 except ImportError:
     driver_ok = False
 
+import os
+
 from time import time
 import logging
 
@@ -51,6 +53,8 @@ class Device:
         (103, 'BCHARGE'), # %
         (104, 'TIMELEFT'), # Minutes
         (105, 'LOADPCT'), #
+        ### Other
+        (200, 'list_files'), #
 
 
 
@@ -199,6 +203,57 @@ class Device:
                         if 'LOADPCT' in apcupsd_status:
                             value = apcupsd_status['LOADPCT']
                             timestamp = apcupsd_status['timestamp']
+            elif item.systemstatvariable.information == 200:
+                # list first X/last X/all items of a directory
+                for vp in VariableProperty.objects.filter(variable=item):
+                    try:
+                        os.chdir(vp.name)
+                        list_dir = list(filter(os.path.isfile, os.listdir(vp.name)))
+                        list_dir.sort(key=os.path.getmtime)
+                    except FileNotFoundError:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str(vp.name + " not found"))
+                        continue
+                    param = item.systemstatvariable.parameter
+                    if param is None:
+                        param = ""
+                    if param != "":
+                        param = param.split()
+                    result = ""
+                    if list_dir is None or len(list_dir) == 0:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str("No files in " + vp.name))
+                        continue
+                    if len(param) == 2:
+                        try:
+                            val = int(param[1])
+                            if val <= 1:
+                                VariableProperty.objects.update_property(variable_property=vp,
+                                                                         value="Systemstat listing directory filter "
+                                                                               "value must be > 0")
+                                continue
+                            else:
+                                if param[0] == "first":
+                                    for i in list_dir[:val]:
+                                        result += str(i) + "<br>"
+                                elif param[0] == "last":
+                                    for i in list_dir[-val:]:
+                                        result += str(i) + "<br>"
+                        except ValueError:
+                            VariableProperty.objects.update_property(variable_property=vp,
+                                                                     value="Systemstat listing directory filter value "
+                                                                           "must be an integer")
+                            continue
+                    elif (len(param) == 1 and param[0] == "all") or len(param) == 0:
+                        for i in list_dir:
+                            result += str(i) + "\r\n"
+                    else:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value="Systemstat listing directory parameter error")
+                        continue
+                    VariableProperty.objects.update_property(variable_property=vp, value=result)
+                value = None
+                timestamp = time()
             else:
                 value = None
             # update variable
