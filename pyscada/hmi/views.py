@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from pyscada.core import version as core_version
-from pyscada.models import RecordedData, VariableProperty
+from pyscada.models import RecordedData, VariableProperty, Variable
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Form
 from pyscada.hmi.models import DropDown
@@ -11,7 +11,7 @@ from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
 
 from pyscada.models import Log
-from pyscada.models import DeviceWriteTask
+from pyscada.models import DeviceWriteTask, DeviceReadTask
 
 from django.http import HttpResponse
 from django.template.loader import get_template
@@ -178,6 +178,41 @@ def log_data(request):
     jdata = json.dumps(odata, indent=2)
 
     return HttpResponse(jdata, content_type='application/json')
+
+
+@unauthenticated_redirect
+def form_read_task(request):
+    if 'key' in request.POST and 'type' in request.POST:
+        key = int(request.POST['key'])
+        item_type = request.POST['type']
+        # check if float as DeviceWriteTask doesn't support string values
+        if GroupDisplayPermission.objects.count() == 0:
+            if item_type == 'variable':
+                crt = DeviceReadTask(device=Variable.objects.get(pk=key).device, start=time.time(), user=request.user)
+                crt.save()
+                return HttpResponse(status=200)
+            elif item_type == 'variable_property':
+                crt = DeviceReadTask(device=VariableProperty.objects.get(pk=key).variable.device, start=time.time(),
+                                      user=request.user)
+                crt.save()
+                return HttpResponse(status=200)
+        else:
+            if item_type == 'variable':
+                if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
+                                                         control_items__type=5, control_items__variable__pk=key):
+                    crt = DeviceReadTask(device=Variable.objects.get(pk=key).device, start=time.time(),
+                                         user=request.user)
+                    crt.save()
+                    return HttpResponse(status=200)
+            elif item_type == 'variable_property':
+                if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
+                                                         control_items__type=5,
+                                                         control_items__variable_property__pk=key):
+                    crt = DeviceReadTask(device=VariableProperty.objects.get(pk=key).variable.device, start=time.time(),
+                                         user=request.user)
+                    crt.save()
+                    return HttpResponse(status=200)
+    return HttpResponse(status=404)
 
 
 @unauthenticated_redirect

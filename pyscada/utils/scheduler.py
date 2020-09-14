@@ -43,7 +43,7 @@ from django.db.utils import OperationalError
 from django.db.transaction import TransactionManagementError
 
 
-from pyscada.models import BackgroundProcess, DeviceWriteTask, Device, RecordedData
+from pyscada.models import BackgroundProcess, DeviceWriteTask, Device, RecordedData, DeviceReadTask
 from django.utils.timezone import now
 import logging
 
@@ -978,15 +978,29 @@ class SingleDeviceDAQProcess(Process):
             if len(data) > 0:
                 return 1, data
 
-        if time() - self.last_query > self.dt_query_data:
+        if (time() - self.last_query > self.dt_query_data) or \
+                DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
+                                              device_id=self.device_id).count():
+            # TODO : Read data for a variable or a VP only
+
             self.last_query = time()
             # Query data
             if self.device is not None:
                 tmp_data = self.device.request_data()
             else:
+                for task in DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
+                                                          device_id=self.device_id).order_by('start'):
+                    task.failed = True
+                    task.finished = time()
+                    task.save()
                 return 1, None
             if isinstance(tmp_data, list):
                 if len(tmp_data) > 0:
+                    for task in DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
+                                                              device_id=self.device_id).order_by('start'):
+                        task.done = True
+                        task.finished = time()
+                        task.save()
                     return 1, [tmp_data, ]
 
         return 1, None

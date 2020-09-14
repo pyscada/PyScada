@@ -1070,6 +1070,27 @@ class DeviceWriteTask(models.Model):
 
 
 @python_2_unicode_compatible
+class DeviceReadTask(models.Model):
+    id = models.AutoField(primary_key=True)
+    device = models.ForeignKey('Device', blank=True, null=True, on_delete=models.CASCADE)
+    variable = models.ForeignKey('Variable', blank=True, null=True, on_delete=models.CASCADE)
+    variable_property = models.ForeignKey('VariableProperty', blank=True, null=True, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    start = models.FloatField(default=0)  # TODO DateTimeField
+    finished = models.FloatField(default=0, blank=True)  # TODO DateTimeField
+    done = models.BooleanField(default=False, blank=True)
+    failed = models.BooleanField(default=False, blank=True)
+
+    def __str__(self):
+        if self.variable:
+            return self.variable.name
+        elif self.variable_property:
+            return self.variable_property.variable.name + ' : ' + self.variable_property.name
+        else:
+            return self.device.short_name
+
+
+@python_2_unicode_compatible
 class RecordedDataOld(models.Model):
     """
     Big Int first 42 bits are used for the unixtime in ms, unsigned because we only

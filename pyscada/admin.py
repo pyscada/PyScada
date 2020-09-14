@@ -5,7 +5,7 @@ from pyscada.models import Device, DeviceProtocol
 from pyscada.models import Variable, VariableProperty
 from pyscada.models import Scaling, Color
 from pyscada.models import Unit
-from pyscada.models import DeviceWriteTask
+from pyscada.models import DeviceWriteTask, DeviceReadTask
 from pyscada.models import Log
 from pyscada.models import BackgroundProcess
 from pyscada.models import Event
@@ -197,6 +197,25 @@ class DeviceWriteTaskAdmin(admin.ModelAdmin):
         return True
 
 
+class DeviceReadTaskAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'user_name', 'start_time', 'done', 'failed',)
+    list_display_links = ('name',)
+    list_filter = ('done', 'failed',)
+    raw_id_fields = ('variable',)
+
+    def name(self, instance):
+        return instance.__str__()
+
+    def user_name(self, instance):
+        try:
+            return instance.user.username
+        except:
+            return 'None'
+
+    def start_time(self, instance):
+        return datetime.datetime.fromtimestamp(int(instance.start)).strftime('%Y-%m-%d %H:%M:%S')
+
+
 class LogAdmin(admin.ModelAdmin):
     list_display = ('id', 'time', 'level', 'message_short', 'user_name',)
     list_display_links = ('message_short',)
@@ -272,6 +291,7 @@ admin_site.register(Event, EventAdmin)
 admin_site.register(RecordedEvent, RecordedEventAdmin)
 admin_site.register(Mail, MailAdmin)
 admin_site.register(DeviceWriteTask, DeviceWriteTaskAdmin)
+admin_site.register(DeviceReadTask, DeviceReadTaskAdmin)
 admin_site.register(Log, LogAdmin)
 admin_site.register(BackgroundProcess, BackgroundProcessAdmin)
 admin_site.register(VariableState, VariableStateAdmin)

@@ -2071,6 +2071,27 @@ function check_min_max(value, min, max, min_strict, max_strict) {
     return 0;
 }
 
+//form/read-task
+
+$('button.read-task-set').click(function(){
+    key = $(this).data('key');
+    type = $(this).data('type');
+    $(this)[0].disabled = true;
+    $.ajax({
+        type: 'post',
+        url: ROOT_URL+'form/read_task/',
+        data: {key:key, type:type},
+        success: function (data) {
+            $(this).disabled = false;
+        },
+        error: function(data) {
+            add_notification('read task failed',3);
+            console.log('read task failed');
+            $(this)[0].disabled = false;
+        }
+    });
+})
+
 //form/write_task/
 
 $('button.write-task-set').click(function(){

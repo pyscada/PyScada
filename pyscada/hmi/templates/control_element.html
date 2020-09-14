@@ -23,13 +23,16 @@
                 </span>
                 {% if item.unit %}<span class="input-group-addon" style="width: 10%;display: inline-block;height: 34px;">{{ item.unit }}</span>{% endif %}
                 <span class="input-group-btn" style="display:inline-block;width:10%;">
-                    <button class="btn btn-default write-task-set set-{{ item.key }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}" id="{{ item.web_id }}-{{ uuid }}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-value-class="{{ item.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}" type="button" style="width:100%;height:34px;padding-top:0;padding-bottom:0;">set</button>
+                    <button class="btn btn-default write-task-set set-{{ item.key }}" data-key="{{ item.key }}" data-type="{{ item.item_type }}" id="{{ item.web_id }}-{{ uuid }}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-value-class="{{ item.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}" type="button" style="width:100%;height:34px;padding-top:0;padding-bottom:0;">set</button>
                 </span>
             </div>
         {% endif %}
     {% elif item.type == 6 %}<!-- display value -->
         <div class="input-group set_value">
             <span class="input-group-addon input-group-addon-label" data-device-polling_interval="{{ item.variable.device.polling_interval }}">
+                <button class="btn btn-default read-task-set set-{{ item.key }}" data-key="{{ item.key }}" data-type="{{ item.item_type }}" type="button" style="width:16px;height:16px;padding:0;margin:0;">
+                    <span class="glyphicon glyphicon-refresh" data-toggle="tooltip" data-placement="top" title="" data-original-title="Refresh data" style="font-size:10px;vertical-align:text-top;"></span>
+                </button>
                 <span style="color:red;height:12px;" data-toggle="tooltip" data-placement="top" title="" data-original-title="Very old value (>10 polling interval)" class="glyphicon glyphicon-alert hidden"></span>
                 <span style="color:orange;height:12px;" data-toggle="tooltip" data-placement="top" title="" data-original-title="Old value (between 3 and 10 polling interval)" class="glyphicon glyphicon-exclamation-sign hidden"></span>
                 {{ item.label }}

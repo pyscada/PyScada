@@ -147,6 +147,12 @@ class ControlItem(models.Model):
         elif self.variable:
             return self.variable.max_type
 
+    def device(self):
+        if self.variable_property:
+            return self.variable_property.variable.device
+        elif self.variable:
+            return self.variable.device
+
 
 @python_2_unicode_compatible
 class Chart(WidgetContentModel):
