@@ -9,6 +9,8 @@ except ImportError:
     driver_ok = False
 
 import os
+from ftplib import FTP, error_perm
+from ipaddress import ip_address
 
 from time import time
 import logging
@@ -205,7 +207,13 @@ class Device:
                             timestamp = apcupsd_status['timestamp']
             elif item.systemstatvariable.information == 200:
                 # list first X/last X/all items of a directory
+                param = item.systemstatvariable.parameter
+                if param is None:
+                    param = ""
+                if param != "":
+                    param = param.split()
                 for vp in VariableProperty.objects.filter(variable=item):
+                    result = ""
                     try:
                         os.chdir(vp.name)
                         list_dir = list(filter(os.path.isfile, os.listdir(vp.name)))
@@ -214,12 +222,6 @@ class Device:
                         VariableProperty.objects.update_property(variable_property=vp,
                                                                  value=str(vp.name + " not found"))
                         continue
-                    param = item.systemstatvariable.parameter
-                    if param is None:
-                        param = ""
-                    if param != "":
-                        param = param.split()
-                    result = ""
                     if list_dir is None or len(list_dir) == 0:
                         VariableProperty.objects.update_property(variable_property=vp,
                                                                  value=str("No files in " + vp.name))
@@ -231,7 +233,7 @@ class Device:
                                 VariableProperty.objects.update_property(variable_property=vp,
                                                                          value="Systemstat listing directory filter "
                                                                                "value must be > 0")
-                                continue
+                                break
                             else:
                                 if param[0] == "first":
                                     for i in list_dir[:val]:
@@ -243,14 +245,74 @@ class Device:
                             VariableProperty.objects.update_property(variable_property=vp,
                                                                      value="Systemstat listing directory filter value "
                                                                            "must be an integer")
-                            continue
+                            break
                     elif (len(param) == 1 and param[0] == "all") or len(param) == 0:
                         for i in list_dir:
                             result += str(i) + "\r\n"
                     else:
                         VariableProperty.objects.update_property(variable_property=vp,
                                                                  value="Systemstat listing directory parameter error")
+                        break
+                    VariableProperty.objects.update_property(variable_property=vp, value=result)
+                value = None
+                timestamp = time()
+            elif item.systemstatvariable.information == 201:
+                # list first X/last X/all items of a ftp directory
+                param = item.systemstatvariable.parameter
+                if param is None:
+                    param = ""
+                if param != "":
+                    param = param.split()
+                for vp in VariableProperty.objects.filter(variable=item):
+                    result = ""
+                    if len(param) == 0:
+                        logger.debug("FTP IP missing for listing directory")
+                        break
+                    try:
+                        ip_address(param[0])
+                    except ValueError:
+                        logger.debug("FTP listing directory : first argument must be IP, it's : " + param[0])
+                        break
+                    try:
+                        ftp = FTP(param[0])
+                        ftp.login()
+                        list_dir = ftp.nlst(vp.name)
+                        ftp.close()
+                    except error_perm:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str(vp.name + " not found"))
                         continue
+                    if list_dir is None or len(list_dir) == 0:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str("No files in " + vp.name))
+                        continue
+                    if len(param) == 3:
+                        try:
+                            val = int(param[2])
+                            if val <= 1:
+                                VariableProperty.objects.update_property(variable_property=vp,
+                                                                         value="Systemstat listing directory filter "
+                                                                               "value must be > 0")
+                                break
+                            else:
+                                if param[1] == "first":
+                                    for i in list_dir[:val]:
+                                        result += str(i) + "<br>"
+                                elif param[1] == "last":
+                                    for i in list_dir[-val:]:
+                                        result += str(i) + "<br>"
+                        except ValueError:
+                            VariableProperty.objects.update_property(variable_property=vp,
+                                                                     value="Systemstat listing directory filter value "
+                                                                           "must be an integer")
+                            break
+                    elif (len(param) == 2 and param[1] == "all") or len(param) == 1:
+                        for i in list_dir:
+                            result += str(i) + "\r\n"
+                    else:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value="Systemstat listing directory parameter error")
+                        break
                     VariableProperty.objects.update_property(variable_property=vp, value=result)
                 value = None
                 timestamp = time()

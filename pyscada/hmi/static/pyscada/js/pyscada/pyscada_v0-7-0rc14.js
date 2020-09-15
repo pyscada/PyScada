@@ -2082,14 +2082,14 @@ $('button.read-task-set').click(function(){
         url: ROOT_URL+'form/read_task/',
         data: {key:key, type:type},
         success: function (data) {
-            $(this).disabled = false;
+
         },
         error: function(data) {
             add_notification('read task failed',3);
             console.log('read task failed');
-            $(this)[0].disabled = false;
         }
     });
+    $(this)[0].disabled = false;
 })
 
 //form/write_task/
