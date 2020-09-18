@@ -50,6 +50,8 @@ class ChartAdmin(admin.ModelAdmin):
     list_display = ('id', 'title',)
     #list_filter = ('widget__page__title', 'widget__title',)
     form = ChartForm
+    save_as = True
+    save_as_continue = True
 
     def name(self, instance):
         return instance.variables.name
@@ -74,6 +76,8 @@ class XYChartAdmin(admin.ModelAdmin):
     List_display_link = ('title',)
     list_display = ('id', 'title', 'x_axis_label', 'x_axis_linlog', 'y_axis_label')
     form = XYChartForm
+    save_as = True
+    save_as_continue = True
 
     def name(self, instance):
         return instance.variables.name
@@ -98,6 +102,8 @@ class PieAdmin(admin.ModelAdmin):
     List_display_link = ('title',)
     list_display = ('id', 'title')
     form = PieForm
+    save_as = True
+    save_as_continue = True
 
     def name(self, instance):
         return instance.variables.name
@@ -107,16 +113,22 @@ class DropDownAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'empty', 'empty_value', 'items_list')
     filter_horizontal = ('items',)
     list_filter = ('controlpanel', 'dropdowns_form',)
+    save_as = True
+    save_as_continue = True
 
 
 class DropDownItemAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'value')
     list_filter = ('dropdown',)
+    save_as = True
+    save_as_continue = True
 
 
 class FormAdmin(admin.ModelAdmin):
     filter_horizontal = ('control_items', 'hidden_control_items_to_true', 'dropdowns')
     list_filter = ('controlpanel',)
+    save_as = True
+    save_as_continue = True
 
 
 class DisplayValueOptionAdminFrom(forms.ModelForm):
@@ -175,6 +187,8 @@ class DisplayValueOptionAdmin(admin.ModelAdmin):
         }),
     )
     form = DisplayValueOptionAdminFrom
+    save_as = True
+    save_as_continue = True
 
     def has_module_permission(self, request):
         return False
@@ -185,6 +199,8 @@ class ControlItemAdmin(admin.ModelAdmin):
     list_filter = ('controlpanel', 'control_items_form',)
     list_editable = ('position', 'label', 'type', 'variable', 'variable_property', 'display_value_options')
     raw_id_fields = ('variable',)
+    save_as = True
+    save_as_continue = True
 
 
 class SlidingPanelMenuForm(forms.ModelForm):
@@ -204,6 +220,8 @@ class SlidingPanelMenuAdmin(admin.ModelAdmin):
     # filter_horizontal = ('items',)
     # form = SlidingPanelMenuForm
     list_display = ('id', 'title', 'position', 'visible')
+    save_as = True
+    save_as_continue = True
 
 
 class WidgetAdmin(admin.ModelAdmin):
@@ -211,24 +229,34 @@ class WidgetAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'page', 'row', 'col', 'size', 'content', )
     list_editable = ('title', 'page', 'row', 'col', 'size', 'content', )
     list_filter = ('page',)
+    save_as = True
+    save_as_continue = True
 
 
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
     filter_horizontal = (
         'pages', 'sliding_panel_menus', 'charts', 'xy_charts', 'control_items', 'widgets', 'views',
         'custom_html_panels', 'process_flow_diagram', 'forms', 'dropdowns')
+    save_as = True
+    save_as_continue = True
 
 
 class ControlPanelAdmin(admin.ModelAdmin):
     filter_horizontal = ('items', 'forms', 'dropdowns')
+    save_as = True
+    save_as_continue = True
 
 
 class ViewAdmin(admin.ModelAdmin):
     filter_horizontal = ('pages', 'sliding_panel_menus')
+    save_as = True
+    save_as_continue = True
 
 
 class CustomHTMLPanelAdmin(admin.ModelAdmin):
     filter_horizontal = ('variables', 'variable_properties')
+    save_as = True
+    save_as_continue = True
 
 
 class PageAdmin(admin.ModelAdmin):
@@ -236,15 +264,21 @@ class PageAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'link_title', 'position',)
     list_editable = ('title', 'link_title', 'position',)
     list_filter = ('view__title',)
+    save_as = True
+    save_as_continue = True
 
 
 class ProcessFlowDiagramItemAdmin(admin.ModelAdmin):
     list_display = ('id',)
     # raw_id_fields = ('variable',)
+    save_as = True
+    save_as_continue = True
 
 
 class ProcessFlowDiagramAdmin(admin.ModelAdmin):
     filter_horizontal = ('process_flow_diagram_items',)
+    save_as = True
+    save_as_continue = True
 
 
 admin_site.register(ControlItem, ControlItemAdmin)

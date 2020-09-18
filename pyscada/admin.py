@@ -131,6 +131,8 @@ class DeviceAdmin(admin.ModelAdmin):
     list_display = ('id', 'short_name', 'description', 'protocol', 'active', 'polling_interval')
     list_editable = ('active', 'polling_interval')
     list_display_links = ('short_name', 'description')
+    save_as = True
+    save_as_continue = True
 
 
 class VariableAdminFrom(forms.ModelForm):
@@ -160,6 +162,8 @@ class VariableAdmin(admin.ModelAdmin):
     list_filter = ('device__short_name', 'active', 'writeable', 'unit__unit', 'value_class')
     search_fields = ['name', ]
     form = VariableAdminFrom
+    save_as = True
+    save_as_continue = True
 
     def device_name(self, instance):
         return instance.device.short_name
@@ -276,6 +280,8 @@ class VariablePropertyAdmin(admin.ModelAdmin):
     list_display_links = ('id', 'variable', 'name', 'property_class')
     list_filter = ('variable', 'name', 'property_class',)
     raw_id_fields = ('variable',)
+    save_as = True
+    save_as_continue = True
 
     def value(self, instance):
         return instance.value()
