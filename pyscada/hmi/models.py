@@ -426,7 +426,7 @@ class Form(models.Model):
                                            limit_choices_to={'type': '1'}, blank=True)
     dropdowns = models.ManyToManyField(DropDown, related_name='dropdowns_form', blank=True)
     hidden_control_items_to_true = models.ManyToManyField(ControlItem, related_name='hidden_control_items_form',
-                                                          limit_choices_to={'type': '5'}, blank=True)
+                                                          limit_choices_to={'type': '1'}, blank=True)
 
     def __str__(self):
         return text_type(str(self.id) + ': ' + self.title)
