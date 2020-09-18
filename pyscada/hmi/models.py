@@ -107,9 +107,11 @@ class ControlItem(models.Model):
 
     def __str__(self):
         if self.variable_property:
-            return self.id.__str__() + "-" + self.variable_property.name.replace(' ', '_')
+            return self.id.__str__() + "-" + self.label.replace(' ', '_') + "-" + \
+                   self.variable_property.name.replace(' ', '_')
         elif self.variable:
-            return self.id.__str__() + "-" + self.variable.name.replace(' ', '_')
+            return self.id.__str__() + "-" + self.label.replace(' ', '_') + "-" + "-" + \
+                   self.variable.name.replace(' ', '_')
 
     def web_id(self):
         if self.variable_property:
@@ -421,7 +423,7 @@ class Form(models.Model):
     title = models.CharField(max_length=400, default='')
     button = models.CharField(max_length=50, default='Ok')
     control_items = models.ManyToManyField(ControlItem, related_name='control_items_form',
-                                           limit_choices_to={'type': '5'}, blank=True)
+                                           limit_choices_to={'type': '1'}, blank=True)
     dropdowns = models.ManyToManyField(DropDown, related_name='dropdowns_form', blank=True)
     hidden_control_items_to_true = models.ManyToManyField(ControlItem, related_name='hidden_control_items_form',
                                                           limit_choices_to={'type': '5'}, blank=True)
