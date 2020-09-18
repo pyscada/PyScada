@@ -49,14 +49,14 @@ class DisplayValueOption(models.Model):
     display_value_color_type = models.PositiveSmallIntegerField(default=0, choices=display_value_color_type_choices,
                                                            help_text="For boolean no level needed and will use color 1 "
                                                                      "and 2")
-    color_level_1 = models.PositiveSmallIntegerField(default=0)
+    color_level_1 = models.FloatField(default=0)
     color_level_1_type_choices = (
         (0, 'color 1 =< level 1'),
         (1, 'color 1 < level 1'),)
     color_level_1_type = models.PositiveSmallIntegerField(default=0, choices=color_level_1_type_choices,
                                                           help_text="Only needed for 2 or 3 colors")
 
-    color_level_2 = models.PositiveSmallIntegerField(default=50, help_text="Only needed for 3 colors and gradient")
+    color_level_2 = models.FloatField(default=50, help_text="Only needed for 3 colors and gradient")
     color_level_2_type_choices = (
         (0, 'color 2 =< level 2'),
         (1, 'color 2 < level 2'),)

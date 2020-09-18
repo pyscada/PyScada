@@ -181,9 +181,9 @@ class DisplayValueOptionAdmin(admin.ModelAdmin):
 
 
 class ControlItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'position', 'label', 'type', 'variable', 'variable_property')
+    list_display = ('id', 'position', 'label', 'type', 'variable', 'variable_property', 'display_value_options')
     list_filter = ('controlpanel', 'control_items_form',)
-    list_editable = ('position', 'label', 'type', 'variable', 'variable_property')
+    list_editable = ('position', 'label', 'type', 'variable', 'variable_property', 'display_value_options')
     raw_id_fields = ('variable',)
 
 

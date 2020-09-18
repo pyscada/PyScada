@@ -40,6 +40,8 @@
                 {% elif item.display_value_options.display_value_mode == 2 %}
                     <!-- Value and color -->
                     Strange : No color + Value and color
+                {% else %}
+                    <!-- else 1 -->
                 {% endif %}
             {% else %}
                 <!-- 2, 3 colors or gradient -->
@@ -52,8 +54,12 @@
                 {% elif item.display_value_options.display_value_mode == 2 %}
                     <!-- Value and color only -->
                     {% include "value_field.html" %}
+                {% else %}
+                    <!-- else 2 -->
                 {% endif %}
             {% endif %}
         {% endif %}
+    {% else %}
+        <!-- else 3 -->
     {% endif %}
 {% endif %}

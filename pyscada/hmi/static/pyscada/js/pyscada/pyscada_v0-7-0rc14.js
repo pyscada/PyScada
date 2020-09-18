@@ -630,19 +630,19 @@ function update_data_values(key,val,time){
 function transform_data_values(id,val){
     if ($(".variable-config[data-color-type][data-id=" + id + "]").attr('data-transform') == 1){
         // convert timestamp to local date
-        val = new Date(val).toLocaleDateString();
+        val = new Date(val).toDateString();
     }else if ($(".variable-config[data-color-type][data-id=" + id + "]").attr('data-transform') == 2){
         // convert timestamp to local time
-        val = new Date(val).toLocaleTimeString();
+        val = new Date(val).toTimeString();
     }else if ($(".variable-config[data-color-type][data-id=" + id + "]").attr('data-transform') == 3){
         // convert timestamp to local date and time
-        val = new Date(val).toLocaleString();
+        val = new Date(val).toUTCString();
     }else if ($(".variable-config[data-color-type][data-id=" + id + "]").attr('data-transform') == 4){
         // apply dictionary
         t = $(".variable-config[data-color-type][data-id=" + id + "]").attr('data-transform-param')
         d=[];
         for (j = 0; j < t.split(";").length; j++) {
-            d.push(t.split(";")[j].split(":")[1])
+            d[t.split(";")[j].split(":")[0]] = t.split(";")[j].split(":")[1]
         }
         if (val in d) {
             val = d[val]
