@@ -423,10 +423,10 @@ class Form(models.Model):
     title = models.CharField(max_length=400, default='')
     button = models.CharField(max_length=50, default='Ok')
     control_items = models.ManyToManyField(ControlItem, related_name='control_items_form',
-                                           limit_choices_to={'type': '1'}, blank=True)
+                                           limit_choices_to={'type': '0'}, blank=True)
     dropdowns = models.ManyToManyField(DropDown, related_name='dropdowns_form', blank=True)
     hidden_control_items_to_true = models.ManyToManyField(ControlItem, related_name='hidden_control_items_form',
-                                                          limit_choices_to={'type': '1'}, blank=True)
+                                                          limit_choices_to={'type': '0'}, blank=True)
 
     def __str__(self):
         return text_type(str(self.id) + ': ' + self.title)

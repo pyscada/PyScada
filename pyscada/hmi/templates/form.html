@@ -1,7 +1,7 @@
 <form name="{{ form.title }}" class="form" id="{{ form.web_id }}-{{ uuid }}" style="width:100%;">
     {% for item in form.hidden_control_items_to_true.all %}
         {% if item.active == 1 %}
-            {% if item.type == 1 %}<!-- hidden form input {{ item.key }} -->
+            {% if item.type == 0 %}<!-- hidden form input {{ item.key }} -->
                 <div class="hidden variable-config" data-name="{{ item.name }}" data-key="{{ item.key }}" data-init-type="0" data-type="{{ item.item_type}}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}"></div>
                 <input type="hidden" class="form-control {{ item.web_class_str }}" name="{{ item.name }}" id="{{ form.web_id }}-{{ uuid }}-{{ item.web_id }}-value" placeholder="" value="1">
             {% endif %}
@@ -9,7 +9,7 @@
     {% endfor %}
     {% for item in form.control_items.all %}
         {% if item.active == 1 %}
-            {% if item.type == 1 %}<!-- form input {{ item.key }} -->
+            {% if item.type == 0 %}<!-- form input {{ item.key }} -->
                 <div class="hidden variable-config" data-name="{{ item.name }}" data-key="{{ item.key }}" data-init-type="0" data-type="{{ item.item_type}}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-value-class="{{ item.value_class }}" data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}"></div>
                 {% if item.value_class == 'BOOL' or item.value_class == 'BOOLEAN' %}
                     <!-- control item value {{ item.value }} -->
