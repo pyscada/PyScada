@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 from pyscada.admin import admin_site
 
 from pyscada.models import Variable
+from pyscada.models import Color
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Chart
 from pyscada.hmi.models import XYChart
@@ -14,6 +15,7 @@ from pyscada.hmi.models import SlidingPanelMenu
 from pyscada.hmi.models import Page
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import ControlPanel
+from pyscada.hmi.models import DisplayValueOption
 from pyscada.hmi.models import CustomHTMLPanel
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
@@ -117,9 +119,71 @@ class FormAdmin(admin.ModelAdmin):
     list_filter = ('controlpanel',)
 
 
+class DisplayValueOptionAdminFrom(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(DisplayValueOptionAdminFrom, self).__init__(*args, **kwargs)
+        wtf = Color.objects.all()
+        w1 = self.fields['color_1'].widget
+        w2 = self.fields['color_2'].widget
+        w3 = self.fields['color_3'].widget
+        color_choices = []
+        for choice in wtf:
+            color_choices.append((choice.id, choice.color_code()))
+        w1.choices = color_choices
+        w2.choices = color_choices
+        w3.choices = color_choices
+
+        def create_option_color(self, name, value, label, selected, index, subindex=None, attrs=None):
+            font_color = hex(int('ffffff', 16) - int(label[1::], 16))[2::]
+            # attrs = self.build_attrs(attrs,{'style':'background: %s; color: #%s'%(label,font_color)})
+            self.option_inherits_attrs = True
+            return self._create_option(name, value, label, selected, index, subindex,
+                                       attrs={'style': 'background: %s; color: #%s' % (label, font_color)})
+
+        import types
+        # from django.forms.widgets import Select
+        w1.widget._create_option = w1.widget.create_option  # copy old method
+        w1.widget.create_option = types.MethodType(create_option_color, w1.widget)  # replace old with new
+        w2.widget._create_option = w2.widget.create_option  # copy old method
+        w2.widget.create_option = types.MethodType(create_option_color, w2.widget)  # replace old with new
+        w3.widget._create_option = w3.widget.create_option  # copy old method
+        w3.widget.create_option = types.MethodType(create_option_color, w3.widget)  # replace old with new
+        w1.widget.attrs = {'onchange': 'this.style.backgroundColor=this.options[this.selectedIndex].style.'
+                                       'backgroundColor;this.style.color=this.options[this.selectedIndex].style.color'}
+        w2.widget.attrs = {'onchange': 'this.style.backgroundColor=this.options[this.selectedIndex].style.'
+                                       'backgroundColor;this.style.color=this.options[this.selectedIndex].style.color'}
+        w3.widget.attrs = {'onchange': 'this.style.backgroundColor=this.options[this.selectedIndex].style.'
+                                       'backgroundColor;this.style.color=this.options[this.selectedIndex].style.color'}
+
+
+class DisplayValueOptionAdmin(admin.ModelAdmin):
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'display_value_color_type', 'display_value_mode',),
+        }),
+        ('Color 1', {
+            'fields': ('color_level_1_type', 'color_level_1', 'color_1',),
+        }),
+        ('Color 2', {
+            'fields': ('color_level_2_type', 'color_level_2', 'color_2',),
+        }),
+        ('Color 3', {
+            'fields': ('color_3',),
+        }),
+        ('Transformation', {
+            'fields': ('display_value_transformation', 'display_value_transformation_parameter',),
+        }),
+    )
+    form = DisplayValueOptionAdminFrom
+
+    def has_module_permission(self, request):
+        return False
+
+
 class ControlItemAdmin(admin.ModelAdmin):
     list_display = ('id', 'position', 'label', 'type', 'variable', 'variable_property')
     list_filter = ('controlpanel', 'control_items_form',)
+    list_editable = ('position', 'label', 'type', 'variable', 'variable_property')
     raw_id_fields = ('variable',)
 
 
@@ -139,7 +203,7 @@ class SlidingPanelMenuAdmin(admin.ModelAdmin):
     # search_fields = ['name',]
     # filter_horizontal = ('items',)
     # form = SlidingPanelMenuForm
-    list_display = ('id',)
+    list_display = ('id', 'title', 'position', 'visible')
 
 
 class WidgetAdmin(admin.ModelAdmin):
@@ -175,7 +239,8 @@ class PageAdmin(admin.ModelAdmin):
 
 
 class ProcessFlowDiagramItemAdmin(admin.ModelAdmin):
-    raw_id_fields = ('variable',)
+    list_display = ('id',)
+    # raw_id_fields = ('variable',)
 
 
 class ProcessFlowDiagramAdmin(admin.ModelAdmin):
@@ -192,6 +257,7 @@ admin_site.register(Form, FormAdmin)
 admin_site.register(SlidingPanelMenu, SlidingPanelMenuAdmin)
 admin_site.register(Page, PageAdmin)
 admin_site.register(GroupDisplayPermission, GroupDisplayPermissionAdmin)
+admin_site.register(DisplayValueOption, DisplayValueOptionAdmin)
 admin_site.register(ControlPanel, ControlPanelAdmin)
 admin_site.register(CustomHTMLPanel, CustomHTMLPanelAdmin)
 admin_site.register(Widget, WidgetAdmin)

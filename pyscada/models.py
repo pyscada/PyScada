@@ -343,8 +343,7 @@ class RecordedDataValueManager(models.Manager):
             date_saved_max = max(date_saved_max, time.mktime(item[7].utctimetuple()) + item[7].microsecond / 1e6)
             tmp_time_max = max(tmp_time, tmp_time_max)
             if tmp_time < time_min:
-                if item[0] not in first_value:
-                    first_value[item[0]] = [tmp_time * f_time_scale, get_rd_value(item)]
+                first_value[item[0]] = get_rd_value(item)
                 continue
             tmp_time_min = min(tmp_time, tmp_time_min)
             values[item[0]].append([tmp_time * f_time_scale, get_rd_value(item)])
@@ -354,7 +353,7 @@ class RecordedDataValueManager(models.Manager):
                 if pk not in values:
                     values[pk] = []
                 if pk in first_value:
-                    values[pk].insert(0, first_value[pk])
+                    values[pk].insert(0,[time_min*f_time_scale,first_value[pk]])
                 if len(values[pk]) > 1:
                     values[pk].append([tmp_time_max*f_time_scale, values[pk][-1][1]])
         values['timestamp'] = max(tmp_time_max, time_min) * f_time_scale

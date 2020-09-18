@@ -511,18 +511,19 @@ function update_data_values(key,val,time){
         if (time != null) {
             t = new Date() - time
             $(".type-numeric." + key).attr('data-original-title','last update ' + msToTime(t) + ' ago')
-            polling_interval = $(".type-numeric." + key).parent().find('[data-device-polling_interval]').attr('data-device-polling_interval')
+            polling_interval = $(".variable-config[data-device-polling_interval][data-key=" + key.split("-")[1] + "]").attr('data-device-polling_interval')
             if (time < SERVER_TIME - 10 * 1000 * polling_interval) {
-                polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-alert').removeClass("hidden")
-                polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').addClass("hidden")
+                $(".type-numeric." + key).parent().find('.glyphicon-alert').removeClass("hidden")
+                $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').addClass("hidden")
             }else if (time < SERVER_TIME - 3 * 1000 * polling_interval) {
-                polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-alert').addClass("hidden")
-                polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').removeClass("hidden")
+                $(".type-numeric." + key).parent().find('.glyphicon-alert').addClass("hidden")
+                $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').removeClass("hidden")
             }else {
-                polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-alert').addClass("hidden")
-                polling_interval = $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').addClass("hidden")
+                $(".type-numeric." + key).parent().find('.glyphicon-alert').addClass("hidden")
+                $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').addClass("hidden")
             }
         }
+
         if (typeof(val)==="number"){
             var r_val = Number(val);
             if(Math.abs(r_val) == 0 ){
@@ -540,9 +541,21 @@ function update_data_values(key,val,time){
             }else{
                 r_val = r_val.toPrecision(4);
             }
-            
-            $(".input-group-addon-label.type-numeric." + key).html(r_val + " " + $(".input-group-addon-label.type-numeric." + key).attr("data-unit"));
+            for (i = 0; i < $(".control-item.type-numeric." + key).length; ++i) {
+                r_val_temp = r_val
+                if (typeof $(".variable-config[data-transform][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-transform') != 'undefined' && $(".variable-config[data-transform][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-transform') != 0){
+                    r_val_temp=transform_data_values($(".control-item.type-numeric." + key)[i].id,val);
+                }
+                color_mode = $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode')
+                if (color_mode != 1 ) {
+                    $("#" + $(".control-item.type-numeric." + key)[i].id).html(r_val_temp + " " + $(".variable-config[data-unit][data-key=" + key.split("-")[1] + "]").attr('data-unit'));
+                }
+                if ($(".variable-config[data-color-type][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-type') != 0 && $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode') != 0){
+                    $($(".control-item.type-numeric." + key)[i]).css("background-color", update_data_colors($(".control-item.type-numeric." + key)[i].id,val))
+                }
+            }
             $(".legendValue.type-numeric." + key).html(r_val);
+            $(".label .type-numeric." + key).html(r_val);
             $('input.'+ key).attr("placeholder",r_val);
             // unixtime
             var date = new Date(val*1000);
@@ -563,26 +576,44 @@ function update_data_values(key,val,time){
                 $(".label.type-bool." + key).removeClass("label-danger");
                 // inverted
                 $(".label.type-bool.status-red-inv." + key).addClass("label-danger");
-                
+                $(".label.type-bool.status-red-inv." + key).removeClass("label-default");
+
                 $('button.btn-default.write-task-btn.' + key).addClass("update-able");
                 $('button.update-able.write-task-btn.' + key).addClass("btn-default");
                 $('button.update-able.write-task-btn.' + key).removeClass("btn-success");
-                $(".type-numeric." + key).html(0);
+                val = 0
+                //$(".type-numeric." + key).html(0);
                 $('input.'+ key).attr("placeholder",0);
             } else {
                 $(".label.type-bool." + key).removeClass("label-default");
-                $(".label.type-bool." + key).removeClass("label-danger");
                 $(".label.type-bool.status-blue." + key).addClass("label-primary");
                 $(".label.type-bool.status-info." + key).addClass("label-info");
                 $(".label.type-bool.status-green." + key).addClass("label-success");
                 $(".label.type-bool.status-yellow." + key).addClass("label-warning");
                 $(".label.type-bool.status-red." + key).addClass("label-danger");
+                // inverted
+                $(".label.type-bool.status-red-inv." + key).removeClass("label-danger");
                 $(".label.type-bool.status-red-inv." + key).addClass("label-default");
+                val = 1
                 $('button.btn-success.write-task-btn.' + key).addClass("update-able");
                 $('button.update-able.write-task-btn.' + key).removeClass("btn-default");
                 $('button.update-able.write-task-btn.' + key).addClass("btn-success");
-                $(".type-numeric." + key).html(1);
+                //$(".type-numeric." + key).html(1);
                 $('input.'+ key).attr("placeholder",1);
+            }
+            $(".label .type-numeric." + key).html(val);
+            for (i = 0; i < $(".control-item.type-numeric." + key).length; ++i) {
+                if ($(".variable-config[data-color-type][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-type') != 0 && $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode') != 0){
+                    r_val_temp = val
+                    if (typeof $(".variable-config[data-transform][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-transform') != 'undefined' && $(".variable-config[data-transform][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-transform') != 0){
+                        r_val_temp=transform_data_values($(".control-item.type-numeric." + key)[i].id,val);
+                    }
+                    color_mode = $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode')
+                    if (color_mode != 1 ) {
+                        $("#" + $(".control-item.type-numeric." + key)[i].id).html(r_val_temp);
+                    }
+                    $("#" + $(".control-item.type-numeric." + key)[i].id).css("background-color", update_data_colors($(".control-item.type-numeric." + key)[i].id,val))
+                }
             }
         }
         if (typeof(val)==="object" && val === null){
@@ -593,7 +624,154 @@ function update_data_values(key,val,time){
             $(".type-numeric." + key).html(val);
             $('input.'+ key).attr("placeholder",val);
         }
+
 }
+
+function transform_data_values(id,val){
+    if ($(".variable-config[data-color-type][data-id=" + id + "]").attr('data-transform') == 1){
+        // convert timestamp to local date
+        val = new Date(val).toLocaleDateString();
+    }else if ($(".variable-config[data-color-type][data-id=" + id + "]").attr('data-transform') == 2){
+        // convert timestamp to local time
+        val = new Date(val).toLocaleTimeString();
+    }else if ($(".variable-config[data-color-type][data-id=" + id + "]").attr('data-transform') == 3){
+        // convert timestamp to local date and time
+        val = new Date(val).toLocaleString();
+    }else if ($(".variable-config[data-color-type][data-id=" + id + "]").attr('data-transform') == 4){
+        // apply dictionary
+        t = $(".variable-config[data-color-type][data-id=" + id + "]").attr('data-transform-param')
+        d=[];
+        for (j = 0; j < t.split(";").length; j++) {
+            d.push(t.split(";")[j].split(":")[1])
+        }
+        if (val in d) {
+            val = d[val]
+        }
+    }
+    return val;
+}
+
+function update_data_colors(id,val){
+    color_type = $(".variable-config[data-color-type][data-id=" + id + "]").attr('data-color-type')
+    color_mode = $(".variable-config[data-color-mode][data-id=" + id + "]").attr('data-color-mode')
+    color_level_1_type = $(".variable-config[data-level-1-type][data-id=" + id + "]").attr('data-level-1-type')
+    color_level_2_type = $(".variable-config[data-level-2-type][data-id=" + id + "]").attr('data-level-2-type')
+    color_level_1 = $(".variable-config[data-level-1][data-id=" + id + "]").attr('data-level-1')
+    color_level_2 = $(".variable-config[data-level-2][data-id=" + id + "]").attr('data-level-2')
+    color_1 = $(".variable-config[data-color-1][data-id=" + id + "]").attr('data-color-1')
+    color_2 = $(".variable-config[data-color-2][data-id=" + id + "]").attr('data-color-2')
+    color_3 = $(".variable-config[data-color-3][data-id=" + id + "]").attr('data-color-3')
+
+    if ($(".variable-config[data-value-class][data-id=" + id + "]").attr('data-value-class') == 'BOOLEAN') {
+        color_type = 1
+        color_level_1 = 1
+        color_level_1_type = 1
+        if (val == false) { val = 0 } else if ( val == true ) { val = 1 }
+    }
+
+    color = null
+
+
+    if (color_type == 1) {
+        if (color_level_1_type == 0) {
+            if (val <= color_level_1) {
+                color = color_1
+            }else {
+                color = color_2
+            }
+        }else if (color_level_1_type == 1) {
+            if (val < color_level_1) {
+                color = color_1
+            }else {
+                color = color_2
+            }
+        }
+    }else if (color_type == 2) {
+        if (color_level_1_type == 0) {
+            if (val <= color_level_1) {
+                color = color_1
+            }else if (color_level_2_type == 0) {
+                if (val <= color_level_2) {
+                    color = color_2
+                }else {
+                    color = color_3
+                }
+            }else {
+                if (val < color_level_2) {
+                    color = color_2
+                }else {
+                    color = color_3
+                }
+            }
+        }else if (color_level_1_type == 1) {
+            if (val < color_level_1) {
+                color = color_1
+            }else if (color_level_2_type == 0) {
+                if (val <= color_level_2) {
+                    color = color_2
+                }else {
+                    color = color_3
+                }
+            }else {
+                if (val < color_level_2) {
+                    color = color_2
+                }else {
+                    color = color_3
+                }
+            }
+        }
+    }else if (color_type == 3) {
+        if (val <= color_level_1) {
+            color = color_1
+        }else if (val >= color_level_2) {
+            color = color_2
+        }else {
+            fade = (val-color_level_1)/(color_level_2-color_level_1);
+            color_1_new = new Color(color_1.match(/\d+/g)[0],color_1.match(/\d+/g)[1],color_1.match(/\d+/g)[2])
+            color_2_new = new Color(color_2.match(/\d+/g)[0],color_2.match(/\d+/g)[1],color_2.match(/\d+/g)[2])
+            color = colorGradient(fade, color_1_new, color_2_new)
+        }
+    }
+
+    //console.log(id + " " + color_mode + " " + color_type + " " + color);
+    return color;
+}
+
+function Color(red,green,blue) {
+    this.red = red;
+    this.green = green;
+    this.blue = blue;
+}
+
+function colorGradient(fadeFraction, rgbColor1, rgbColor2, rgbColor3) {
+    var color1 = rgbColor1;
+    var color2 = rgbColor2;
+    var fade = fadeFraction;
+
+    // Do we have 3 colors for the gradient? Need to adjust the params.
+    if (rgbColor3) {
+      fade = fade * 2;
+
+      // Find which interval to use and adjust the fade percentage
+      if (fade >= 1) {
+        fade -= 1;
+        color1 = rgbColor2;
+        color2 = rgbColor3;
+      }
+    }
+
+    var diffRed = color2.red - color1.red;
+    var diffGreen = color2.green - color1.green;
+    var diffBlue = color2.blue - color1.blue;
+
+    var gradient = {
+      red: parseInt(Math.floor(parseInt(color1.red) + (diffRed * fade)), 10),
+      green: parseInt(Math.floor(parseInt(color1.green) + (diffGreen * fade)), 10),
+      blue: parseInt(Math.floor(parseInt(color1.blue) + (diffBlue * fade)), 10),
+    };
+
+    return 'rgb(' + gradient.red + ',' + gradient.green + ',' + gradient.blue + ')';
+  }
 
 function msToTime(duration) {
   var milliseconds = parseInt(duration % 1000),
@@ -1881,7 +2059,7 @@ function Pie(id){
             // update the plot
             update(false);
         }else {
-            prepared = false;
+            //prepared = false;
         }
     };
 

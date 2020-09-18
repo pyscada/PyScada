@@ -2,13 +2,13 @@
     <div class="control-panel">
         <div>{{ control_panel.title }}</div>
         {% for item in control_panel.items.all %}
-            {% include "control_element.html" with item=item %}
+            {% include "control_element2.html" %}
         {% endfor %}
         {% for dropdown in control_panel.dropdowns.all %}
-            {% include "dropdown.html" with dropdown=dropdown form="0" %}
+            {% include "dropdown.html" with form="0" %}
         {% endfor %}
         {% for form in control_panel.forms.all %}
-            {% include "form.html" with form=form %}
+            {% include "form.html" %}
         {% endfor %}
     </div>
 </div>

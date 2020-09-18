@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.models import Variable, VariableProperty
+from pyscada.models import Variable, VariableProperty, Color
 
 from django.db import models
 from django.contrib.auth.models import Group
@@ -39,22 +39,68 @@ class WidgetContentModel(models.Model):
 
 
 @python_2_unicode_compatible
+class DisplayValueOption(models.Model):
+    name = models.CharField(max_length=400)
+    display_value_color_type_choices = (
+        (0, 'No color'),
+        (1, '2 color'),
+        (2, '3 colors'),
+        (3, 'color gradient'),)
+    display_value_color_type = models.PositiveSmallIntegerField(default=0, choices=display_value_color_type_choices,
+                                                           help_text="For boolean no level needed and will use color 1 "
+                                                                     "and 2")
+    color_level_1 = models.PositiveSmallIntegerField(default=0)
+    color_level_1_type_choices = (
+        (0, 'color 1 =< level 1'),
+        (1, 'color 1 < level 1'),)
+    color_level_1_type = models.PositiveSmallIntegerField(default=0, choices=color_level_1_type_choices,
+                                                          help_text="Only needed for 2 or 3 colors")
+
+    color_level_2 = models.PositiveSmallIntegerField(default=50, help_text="Only needed for 3 colors and gradient")
+    color_level_2_type_choices = (
+        (0, 'color 2 =< level 2'),
+        (1, 'color 2 < level 2'),)
+    color_level_2_type = models.PositiveSmallIntegerField(default=0, choices=color_level_2_type_choices,
+                                                          help_text="Only needed for 3 colors")
+
+    color_1 = models.ForeignKey(Color, null=True, blank=True, on_delete=models.SET_NULL, related_name="color_1", default="")
+    color_2 = models.ForeignKey(Color, null=True, blank=True, on_delete=models.SET_NULL, related_name="color_2")
+    color_3 = models.ForeignKey(Color, null=True, blank=True, on_delete=models.SET_NULL, related_name="color_3",
+                                help_text="Only needed for 3 colors")
+
+    display_value_mode_choices = (
+        (0, 'Value only'),
+        (1, 'Color only'),
+        (2, 'Value and color'),)
+    display_value_mode = models.PositiveSmallIntegerField(default=0, choices=display_value_mode_choices)
+
+    display_value_transformation_choices = (
+        (0, 'None'),
+        (1, 'Timestamp to local date'),
+        (2, 'Timestamp to local time'),
+        (3, 'Timestamp to local date and time'),
+        (4, 'Dictionary'),)
+    display_value_transformation = models.PositiveSmallIntegerField(default=0,
+                                                                    choices=display_value_transformation_choices)
+    display_value_transformation_parameter = models.CharField(max_length=400, default='', null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+@python_2_unicode_compatible
 class ControlItem(models.Model):
     id = models.AutoField(primary_key=True)
     label = models.CharField(max_length=400, default='')
     position = models.PositiveSmallIntegerField(default=0)
     type_choices = (
-        (0, 'label blue'),
-        (1, 'label light blue'),
-        (2, 'label ok'),
-        (3, 'label warning'),
-        (4, 'label alarm'),
-        (7, 'label alarm inverted'),
-        (5, 'Control Element'),
-        (6, 'Display Value'),)
+        (0, 'Control Element'),
+        (1, 'Display Value'),
+    )
     type = models.PositiveSmallIntegerField(default=0, choices=type_choices)
     variable = models.ForeignKey(Variable, null=True, blank=True, on_delete=models.CASCADE)
     variable_property = models.ForeignKey(VariableProperty, null=True, blank=True, on_delete=models.CASCADE)
+    display_value_options = models.ForeignKey(DisplayValueOption, null=True, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
         ordering = ['position']
@@ -79,7 +125,7 @@ class ControlItem(models.Model):
 
     def active(self):
         if self.variable_property:
-            return True
+            return self.variable_property.variable.active and self.variable_property.variable.device.active
         elif self.variable:
             return self.variable.active and self.variable.device.active
         return False
@@ -463,18 +509,7 @@ class CustomHTMLPanel(WidgetContentModel):
 @python_2_unicode_compatible
 class ProcessFlowDiagramItem(models.Model):
     id = models.AutoField(primary_key=True)
-    label = models.CharField(max_length=400, default='', blank=True)
-    type_choices = (
-        (0, 'label blue'),
-        (1, 'label light blue'),
-        (2, 'label ok'),
-        (3, 'label warning'),
-        (4, 'label alarm'),
-        (7, 'label alarm inverted'),
-        (5, 'Control Element'),
-        (6, 'Display Value'),)
-    type = models.PositiveSmallIntegerField(default=0, choices=type_choices)
-    variable = models.ForeignKey(Variable, default=None, blank=True, null=True, on_delete=models.SET_NULL)
+    control_item = models.ForeignKey(ControlItem, default=None, blank=True, null=True, on_delete=models.SET_NULL)
     top = models.PositiveIntegerField(blank=True, default=0)
     left = models.PositiveIntegerField(blank=True, default=0)
     width = models.PositiveIntegerField(blank=True, default=0)
@@ -482,10 +517,10 @@ class ProcessFlowDiagramItem(models.Model):
     visible = models.BooleanField(default=True)
 
     def __str__(self):
-        if self.label:
-            return str(self.id) + ": " + self.label
+        if self.control_item.label != '':
+            return str(self.id) + ": " + self.control_item.label
         else:
-            return str(self.id) + ": " + self.variable.name
+            return str(self.id) + ": " + self.control_item.name
 
 
 @python_2_unicode_compatible

@@ -1,0 +1,59 @@
+{% if item.active == 1 %}
+        <div class="hidden variable-config" data-id="{{ item.web_id }}-{{ uuid }}" data-name="{{ item.name }}" data-key="{{ item.key }}" data-color="{{ var.chart_line_color_code }}" data-init-type="0" data-type="{{ item.item_type}}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-value-class="{{ item.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}" data-unit="{% if item.unit %}{{ item.unit }}{% endif %}" data-device-polling_interval="{{ item.variable.device.polling_interval }}"
+        {% if item.display_value_options %}
+             data-color-type="{{ item.display_value_options.display_value_color_type }}"
+             data-color-mode="{{ item.display_value_options.display_value_mode }}"
+             data-level-1-type="{{ item.display_value_options.color_level_1_type }}"
+             data-level-2-type="{{ item.display_value_options.color_level_2_type }}"
+             data-level-1="{{ item.display_value_options.color_level_1 }}"
+             data-level-2="{{ item.display_value_options.color_level_2 }}"
+             data-color-1="{{ item.display_value_options.color_1 }}"
+             data-color-2="{{ item.display_value_options.color_2 }}"
+             data-color-3="{{ item.display_value_options.color_3 }}"
+             data-transform="{{ item.display_value_options.display_value_transformation }}"
+             data-transform-param="{{ item.display_value_options.display_value_transformation_parameter }}"
+         {% endif %}
+        ></div>
+    {% if item.type == 0 %}<!-- control element -->
+        {% if item.value_class == 'BOOL' or item.value_class == 'BOOLEAN' %}
+            <!-- input button -->
+            {% include "button.html" %}
+        {% else %}
+            <!-- input field -->
+            {% include "value_field.html" %}
+        {% endif %}
+    {% elif item.type == 1 %}<!-- display value -->
+        {% if not item.display_value_options %}
+            <!-- No display options -->
+            <!-- Value only -->
+            {% include "value_field.html" %}
+        {% else %}
+            <!-- Display options -->
+            {% if item.display_value_options.display_value_color_type == 0 %}
+                <!-- No color -->
+                {% if item.display_value_options.display_value_mode == 0 %}
+                    <!-- Value only -->
+                    {% include "value_field.html" %}
+                {% elif item.display_value_options.display_value_mode == 1 %}
+                    <!-- Color only -->
+                    Error
+                {% elif item.display_value_options.display_value_mode == 2 %}
+                    <!-- Value and color -->
+                    Strange : No color + Value and color
+                {% endif %}
+            {% else %}
+                <!-- 2, 3 colors or gradient -->
+                {% if item.display_value_options.display_value_mode == 0 %}
+                    <!-- Value only -->
+                    Strange : 2, 3 colors or gradient + value only
+                {% elif item.display_value_options.display_value_mode == 1 %}
+                    <!-- Color only -->
+                    {% include "button.html" %}
+                {% elif item.display_value_options.display_value_mode == 2 %}
+                    <!-- Value and color only -->
+                    {% include "value_field.html" %}
+                {% endif %}
+            {% endif %}
+        {% endif %}
+    {% endif %}
+{% endif %}
