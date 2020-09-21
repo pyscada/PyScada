@@ -602,6 +602,7 @@ function update_data_values(key,val,time){
                 $('input.'+ key).attr("placeholder",1);
             }
             $(".label .type-numeric." + key).html(val);
+            $(".legendValue.type-numeric." + key).html(val);
             for (i = 0; i < $(".control-item.type-numeric." + key).length; ++i) {
                 if ($(".variable-config[data-color-type][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-type') != 0 && $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode') != 0){
                     r_val_temp = val

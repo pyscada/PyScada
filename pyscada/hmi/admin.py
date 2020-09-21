@@ -226,8 +226,8 @@ class SlidingPanelMenuAdmin(admin.ModelAdmin):
 
 class WidgetAdmin(admin.ModelAdmin):
     list_display_links = ('id',)
-    list_display = ('id', 'title', 'page', 'row', 'col', 'size', 'content', )
-    list_editable = ('title', 'page', 'row', 'col', 'size', 'content', )
+    list_display = ('id', 'title', 'page', 'row', 'col', 'size', 'content', 'visible', )
+    list_editable = ('title', 'page', 'row', 'col', 'size', 'content', 'visible', )
     list_filter = ('page',)
     save_as = True
     save_as_continue = True
