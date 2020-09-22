@@ -9,15 +9,17 @@
         
         <title>{% block title %}{% endblock %}</title>
         <!-- Bootstrap core CSS -->
-        <link href="{% static "pyscada/css/bootstrap.css" %}" rel="stylesheet"/>
+        <link href="{% static "pyscada/css/bootstrap/bootstrap.min.css" %}" rel="stylesheet"/>
         <!-- Bootstrap theme -->
-        <link href="{% static "pyscada/css/bootstrap-theme.min.css" %}" rel="stylesheet"/>
+        <link href="{% static "pyscada/css/bootstrap/bootstrap-theme.min.css" %}" rel="stylesheet"/>
         <!-- Bootstrap theme -->
         <link href="{% static "pyscada/css/jquery-ui/jquery-ui.min.css" %}" rel="stylesheet"/>
         <!-- Bootstrap theme -->
         <link href="{% static "pyscada/css/jquery-ui/jquery-ui.theme.min.css" %}" rel="stylesheet"/>
         <!-- Custom styles for this template -->    
         <link href="{% static "pyscada/css/pyscada-theme.css" %}" rel="stylesheet"/>
+        <!-- TempusDominus theme -->
+        <link href="{% static "pyscada/css/tempusdominus-bootstrap-3.min.css" %}" rel="stylesheet"/>
         <link rel="icon" href="{% static "pyscada/img/favicon.ico" %}" type="image/x-icon">
     </head>
     <body {% block body_confic_data %} {% endblock %}>
@@ -78,10 +80,16 @@
         <!-- Bootstrap core JavaScript
         ================================================== -->
         <!-- Placed at the end of the document so the pages load faster -->
-        <script type="text/javascript" src="{% static "pyscada/js/jquery.min.js" %}"></script>
+        <script type="text/javascript" src="{% static "pyscada/js/jquery/jquery.min.js" %}"></script>
+        <script type="text/javascript" src="{% static "pyscada/js/moment-with-locales.min.js" %}"></script>
+        <script type="text/javascript" src="{% static "pyscada/js/tempusdominus-bootstrap-3.min.js" %}"></script>
         <script type="text/javascript" src="{% static "pyscada/js/jquery-ui/jquery-ui.js" %}"></script>
-        <script type="text/javascript" src="{% static "pyscada/js/jquery.cookie.js" %}"></script>
-        <script type="text/javascript" src="{% static "pyscada/js/bootstrap.min.js" %}"></script>
+        <script type="text/javascript" src="{% static "pyscada/js/jquery/jquery.cookie.js" %}"></script>
+        <script type="text/javascript" src="{% static "pyscada/js/bootstrap/bootstrap.min.js" %}"></script>
+        <script type="text/javascript" src="{% static "pyscada/js/bootstrap/dropdown.js" %}"></script>
+        <script type="text/javascript" src="{% static "pyscada/js/bootstrap/tooltip.js" %}"></script>
+        <script type="text/javascript" src="{% static "pyscada/js/bootstrap/transition.js" %}"></script>
+        <script type="text/javascript" src="{% static "pyscada/js/bootstrap/alert.js" %}"></script>
         {% block include_bootom %}{% endblock %}
         
         <script>

@@ -15,6 +15,8 @@ var DATA_OUT_OF_DATE = false;
 var DATA_OUT_OF_DATE_ALERT_ID = '';
 var JSON_ERROR_COUNT = 0;
 var AUTO_UPDATE_ACTIVE = true;
+var SINGLE_UPDATE = false;
+var PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = false;
 var LOG_LAST_TIMESTAMP = 0;
 var DATA_TO_TIMESTAMP = 0;
 var DATA_FROM_TIMESTAMP = 0;
@@ -103,7 +105,7 @@ function add_fetched_data(key,value){
                 // no history needed
                 DATA[key] = [value.pop()];
                 if (DATA[key][0] < DATA_FROM_TIMESTAMP){
-                    DATA_FROM_TIMESTAMP = value[0][0];
+                    //DATA_FROM_TIMESTAMP = value[0][0];
                     UPDATE_X_AXES_TIME_LINE_STATUS = true;
                 }
             }else {
@@ -158,11 +160,11 @@ function add_fetched_data(key,value){
                             console.log(key + ' : dropped data');
                         }
                     } else{
-                        console.log(key + ' : dropped data');
+                        console.log(key + ' : no new data');
                     }
                 }
                 if (value[0][0] < DATA_FROM_TIMESTAMP){
-                    DATA_FROM_TIMESTAMP = value[0][0];
+                    //DATA_FROM_TIMESTAMP = value[0][0];
                     UPDATE_X_AXES_TIME_LINE_STATUS = true;
                 }
             }
@@ -173,15 +175,9 @@ function add_fetched_data(key,value){
 }
 
 function data_handler(){
-    // call the data handler periodically
-    if(!INIT_STATUS_VARIABLES_DONE || !INIT_CHART_VARIABLES_DONE){
-        // initialisation is active
-        setTimeout(function() {data_handler();}, REFRESH_RATE/2.0);
-    }else{
-        setTimeout(function() {data_handler();}, REFRESH_RATE);
-    }
 
-    if(AUTO_UPDATE_ACTIVE){
+    if(AUTO_UPDATE_ACTIVE || SINGLE_UPDATE){
+        SINGLE_UPDATE = false
         if(DATA_TO_TIMESTAMP==0){
         // fetch the SERVER_TIME
             data_handler_ajax(0,[],[],Date.now());
@@ -241,9 +237,11 @@ function data_handler(){
                             timestamp = DATA_DISPLAY_TO_TIMESTAMP;
                         }
                         if (timestamp == -1){
-                            var timestamp = SERVER_TIME;
+                            //var timestamp = SERVER_TIME;
+                            var timestamp = DATA_TO_TIMESTAMP;
                         }
-                        data_handler_ajax(1,vars,props,timestamp-120*60*1000,timestamp);
+                        //data_handler_ajax(1,vars,props,timestamp-120*60*1000,timestamp);
+                        data_handler_ajax(1,vars,props,DATA_FROM_TIMESTAMP,timestamp);
                     }else{
                         INIT_CHART_VARIABLES_DONE = true;
                         $('#PlusTwoHoursButton').removeClass("disabled");
@@ -251,6 +249,14 @@ function data_handler(){
                 }
             }
         }
+    }
+
+    // call the data handler periodically
+    if(!INIT_STATUS_VARIABLES_DONE || !INIT_CHART_VARIABLES_DONE){
+        // initialisation is active
+        setTimeout(function() {data_handler();}, REFRESH_RATE/2.0);
+    }else{
+        setTimeout(function() {data_handler();}, REFRESH_RATE);
     }
 }
 
@@ -299,7 +305,9 @@ function data_handler_done(fetched_data){
         VARIABLE_PROPERTIES_DATA = {}
     }
     if(DATA_TO_TIMESTAMP==0){
-        DATA_TO_TIMESTAMP = DATA_FROM_TIMESTAMP = SERVER_TIME;
+        //DATA_TO_TIMESTAMP = DATA_FROM_TIMESTAMP = SERVER_TIME;
+        DATA_TO_TIMESTAMP = SERVER_TIME;
+        DATA_FROM_TIMESTAMP = SERVER_TIME - 120 * 60 * 1000;
     }else{
         $.each(fetched_data, function(key, val) {
             add_fetched_data(parseInt(key),val);
@@ -307,7 +315,8 @@ function data_handler_done(fetched_data){
         if (DATA_TO_TIMESTAMP < timestamp){
             DATA_TO_TIMESTAMP = timestamp;
             if ((DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP)> DATA_BUFFER_SIZE){
-                DATA_FROM_TIMESTAMP = DATA_TO_TIMESTAMP - DATA_BUFFER_SIZE;
+                DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
+                //DATA_FROM_TIMESTAMP = DATA_TO_TIMESTAMP - DATA_BUFFER_SIZE;
             }
             if (DATA_DISPLAY_TO_TIMESTAMP < 0 && DATA_DISPLAY_FROM_TIMESTAMP < 0){
                 // both fixed
@@ -354,7 +363,7 @@ function data_handler_done(fetched_data){
     // update all legend tables
     $('.legend table').trigger("update");
     $("#AutoUpdateButton").removeClass("btn-warning");
-    $("#AutoUpdateButton").addClass("btn-success");
+    //$("#AutoUpdateButton").addClass("btn-success");
     if (JSON_ERROR_COUNT > 0) {
         JSON_ERROR_COUNT = JSON_ERROR_COUNT - 1;
     }
@@ -380,7 +389,7 @@ function data_handler_fail(x, t, m) {
         }
     }
     hide_update_status();
-    $("#AutoUpdateButton").removeClass("btn-success");
+    //$("#AutoUpdateButton").removeClass("btn-success");
     $("#AutoUpdateButton").addClass("btn-warning");
     if(request_data.init===1){
         for (key in request_data.variables){
@@ -811,7 +820,7 @@ function update_timeline(){
         //var min_to = ((DATA_TO_TIMESTAMP - DATA_DISPLAY_TO_TIMESTAMP)/60/1000);
         //$('#timeline-time-to-label').html("-" + min_to.toPrecision(3) + "min");
         var date = new Date(DATA_DISPLAY_TO_TIMESTAMP);
-        $("#timeline-time-to-label").html(date.toLocaleTimeString());
+        $("#timeline-time-to-label").html(date.toLocaleString());
     }
     var min_full = ((DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP)/60/1000);
     if (DATA_DISPLAY_FROM_TIMESTAMP < 0 ){
@@ -821,7 +830,7 @@ function update_timeline(){
         var min_from = Math.min(min_full,((DATA_TO_TIMESTAMP - DATA_DISPLAY_FROM_TIMESTAMP)/60/1000));
         //$('#timeline-time-from-label').html("-" + min_from.toPrecision(3) + "min");
         var date = new Date(DATA_DISPLAY_FROM_TIMESTAMP);
-        $("#timeline-time-from-label").html(date.toLocaleTimeString());
+        $("#timeline-time-from-label").html(date.toLocaleString());
     }
     if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
         $('#timeline').css("width", "100%");
@@ -832,7 +841,11 @@ function update_timeline(){
     }
     //$('#timeline-time-left-label').html("-" + min_full.toPrecision(3) + "min");
     var date = new Date(DATA_FROM_TIMESTAMP);
-    $("#timeline-time-left-label").html(date.toLocaleTimeString());
+    $("#timeline-time-left-label").html(date.toLocaleString());
+
+    // Update DateTime pickers
+    $('#datetimepicker_start').datetimepicker('date', new Date(DATA_FROM_TIMESTAMP))
+    $('#datetimepicker_stop').datetimepicker('date', new Date(DATA_TO_TIMESTAMP))
 }
 
 function progressbarSetWindow( event, ui ) {
@@ -2615,10 +2628,10 @@ function set_chart_selection_mode(){
 // fix drop down problem
 $( document ).ready(function() {
     // Activate tooltips
-    $('[data-toggle="tooltip"]').tooltip()
+    $('[data-toggle*="tooltip"]').tooltip()
 
     // Setup drop down menu
-    $('.dropdown-toggle').dropdown();
+    //$('.dropdown-toggle').dropdown();
 
     // Fix input element click problem
     $('.dropdown input, .dropdown label, .dropdown button').click(function(e) {
@@ -2687,7 +2700,7 @@ $( document ).ready(function() {
     set_chart_selection_mode();
     $(window).on('hashchange', function() {
         if (window.location.hash.substr(1) !== '') {
-            if ($("#" + window.location.hash.substr(1) + " .has_chart").length && $('#ShowTimelineButton').hasClass("btn-success")) {
+            if ($("#" + window.location.hash.substr(1) + " .has_chart").length) {
                 $("#show_timeline").removeClass("hidden");
             }else {
                 $("#show_timeline").addClass("hidden");
@@ -2718,14 +2731,18 @@ $( document ).ready(function() {
             // deactivate auto update
             AUTO_UPDATE_ACTIVE = false;
             $("#AutoUpdateButton").addClass("btn-default");
+            $("#AutoUpdateButton .glyphicon").addClass("glyphicon-play");
             $("#AutoUpdateButton").removeClass("btn-success");
+            $("#AutoUpdateButton .glyphicon").removeClass("glyphicon-pause");
         } else {
             // activate auto update
             AUTO_UPDATE_ACTIVE = true;
             $("#AutoUpdateButton").addClass("btn-success");
+            $("#AutoUpdateButton .glyphicon").addClass("glyphicon-pause");
             $("#AutoUpdateButton").removeClass("btn-default");
+            $("#AutoUpdateButton .glyphicon").removeClass("glyphicon-play");
             JsonErrorCount = 0;
-            data_handler();
+            //data_handler();
         }
     });
     $('#PlusTwoHoursButton').click(function(e) {
@@ -2739,27 +2756,69 @@ $( document ).ready(function() {
     });
     // show timeline init
     if (window.location.hash.substr(1) !== '') {
-        if ($("#" + window.location.hash.substr(1) + " .has_chart").length && $('#ShowTimelineButton').hasClass("btn-success")) {
+        if ($("#" + window.location.hash.substr(1) + " .has_chart").length) {
             $("#show_timeline").removeClass("hidden");
         } else {
             $("#show_timeline").addClass("hidden");
         };
     }
-    $('#ShowTimelineButton').click(function(e) {
-        if ($('#ShowTimelineButton').hasClass("btn-default")) {
-            // deactivate timeline
-            if (window.location.hash.substr(1) !== '') {
-                if ($("#" + window.location.hash.substr(1) + " .has_chart").length) {
-                    $("#show_timeline").removeClass("hidden");
-                }
-            }
-            $("#ShowTimelineButton").addClass("btn-success");
-            $("#ShowTimelineButton").removeClass("btn-default");
-        } else if ($('#ShowTimelineButton').hasClass("btn-success")) {
-            // activate timeline
-            $("#show_timeline").addClass("hidden");
-            $("#ShowTimelineButton").addClass("btn-default");
-            $("#ShowTimelineButton").removeClass("btn-success");
-        }
+
+
+    // DateTime Picker
+    $('#datetimepicker_start').datetimepicker({
+        sideBySide: true,
+        locale: 'fr',
+        format: 'L LTS',
+        allowInputToggle: true,
+    });
+    $('#datetimepicker_stop').datetimepicker({
+        sideBySide: true,
+        locale: 'fr',
+        format: 'L LTS',
+        useCurrent: false,
+        allowInputToggle: true,
+    });
+    $("#datetimepicker_start").on("change.datetimepicker", function (e) {
+        $('#datetimepicker_stop').datetimepicker('minDate', e.date);
+    }).on("hide.datetimepicker", function (e) {
+        DATA_INIT_STATUS++;
+        DATA_FROM_TIMESTAMP = $('#datetimepicker_start').datetimepicker('date').unix() * 1000;
+        DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
+        INIT_CHART_VARIABLES_DONE = false;
+        SINGLE_UPDATE = true;
+        if($('#AutoUpdateButton').hasClass('btn-default') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
+            $('#AutoUpdateButton').trigger('click');
+        };
+    }).click(function (e) {
+        $("#datetimepicker_start").datetimepicker('show');
+        PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = AUTO_UPDATE_ACTIVE
+        if($('#AutoUpdateButton').hasClass('btn-success') && AUTO_UPDATE_ACTIVE){
+            $('#AutoUpdateButton').trigger('click');
+        };
+    });
+
+    $("#datetimepicker_stop").on("change.datetimepicker", function (e) {
+        $('#datetimepicker_start').datetimepicker('maxDate', e.date);
+        }).on("hide.datetimepicker", function (e) {
+        DATA_INIT_STATUS++;
+        DATA_TO_TIMESTAMP = Math.min($('#datetimepicker_stop').datetimepicker('date').unix() * 1000, SERVER_TIME);
+        DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
+        INIT_CHART_VARIABLES_DONE = false;
+        SINGLE_UPDATE = true;
+        if($('#AutoUpdateButton').hasClass('btn-default') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
+            //$('#AutoUpdateButton').trigger('click');
+        };
+    }).click(function (e) {
+        //$('#datetimepicker_stop').datetimepicker('maxDate', new Date(SERVER_TIME));
+        $("#datetimepicker_stop").datetimepicker('show');
+        PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = AUTO_UPDATE_ACTIVE
+        if($('#AutoUpdateButton').hasClass('btn-success') && AUTO_UPDATE_ACTIVE){
+            $('#AutoUpdateButton').trigger('click');
+        };
+    });
+
+    // Prevent closing dropdown on click
+    $('.dropdown-menu').click(function(e) {
+        e.stopPropagation();
     });
 });

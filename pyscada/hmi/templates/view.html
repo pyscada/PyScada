@@ -36,43 +36,36 @@
             </li>
         {% endif %}
     {% endfor %}
-        <li class="dropdown"><!-- Settings -->
-            <a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> Options <strong class="caret"></strong></a>
-            <div class="dropdown-menu" style="padding: 15px; padding-bottom: 15px; width:70%; min-width:380px;">
-                <ul>
-                    <li>
-                        <button type="button" class="btn btn-success" id="AutoUpdateButton" >auto update</button>
-                        {% if view_show_timeline %}
-                            <button type="button" class="btn btn-success" id="ShowTimelineButton" >show timeline</button>
-                        {% else %}
-                            <button type="button" class="btn btn-default" id="ShowTimelineButton" >show timeline</button>
-                        {% endif %}
-                    </li>
-                </ul>
+        <li class="dropdown"><!-- Charts timeline -->
+            <a class="dropdown-toggle" id="show_timeline" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-cog"></span> Charts timeline <strong class="caret"></strong></a>
+            <div class="dropdown-menu" style="padding: 15px; min-width: 1200px;">
+                <div class='col-md-1 col-sm-12'>
+                    <button type="button" class="btn btn-success" id="AutoUpdateButton" data-toggle="tooltip" data-placement="top" title="" data-original-title="Auto update data"><span class="glyphicon glyphicon-pause"></span></button>
+                </div>
+                <div class='col-md-2 col-sm-12'>
+                    <input type="text" class="form-control datetimepicker-input" id="datetimepicker_start" data-toggle="datetimepicker tooltip" data-target="#datetimepicker_start" data-placement="top" title="" data-original-title="Load data from :"/>
+                </div>
+                <div class='col-md-7 col-sm-12'>
+                    <div id="timeline-border" style="height:34px; background-color: #9d9d9d;">
+                        <div id="timeline" class="ui-widget-content ui-resizable ui-draggable ui-draggable-handle" style="background-color: #333; height: 34px; left: 0px; width: 0px; top: 0px;" data-toggle="tooltip" data-placement="top" title="" data-original-title="Display data filter">
+                            <span class="pull-left glyphicon glyphicon-triangle-left" style="line-height:30px;color:#9d9d9d;" aria-hidden="true"></span>
+                            <span class="pull-right glyphicon glyphicon-triangle-right" style="line-height:30px;color:#9d9d9d;" aria-hidden="true"></span>
+                            <span id="timeline-time-from-label" class="pull-left" style="padding-left:3px; line-height:34px; color:#9d9d9d"> </span>
+                            <span id="timeline-time-to-label" class="pull-right" style="padding-right:3px; line-height:34px; color:#9d9d9d"> </span>
+                        </div>
+                    </div>
+                </div>
+                <div class='col-md-2 col-sm-12'>
+                    <input type="text" class="form-control datetimepicker-input" id="datetimepicker_stop" data-toggle="datetimepicker tooltip" data-target="#datetimepicker_stop" data-placement="top" title="" data-original-title="Load data to :"/>
+                </div>
             </div>
-
         </li>
 {% endblock %}
 {% block top_area %}
 {% endblock %}
 {% block content %}
     <div id="page-timeline">
-        <div class="row show_timeline_yes" id="show_timeline">
-            <div class="col-md-12">
-                <span class="pull-left"><button type="button" class="btn" id="PlusTwoHoursButton" style="height:24px; padding-top:1px;"><img id="loadingAnimation" style="display: inline; height:15px;padding-bottom:3px;" src="/static/pyscada/img/load.gif" alt="loading"> +2h</button></span>
-                <span id="timeline-time-left-label" class="pull-left" style="padding-left: 10px; line-height:24px;color:#333"></span>
-                <div style="height:24px; padding-left:150px;">
-                    <div id="timeline-border" style="height:24px; background-color: #9d9d9d;">
-                        <div id="timeline" class="ui-widget-content ui-resizable ui-draggable ui-draggable-handle" style="background-color: #333; height: 24px; left: 0px; width: 0px; top: 0px;">
-                            <span class="pull-left glyphicon glyphicon-triangle-left" style="line-height:20px;color:#9d9d9d;" aria-hidden="true"></span>
-                            <span class="pull-right glyphicon glyphicon-triangle-right" style="line-height:20px;color:#9d9d9d;" aria-hidden="true"></span>
-                            <span id="timeline-time-from-label" class="pull-left" style="padding-left:3px; line-height:24px; color:#9d9d9d"> </span>
-                            <span id="timeline-time-to-label" class="pull-right" style="padding-right:3px; line-height:24px; color:#9d9d9d"> </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+
     </div>
     {{pages_html|safe}}
     <div id="page-log" class="sub-page" >
@@ -106,7 +99,6 @@
     {% endfor %}
 {% endblock %}
 {% block include_bootom %}
-<script type="text/javascript" src="{% static "pyscada/js/jquery.mb.CSSAnimate.min.js" %}"></script>
 <script type="text/javascript" src="{% static "pyscada/js/jquery.tablesorter.min.js" %}"></script>
 
 <script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/lib/jquery.mousewheel.js" %}"></script>
@@ -162,28 +154,28 @@
             });
             // sidemenues
             $('.side-menu.left').mouseenter(function(){
-                $(this).stop().CSSAnimate({"left":0},500)
+                $(this).stop().animate({"left":0},500)
             }).mouseleave(function(){
                 ow = $(this).outerWidth()
-                $(this).stop().CSSAnimate({"left":-(ow - 11)},500)
+                $(this).stop().animate({"left":-(ow - 11)},500)
             });
             
             $('.side-menu.right').mouseenter(function(){
-                $(this).stop().CSSAnimate({"right":0},500)
+                $(this).stop().animate({"right":0},500)
             }).mouseleave(function(){
                 ow = $(this).outerWidth()
-                $(this).stop().CSSAnimate({"right":-(ow - 11)},500)
+                $(this).stop().animate({"right":-(ow - 11)},500)
             });
             
             $('.side-menu.bottom').css('margin-left',- $('.side-menu.bottom').outerWidth(true)/2)
             
-            $('.side-menu.bottom').stop().CSSAnimate({"bottom":-($('.side-menu.bottom').outerHeight(true) - 31)},500)
+            $('.side-menu.bottom').stop().animate({"bottom":-($('.side-menu.bottom').outerHeight(true) - 31)},500)
             
             $('.side-menu.bottom').mouseenter(function(){
-                $(this).stop().CSSAnimate({"bottom":0},500)
+                $(this).stop().animate({"bottom":0},500)
             }).mouseleave(function(){
                 oh = $(this).outerHeight(true)
-                $(this).stop().CSSAnimate({"bottom":-(oh - 31)},500)
+                $(this).stop().animate({"bottom":-(oh - 31)},500)
             });
             
 
