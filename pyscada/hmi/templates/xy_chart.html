@@ -2,9 +2,10 @@
     <div class="hidden variable-config" data-name="{{ xy_chart.x_axis_var.name }}" data-key="{{ xy_chart.x_axis_var.id }}" data-init-type="0" data-type="variable"></div>
     <div class="main-chart-area" style="height:450px; width:100%;">
         <div id="xy-chart-container-{{ widget_pk }}-{{xy_chart.pk}}" class="xy-chart-container" style="width: 100%; height:100%;"
-             data-xaxis='{"id":"{{xy_chart.x_axis_var.id}}","linlog":"{{xy_chart.x_axis_linlog}}"}'
+             data-xaxis='{"id":"{{xy_chart.x_axis_var.id}}","linlog":"{% if xy_chart.x_axis_linlog %}True{% else %}False{% endif %}"}'
              data-axes0-yaxis='{"label":"{{xy_chart.y_axis_label}}"}'
-             data-yaxis='{"plotpoints":"{{xy_chart.y_axis_plotpoints}}","uniquescale":"{{xy_chart.y_axis_uniquescale}}"}'>
+             data-yaxis='{"plotpoints":"{% if xy_chart.show_plot_points %}True{% else %}False{% endif %}","plotlines":"{% if xy_chart.show_plot_lines > 0 %}True{% else %}False{% endif %}",
+             "steplines":"{% if xy_chart.show_plot_lines == 2 %}True{% else %}False{% endif %}","uniquescale":"{% if xy_chart.y_axis_uniquescale %}True{% else %}False{% endif %}"}'>
             <div class="chart-placeholder"></div>
             <div class="chartTitle">{{xy_chart.title}}</div>
             <div class="chart-zoom-bar" >
@@ -16,19 +17,19 @@
             </div>
             <div class="chart-btn-bar" >
                 <div class="btn-group">
-                    <button type="button" class="btn btn-default chart-save-csv">
+                    <button type="button" class="btn btn-default chart-save-csv" data-toggle="tooltip" data-placement="top" title="" data-original-title="Export data (csv)">
                         <span class="glyphicon glyphicon-list-alt"></span>
                     </button>
-                    <button type="button" class="btn btn-default chart-save-picture">
+                    <button type="button" class="btn btn-default chart-save-picture" data-toggle="tooltip" data-placement="top" title="" data-original-title="Save picture">
                         <span class="glyphicon glyphicon-picture"></span>
                     </button>
-                    <button type="button" class="btn btn-default chart-ResetSelection">
+                    <button type="button" class="btn btn-default chart-ResetSelection" data-toggle="tooltip" data-placement="top" title="" data-original-title="Reset X and Y zooms">
                         <span class="glyphicon glyphicon-fullscreen"></span>
                     </button>
-                    <button type="button" class="btn btn-default chart-ZoomYToFit">
+                    <button type="button" class="btn btn-default chart-ZoomYToFit" data-toggle="tooltip" data-placement="top" title="" data-original-title="Reset Y zoom">
                         <span class="glyphicon glyphicon-resize-vertical"></span>
                     </button>
-                    <button type="button" class="btn btn-default chart-ZoomXToFit">
+                    <button type="button" class="btn btn-default chart-ZoomXToFit" data-toggle="tooltip" data-placement="top" title="" data-original-title="Reset X zoom">
                         <span class="glyphicon glyphicon-resize-horizontal"></span>
                     </button>
                 </div>

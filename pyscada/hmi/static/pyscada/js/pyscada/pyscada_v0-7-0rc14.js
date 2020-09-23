@@ -902,7 +902,7 @@ function timeline_drag( event, ui ) {
     update_timeline();
 }
 
-function PyScadaPlot(id){
+function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
     var options = {
         legend: {
             position: "nw",
@@ -914,15 +914,18 @@ function PyScadaPlot(id){
         },
         series: {
             lines: {
-                show: true,
+                show: plotLines,
                 lineWidth: 3,
-                steps: true
-            }
+                steps: lineSteps,
+            },
+            points: {
+                show: plotPoints,
+            },
         },
         xaxis: {
             mode: "time",
             ticks: $('#chart-container-'+id).data('xaxisTicks'),
-            timeformat: "%H:%M:%S",
+            timeformat: "%Y/%m/%d %H:%M:%S",
             timezone: "browser",
             timeBase: "milliseconds",
             autoScale: "none"
@@ -1332,7 +1335,7 @@ function PyScadaPlot(id){
                             chart_data.push([DATA_DISPLAY_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
                         }
                     }
-                    series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":variables[key].label,"unit":variables[key].unit});
+                    series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":variables[key].label,"unit":variables[key].unit, "key":key});
                 }
             }
 
@@ -1364,7 +1367,7 @@ function PyScadaPlot(id){
     }
 }
 
-function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
+function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
     var options = {
         yaxes: [],
         xaxis: {
@@ -1374,11 +1377,12 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
         },
         series: {
             lines: {
-                show: true,
-                lineWidth: 3
+                show: plotLines,
+                lineWidth: 3,
+                steps: lineSteps,
             },
             points: {
-                show: plotPoints
+                show: plotPoints,
             }
         },
         legend: {
@@ -1523,7 +1527,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale){
             } else {
                 y = p1[1] + (p2[1] - p1[1]) * (pos.x - p1[0]) / (p2[0] - p1[0]);
             }
-            $(legend_value_id+key).text(y.toFixed(2));
+            if(y){$(legend_value_id+key).text(y.toFixed(2));};
         }
     }
 
@@ -2641,21 +2645,27 @@ $( document ).ready(function() {
     $.each($('.chart-container'),function(key,val){
         // get identifier of the chart
         id = val.id.substring(16);
+        if ($(val).data('yaxis').plotpoints == 'True') {plotPoints = true} else {plotPoints = false}
+        if ($(val).data('yaxis').plotlines == 'True') {plotLines = true} else {plotLines = false}
+        if ($(val).data('yaxis').steplines == 'True') {lineSteps = true} else {lineSteps = false}
+        if ($(val).data('yaxis').uniquescale == 'True') {yaxisUniqueScale = true} else {yaxisUniqueScale = false}
         // add a new Plot
-        PyScadaPlots.push(new PyScadaPlot(id));
+        PyScadaPlots.push(new PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale));
     });
     $.each($('.xy-chart-container'),function(key,val){
         // get identifier of the chart
         id = val.id.substring(19);
         label = $(val).data('axes0Yaxis').label;
         xaxisVarId = $(val).data('xaxis').id;
-        xaxisLinLog = $(val).data('xaxis').linlog;
+        if ($(val).data('yaxis').linlog == 'True') {xaxisLinLog = true} else {xaxisLinLog = false}
         if ($(val).data('yaxis').plotpoints == 'True') {plotPoints = true} else {plotPoints = false}
+        if ($(val).data('yaxis').plotlines == 'True') {plotLines = true} else {plotLines = false}
+        if ($(val).data('yaxis').steplines == 'True') {lineSteps = true} else {lineSteps = false}
         if ($(val).data('yaxis').uniquescale == 'True') {yaxisUniqueScale = true} else {yaxisUniqueScale = false}
         CHART_VARIABLE_KEYS[xaxisVarId]=0;
         X_AXIS = xaxisVarId;
-        // add a new Plot
-        PyScadaPlots.push(new XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, yaxisUniqueScale));
+        // add a new XYPlot
+        PyScadaPlots.push(new XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, yaxisUniqueScale));
     });
     $.each($('.pie-container'),function(key,val){
         // get identifier of the chart

@@ -211,6 +211,14 @@ class Chart(WidgetContentModel):
     y_axis_label = models.CharField(max_length=400, default='', blank=True)
     y_axis_min = models.FloatField(default=0)
     y_axis_max = models.FloatField(default=100)
+    show_plot_points = models.BooleanField(default=False, help_text="Show the plots points")
+    show_plot_lines_choices = (
+        (0, 'No'),
+        (1, 'Yes'),
+        (2, 'Yes as steps'),)
+    show_plot_lines = models.PositiveSmallIntegerField(default=2, help_text="Show the plot lines",
+                                                       choices=show_plot_lines_choices)
+    y_axis_uniquescale = models.BooleanField(default=True, help_text="To have a unique scale for all the y axis")
     variables = models.ManyToManyField(Variable)
 
     def __str__(self):
@@ -244,7 +252,13 @@ class XYChart(WidgetContentModel):
                                    on_delete=models.SET_NULL)
     x_axis_linlog = models.BooleanField(default=False, help_text="False->Lin / True->Log")
     y_axis_label = models.CharField(max_length=400, default='', blank=True)
-    y_axis_plotpoints = models.BooleanField(default=False, help_text="Show the plots points")
+    show_plot_points = models.BooleanField(default=False, help_text="Show the plots points")
+    show_plot_lines_choices = (
+        (0, 'No'),
+        (1, 'Yes'),
+        (2, 'Yes as steps'),)
+    show_plot_lines = models.PositiveSmallIntegerField(default=1, help_text="Show the plot lines",
+                                                       choices=show_plot_lines_choices)
     y_axis_uniquescale = models.BooleanField(default=True, help_text="To have a unique scale for all the y axis")
     variables = models.ManyToManyField(Variable, related_name='variables_xy_chart')
 

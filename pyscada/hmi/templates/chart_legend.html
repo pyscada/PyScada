@@ -39,7 +39,7 @@
                     <td class="legendLabel" style="word-wrap: break-word">
                         {{ var.hmi_name }}
                     </td>
-                    <td class="legendValue type-numeric chart-legend-value-{{widget_pk}}-{{chart.pk}} var-{{ var.pk }}" style="text-align:right"></td>
+                    <td class="legendValue type-numeric chart-legend-value-{{widget_pk}}-{{chart.pk}} var-{{ var.pk }}" id="chart-legend-value-{{widget_pk}}-{{chart.pk}}-{{var.pk}}" style="text-align:right"></td>
                     <td class="legendUnit">{{ var.unit.unit }}</td>
                 </tr>
                 {% endif %}
