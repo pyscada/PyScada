@@ -202,7 +202,7 @@ function data_handler(){
                                 vars.push(key);
                             }
                         }
-                        if(var_count >= 5){break;}
+                        if(var_count >= 5){SINGLE_UPDATE = true;break;}
                     }
                     if(var_count>0){
                         data_handler_ajax(1,vars,props,timestamp);
@@ -229,7 +229,7 @@ function data_handler(){
                             if (typeof(DATA[key]) == 'object'){
                                 timestamp = Math.max(timestamp,DATA[key][0][0])
                             }
-                            if(var_count >= 10){break;}
+                            if(var_count >= 10){SINGLE_UPDATE = true;break;}
                        }
                     }
                     if(var_count>0){
@@ -844,8 +844,10 @@ function update_timeline(){
     $("#timeline-time-left-label").html(date.toLocaleString());
 
     // Update DateTime pickers
-    $('#datetimepicker_start').datetimepicker('date', new Date(DATA_FROM_TIMESTAMP))
-    $('#datetimepicker_stop').datetimepicker('date', new Date(DATA_TO_TIMESTAMP))
+    $("#datetimepicker_from").datetimepicker('enable');
+    $('#datetimepicker_from').datetimepicker('date', new Date(DATA_FROM_TIMESTAMP))
+    $("#datetimepicker_to").datetimepicker('enable');
+    $('#datetimepicker_to').datetimepicker('date', new Date(DATA_TO_TIMESTAMP))
 }
 
 function progressbarSetWindow( event, ui ) {
@@ -913,19 +915,28 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
             //container: $('#chart-legend-' + id + ' .legend')[0],
         },
         series: {
+            shadowSize: 0,
             lines: {
                 show: plotLines,
                 lineWidth: 3,
                 steps: lineSteps,
+                fill: false,
             },
             points: {
                 show: plotPoints,
+                radius: 4,
+                symbol: "cross",
+            },
+        bars: {
+                show: false,
+                barWidth: [1, false],
+                align: "center",
             },
         },
         xaxis: {
             mode: "time",
             ticks: $('#chart-container-'+id).data('xaxisTicks'),
-            timeformat: "%Y/%m/%d %H:%M:%S",
+            timeformat: "%d/%m/%Y %H:%M:%S",
             timezone: "browser",
             timeBase: "milliseconds",
             autoScale: "none"
@@ -1035,11 +1046,11 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
             var y,
                 p1 = series.data[j - 1],
                 p2 = series.data[j];
-            if (p1 == null) {
+            if (p1 == null && typeof(p2) != "undefined") {
                 y = p2[1];
-            } else if (p2 == null) {
+            } else if (p2 == null && typeof(p1) != "undefined") {
                 y = p1[1];
-            } else {
+            } else if (typeof(12) != "undefined" && typeof(p2) != "undefined") {
                 y = p1[1] + (p2[1] - p1[1]) * (pos.x - p1[0]) / (p2[0] - p1[0]);
             }
             if (typeof(y) === "number") {
@@ -1383,6 +1394,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
             },
             points: {
                 show: plotPoints,
+                radius: 1,
             }
         },
         legend: {
@@ -2775,24 +2787,26 @@ $( document ).ready(function() {
 
 
     // DateTime Picker
-    $('#datetimepicker_start').datetimepicker({
+    $('#datetimepicker_from').datetimepicker({
         sideBySide: true,
         locale: 'fr',
         format: 'L LTS',
         allowInputToggle: true,
+        disable: true,
     });
-    $('#datetimepicker_stop').datetimepicker({
+    $('#datetimepicker_to').datetimepicker({
         sideBySide: true,
         locale: 'fr',
         format: 'L LTS',
         useCurrent: false,
         allowInputToggle: true,
+        disable: true,
     });
-    $("#datetimepicker_start").on("change.datetimepicker", function (e) {
-        $('#datetimepicker_stop').datetimepicker('minDate', e.date);
+    $("#datetimepicker_from").on("change.datetimepicker", function (e) {
+        $('#datetimepicker_to').datetimepicker('minDate', e.date);
     }).on("hide.datetimepicker", function (e) {
         DATA_INIT_STATUS++;
-        DATA_FROM_TIMESTAMP = $('#datetimepicker_start').datetimepicker('date').unix() * 1000;
+        DATA_FROM_TIMESTAMP = $('#datetimepicker_from').datetimepicker('date').unix() * 1000;
         DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
         INIT_CHART_VARIABLES_DONE = false;
         SINGLE_UPDATE = true;
@@ -2800,18 +2814,18 @@ $( document ).ready(function() {
             $('#AutoUpdateButton').trigger('click');
         };
     }).click(function (e) {
-        $("#datetimepicker_start").datetimepicker('show');
+        //$("#datetimepicker_from").datetimepicker('show');
         PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = AUTO_UPDATE_ACTIVE
         if($('#AutoUpdateButton').hasClass('btn-success') && AUTO_UPDATE_ACTIVE){
             $('#AutoUpdateButton').trigger('click');
         };
     });
 
-    $("#datetimepicker_stop").on("change.datetimepicker", function (e) {
-        $('#datetimepicker_start').datetimepicker('maxDate', e.date);
+    $("#datetimepicker_to").on("change.datetimepicker", function (e) {
+        $('#datetimepicker_from').datetimepicker('maxDate', e.date);
         }).on("hide.datetimepicker", function (e) {
         DATA_INIT_STATUS++;
-        DATA_TO_TIMESTAMP = Math.min($('#datetimepicker_stop').datetimepicker('date').unix() * 1000, SERVER_TIME);
+        DATA_TO_TIMESTAMP = Math.min($('#datetimepicker_to').datetimepicker('date').unix() * 1000, SERVER_TIME);
         DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
         INIT_CHART_VARIABLES_DONE = false;
         SINGLE_UPDATE = true;
@@ -2819,11 +2833,22 @@ $( document ).ready(function() {
             //$('#AutoUpdateButton').trigger('click');
         };
     }).click(function (e) {
-        //$('#datetimepicker_stop').datetimepicker('maxDate', new Date(SERVER_TIME));
-        $("#datetimepicker_stop").datetimepicker('show');
+        //$('#datetimepicker_to').datetimepicker('maxDate', new Date(SERVER_TIME));
+        //$("#datetimepicker_to").datetimepicker('show');
         PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = AUTO_UPDATE_ACTIVE
         if($('#AutoUpdateButton').hasClass('btn-success') && AUTO_UPDATE_ACTIVE){
             $('#AutoUpdateButton').trigger('click');
+        };
+    });
+
+    $("#datetimepicker_from_button").click(function (e) {
+        if (!$('#datetimepicker_from .bootstrap-datetimepicker-widget').length) {
+            $('#datetimepicker_from').datetimepicker('show');
+        };
+    });
+    $("#datetimepicker_to_button").click(function (e) {
+        if (!$('#datetimepicker_to .bootstrap-datetimepicker-widget').length) {
+            $('#datetimepicker_to').datetimepicker('show');
         };
     });
 

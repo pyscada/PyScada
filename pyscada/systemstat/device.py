@@ -222,6 +222,10 @@ class Device:
                         VariableProperty.objects.update_property(variable_property=vp,
                                                                  value=str(vp.name + " not found"))
                         continue
+                    except OSError as e:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str(vp.name + " - " + e))
+                        continue
                     if list_dir is None or len(list_dir) == 0:
                         VariableProperty.objects.update_property(variable_property=vp,
                                                                  value=str("No files in " + vp.name))
