@@ -314,19 +314,6 @@ class Pie(WidgetContentModel):
 
 
 @python_2_unicode_compatible
-class DropDownItem(models.Model):
-    id = models.AutoField(primary_key=True)
-    title = models.CharField(max_length=400, default='')
-    value = models.CharField(max_length=400, default='')
-
-    def __str__(self):
-        return text_type(str(self.id) + ': ' + self.title)
-
-    def visible(self):
-        return True
-
-
-@python_2_unicode_compatible
 class DropDown(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
@@ -334,7 +321,6 @@ class DropDown(models.Model):
     variable_property = models.ForeignKey(VariableProperty, null=True, blank=True, on_delete=models.SET_NULL)
     empty = models.BooleanField(default=False)
     empty_value = models.CharField(max_length=30, default='------')
-    items = models.ManyToManyField(DropDownItem)
 
     def __str__(self):
         return text_type(str(self.id) + ': ' + self.title)
@@ -429,6 +415,20 @@ class DropDown(models.Model):
             return self.variable_property.max_type
         elif self.variable:
             return self.variable.max_type
+
+
+@python_2_unicode_compatible
+class DropDownItem(models.Model):
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=400, default='')
+    value = models.CharField(max_length=400, default='')
+    dropdown = models.ForeignKey(DropDown, blank=True, null=True, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return text_type(str(self.id) + ': ' + self.title)
+
+    def visible(self):
+        return True
 
 
 @python_2_unicode_compatible

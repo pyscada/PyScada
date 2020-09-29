@@ -109,19 +109,18 @@ class PieAdmin(admin.ModelAdmin):
         return instance.variables.name
 
 
+class DropDownItemInline(admin.TabularInline):
+    model = DropDownItem
+    extra = 1
+
+
 class DropDownAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'empty', 'empty_value', 'items_list')
-    filter_horizontal = ('items',)
+    list_display = ('id', 'title', 'empty', 'empty_value',)
+    #filter_horizontal = ('items',)
     list_filter = ('controlpanel', 'dropdowns_form',)
     save_as = True
     save_as_continue = True
-
-
-class DropDownItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'value')
-    list_filter = ('dropdown',)
-    save_as = True
-    save_as_continue = True
+    inlines = [DropDownItemInline]
 
 
 class FormAdmin(admin.ModelAdmin):
@@ -286,7 +285,6 @@ admin_site.register(Chart, ChartAdmin)
 admin_site.register(XYChart, XYChartAdmin)
 admin_site.register(Pie, PieAdmin)
 admin_site.register(DropDown, DropDownAdmin)
-admin_site.register(DropDownItem, DropDownItemAdmin)
 admin_site.register(Form, FormAdmin)
 admin_site.register(SlidingPanelMenu, SlidingPanelMenuAdmin)
 admin_site.register(Page, PageAdmin)
