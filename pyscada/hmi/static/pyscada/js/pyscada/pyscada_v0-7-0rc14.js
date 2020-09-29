@@ -805,7 +805,10 @@ function msToTime(duration) {
 function set_x_axes(){
     if(!progressbar_resize_active){
         $.each(PyScadaPlots,function(plot_id){
-            PyScadaPlots[plot_id].update(false);
+            var self = this, doBind = function() {
+                PyScadaPlots[plot_id].update(false);
+            };
+            $.browserQueue.add(doBind, this);
         });
         // update the progressbar
         update_timeline();
@@ -852,7 +855,10 @@ function update_timeline(){
 
 function progressbarSetWindow( event, ui ) {
     $.each(PyScadaPlots,function(plot_id){
+        var self = this, doBind = function() {
             PyScadaPlots[plot_id].update(false);
+        };
+        $.browserQueue.add(doBind, this);
     });
 
     progressbar_resize_active = false;
@@ -992,6 +998,7 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
     // public functions
     plot.update 			= update;
     plot.prepare 			= prepare;
+    plot.resize 			= resize;
     plot.updateLegend 		= updateLegend;
     plot.getSeries 			= function () { return series };
     plot.getFlotObject		= function () { return flotPlot};
@@ -1138,7 +1145,7 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
                 }
                 y_label = (typeof item.series.label !== 'undefined') ? item.series.label : "T"
                 y_unit = (typeof item.series.unit !== 'undefined') ? item.series.unit : ""
-                $("#tooltip").html(y_label + "(" + x + ") = " + y + " " + y_unit)
+                $("#tooltip").html(y_label + " (" + x + ") = " + y + " " + y_unit)
                     .css({top: item.pageY+5, left: item.pageX+5, "z-index": 91})
                     .show();
                     //.fadeIn(200);
@@ -1376,6 +1383,14 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
             flotPlot.draw();
         }
     }
+
+    function resize() {
+        if (typeof(flotPlot) !== 'undefined') {
+            flotPlot.resize();
+            flotPlot.setupGrid(true);
+            flotPlot.draw();
+        }
+    }
 }
 
 function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
@@ -1440,6 +1455,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
     // public functions
     plot.update 			= update;
     plot.prepare 			= prepare;
+    plot.resize 			= resize;
     plot.updateLegend 		= updateLegend;
     plot.getSeries 			= function () { return series };
     plot.getFlotObject		= function () { return flotPlot};
@@ -1962,6 +1978,14 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
             }
         }
     }
+
+    function resize() {
+        if (typeof(flotPlot) !== 'undefined') {
+            flotPlot.resize();
+            flotPlot.setupGrid(true);
+            flotPlot.draw();
+        }
+    }
 }
 
 function Pie(id){
@@ -2001,6 +2025,7 @@ function Pie(id){
     // public functions
     plot.update 			= update;
     plot.prepare 			= prepare;
+    plot.resize 			= resize;
     plot.getSeries 			= function () { return series };
     plot.getFlotObject		= function () { return flotPlot};
     plot.getKeys			= function (){ return keys};
@@ -2122,6 +2147,14 @@ function Pie(id){
                     flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series, options)
                 }
             }
+        }
+    }
+
+    function resize() {
+        if (typeof(flotPlot) !== 'undefined') {
+            flotPlot.resize();
+            flotPlot.setupGrid(true);
+            flotPlot.draw();
         }
     }
 }
@@ -2801,12 +2834,14 @@ $( document ).ready(function() {
         useCurrent: false,
         allowInputToggle: true,
         disable: true,
+        widgetPositioning: {horizontal: 'right'},
+        widgetParent: $('#timeline'),
     });
     $("#datetimepicker_from").on("change.datetimepicker", function (e) {
         $('#datetimepicker_to').datetimepicker('minDate', e.date);
-    }).on("hide.datetimepicker", function (e) {
+    }).focusout(function (e) {
         DATA_INIT_STATUS++;
-        DATA_FROM_TIMESTAMP = $('#datetimepicker_from').datetimepicker('date').unix() * 1000;
+        DATA_FROM_TIMESTAMP = $('#datetimepicker_from').datetimepicker('viewDate').unix() * 1000;
         DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
         INIT_CHART_VARIABLES_DONE = false;
         SINGLE_UPDATE = true;
@@ -2814,7 +2849,11 @@ $( document ).ready(function() {
             $('#AutoUpdateButton').trigger('click');
         };
     }).click(function (e) {
-        //$("#datetimepicker_from").datetimepicker('show');
+        if (!$('#datetimepicker_from .bootstrap-datetimepicker-widget').length) {
+            $('#datetimepicker_from').datetimepicker('show');
+        };
+    });
+    $("#datetimepicker_from .datetimepicker-input").focusin(function (e) {
         PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = AUTO_UPDATE_ACTIVE
         if($('#AutoUpdateButton').hasClass('btn-success') && AUTO_UPDATE_ACTIVE){
             $('#AutoUpdateButton').trigger('click');
@@ -2823,33 +2862,37 @@ $( document ).ready(function() {
 
     $("#datetimepicker_to").on("change.datetimepicker", function (e) {
         $('#datetimepicker_from').datetimepicker('maxDate', e.date);
-        }).on("hide.datetimepicker", function (e) {
+        PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = false;
+    }).focusout(function (e) {
         DATA_INIT_STATUS++;
-        DATA_TO_TIMESTAMP = Math.min($('#datetimepicker_to').datetimepicker('date').unix() * 1000, SERVER_TIME);
+        DATA_TO_TIMESTAMP = Math.min($('#datetimepicker_to').datetimepicker('viewDate').unix() * 1000, SERVER_TIME);
         DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
         INIT_CHART_VARIABLES_DONE = false;
         SINGLE_UPDATE = true;
         if($('#AutoUpdateButton').hasClass('btn-default') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
-            //$('#AutoUpdateButton').trigger('click');
+            $('#AutoUpdateButton').trigger('click');
         };
     }).click(function (e) {
         //$('#datetimepicker_to').datetimepicker('maxDate', new Date(SERVER_TIME));
-        //$("#datetimepicker_to").datetimepicker('show');
+        if (!$('#datetimepicker_to .bootstrap-datetimepicker-widget').length) {
+            $('#datetimepicker_to').datetimepicker('show');
+        };
+    });
+    $("#datetimepicker_to .datetimepicker-input").focusin(function (e) {
         PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = AUTO_UPDATE_ACTIVE
         if($('#AutoUpdateButton').hasClass('btn-success') && AUTO_UPDATE_ACTIVE){
             $('#AutoUpdateButton').trigger('click');
         };
     });
 
-    $("#datetimepicker_from_button").click(function (e) {
-        if (!$('#datetimepicker_from .bootstrap-datetimepicker-widget').length) {
-            $('#datetimepicker_from').datetimepicker('show');
-        };
-    });
-    $("#datetimepicker_to_button").click(function (e) {
-        if (!$('#datetimepicker_to .bootstrap-datetimepicker-widget').length) {
-            $('#datetimepicker_to').datetimepicker('show');
-        };
+    // Resize charts on windows resize
+    $(window).resize(function() {
+      $.each(PyScadaPlots,function(plot_id){
+            var self = this, doBind = function() {
+                PyScadaPlots[plot_id].resize();
+            };
+            $.browserQueue.add(doBind, this);
+        });
     });
 
     // Prevent closing dropdown on click
