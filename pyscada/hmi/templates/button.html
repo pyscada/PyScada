@@ -1,5 +1,14 @@
 {% if item.type == 0 %}<!-- input value -->
-    <div class="input-group control_button"><button type="button" class="btn btn-default update-able write-task-btn type-bool {{ item.web_class_str }}" id="{{ item.web_id }}-{{ uuid }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}">{{ item.label }}</button></div>
-{% elif item.type == 1 %}<!-- color only -->
-    <div class="input-group control_button"><button type="button" class="btn btn-default control-item type-numeric update-able {{ item.web_class_str }}" id="{{ item.web_id }}-{{ uuid }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}">{{ item.label }}</button></div>
+    <div class="input-group control_button"><button type="button" class="btn btn-default update-able write-task-btn type-bool {{ item.web_class_str }}" id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}">{{ item.label }}</button></div>
+{% elif item.type == 1 %}<!-- display value -->
+    <div class="input-group set_value">
+        <span class="input-group-addon input-group-addon-label control-item type-numeric {{ item.web_class_str }}" id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}" data-toggle="tooltip" data-placement="top" title="" data-original-title="" style="border:1px solid #ccc;width:100%;text-align:center;">
+            <button class="btn btn-default read-task-set set-{{ item.key }}" type="button" data-key="{{ item.key }}" data-type="{{ item.item_type}}" style="width:16px;height:16px;padding:0;margin:0;">
+                <span class="glyphicon glyphicon-refresh" data-toggle="tooltip" data-placement="top" title="" data-original-title="Refresh data" style="font-size:10px;vertical-align:text-top;"></span>
+            </button>
+            <span style="color:red;height:12px;" data-toggle="tooltip" data-placement="top" title="" data-original-title="Very old value (>10 polling interval)" class="glyphicon glyphicon-alert hidden"></span>
+            <span style="color:orange;height:12px;" data-toggle="tooltip" data-placement="top" title="" data-original-title="Old value (between 3 and 10 polling interval)" class="glyphicon glyphicon-exclamation-sign hidden"></span>
+            {{ item.label }}
+        </span>
+    </div>
 {% endif %}

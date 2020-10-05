@@ -520,6 +520,7 @@ function update_data_values(key,val,time){
         if (time != null) {
             t = new Date() - time
             $(".type-numeric." + key).attr('data-original-title','last update ' + msToTime(t) + ' ago')
+            $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "]").attr('data-value-timestamp',time)
             polling_interval = $(".variable-config[data-device-polling_interval][data-key=" + key.split("-")[1] + "]").attr('data-device-polling_interval')
             if (time < SERVER_TIME - 10 * 1000 * polling_interval) {
                 $(".type-numeric." + key).parent().find('.glyphicon-alert').removeClass("hidden")
@@ -639,6 +640,23 @@ function update_data_values(key,val,time){
             $('input.'+ key).attr("placeholder",val);
         }
 
+        refresh_logo(key.split("-")[1], time);
+}
+
+function refresh_logo(key,time){
+    $.each($(".type-numeric.var-" + key + " img"), function(k,v){
+        $(v).remove();
+    });
+    if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "]").attr('data-refresh-requested-timestamp')>time) {
+        $.each($(".type-numeric.var-" + key), function(k,v){
+            val_temp=$(v).html();
+            $(v).html('<img style="height:14px;" src="/static/pyscada/img/load.gif" alt="refreshing">' + val_temp);
+        })
+    }else {
+        $.each($(".type-numeric.var-" + key + " img"), function(k,v){
+            $(v).remove();
+        });
+    }
 }
 
 function timestamp_conversion(id,val){
@@ -685,7 +703,6 @@ function update_data_colors(id,val){
     }
 
     color = null
-
 
     if (color_type == 1) {
         if (color_level_1_type == 0) {
@@ -2320,7 +2337,10 @@ function check_min_max(value, min, max, min_strict, max_strict) {
 //form/read-task
 
 $('button.read-task-set').click(function(){
+    t = new Date().valueOf()
     key = $(this).data('key');
+    $(".variable-config[data-key=" + key + "]").attr('data-refresh-requested-timestamp',t)
+    refresh_logo(key,0);
     type = $(this).data('type');
     $(this)[0].disabled = true;
     $.ajax({
