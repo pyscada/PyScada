@@ -13,8 +13,8 @@
                 {% if dropdown.empty == 1 %}
                     <option disabled selected value> {{ dropdown.empty_value }} </option>
                 {% endif %}
-                {% for dropdown_item in dropdown.dropdownitem_set.all %}
-                    <option class="select-item {{ dropdown.web_class_str }}" id="{{ dropdown_item.pk }}" data-value="{{ dropdown_item.value }}" value="{{ dropdown_item.value }}">{{ dropdown_item.title }}</option>
+                {% for dropdown_item in dropdown.dictionary.dictionaryitem_set.all %}
+                    <option class="select-item {{ dropdown.web_class_str }}" id="{{ dropdown_item.pk }}" data-value="{{ dropdown_item.value }}" value="{{ dropdown_item.value }}">{{ dropdown_item.label }}</option>
                 {% endfor %}
                 </select>
             </span>

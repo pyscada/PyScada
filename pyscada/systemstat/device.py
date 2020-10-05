@@ -9,6 +9,7 @@ except ImportError:
     driver_ok = False
 
 import os
+import concurrent.futures
 from ftplib import FTP, error_perm
 from ipaddress import ip_address
 
@@ -16,6 +17,8 @@ from time import time
 import logging
 
 logger = logging.getLogger(__name__)
+
+pool = concurrent.futures.ThreadPoolExecutor()
 
 
 class Device:
@@ -163,7 +166,7 @@ class Device:
                         value = None
                     timestamp = time()
             elif item.systemstatvariable.information == 19:
-                # disk_usage_disk_percent
+                # ip_addresses
                 if hasattr(psutil, 'net_if_addrs'):
                     for vp in VariableProperty.objects.filter(variable=item):
                         try:
@@ -216,15 +219,22 @@ class Device:
                     result = ""
                     try:
                         os.chdir(vp.name)
-                        list_dir = list(filter(os.path.isfile, os.listdir(vp.name)))
+                        future = pool.submit(os.listdir, vp.name)
+                        timeout = 10
+                        list_dir = future.result(timeout)
+                        list_dir = list(filter(os.path.isfile, list_dir))
                         list_dir.sort(key=os.path.getmtime)
+                    except concurrent.futures.TimeoutError:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str("Timeout : " + vp.name))
+                        continue
                     except FileNotFoundError:
                         VariableProperty.objects.update_property(variable_property=vp,
                                                                  value=str(vp.name + " not found"))
                         continue
                     except OSError as e:
                         VariableProperty.objects.update_property(variable_property=vp,
-                                                                 value=str(vp.name + " - " + e))
+                                                                 value=str(vp.name + " - OSError"))
                         continue
                     if list_dir is None or len(list_dir) == 0:
                         VariableProperty.objects.update_property(variable_property=vp,
@@ -237,7 +247,7 @@ class Device:
                                 VariableProperty.objects.update_property(variable_property=vp,
                                                                          value="Systemstat listing directory filter "
                                                                                "value must be > 0")
-                                break
+                                continue
                             else:
                                 if param[0] == "first":
                                     for i in list_dir[:val]:
@@ -245,18 +255,23 @@ class Device:
                                 elif param[0] == "last":
                                     for i in list_dir[-val:]:
                                         result += str(i) + "<br>"
+                                else:
+                                    VariableProperty.objects.update_property(variable_property=vp,
+                                                                             value="Systemstat listing directory "
+                                                                                   "syntax error")
+                                continue
                         except ValueError:
                             VariableProperty.objects.update_property(variable_property=vp,
                                                                      value="Systemstat listing directory filter value "
                                                                            "must be an integer")
-                            break
+                            continue
                     elif (len(param) == 1 and param[0] == "all") or len(param) == 0:
                         for i in list_dir:
                             result += str(i) + "\r\n"
                     else:
                         VariableProperty.objects.update_property(variable_property=vp,
                                                                  value="Systemstat listing directory parameter error")
-                        break
+                        continue
                     VariableProperty.objects.update_property(variable_property=vp, value=result)
                 value = None
                 timestamp = time()
@@ -271,20 +286,30 @@ class Device:
                     result = ""
                     if len(param) == 0:
                         logger.debug("FTP IP missing for listing directory")
-                        break
+                        continue
                     try:
                         ip_address(param[0])
                     except ValueError:
                         logger.debug("FTP listing directory : first argument must be IP, it's : " + param[0])
-                        break
+                        continue
                     try:
                         ftp = FTP(param[0])
                         ftp.login()
-                        list_dir = ftp.nlst(vp.name)
+                        future = pool.submit(ftp.nlst, vp.name)
+                        timeout = 10
+                        list_dir = future.result(timeout)
                         ftp.close()
+                    except concurrent.futures.TimeoutError:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str("Timeout : " + vp.name))
+                        continue
                     except error_perm:
                         VariableProperty.objects.update_property(variable_property=vp,
                                                                  value=str(vp.name + " not found"))
+                        continue
+                    except OSError:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str("Device offline ?"))
                         continue
                     if list_dir is None or len(list_dir) == 0:
                         VariableProperty.objects.update_property(variable_property=vp,
@@ -297,7 +322,7 @@ class Device:
                                 VariableProperty.objects.update_property(variable_property=vp,
                                                                          value="Systemstat listing directory filter "
                                                                                "value must be > 0")
-                                break
+                                continue
                             else:
                                 if param[1] == "first":
                                     for i in list_dir[:val]:
@@ -305,18 +330,22 @@ class Device:
                                 elif param[1] == "last":
                                     for i in list_dir[-val:]:
                                         result += str(i) + "<br>"
+                                else:
+                                    VariableProperty.objects.update_property(variable_property=vp,
+                                                                             value="Systemstat listing directory "
+                                                                                   "syntax error")
                         except ValueError:
                             VariableProperty.objects.update_property(variable_property=vp,
                                                                      value="Systemstat listing directory filter value "
                                                                            "must be an integer")
-                            break
+                            continue
                     elif (len(param) == 2 and param[1] == "all") or len(param) == 1:
                         for i in list_dir:
                             result += str(i) + "\r\n"
                     else:
                         VariableProperty.objects.update_property(variable_property=vp,
                                                                  value="Systemstat listing directory parameter error")
-                        break
+                        continue
                     VariableProperty.objects.update_property(variable_property=vp, value=result)
                 value = None
                 timestamp = time()

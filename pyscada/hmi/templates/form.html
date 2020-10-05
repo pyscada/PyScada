@@ -10,7 +10,21 @@
     {% for item in form.control_items.all %}
         {% if item.active == 1 %}
             {% if item.type == 0 %}<!-- form input {{ item.key }} -->
-                <div class="hidden variable-config" data-name="{{ item.name }}" data-key="{{ item.key }}" data-init-type="0" data-type="{{ item.item_type}}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-value-class="{{ item.value_class }}" data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}"></div>
+                <div class="hidden variable-config" data-id="{{ form.web_id }}-{{ uuid }}-{{ item.web_id }}" data-name="{{ item.name }}" data-key="{{ item.key }}" data-color="{{ var.chart_line_color_code }}" data-init-type="0" data-type="{{ item.item_type}}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-value-class="{{ item.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}" data-unit="{% if item.unit %}{{ item.unit }}{% endif %}" data-device-polling_interval="{{ item.variable.device.polling_interval }}"
+                {% if item.display_value_options %}
+                     data-color-type="{{ item.display_value_options.color_type }}"
+                     data-color-mode="{{ item.display_value_options.mode }}"
+                     data-level-1-type="{{ item.display_value_options.color_level_1_type }}"
+                     data-level-2-type="{{ item.display_value_options.color_level_2_type }}"
+                     data-level-1="{{ item.display_value_options.color_level_1 }}"
+                     data-level-2="{{ item.display_value_options.color_level_2 }}"
+                     data-color-1="{{ item.display_value_options.color_1 }}"
+                     data-color-2="{{ item.display_value_options.color_2 }}"
+                     data-color-3="{{ item.display_value_options.color_3 }}"
+                     data-timestamp-conversion="{{ item.display_value_options.timestamp_conversion }}"
+                     data-dictionary="{{ item.display_value_options.dictionary.dict_as_json }}"
+                 {% endif %}
+                ></div>
                 {% if item.value_class == 'BOOL' or item.value_class == 'BOOLEAN' %}
                     <!-- control item value {{ item.value }} -->
                     {% if item.value %}

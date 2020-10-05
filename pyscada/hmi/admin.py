@@ -9,7 +9,8 @@ from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Chart
 from pyscada.hmi.models import XYChart
 from pyscada.hmi.models import DropDown
-from pyscada.hmi.models import DropDownItem
+from pyscada.hmi.models import Dictionary
+from pyscada.hmi.models import DictionaryItem
 from pyscada.hmi.models import Form
 from pyscada.hmi.models import SlidingPanelMenu
 from pyscada.hmi.models import Page
@@ -109,18 +110,27 @@ class PieAdmin(admin.ModelAdmin):
         return instance.variables.name
 
 
-class DropDownItemInline(admin.TabularInline):
-    model = DropDownItem
+class DictionaryItemInline(admin.TabularInline):
+    model = DictionaryItem
     extra = 1
 
 
+class DictionaryAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name',)
+    list_filter = ('displayvalueoption', 'dropdown',)
+    save_as = True
+    save_as_continue = True
+    inlines = [DictionaryItemInline]
+
+    def has_module_permission(self, request):
+        return False
+
+
 class DropDownAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'empty', 'empty_value',)
-    #filter_horizontal = ('items',)
+    list_display = ('id', 'label', 'empty', 'empty_value',)
     list_filter = ('controlpanel', 'dropdowns_form',)
     save_as = True
     save_as_continue = True
-    inlines = [DropDownItemInline]
 
 
 class FormAdmin(admin.ModelAdmin):
@@ -170,7 +180,7 @@ class DisplayValueOptionAdminFrom(forms.ModelForm):
 class DisplayValueOptionAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {
-            'fields': ('name', 'display_value_color_type', 'display_value_mode',),
+            'fields': ('name', 'color_type', 'mode', 'timestamp_conversion', 'dictionary',),
         }),
         ('Color 1', {
             'fields': ('color_level_1_type', 'color_level_1', 'color_1',),
@@ -180,9 +190,6 @@ class DisplayValueOptionAdmin(admin.ModelAdmin):
         }),
         ('Color 3', {
             'fields': ('color_3',),
-        }),
-        ('Transformation', {
-            'fields': ('display_value_transformation', 'display_value_transformation_parameter',),
         }),
     )
     form = DisplayValueOptionAdminFrom
@@ -284,6 +291,7 @@ admin_site.register(ControlItem, ControlItemAdmin)
 admin_site.register(Chart, ChartAdmin)
 admin_site.register(XYChart, XYChartAdmin)
 admin_site.register(Pie, PieAdmin)
+admin_site.register(Dictionary, DictionaryAdmin)
 admin_site.register(DropDown, DropDownAdmin)
 admin_site.register(Form, FormAdmin)
 admin_site.register(SlidingPanelMenu, SlidingPanelMenuAdmin)

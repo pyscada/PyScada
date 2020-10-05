@@ -13,7 +13,7 @@ from six import text_type
 import traceback
 from uuid import uuid4
 import logging
-
+import json
 logger = logging.getLogger(__name__)
 
 
@@ -39,16 +39,31 @@ class WidgetContentModel(models.Model):
 
 
 @python_2_unicode_compatible
+class Dictionary(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=400, default='')
+
+    def __str__(self):
+        return text_type(str(self.id) + ': ' + self.name)
+
+    def dict_as_json(self):
+        items_list = dict()
+        for item in self.dictionaryitem_set.all():
+            items_list[item.value] = item.label
+        return json.dumps(items_list)
+
+
+@python_2_unicode_compatible
 class DisplayValueOption(models.Model):
     name = models.CharField(max_length=400)
-    display_value_color_type_choices = (
+    color_type_choices = (
         (0, 'No color'),
         (1, '2 color'),
         (2, '3 colors'),
         (3, 'color gradient'),)
-    display_value_color_type = models.PositiveSmallIntegerField(default=0, choices=display_value_color_type_choices,
-                                                           help_text="For boolean no level needed and will use color 1 "
-                                                                     "and 2")
+    color_type = models.PositiveSmallIntegerField(default=0, choices=color_type_choices,
+                                                  help_text="For boolean no level needed and will use color 1 "
+                                                            "and 2")
     color_level_1 = models.FloatField(default=0)
     color_level_1_type_choices = (
         (0, 'color 1 =< level 1'),
@@ -63,26 +78,25 @@ class DisplayValueOption(models.Model):
     color_level_2_type = models.PositiveSmallIntegerField(default=0, choices=color_level_2_type_choices,
                                                           help_text="Only needed for 3 colors")
 
-    color_1 = models.ForeignKey(Color, null=True, blank=True, on_delete=models.SET_NULL, related_name="color_1", default="")
+    color_1 = models.ForeignKey(Color, null=True, blank=True, on_delete=models.SET_NULL, related_name="color_1")
     color_2 = models.ForeignKey(Color, null=True, blank=True, on_delete=models.SET_NULL, related_name="color_2")
     color_3 = models.ForeignKey(Color, null=True, blank=True, on_delete=models.SET_NULL, related_name="color_3",
                                 help_text="Only needed for 3 colors")
 
-    display_value_mode_choices = (
+    mode_choices = (
         (0, 'Value only'),
         (1, 'Color only'),
         (2, 'Value and color'),)
-    display_value_mode = models.PositiveSmallIntegerField(default=0, choices=display_value_mode_choices)
+    mode = models.PositiveSmallIntegerField(default=0, choices=mode_choices)
 
-    display_value_transformation_choices = (
+    timestamp_conversion_choices = (
         (0, 'None'),
         (1, 'Timestamp to local date'),
         (2, 'Timestamp to local time'),
-        (3, 'Timestamp to local date and time'),
-        (4, 'Dictionary'),)
-    display_value_transformation = models.PositiveSmallIntegerField(default=0,
-                                                                    choices=display_value_transformation_choices)
-    display_value_transformation_parameter = models.CharField(max_length=400, default='', null=True, blank=True)
+        (3, 'Timestamp to local date and time'),)
+    timestamp_conversion = models.PositiveSmallIntegerField(default=0,
+                                                            choices=timestamp_conversion_choices)
+    dictionary = models.ForeignKey(Dictionary, blank=True, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return self.name
@@ -112,6 +126,8 @@ class ControlItem(models.Model):
         elif self.variable:
             return self.id.__str__() + "-" + self.label.replace(' ', '_') + "-" + "-" + \
                    self.variable.name.replace(' ', '_')
+        else:
+            return "No variable nor property is attached to this control item"
 
     def web_id(self):
         if self.variable_property:
@@ -175,7 +191,7 @@ class ControlItem(models.Model):
         if self.variable_property:
             return self.variable_property.value
         elif self.variable:
-            return self.variable.value
+            return self.variable.prev_value
 
     def value_class(self):
         if self.variable_property:
@@ -316,23 +332,18 @@ class Pie(WidgetContentModel):
 @python_2_unicode_compatible
 class DropDown(models.Model):
     id = models.AutoField(primary_key=True)
-    title = models.CharField(max_length=400, default='')
-    variable = models.ForeignKey(Variable, null=True, blank=True, on_delete=models.SET_NULL)
-    variable_property = models.ForeignKey(VariableProperty, null=True, blank=True, on_delete=models.SET_NULL)
+    label = models.CharField(max_length=400, default='')
+    variable = models.ForeignKey(Variable, null=True, blank=True, on_delete=models.CASCADE)
+    variable_property = models.ForeignKey(VariableProperty, null=True, blank=True, on_delete=models.CASCADE)
     empty = models.BooleanField(default=False)
     empty_value = models.CharField(max_length=30, default='------')
+    dictionary = models.ForeignKey(Dictionary, blank=True, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
-        return text_type(str(self.id) + ': ' + self.title)
+        return text_type(str(self.id) + ': ' + self.label)
 
     def visible(self):
         return True
-
-    def dropdown_items_list(self):
-        return [item.pk for item in self.items]
-
-    def items_list(self):
-        return ",\n".join([i.title for i in self.items.all()])
 
     def web_id(self):
         if self.variable_property:
@@ -396,7 +407,7 @@ class DropDown(models.Model):
         if self.variable_property:
             return self.variable_property.value
         elif self.variable:
-            return self.variable.value
+            return self.variable.prev_value
 
     def value_class(self):
         if self.variable_property:
@@ -418,17 +429,14 @@ class DropDown(models.Model):
 
 
 @python_2_unicode_compatible
-class DropDownItem(models.Model):
+class DictionaryItem(models.Model):
     id = models.AutoField(primary_key=True)
-    title = models.CharField(max_length=400, default='')
+    label = models.CharField(max_length=400, default='')
     value = models.CharField(max_length=400, default='')
-    dropdown = models.ForeignKey(DropDown, blank=True, null=True, on_delete=models.CASCADE)
+    dictionary = models.ForeignKey(Dictionary, blank=True, null=True, on_delete=models.CASCADE)
 
     def __str__(self):
-        return text_type(str(self.id) + ': ' + self.title)
-
-    def visible(self):
-        return True
+        return text_type(str(self.id) + ': ' + self.label)
 
 
 @python_2_unicode_compatible

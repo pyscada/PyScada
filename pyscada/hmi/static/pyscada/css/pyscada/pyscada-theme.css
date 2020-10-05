@@ -525,7 +525,7 @@ table.tablesorter thead tr .header.sorter-false {
 }
 .input-group.set_value .help-block {
   width: 100%;
-  display: table-caption;
+  display: inline-block;
   font-size: 14px;
   caption-side: bottom;
   margin: 0px;

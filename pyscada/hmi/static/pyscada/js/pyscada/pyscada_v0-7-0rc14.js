@@ -551,12 +551,14 @@ function update_data_values(key,val,time){
                 r_val = r_val.toPrecision(4);
             }
             for (i = 0; i < $(".control-item.type-numeric." + key).length; ++i) {
-                r_val_temp = r_val
-                if (typeof $(".variable-config[data-transform][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-transform') != 'undefined' && $(".variable-config[data-transform][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-transform') != 0){
-                    r_val_temp=transform_data_values($(".control-item.type-numeric." + key)[i].id,val);
-                }
                 color_mode = $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode')
                 if (color_mode != 1 ) {
+                    r_val_temp = r_val
+                    if (typeof $(".variable-config[data-timestamp-conversion][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-timestamp-conversion') != 'undefined' && $(".variable-config[data-timestamp-conversion][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-timestamp-conversion') != 0){
+                        r_val_temp=timestamp_conversion($(".control-item.type-numeric." + key)[i].id,val);
+                    }else if (typeof $(".variable-config[data-dictionary][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-dictionary') != 'undefined' && $(".variable-config[data-dictionary][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-dictionary') != 0){
+                        r_val_temp=dictionary($(".control-item.type-numeric." + key)[i].id,val);
+                    }
                     $("#" + $(".control-item.type-numeric." + key)[i].id).html(r_val_temp + " " + $(".variable-config[data-unit][data-key=" + key.split("-")[1] + "]").attr('data-unit'));
                 }
                 if ($(".variable-config[data-color-type][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-type') != 0 && $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode') != 0){
@@ -613,15 +615,17 @@ function update_data_values(key,val,time){
             $(".label .type-numeric." + key).html(val);
             $(".legendValue.type-numeric." + key).html(val);
             for (i = 0; i < $(".control-item.type-numeric." + key).length; ++i) {
-                if ($(".variable-config[data-color-type][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-type') != 0 && $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode') != 0){
+                color_mode = $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode')
+                if (color_mode != 1 ) {
                     r_val_temp = val
-                    if (typeof $(".variable-config[data-transform][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-transform') != 'undefined' && $(".variable-config[data-transform][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-transform') != 0){
-                        r_val_temp=transform_data_values($(".control-item.type-numeric." + key)[i].id,val);
+                    if (typeof($(".variable-config[data-timestamp-conversion][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-timestamp-conversion')) != 'undefined' && $(".variable-config[data-timestamp-conversion][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-timestamp-conversion') != 0){
+                        r_val_temp=timestamp_conversion($(".control-item.type-numeric." + key)[i].id,val);
+                    }else if (typeof($(".variable-config[data-dictionary][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-dictionary')) == 'string' && $(".variable-config[data-dictionary][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-dictionary') != ""){
+                        r_val_temp=dictionary($(".control-item.type-numeric." + key)[i].id,val);
                     }
-                    color_mode = $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode')
-                    if (color_mode != 1 ) {
-                        $("#" + $(".control-item.type-numeric." + key)[i].id).html(r_val_temp);
-                    }
+                    $("#" + $(".control-item.type-numeric." + key)[i].id).html(r_val_temp);
+                }
+                if ($(".variable-config[data-color-type][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-type') != 0 && $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode') != 0){
                     $("#" + $(".control-item.type-numeric." + key)[i].id).css("background-color", update_data_colors($(".control-item.type-numeric." + key)[i].id,val))
                 }
             }
@@ -637,25 +641,26 @@ function update_data_values(key,val,time){
 
 }
 
-function transform_data_values(id,val){
-    if ($(".variable-config[data-color-type][data-id=" + id + "]").attr('data-transform') == 1){
+function timestamp_conversion(id,val){
+    if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 1){
         // convert timestamp to local date
         val = new Date(val).toDateString();
-    }else if ($(".variable-config[data-color-type][data-id=" + id + "]").attr('data-transform') == 2){
+    }else if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 2){
         // convert timestamp to local time
         val = new Date(val).toTimeString();
-    }else if ($(".variable-config[data-color-type][data-id=" + id + "]").attr('data-transform') == 3){
+    }else if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 3){
         // convert timestamp to local date and time
         val = new Date(val).toUTCString();
-    }else if ($(".variable-config[data-color-type][data-id=" + id + "]").attr('data-transform') == 4){
+    }
+    return val;
+}
+
+function dictionary(id,val){
+    if ($(".variable-config[data-dictionary][data-id=" + id + "]").attr('data-dictionary')){
         // apply dictionary
-        t = $(".variable-config[data-color-type][data-id=" + id + "]").attr('data-transform-param')
-        d=[];
-        for (j = 0; j < t.split(";").length; j++) {
-            d[t.split(";")[j].split(":")[0]] = t.split(";")[j].split(":")[1]
-        }
-        if (val in d) {
-            val = d[val]
+        t = JSON.parse($(".variable-config[data-dictionary][data-id=" + id + "]").attr('data-dictionary'))
+        if (val in t) {
+            val = t[val]
         }
     }
     return val;

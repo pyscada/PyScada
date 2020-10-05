@@ -1456,11 +1456,11 @@ class Event(models.Model):
                                         dependent on the current value of an variable, if you choose a value other than 
                                         none for variable limit the fixed limit would be ignored''')
     limit_type_choices = (
-        (0, 'value is less than limit',),
-        (1, 'value is less than or equal to the limit',),
-        (2, 'value is greater than the limit'),
-        (3, 'value is greater than or equal to the limit'),
-        (4, 'value equals the limit'),
+        (0, 'value < limit',),
+        (1, 'value <= limit',),
+        (2, 'limit < value'),
+        (3, 'limit <= value'),
+        (4, 'value == limit'),
     )
     limit_type = models.PositiveSmallIntegerField(default=0, choices=limit_type_choices)
     hysteresis = models.FloatField(default=0)
