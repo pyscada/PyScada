@@ -18,7 +18,7 @@
                     <div class="control-panel">
                         {% for item in panel.control_panel.items.all %}
                             {% if item.pk in visible_control_element_list %}
-                                {% include "control_element2.html" with item=item %}
+                                {% include "control_element.html" with item=item %}
                             {% endif %}	
                         {% endfor %}
                         {% for form in panel.control_panel.forms.all %}

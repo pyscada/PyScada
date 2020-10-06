@@ -10,7 +10,7 @@
     {% for item in form.control_items.all %}
         {% if item.active == 1 %}
             {% if item.type == 0 %}<!-- form input {{ item.key }} -->
-                {% include "control_element2.html" with form=form %}
+                {% include "control_element.html" with form=form %}
             {% endif %}
         {% endif %}
     {% endfor %}

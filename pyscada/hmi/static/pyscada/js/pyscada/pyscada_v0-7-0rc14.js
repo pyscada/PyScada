@@ -644,16 +644,17 @@ function update_data_values(key,val,time){
 }
 
 function refresh_logo(key,time){
-    $.each($(".type-numeric.var-" + key + " img"), function(k,v){
+    $.each($(".control-item.type-numeric.var-" + key + " img"), function(k,v){
         $(v).remove();
     });
     if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "]").attr('data-refresh-requested-timestamp')>time) {
-        $.each($(".type-numeric.var-" + key), function(k,v){
+        $.each($(".control-item.type-numeric.var-" + key), function(k,v){
             val_temp=$(v).html();
-            $(v).html('<img style="height:14px;" src="/static/pyscada/img/load.gif" alt="refreshing">' + val_temp);
+            $(v).prepend('<img style="height:14px;" src="/static/pyscada/img/load.gif" alt="refreshing">')
+            //$(v).html('<img style="height:14px;" src="/static/pyscada/img/load.gif" alt="refreshing">' + val_temp);
         })
     }else {
-        $.each($(".type-numeric.var-" + key + " img"), function(k,v){
+        $.each($(".control-item.type-numeric.var-" + key + " img"), function(k,v){
             $(v).remove();
         });
     }
@@ -2341,12 +2342,12 @@ $('button.read-task-set').click(function(){
     key = $(this).data('key');
     $(".variable-config[data-key=" + key + "]").attr('data-refresh-requested-timestamp',t)
     refresh_logo(key,0);
-    type = $(this).data('type');
+    data_type = $(this).data('type');
     $(this)[0].disabled = true;
     $.ajax({
         type: 'post',
         url: ROOT_URL+'form/read_task/',
-        data: {key:key, type:type},
+        data: {key:key, type:data_type},
         success: function (data) {
 
         },

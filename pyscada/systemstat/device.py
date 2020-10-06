@@ -313,7 +313,8 @@ class Device:
                         continue
                     if list_dir is None or len(list_dir) == 0:
                         VariableProperty.objects.update_property(variable_property=vp,
-                                                                 value=str("No files in " + vp.name))
+                                                                 value=str("No files in ftp://" + param[0] + "/" +
+                                                                           vp.name))
                         continue
                     if len(param) == 3:
                         try:
