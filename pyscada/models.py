@@ -1462,21 +1462,21 @@ class ComplexEventGroup(models.Model):
         for item in self.complexevent_set.all().order_by('order'):
             (is_valid, var_list, vp_list) = item.is_valid()
             if item_found is None and not active and self.last_level != item.level and is_valid:
-                logger.debug("item %s is valid : level %s" % (item, item.level))
+                # logger.debug("item %s is valid : level %s" % (item, item.level))
                 item_found = item
                 self.last_level = item.level
                 self.save()
                 prev_event = RecordedEvent.objects.filter(complex_event_group=self, active=True)
                 if prev_event:
                     if item.stop_recording:  # Stop recording
-                        logger.debug("stop recording")
+                        # logger.debug("stop recording")
                         prev_event = prev_event.last()
                         prev_event.active = False
                         prev_event.time_end = timestamp
                         prev_event.save()
                 else:
                     if not item.stop_recording:  # Start Recording
-                        logger.debug("start recording")
+                        # logger.debug("start recording")
                         prev_event = RecordedEvent(complex_event_group=self, time_begin=timestamp, active=True)
                         prev_event.save()
             active = active or item.active
@@ -1497,11 +1497,11 @@ class ComplexEventGroup(models.Model):
         elif not active and self.last_level != -1:
             self.last_level = -1
             self.save()
-            logger.debug("level = -1")
+            # logger.debug("level = -1")
             # No active event : stop recording
             prev_event = RecordedEvent.objects.filter(complex_event_group=self, active=True)
             if prev_event:
-                logger.debug("stop recording2")
+                # logger.debug("stop recording2")
                 prev_event = prev_event.last()
                 prev_event.active = False
                 prev_event.time_end = timestamp
@@ -1522,15 +1522,31 @@ class ComplexEventGroup(models.Model):
                 subject_str += " Warning! "
             elif item_found.level == 3:  # alert
                 subject_str += " Alert! "
-            subject_str += self.label + " record is on"
+            subject_str += self.label
         else:
             subject_str += " Information "
             subject_str += self.label + " record is off"
-        message_str = "The Event " + self.label + " has been triggered\n"
+        message_str = "The Event " + self.label + " has been triggered\n\n"
         for i in var_list:
-            message_str += "Value of variable " + str(i) + " is " + json.dumps(var_list[i]) + "\n"
+            message_str += "Variable : " + str(var_list[i]['name']) + "\n"
+            message_str += "id : " + str(i) + "\n"
+            message_str += "type : " + str(var_list[i]['type']) + "\n"
+            message_str += "limit_low_type : " + str(var_list[i]['limit_low_type']) + "\n"
+            message_str += "limit_low_value : " + str(var_list[i]['limit_low_value']) + "\n"
+            message_str += "hysteresis_low : " + str(var_list[i]['hysteresis_low']) + "\n"
+            message_str += "limit_high_type : " + str(var_list[i]['limit_high_type']) + "\n"
+            message_str += "limit_high_value : " + str(var_list[i]['limit_high_value']) + "\n"
+            message_str += "hysteresis_high : " + str(var_list[i]['hysteresis_high']) + "\n\n"
         for i in vp_list:
-            message_str += "Value of VP " + str(i) + " is " + json.dumps(vp_list[i]) + "\n"
+            message_str += "Variable property : " + str(vp_list[i]['name']) + "\n"
+            message_str += "id : " + str(i) + "\n"
+            message_str += "type : " + str(vp_list[i]['type']) + "\n"
+            message_str += "limit_low_type : " + str(vp_list[i]['limit_low_type']) + "\n"
+            message_str += "limit_low_value : " + str(vp_list[i]['limit_low_value']) + "\n"
+            message_str += "hysteresis_low : " + str(vp_list[i]['hysteresis_low']) + "\n"
+            message_str += "limit_high_type : " + str(vp_list[i]['limit_high_type']) + "\n"
+            message_str += "limit_high_value : " + str(vp_list[i]['limit_high_value']) + "\n"
+            message_str += "hysteresis_high : " + str(vp_list[i]['hysteresis_high']) + "\n"
         return subject_str, message_str
 
 
@@ -1560,12 +1576,12 @@ class ComplexEvent(models.Model):
     complex_event_group = models.ForeignKey(ComplexEventGroup, on_delete=models.CASCADE)
 
     def is_valid(self):
-        valid = None
+        valid = False
         vars_infos = {}
         vp_infos = {}
         if self.validation == 0:
             valid = False
-        elif self.validation == 1:
+        elif self.validation == 1 and self.complexeventitem_set.count():
             valid = True
         for item in self.complexeventitem_set.all():
             (in_limit, item_info) = item.in_limit()
@@ -1575,9 +1591,9 @@ class ComplexEvent(models.Model):
             else:
                 if self.validation == 1:
                     valid = False
-            if item.get_type() == 'variable':
+            if item.get_type() == 'variable' and len(item_info):
                 vars_infos[item.get_id()] = item_info
-            elif item.get_type() == 'variable_property':
+            elif item.get_type() == 'variable_property' and len(item_info):
                 vp_infos[item.get_id()] = item_info
         self.active = valid
         self.save()
@@ -1623,15 +1639,18 @@ class ComplexEventItem(models.Model):
     def in_limit(self):
         item_value = None
         item_type = None
+        item_name = None
         if self.variable is not None:
             if self.variable.query_prev_value():
                 item_value = self.variable.prev_value
             item_type = 'variable'
+            item_name = self.variable.name
         elif self.variable_property is not None:
             item_value = self.variable_property.value()
             if type(item_value) != int or float:
                 item_value = None
             item_type = 'variable_property'
+            item_name = self.variable_property.name
         if item_value is not None:
             if self.variable_limit_low is not None:
                 if self.variable_limit_low.query_prev_value():
@@ -1652,6 +1671,7 @@ class ComplexEventItem(models.Model):
 
             var_info = {'value': item_value,
                         'type': item_type,
+                        'name': item_name,
                         'limit_low_type': self.limit_low_type_choices[self.limit_low_type],
                         'limit_low_value': limit_low,
                         'hysteresis_low': self.hysteresis_low,

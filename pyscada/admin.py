@@ -295,6 +295,8 @@ class ComplexEventGroupAdmin(admin.ModelAdmin):
     inlines = [ComplexEventAdminInline]
     raw_id_fields = ('variable_to_change',)
     readonly_fields = ('last_level',)
+    save_as = True
+    save_as_continue = True
 
 
 class ComplexEventAdmin(admin.ModelAdmin):
@@ -303,6 +305,8 @@ class ComplexEventAdmin(admin.ModelAdmin):
     list_filter = ('complex_event_group__label', 'level', 'send_mail', 'change_value',)
     inlines = [ComplexEventItemAdminInline]
     readonly_fields = ('active',)
+    save_as = True
+    save_as_continue = True
 
 
 class ComplexEventItemAdmin(admin.ModelAdmin):
