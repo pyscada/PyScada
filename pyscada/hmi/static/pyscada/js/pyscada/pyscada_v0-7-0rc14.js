@@ -2390,7 +2390,7 @@ $('button.write-task-set').click(function(){
         }else if (check_mm == 0) {
             $(this).parents(".input-group").removeClass("has-error")
             if (isNaN(value)) {
-                if (item_type == "variable_property" && value_class == 'STRING'){
+                if (item_type == "variable_property" && value_class == 'STRING'){
                     $.ajax({
                         type: 'post',
                         url: ROOT_URL+'form/write_property2/',
@@ -2467,7 +2467,7 @@ $('button.write-task-form-set').click(function(){
             }else if (check_mm == 0) {
                 $(tabinputs[i]).parents(".input-group").removeClass("has-error")
                 if (isNaN(value)) {
-                    if (item_type == "variable_property" && value_class == 'STRING') {
+                    if (item_type == "variable_property" && value_class == 'STRING') {
                     }else {
                         $(tabinputs[i]).parents(".input-group").addClass("has-error");
                         $(tabinputs[i]).parents(".input-group").append('<span id="helpBlock-' + id + '" class="help-block">The value must be a number ! Use dot not coma.</span>');
@@ -2515,7 +2515,7 @@ $('button.write-task-form-set').click(function(){
             }else if (check_mm == 0) {
                 $(tabselects[i]).parents(".input-group").removeClass("has-error")
                 if (isNaN(value)) {
-                    if (item_type == "variable_property" && value_class == 'STRING') {
+                    if (item_type == "variable_property" && value_class == 'STRING') {
                     }else {
                         $(tabselects[i]).parents(".input-group").addClass("has-error");
                         $(tabselects[i]).parents(".input-group").append('<span id="helpBlock-' + id + '" class="help-block">The value must be a number ! Use dot not coma.</span>');

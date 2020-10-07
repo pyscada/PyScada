@@ -1438,6 +1438,269 @@ class BackgroundProcess(models.Model):
 
 
 @python_2_unicode_compatible
+class ComplexEventGroup(models.Model):
+    id = models.AutoField(primary_key=True)
+    label = models.CharField(max_length=400, default='')
+    complex_mail_recipients = models.ManyToManyField(User, blank=True)
+    variable_to_change = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
+                                           related_name="complex_variable_to_change")
+    last_level = models.SmallIntegerField(default=-1,)
+
+    def __str__(self):
+        return self.label
+
+    def do_event_check(self):
+        """
+
+        """
+        item_found = None
+        timestamp = time.time()
+        active = False
+        var_list = {}
+        vp_list = {}
+
+        for item in self.complexevent_set.all().order_by('order'):
+            (is_valid, var_list, vp_list) = item.is_valid()
+            if item_found is None and not active and self.last_level != item.level and is_valid:
+                logger.debug("item %s is valid : level %s" % (item, item.level))
+                item_found = item
+                self.last_level = item.level
+                self.save()
+                prev_event = RecordedEvent.objects.filter(complex_event_group=self, active=True)
+                if prev_event:
+                    if item.stop_recording:  # Stop recording
+                        logger.debug("stop recording")
+                        prev_event = prev_event.last()
+                        prev_event.active = False
+                        prev_event.time_end = timestamp
+                        prev_event.save()
+                else:
+                    if not item.stop_recording:  # Start Recording
+                        logger.debug("start recording")
+                        prev_event = RecordedEvent(complex_event_group=self, time_begin=timestamp, active=True)
+                        prev_event.save()
+            active = active or item.active
+
+        if item_found is not None:
+            if item_found.send_mail:  # Send Mail
+                (subject, message,) = self.compose_mail(item_found, var_list, vp_list)
+                for recipient in self.complex_mail_recipients.exclude(email=''):
+                    Mail(None, subject, message, recipient.email, time.time()).save()
+
+            # Change value
+            if item_found.change_value and self.variable_to_change is not None and \
+                    self.variable_to_change.update_value(item_found.new_value, timestamp):
+                temp_item = self.variable_to_change.create_recorded_data_element()
+                temp_item.date_saved = now()
+                RecordedData.objects.bulk_create([temp_item])
+
+        elif not active and self.last_level != -1:
+            self.last_level = -1
+            self.save()
+            logger.debug("level = -1")
+            # No active event : stop recording
+            prev_event = RecordedEvent.objects.filter(complex_event_group=self, active=True)
+            if prev_event:
+                logger.debug("stop recording2")
+                prev_event = prev_event.last()
+                prev_event.active = False
+                prev_event.time_end = timestamp
+                prev_event.save()
+
+    def compose_mail(self, item_found, var_list, vp_list):
+        if hasattr(settings, 'EMAIL_PREFIX'):
+            subject_str = settings.EMAIL_SUBJECT_PREFIX
+        else:
+            subject_str = ''
+
+        if item_found.active:
+            if item_found.level == 0:  # infomation
+                subject_str += " Information "
+            elif item_found.level == 1:  # Ok
+                subject_str += " "
+            elif item_found.level == 2:  # warning
+                subject_str += " Warning! "
+            elif item_found.level == 3:  # alert
+                subject_str += " Alert! "
+            subject_str += self.label + " record is on"
+        else:
+            subject_str += " Information "
+            subject_str += self.label + " record is off"
+        message_str = "The Event " + self.label + " has been triggered\n"
+        for i in var_list:
+            message_str += "Value of variable " + str(i) + " is " + json.dumps(var_list[i]) + "\n"
+        for i in vp_list:
+            message_str += "Value of VP " + str(i) + " is " + json.dumps(vp_list[i]) + "\n"
+        return subject_str, message_str
+
+
+@python_2_unicode_compatible
+class ComplexEvent(models.Model):
+    id = models.AutoField(primary_key=True)
+    level_choices = (
+        (0, 'informative'),
+        (1, 'ok'),
+        (2, 'warning'),
+        (3, 'alert'),
+    )
+    level = models.PositiveSmallIntegerField(default=0, choices=level_choices)
+    send_mail = models.BooleanField(default=False)
+    change_value = models.BooleanField(default=False)
+    new_value = models.FloatField(default=0, blank=True, null=True)
+    order = models.PositiveSmallIntegerField(default=0)
+    stop_recording = models.BooleanField(default=False)
+    validation_choices = (
+        (0, 'OR'),
+        (1, 'AND'),
+        (2, 'Custom'),
+    )
+    validation = models.PositiveSmallIntegerField(default=0, choices=validation_choices)
+    custom_validation = models.CharField(max_length=400, default='', blank=True, null=True)
+    active = models.BooleanField(default=False)
+    complex_event_group = models.ForeignKey(ComplexEventGroup, on_delete=models.CASCADE)
+
+    def is_valid(self):
+        valid = None
+        vars_infos = {}
+        vp_infos = {}
+        if self.validation == 0:
+            valid = False
+        elif self.validation == 1:
+            valid = True
+        for item in self.complexeventitem_set.all():
+            (in_limit, item_info) = item.in_limit()
+            if in_limit:
+                if self.validation == 0:
+                    valid = True
+            else:
+                if self.validation == 1:
+                    valid = False
+            if item.get_type() == 'variable':
+                vars_infos[item.get_id()] = item_info
+            elif item.get_type() == 'variable_property':
+                vp_infos[item.get_id()] = item_info
+        self.active = valid
+        self.save()
+        return valid, vars_infos, vp_infos
+
+    def __str__(self):
+        return self.complex_event_group.label + "-" + self.level_choices[self.level][1]
+
+
+@python_2_unicode_compatible
+class ComplexEventItem(models.Model):
+    id = models.AutoField(primary_key=True)
+    fixed_limit_low = models.FloatField(default=0, blank=True, null=True)
+    variable_limit_low = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
+                                           related_name="variable_limit_low", help_text='''you can choose either an 
+                                            fixed limit or an variable limit that is dependent on the current value of 
+                                            an variable, if you choose a value other than  none for variable limit the 
+                                            fixed limit would be ignored''')
+    limit_low_type_choices = (
+        (0, 'limit < value',),
+        (1, 'limit <= value',),
+    )
+    limit_low_type = models.PositiveSmallIntegerField(default=0, choices=limit_low_type_choices)
+    hysteresis_low = models.FloatField(default=0)
+    variable = models.ForeignKey(Variable, related_name="variable", blank=True, null=True,
+                                 on_delete=models.CASCADE)
+    variable_property = models.ForeignKey(VariableProperty, blank=True, null=True, on_delete=models.CASCADE)
+    fixed_limit_high = models.FloatField(default=0, blank=True, null=True)
+    variable_limit_high = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
+                                            related_name="variable_limit_high", help_text='''you can choose either an 
+                                            fixed limit or an variable limit that is dependent on the current value of 
+                                            an variable, if you choose a value other than  none for variable limit the 
+                                            fixed limit would be ignored''')
+    limit_high_type_choices = (
+        (0, 'value < limit',),
+        (1, 'value <= limit',),
+    )
+    limit_high_type = models.PositiveSmallIntegerField(default=0, choices=limit_high_type_choices)
+    hysteresis_high = models.FloatField(default=0)
+    active = models.BooleanField(default=False)
+    complex_event = models.ForeignKey(ComplexEvent, on_delete=models.CASCADE)
+
+    def in_limit(self):
+        item_value = None
+        item_type = None
+        if self.variable is not None:
+            if self.variable.query_prev_value():
+                item_value = self.variable.prev_value
+            item_type = 'variable'
+        elif self.variable_property is not None:
+            item_value = self.variable_property.value()
+            if type(item_value) != int or float:
+                item_value = None
+            item_type = 'variable_property'
+        if item_value is not None:
+            if self.variable_limit_low is not None:
+                if self.variable_limit_low.query_prev_value():
+                    limit_low = self.variable_limit_low.prev_value
+                else:
+                    limit_low = None
+            else:
+                limit_low = self.fixed_limit_low
+            if self.variable_limit_high is not None:
+                if self.variable_limit_high.query_prev_value():
+                    limit_high = self.variable_limit_high.prev_value
+                else:
+                    limit_high = None
+            else:
+                limit_high = self.fixed_limit_high
+            if limit_low is None and limit_high is None:
+                return False, {}
+
+            var_info = {'value': item_value,
+                        'type': item_type,
+                        'limit_low_type': self.limit_low_type_choices[self.limit_low_type],
+                        'limit_low_value': limit_low,
+                        'hysteresis_low': self.hysteresis_low,
+                        'limit_high_type': self.limit_high_type_choices[self.limit_high_type],
+                        'limit_high_value': limit_high,
+                        'hysteresis_high': self.hysteresis_high,
+                        }
+
+            if limit_low is not None and self.limit_low_type == 0 and item_value <= \
+                    (limit_low + self.hysteresis_low * np.power(-1, self.active)):
+                self.active = False
+                self.save()
+                return False, var_info
+            if limit_low is not None and self.limit_low_type == 1 and item_value < \
+                    (limit_low + self.hysteresis_low * np.power(-1, self.active)):
+                self.active = False
+                self.save()
+                return False, var_info
+
+            if limit_high is not None and self.limit_high_type == 0 and \
+                    (limit_high - self.hysteresis_low * np.power(-1, self.active)) <= item_value:
+                self.active = False
+                self.save()
+                return False, var_info
+            if limit_high is not None and self.limit_high_type == 1 and \
+                    (limit_high - self.hysteresis_low * np.power(-1, self.active)) < item_value:
+                self.active = False
+                self.save()
+                return False, var_info
+
+            self.active = True
+            self.save()
+            return True, var_info
+        return False, {}
+
+    def get_id(self):
+        if self.variable is not None:
+            return self.variable.pk
+        elif self.variable_property is not None:
+            return self.variable_property.pk
+
+    def get_type(self):
+        if self.variable is not None:
+            return 'variable'
+        elif self.variable_property is not None:
+            return 'variable_property'
+
+
+@python_2_unicode_compatible
 class Event(models.Model):
     id = models.AutoField(primary_key=True)
     label = models.CharField(max_length=400, default='')
@@ -1604,12 +1867,16 @@ class Event(models.Model):
 class RecordedEvent(models.Model):
     id = models.AutoField(primary_key=True)
     event = models.ForeignKey(Event, null=True, on_delete=models.CASCADE)
+    complex_event_group = models.ForeignKey(ComplexEventGroup, null=True, on_delete=models.CASCADE)
     time_begin = models.FloatField(default=0)  # TODO DateTimeField
     time_end = models.FloatField(null=True, blank=True)  # TODO DateTimeField
     active = models.BooleanField(default=False, blank=True)
 
     def __str__(self):
-        return self.event.label
+        if self.event:
+            return self.event.label
+        elif self.complex_event_group:
+            return self.complex_event_group.label
 
 
 @python_2_unicode_compatible

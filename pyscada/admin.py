@@ -8,6 +8,7 @@ from pyscada.models import Unit
 from pyscada.models import DeviceWriteTask, DeviceReadTask
 from pyscada.models import Log
 from pyscada.models import BackgroundProcess
+from pyscada.models import ComplexEventGroup, ComplexEvent, ComplexEventItem
 from pyscada.models import Event
 from pyscada.models import RecordedEvent, RecordedData
 from pyscada.models import Mail
@@ -251,8 +252,8 @@ class BackgroundProcessAdmin(admin.ModelAdmin):
 
 
 class RecordedEventAdmin(admin.ModelAdmin):
-    list_display = ('id', 'event', 'time_begin', 'time_end', 'active',)
-    list_display_links = ('event',)
+    list_display = ('id', 'event', 'complex_event_group', 'time_begin', 'time_end', 'active',)
+    list_display_links = ('event', 'complex_event_group',)
     list_filter = ('event', 'active')
     readonly_fields = ('time_begin', 'time_end',)
 
@@ -264,6 +265,53 @@ class MailAdmin(admin.ModelAdmin):
 
     def last_update(self, instance):
         return datetime.datetime.fromtimestamp(int(instance.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+
+
+class ComplexEventAdminInline(admin.TabularInline):
+    model = ComplexEvent
+    extra = 0
+    show_change_link = True
+    readonly_fields = ('active',)
+
+
+class ComplexEventItemAdminInline(admin.StackedInline):
+    model = ComplexEventItem
+    extra = 0
+    fieldsets = (
+        (None, {
+            'fields': (('fixed_limit_low', 'variable_limit_low', 'limit_low_type', 'hysteresis_low',),
+                       ('variable', 'variable_property',),
+                       ('fixed_limit_high', 'variable_limit_high', 'limit_high_type', 'hysteresis_high',)),
+        },),
+    )
+    raw_id_fields = ('variable', 'variable_limit_low', 'variable_limit_high',)
+
+
+class ComplexEventGroupAdmin(admin.ModelAdmin):
+    list_display = ('id', 'label', 'variable_to_change', 'last_level',)
+    list_display_links = ('id', 'label',)
+    list_filter = ('variable_to_change',)
+    filter_horizontal = ('complex_mail_recipients',)
+    inlines = [ComplexEventAdminInline]
+    raw_id_fields = ('variable_to_change',)
+    readonly_fields = ('last_level',)
+
+
+class ComplexEventAdmin(admin.ModelAdmin):
+    list_display = ('id', 'level', 'send_mail', 'change_value', 'new_value', 'complex_event_group', 'order', 'active',)
+    list_display_links = ('id',)
+    list_filter = ('complex_event_group__label', 'level', 'send_mail', 'change_value',)
+    inlines = [ComplexEventItemAdminInline]
+    readonly_fields = ('active',)
+
+
+class ComplexEventItemAdmin(admin.ModelAdmin):
+    list_display = ('id', 'fixed_limit_low', 'variable_limit_low', 'limit_low_type', 'hysteresis_low', 'variable',
+                    'fixed_limit_high', 'variable_limit_high', 'limit_high_type', 'hysteresis_high',)
+    list_display_links = ('id',)
+    list_filter = ('variable',)
+
+    raw_id_fields = ('variable',)
 
 
 class EventAdmin(admin.ModelAdmin):
@@ -293,6 +341,8 @@ admin_site.register(Variable, CoreVariableAdmin)
 admin_site.register(VariableProperty, VariablePropertyAdmin)
 admin_site.register(Scaling)
 admin_site.register(Unit)
+admin_site.register(ComplexEventGroup, ComplexEventGroupAdmin)
+admin_site.register(ComplexEvent, ComplexEventAdmin)
 admin_site.register(Event, EventAdmin)
 admin_site.register(RecordedEvent, RecordedEventAdmin)
 admin_site.register(Mail, MailAdmin)

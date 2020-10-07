@@ -692,8 +692,9 @@ class Process(object):
         except StopIteration:
             self.stop()
             sys.exit(0)
-        except OperationalError:
+        except OperationalError as e:
             logger.debug('%s, DB connection lost' % self.label)
+            logger.debug(e)
             self.stop()
             sys.exit(0)
         except:
