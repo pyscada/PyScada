@@ -288,9 +288,9 @@ class ComplexEventItemAdminInline(admin.StackedInline):
 
 
 class ComplexEventGroupAdmin(admin.ModelAdmin):
-    list_display = ('id', 'label', 'variable_to_change', 'last_level',)
+    list_display = ('id', 'label', 'variable_to_change', 'default_send_mail', 'default_value', 'last_level',)
     list_display_links = ('id', 'label',)
-    list_filter = ('variable_to_change',)
+    list_filter = ('variable_to_change', 'default_send_mail', 'default_value',)
     filter_horizontal = ('complex_mail_recipients',)
     inlines = [ComplexEventAdminInline]
     raw_id_fields = ('variable_to_change',)
@@ -300,9 +300,9 @@ class ComplexEventGroupAdmin(admin.ModelAdmin):
 
 
 class ComplexEventAdmin(admin.ModelAdmin):
-    list_display = ('id', 'level', 'send_mail', 'change_value', 'new_value', 'complex_event_group', 'order', 'active',)
+    list_display = ('id', 'level', 'send_mail', 'new_value', 'complex_event_group', 'order', 'active',)
     list_display_links = ('id',)
-    list_filter = ('complex_event_group__label', 'level', 'send_mail', 'change_value',)
+    list_filter = ('complex_event_group__label', 'level', 'send_mail',)
     inlines = [ComplexEventItemAdminInline]
     readonly_fields = ('active',)
     save_as = True

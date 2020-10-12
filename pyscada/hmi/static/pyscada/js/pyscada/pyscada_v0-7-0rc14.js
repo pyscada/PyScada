@@ -518,6 +518,15 @@ function add_notification(message, level,timeout,clearable) {
 
 function update_data_values(key,val,time){
         if (time != null) {
+            if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && time < DATA_DISPLAY_FROM_TIMESTAMP) {
+                return;
+            }else if (DATA_DISPLAY_TO_TIMESTAMP > 0 && time > DATA_DISPLAY_TO_TIMESTAMP) {
+                return;
+            }else if (DATA_FROM_TIMESTAMP > 0 && time < DATA_FROM_TIMESTAMP) {
+                return;
+            }else if (DATA_TO_TIMESTAMP > 0 && time > DATA_TO_TIMESTAMP) {
+                return;
+            };
             t = new Date() - time
             $(".type-numeric." + key).attr('data-original-title','last update ' + msToTime(t) + ' ago')
             $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "]").attr('data-value-timestamp',time)
@@ -640,21 +649,23 @@ function update_data_values(key,val,time){
             $('input.'+ key).attr("placeholder",val);
         }
 
-        refresh_logo(key.split("-")[1], time);
+        if (key.split("-")[0] == "var") {type="variable"} else {type="variable_property"}
+        refresh_logo(key.split("-")[1], type);
 }
 
-function refresh_logo(key,time){
-    $.each($(".control-item.type-numeric.var-" + key + " img"), function(k,v){
+function refresh_logo(key, type){
+    if (type == "variable") {type_short="var"} else {type_short = "prop"};
+    $.each($(".control-item.type-numeric." + type_short + "-" + key + " img"), function(k,v){
         $(v).remove();
     });
-    if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "]").attr('data-refresh-requested-timestamp')>time) {
-        $.each($(".control-item.type-numeric.var-" + key), function(k,v){
+    if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp')>$(".variable-config[data-value-timestamp][data-key=" + key + "][data-type=" + type + "]").attr('data-value-timestamp')) {
+        $.each($(".control-item.type-numeric." + type_short + "-" + key), function(k,v){
             val_temp=$(v).html();
             $(v).prepend('<img style="height:14px;" src="/static/pyscada/img/load.gif" alt="refreshing">')
             //$(v).html('<img style="height:14px;" src="/static/pyscada/img/load.gif" alt="refreshing">' + val_temp);
         })
     }else {
-        $.each($(".control-item.type-numeric.var-" + key + " img"), function(k,v){
+        $.each($(".control-item.type-numeric." + type_short + "-" + key + " img"), function(k,v){
             $(v).remove();
         });
     }
@@ -811,11 +822,14 @@ function msToTime(duration) {
     seconds = Math.floor((duration / 1000) % 60),
     minutes = Math.floor((duration / (1000 * 60)) % 60),
     hours = Math.floor((duration / (1000 * 60 * 60)) % 24);
+    days = Math.floor(duration / (1000 * 60 * 60 * 24));
 
   //hours = (hours < 10) ? "0" + hours : hours;
   //minutes = (minutes < 10) ? "0" + minutes : minutes;
   //seconds = (seconds < 10) ? "0" + seconds : seconds;
-  if (hours != 0) {
+  if (days != 0) {
+    return days + "d " + hours + "h " + minutes + "m " + seconds + "s";
+  }else if (hours != 0) {
     return hours + "h " + minutes + "m " + seconds + "s";
   }else if (minutes != 0) {
     return minutes + "m " + seconds + "s";
@@ -1355,27 +1369,32 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
                 key = keys[key];
                 if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object'){
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
-                        start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                        start_id = find_index_sub_gte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
                         stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
-                        chart_data = DATA[key].slice(start_id,stop_id+1);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
-                        start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
-                        chart_data = DATA[key].slice(start_id);
+                        start_id = find_index_sub_gte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                        stop_id = find_index_sub_lte(DATA[key],DATA_TO_TIMESTAMP,0);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
                         if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
+                        start_id = find_index_sub_gte(DATA[key],DATA_FROM_TIMESTAMP,0);
                         stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
-                        chart_data = DATA[key].slice(0,stop_id+1);
                     }else {
-                        chart_data = DATA[key].slice();
+                        start_id = find_index_sub_gte(DATA[key],DATA_FROM_TIMESTAMP,0);
+                        stop_id = find_index_sub_lte(DATA[key],DATA_TO_TIMESTAMP,0);
                     }
+                    if (typeof(start_id) == "undefined") {
+                        chart_data = {}
+                    }else {
+                        chart_data = DATA[key].slice(start_id,stop_id+1);
+                    };
                     // append last value
-                    if (chart_data.length >= 1){
-                        if (DATA_DISPLAY_TO_TIMESTAMP < 0){
-                            chart_data.push([DATA_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
-                        }else{
-                            chart_data.push([DATA_DISPLAY_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
-                        }
-                    }
+                    //if (chart_data.length >= 1){
+                    //    if (DATA_DISPLAY_TO_TIMESTAMP < 0){
+                    //        chart_data.push([DATA_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
+                    //    }else{
+                    //        chart_data.push([DATA_DISPLAY_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
+                    //    }
+                    //}
                     series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":variables[key].label,"unit":variables[key].unit, "key":key});
                 }
             }
@@ -1432,7 +1451,8 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
             },
             points: {
                 show: plotPoints,
-                radius: 1,
+                radius: 4,
+                symbol: "cross",
             }
         },
         legend: {
@@ -1578,7 +1598,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
             } else {
                 y = p1[1] + (p2[1] - p1[1]) * (pos.x - p1[0]) / (p2[0] - p1[0]);
             }
-            if(y){$(legend_value_id+key).text(y.toFixed(2));};
+            if(typeof(y) === "number"){$(legend_value_id+key).text(y.toFixed(2));};
         }
     }
 
@@ -1853,32 +1873,42 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
                 xkey = xaxisVarId
                 if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object' && typeof(DATA[xkey]) === 'object'){
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
-                        start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                        start_id = find_index_sub_gte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
                         stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
-                        chart_data = DATA[key].slice(start_id+1,stop_id+1);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
-                        start_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
-                        chart_data = DATA[key].slice(start_id+1);
+                        start_id = find_index_sub_gte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                        stop_id = find_index_sub_lte(DATA[key],DATA_TO_TIMESTAMP,0);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
                         if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
+                        start_id = find_index_sub_gte(DATA[key],DATA_FROM_TIMESTAMP,0);
                         stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
-                        chart_data = DATA[key].slice(0,stop_id+1);
                     }else {
-                        chart_data = DATA[key].slice();
+                        start_id = find_index_sub_gte(DATA[key],DATA_FROM_TIMESTAMP,0);
+                        stop_id = find_index_sub_lte(DATA[key],DATA_TO_TIMESTAMP,0);
+                    }
+                    if (typeof(start_id) == "undefined") {
+                        chart_data = {}
+                    }else {
+                        chart_data = DATA[key].slice(start_id,stop_id+1);
                     };
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
-                        start_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
-                        stop_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_TO_TIMESTAMP,0);
-                        chart_x_data = DATA[xkey].slice(start_fid+1,stop_fid+1);
+                        start_xid = find_index_sub_gte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                        stop_xid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_TO_TIMESTAMP,0);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
-                        start_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
-                        chart_x_data = DATA[xkey].slice(start_fid+1);
+                        start_xid = find_index_sub_gte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                        stop_xid = find_index_sub_lte(DATA[xkey],DATA_TO_TIMESTAMP,0);
                     }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
                         if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
-                        stop_fid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_TO_TIMESTAMP,0);
-                        chart_x_data = DATA[xkey].slice(0,stop_fid+1);
+                        start_xid = find_index_sub_gte(DATA[xkey],DATA_FROM_TIMESTAMP,0);
+                        stop_xid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_TO_TIMESTAMP,0);
                     }else {
-                        chart_x_data = DATA[xkey].slice();
+                        start_xid = find_index_sub_gte(DATA[xkey],DATA_FROM_TIMESTAMP,0);
+                        stop_xid = find_index_sub_lte(DATA[xkey],DATA_TO_TIMESTAMP,0);
+                    }
+                    if (typeof(start_xid) == "undefined") {
+                        chart_x_data = {}
+                    }else {
+                        chart_x_data = DATA[xkey].slice(start_xid,stop_xid+1);
                     };
                     new_data=[];
                     if (chart_data.length > 0 && chart_x_data.length > 0){
@@ -2258,10 +2288,11 @@ function find_index_sub_lte(a,t,d){
 
 function find_index_sub_gte(a,t,d){
     var i = 0; //or 10
-    while(i++ < a.length){
+    while(i < a.length){
         if (a[i][d]>=t){
             return i
         }
+        i++;
     }
 }
 
@@ -2340,8 +2371,9 @@ function check_min_max(value, min, max, min_strict, max_strict) {
 $('button.read-task-set').click(function(){
     t = new Date().valueOf()
     key = $(this).data('key');
-    $(".variable-config[data-key=" + key + "]").attr('data-refresh-requested-timestamp',t)
-    refresh_logo(key,0);
+    type = $(this).data('type');
+    $(".variable-config[data-key=" + key + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp',t)
+    refresh_logo(key, type);
     data_type = $(this).data('type');
     $(this)[0].disabled = true;
     $.ajax({

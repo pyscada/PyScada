@@ -137,6 +137,8 @@ def view(request, link_title):
                 sidebar_content.append(dict(html=sbc, widget=widget))
             if widget.content.content_model == "pyscada.hmi.models.Chart":
                 has_chart = True
+            elif widget.content.content_model == "pyscada.hmi.models.XYChart":
+                has_chart = True
 
         widget_rows_html += widget_row_template.render(
             {'row': current_row, 'main_content': main_content, 'sidebar_content': sidebar_content,
@@ -193,7 +195,7 @@ def form_read_task(request):
                 return HttpResponse(status=200)
             elif item_type == 'variable_property':
                 crt = DeviceReadTask(device=VariableProperty.objects.get(pk=key).variable.device, start=time.time(),
-                                      user=request.user)
+                                     user=request.user)
                 crt.save()
                 return HttpResponse(status=200)
         else:

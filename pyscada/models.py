@@ -356,6 +356,11 @@ class RecordedDataValueManager(models.Manager):
                     values[pk] = []
                 if pk in first_value:
                     values[pk].insert(0, [first_value[pk]["time"]*f_time_scale, first_value[pk]["value"]])
+                else:
+                    last_element = self.last_element(use_date_saved=True, time_min=0, variable_id=pk)
+                    values[pk].append([(time.mktime(last_element.date_saved.utctimetuple()) +
+                                        last_element.date_saved.microsecond / 1e6) * f_time_scale,
+                                       last_element.value()])
                 if len(values[pk]) > 1:
                     values[pk].append([values[pk][-1][0], values[pk][-1][1]])
         values['timestamp'] = max(tmp_time_max, time_min) * f_time_scale
@@ -1443,8 +1448,11 @@ class ComplexEventGroup(models.Model):
     label = models.CharField(max_length=400, default='')
     complex_mail_recipients = models.ManyToManyField(User, blank=True)
     variable_to_change = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
-                                           related_name="complex_variable_to_change")
-    last_level = models.SmallIntegerField(default=-1,)
+                                           related_name="complex_variable_to_change",
+                                           help_text="Change the value on event changes")
+    default_value = models.FloatField(default=None, blank=True, null=True, help_text="Set if no activated event")
+    default_send_mail = models.BooleanField(default=False, help_text="Send mail if no activated event")
+    last_level = models.SmallIntegerField(default=-1)
 
     def __str__(self):
         return self.label
@@ -1456,14 +1464,16 @@ class ComplexEventGroup(models.Model):
         item_found = None
         timestamp = time.time()
         active = False
-        var_list = {}
-        vp_list = {}
+        var_list_final = {}
+        vp_list_final = {}
 
         for item in self.complexevent_set.all().order_by('order'):
             (is_valid, var_list, vp_list) = item.is_valid()
             if item_found is None and not active and self.last_level != item.level and is_valid:
                 # logger.debug("item %s is valid : level %s" % (item, item.level))
                 item_found = item
+                var_list_final = var_list
+                vp_list_final = vp_list
                 self.last_level = item.level
                 self.save()
                 prev_event = RecordedEvent.objects.filter(complex_event_group=self, active=True)
@@ -1483,12 +1493,12 @@ class ComplexEventGroup(models.Model):
 
         if item_found is not None:
             if item_found.send_mail:  # Send Mail
-                (subject, message,) = self.compose_mail(item_found, var_list, vp_list)
+                (subject, message,) = self.compose_mail(item_found, var_list_final, vp_list_final)
                 for recipient in self.complex_mail_recipients.exclude(email=''):
                     Mail(None, subject, message, recipient.email, time.time()).save()
 
             # Change value
-            if item_found.change_value and self.variable_to_change is not None and \
+            if item_found.new_value is not None and self.variable_to_change is not None and \
                     self.variable_to_change.update_value(item_found.new_value, timestamp):
                 temp_item = self.variable_to_change.create_recorded_data_element()
                 temp_item.date_saved = now()
@@ -1497,6 +1507,15 @@ class ComplexEventGroup(models.Model):
         elif not active and self.last_level != -1:
             self.last_level = -1
             self.save()
+            if self.default_value and self.variable_to_change.update_value(self.default_value, timestamp):
+                temp_item = self.variable_to_change.create_recorded_data_element()
+                temp_item.date_saved = now()
+                RecordedData.objects.bulk_create([temp_item])
+            if self.default_send_mail:
+                (subject, message,) = self.compose_mail(None, {}, {})
+                for recipient in self.complex_mail_recipients.exclude(email=''):
+                    Mail(None, subject, message, recipient.email, time.time()).save()
+
             # logger.debug("level = -1")
             # No active event : stop recording
             prev_event = RecordedEvent.objects.filter(complex_event_group=self, active=True)
@@ -1509,28 +1528,33 @@ class ComplexEventGroup(models.Model):
 
     def compose_mail(self, item_found, var_list, vp_list):
         if hasattr(settings, 'EMAIL_PREFIX'):
-            subject_str = settings.EMAIL_SUBJECT_PREFIX
+            subject_str = settings.EMAIL_PREFIX
         else:
             subject_str = ''
 
-        if item_found.active:
+        if item_found is not None and item_found.active:
             if item_found.level == 0:  # infomation
-                subject_str += " Information "
+                subject_str += " - Information - "
             elif item_found.level == 1:  # Ok
-                subject_str += " "
+                subject_str += " - Ok - "
             elif item_found.level == 2:  # warning
-                subject_str += " Warning! "
+                subject_str += " - Warning! - "
             elif item_found.level == 3:  # alert
-                subject_str += " Alert! "
-            subject_str += self.label
+                subject_str += " - Alert! - "
+            subject_str += self.label + " - An event is active"
+            message_str = "The event group " + self.label + " has been triggered\n"
+            message_str += "Validation : " + item_found.validation_choices[item_found.validation][1] + "\n\n"
         else:
-            subject_str += " Information "
-            subject_str += self.label + " record is off"
-        message_str = "The Event " + self.label + " has been triggered\n\n"
+            subject_str += " - Information - "
+            subject_str += self.label + " No active event"
+            message_str = "The event group " + self.label + " has no active events\n\n"
+
         for i in var_list:
             message_str += "Variable : " + str(var_list[i]['name']) + "\n"
             message_str += "id : " + str(i) + "\n"
             message_str += "type : " + str(var_list[i]['type']) + "\n"
+            message_str += "value : " + str(var_list[i]['value']) + "\n"
+            message_str += "in limit : " + str(var_list[i]['in_limit']) + "\n"
             message_str += "limit_low_type : " + str(var_list[i]['limit_low_type']) + "\n"
             message_str += "limit_low_value : " + str(var_list[i]['limit_low_value']) + "\n"
             message_str += "hysteresis_low : " + str(var_list[i]['hysteresis_low']) + "\n"
@@ -1541,6 +1565,8 @@ class ComplexEventGroup(models.Model):
             message_str += "Variable property : " + str(vp_list[i]['name']) + "\n"
             message_str += "id : " + str(i) + "\n"
             message_str += "type : " + str(vp_list[i]['type']) + "\n"
+            message_str += "value : " + str(vp_list[i]['value']) + "\n"
+            message_str += "in limit : " + str(vp_list[i]['in_limit']) + "\n"
             message_str += "limit_low_type : " + str(vp_list[i]['limit_low_type']) + "\n"
             message_str += "limit_low_value : " + str(vp_list[i]['limit_low_value']) + "\n"
             message_str += "hysteresis_low : " + str(vp_list[i]['hysteresis_low']) + "\n"
@@ -1561,8 +1587,7 @@ class ComplexEvent(models.Model):
     )
     level = models.PositiveSmallIntegerField(default=0, choices=level_choices)
     send_mail = models.BooleanField(default=False)
-    change_value = models.BooleanField(default=False)
-    new_value = models.FloatField(default=0, blank=True, null=True)
+    new_value = models.FloatField(default=None, blank=True, null=True, help_text="For the group variable to change")
     order = models.PositiveSmallIntegerField(default=0)
     stop_recording = models.BooleanField(default=False)
     validation_choices = (
@@ -1682,29 +1707,25 @@ class ComplexEventItem(models.Model):
 
             if limit_low is not None and self.limit_low_type == 0 and item_value <= \
                     (limit_low + self.hysteresis_low * np.power(-1, self.active)):
+                var_info['in_limit'] = False
                 self.active = False
-                self.save()
-                return False, var_info
-            if limit_low is not None and self.limit_low_type == 1 and item_value < \
+            elif limit_low is not None and self.limit_low_type == 1 and item_value < \
                     (limit_low + self.hysteresis_low * np.power(-1, self.active)):
+                var_info['in_limit'] = False
                 self.active = False
-                self.save()
-                return False, var_info
-
-            if limit_high is not None and self.limit_high_type == 0 and \
+            elif limit_high is not None and self.limit_high_type == 0 and \
                     (limit_high - self.hysteresis_low * np.power(-1, self.active)) <= item_value:
+                var_info['in_limit'] = False
                 self.active = False
-                self.save()
-                return False, var_info
-            if limit_high is not None and self.limit_high_type == 1 and \
+            elif limit_high is not None and self.limit_high_type == 1 and \
                     (limit_high - self.hysteresis_low * np.power(-1, self.active)) < item_value:
+                var_info['in_limit'] = False
                 self.active = False
-                self.save()
-                return False, var_info
-
-            self.active = True
+            else:
+                var_info['in_limit'] = True
+                self.active = True
             self.save()
-            return True, var_info
+            return self.active, var_info
         return False, {}
 
     def get_id(self):
@@ -1774,8 +1795,8 @@ class Event(models.Model):
         """
 
         def compose_mail(active):
-            if hasattr(settings, 'EMAIL_SUBJECT_PREFIX'):
-                subject_str = settings.EMAIL_SUBJECT_PREFIX
+            if hasattr(settings, 'EMAIL_PREFIX'):
+                subject_str = settings.EMAIL_PREFIX
             else:
                 subject_str = ''
 

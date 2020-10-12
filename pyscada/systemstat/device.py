@@ -259,7 +259,7 @@ class Device:
                                     VariableProperty.objects.update_property(variable_property=vp,
                                                                              value="Systemstat listing directory "
                                                                                    "syntax error")
-                                continue
+                                    continue
                         except ValueError:
                             VariableProperty.objects.update_property(variable_property=vp,
                                                                      value="Systemstat listing directory filter value "
@@ -335,6 +335,7 @@ class Device:
                                     VariableProperty.objects.update_property(variable_property=vp,
                                                                              value="Systemstat listing directory "
                                                                                    "syntax error")
+                                    continue
                         except ValueError:
                             VariableProperty.objects.update_property(variable_property=vp,
                                                                      value="Systemstat listing directory filter value "
