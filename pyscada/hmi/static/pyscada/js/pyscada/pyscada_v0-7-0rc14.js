@@ -2465,20 +2465,17 @@ $('button.write-task-form-set').click(function(){
         value = $(tabinputs[i]).val();
         id = $(tabinputs[i]).attr('id');
         var_name = $(tabinputs[i]).attr("name");
-        $.each($('.variable-config'),function(kkey,val){
-            name_var = $(val).data('name');
-            if (name_var==var_name){
-                key = parseInt($(val).data('key'));
-                item_type = $(val).data('type');
-                value_class = $(val).data('value-class');
-                min = $(val).data('min');
-                max = $(val).data('max');
-                min_type = $(val).data('min-type');
-                max_type = $(val).data('max-type');
-                if (min_type == 'lte') {min_type_char = ">="} else {min_type_char = ">"};
-                if (max_type == 'gte') {max_type_char = "<="} else {max_type_char = "<"};
-            }
-        });
+        val=$('.variable-config[data-id='+id.substring(0, id.length - 6)+']')
+        key = parseInt($(val).data('key'));
+        item_type = $(val).data('type');
+        value_class = $(val).data('value-class');
+        min = $(val).data('min');
+        max = $(val).data('max');
+        min_type = $(val).data('min-type');
+        max_type = $(val).data('max-type');
+        if (min_type == 'lte') {min_type_char = ">="} else {min_type_char = ">"};
+        if (max_type == 'gte') {max_type_char = "<="} else {max_type_char = "<"};
+
         if (value == "" || value == null){
             $(tabinputs[i]).parents(".input-group").addClass("has-error");
             $(tabinputs[i]).parents(".input-group").find('.help-block').remove()
@@ -2513,20 +2510,17 @@ $('button.write-task-form-set').click(function(){
         value = $(tabselects[i]).val();
         id = $(tabselects[i]).attr('id');
         var_name = $(tabselects[i]).data("name");
-        $.each($('.variable-config'),function(kkey,val){
-            name_var = $(val).data('name');
-            if (name_var==var_name){
-                key = parseInt($(val).data('key'));
-                item_type = $(val).data('type');
-                value_class = $(val).data('value-class');
-                min = $(val).data('min');
-                max = $(val).data('max');
-                min_type = $(val).data('min-type');
-                max_type = $(val).data('max-type');
-                if (min_type == 'lte') {min_type_char = ">="} else {min_type_char = ">"};
-                if (max_type == 'gte') {max_type_char = "<="} else {max_type_char = "<"};
-            }
-        });
+        val=$('.variable-config[data-id='+id.substring(0, id.length - 6)+']')
+        key = parseInt($(val).data('key'));
+        item_type = $(val).data('type');
+        value_class = $(val).data('value-class');
+        min = $(val).data('min');
+        max = $(val).data('max');
+        min_type = $(val).data('min-type');
+        max_type = $(val).data('max-type');
+        if (min_type == 'lte') {min_type_char = ">="} else {min_type_char = ">"};
+        if (max_type == 'gte') {max_type_char = "<="} else {max_type_char = "<"};
+
         if (value == "" || value == null){
             $(tabselects[i]).parents(".input-group").addClass("has-error");
             $(tabselects[i]).parents(".input-group").find('.help-block').remove()
@@ -2561,14 +2555,11 @@ $('button.write-task-form-set').click(function(){
     tabinputs = $.merge(tabinputs,$('#'+id_form+ ' :input:button.type-bool'));
     for (i=0;i<tabinputs.length;i++){
         value = $(tabinputs[i]).val();
-        var_name = $(tabinputs[i]).attr("name");
-        $.each($('.variable-config'),function(kkey,val){
-            name_var = $(val).data('name');
-            if (name_var==var_name){
-                key = parseInt($(val).data('key'));
-                item_type = $(val).data('type');
-            }
-        });
+        id = $(tabinputs[i]).attr('id');
+        val=$('.variable-config[data-id='+id.substring(0, id.length - 6)+']')
+        var_name = $(val).data("name");
+        key = parseInt($(val).data('key'));
+        item_type = $(val).data('type');
 
         if ($(tabinputs[i]).hasClass('btn-success')){
             id = $(tabinputs[i]).attr('id');
@@ -2606,7 +2597,7 @@ $('button.write-task-form-set').click(function(){
                 },
                 error: function(data) {
                     add_notification('add new write task failed',3);
-                    alert("Form Set NOK "+data+" - key "+key+" - value "+value+" - item_type "+item_type + " - name "+var_name)
+                    alert("Form Set NOK inputs "+data+" - key "+key+" - value "+value+" - item_type "+item_type + " - name "+var_name)
                 }
             });
         };
@@ -2642,7 +2633,7 @@ $('button.write-task-form-set').click(function(){
                 },
                 error: function(data) {
                     add_notification('add new write task failed',3);
-                    alert("Form Set NOK "+data+" - key "+key+" - value "+value+" - item_type "+item_type + " - name "+var_name)
+                    alert("Form Set NOK selects "+data+" - key "+key+" - value "+value+" - item_type "+item_type + " - name "+var_name)
                 }
             });
         };

@@ -1,6 +1,6 @@
 {% if item.active == 1 %}
         <div class="hidden variable-config"
-             data-id="{{ item.web_id }}-{{ uuid }}"
+             data-id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}"
              data-name="{{ item.name }}"
              data-key="{{ item.key }}"
              data-color="{{ var.chart_line_color_code }}"

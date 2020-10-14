@@ -1,15 +1,10 @@
 <!-- Dropdown {{ dropdown.name }} -->
 {% if dropdown.active == 1 %}
-    <div class="hidden variable-config" data-name="{{ dropdown.name }}" data-key="{{ dropdown.key }}" data-init-type="0" data-type="{{ dropdown.item_type}}" data-min="{{ dropdown.min }}" data-max="{{ dropdown.max }}" data-value-class="{{ dropdown.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}"></div>
+    <div class="hidden variable-config" data-id="{% if form != '0' %}{{ form.web_id }}-{% endif %}{{ dropdown.web_id }}-{{ uuid }}" data-name="{{ dropdown.name }}" data-key="{{ dropdown.key }}" data-init-type="0" data-type="{{ dropdown.item_type}}" data-min="{{ dropdown.min }}" data-max="{{ dropdown.max }}" data-value-class="{{ dropdown.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}"></div>
     <div class="input-group set_value">
         <span class="input-group-addon input-group-addon-label" style="width:40%;height:34px;">{{ dropdown.label }}</span>
-        {% if form == "0" %}
-            <span class="input-group-addon input-group-addon-label" style="{% if dropdown.unit %}width:40%;{% else %}width:50%;{% endif %}padding:0;border:0;">
-                <select class="form-control select {{ dropdown.web_class_str }}" id="{{ dropdown.web_id }}-{{ uuid }}-value" data-key="{{ dropdown.key }}" data-type="{{ dropdown.item_type }}" data-name="{{ dropdown.name }}">
-        {% else %}
-            <span class="input-group-addon input-group-addon-label" style="{% if dropdown.unit %}width:50%;{% else %}width:60%;{% endif %}padding:0;border:0;">
-                <select class="form-control select {{ dropdown.web_class_str }}" id="{{ form.web_id }}-{{ uuid }}-{{ dropdown.web_id }}-value" data-key="{{ dropdown.key }}" data-type="{{ dropdown.item_type }}" data-name="{{ dropdown.name }}">
-        {% endif %}
+        <span class="input-group-addon input-group-addon-label" style="{% if dropdown.unit %}width:50%;{% else %}width:60%;{% endif %}padding:0;border:0;">
+            <select class="form-control select {{ dropdown.web_class_str }}" id="{% if form != '0' %}{{ form.web_id }}-{% endif %}{{ dropdown.web_id }}-{{ uuid }}-value" data-key="{{ dropdown.key }}" data-type="{{ dropdown.item_type }}" data-name="{{ dropdown.name }}">
                 {% if dropdown.empty == 1 %}
                     <option disabled selected value> {{ dropdown.empty_value }} </option>
                 {% endif %}
