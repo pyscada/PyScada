@@ -518,15 +518,6 @@ function add_notification(message, level,timeout,clearable) {
 
 function update_data_values(key,val,time){
         if (time != null) {
-            if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && time < DATA_DISPLAY_FROM_TIMESTAMP) {
-                return;
-            }else if (DATA_DISPLAY_TO_TIMESTAMP > 0 && time > DATA_DISPLAY_TO_TIMESTAMP) {
-                return;
-            }else if (DATA_FROM_TIMESTAMP > 0 && time < DATA_FROM_TIMESTAMP) {
-                return;
-            }else if (DATA_TO_TIMESTAMP > 0 && time > DATA_TO_TIMESTAMP) {
-                return;
-            };
             t = new Date() - time
             $(".type-numeric." + key).attr('data-original-title','last update ' + msToTime(t) + ' ago')
             $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "]").attr('data-value-timestamp',time)
@@ -575,7 +566,11 @@ function update_data_values(key,val,time){
                     $($(".control-item.type-numeric." + key)[i]).css("background-color", update_data_colors($(".control-item.type-numeric." + key)[i].id,val))
                 }
             }
-            $(".legendValue.type-numeric." + key).html(r_val);
+            if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && time < DATA_DISPLAY_FROM_TIMESTAMP) {
+            }else if (DATA_DISPLAY_TO_TIMESTAMP > 0 && time > DATA_DISPLAY_TO_TIMESTAMP) {
+            }else if (DATA_FROM_TIMESTAMP > 0 && time < DATA_FROM_TIMESTAMP) {
+            }else if (DATA_TO_TIMESTAMP > 0 && time > DATA_TO_TIMESTAMP) {
+            }else { $(".legendValue.type-numeric." + key).html(r_val); };
             $(".label .type-numeric." + key).html(r_val);
             $('input.'+ key).attr("placeholder",r_val);
             // unixtime
@@ -623,7 +618,11 @@ function update_data_values(key,val,time){
                 $('input.'+ key).attr("placeholder",1);
             }
             $(".label .type-numeric." + key).html(val);
-            $(".legendValue.type-numeric." + key).html(val);
+            if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && time < DATA_DISPLAY_FROM_TIMESTAMP) {
+            }else if (DATA_DISPLAY_TO_TIMESTAMP > 0 && time > DATA_DISPLAY_TO_TIMESTAMP) {
+            }else if (DATA_FROM_TIMESTAMP > 0 && time < DATA_FROM_TIMESTAMP) {
+            }else if (DATA_TO_TIMESTAMP > 0 && time > DATA_TO_TIMESTAMP) {
+            }else { $(".legendValue.type-numeric." + key).html(val); };
             for (i = 0; i < $(".control-item.type-numeric." + key).length; ++i) {
                 color_mode = $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode')
                 if (color_mode != 1 ) {
@@ -1383,7 +1382,7 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
                         stop_id = find_index_sub_lte(DATA[key],DATA_TO_TIMESTAMP,0);
                     }
                     if (typeof(start_id) == "undefined") {
-                        chart_data = {}
+                        continue;
                     }else {
                         chart_data = DATA[key].slice(start_id,stop_id+1);
                     };
@@ -1887,7 +1886,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
                         stop_id = find_index_sub_lte(DATA[key],DATA_TO_TIMESTAMP,0);
                     }
                     if (typeof(start_id) == "undefined") {
-                        chart_data = {}
+                        continue;
                     }else {
                         chart_data = DATA[key].slice(start_id,stop_id+1);
                     };
@@ -1906,7 +1905,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
                         stop_xid = find_index_sub_lte(DATA[xkey],DATA_TO_TIMESTAMP,0);
                     }
                     if (typeof(start_xid) == "undefined") {
-                        chart_x_data = {}
+                        continue;
                     }else {
                         chart_x_data = DATA[xkey].slice(start_xid,stop_xid+1);
                     };

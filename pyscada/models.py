@@ -1493,9 +1493,9 @@ class ComplexEventGroup(models.Model):
 
         if item_found is not None:
             if item_found.send_mail:  # Send Mail
-                (subject, message,) = self.compose_mail(item_found, var_list_final, vp_list_final)
+                (subject, message, html_message,) = self.compose_mail(item_found, var_list_final, vp_list_final)
                 for recipient in self.complex_mail_recipients.exclude(email=''):
-                    Mail(None, subject, message, recipient.email, time.time()).save()
+                    Mail(None, subject, message, html_message, recipient.email, time.time()).save()
 
             # Change value
             if item_found.new_value is not None and self.variable_to_change is not None and \
@@ -1512,9 +1512,9 @@ class ComplexEventGroup(models.Model):
                 temp_item.date_saved = now()
                 RecordedData.objects.bulk_create([temp_item])
             if self.default_send_mail:
-                (subject, message,) = self.compose_mail(None, {}, {})
+                (subject, message, html_message,) = self.compose_mail(None, {}, {})
                 for recipient in self.complex_mail_recipients.exclude(email=''):
-                    Mail(None, subject, message, recipient.email, time.time()).save()
+                    Mail(None, subject, message, html_message, recipient.email, time.time()).save()
 
             # logger.debug("level = -1")
             # No active event : stop recording
@@ -1542,38 +1542,40 @@ class ComplexEventGroup(models.Model):
             elif item_found.level == 3:  # alert
                 subject_str += " - Alert! - "
             subject_str += self.label + " - An event is active"
-            message_str = "The event group " + self.label + " has been triggered\n"
-            message_str += "Validation : " + item_found.validation_choices[item_found.validation][1] + "\n\n"
+            message_str = "The event group " + self.label + " has been triggered<br>"
+            message_str += "Validation : " + item_found.validation_choices[item_found.validation][1] + "<br><br>"
         else:
             subject_str += " - Information - "
             subject_str += self.label + " No active event"
-            message_str = "The event group " + self.label + " has no active events\n\n"
+            message_str = "The event group " + self.label + " has no active events<br>"
 
         for i in var_list:
-            message_str += "Variable : " + str(var_list[i]['name']) + "\n"
-            message_str += "id : " + str(i) + "\n"
-            message_str += "type : " + str(var_list[i]['type']) + "\n"
-            message_str += "value : " + str(var_list[i]['value']) + "\n"
-            message_str += "in limit : " + str(var_list[i]['in_limit']) + "\n"
-            message_str += "limit_low_type : " + str(var_list[i]['limit_low_type']) + "\n"
-            message_str += "limit_low_value : " + str(var_list[i]['limit_low_value']) + "\n"
-            message_str += "hysteresis_low : " + str(var_list[i]['hysteresis_low']) + "\n"
-            message_str += "limit_high_type : " + str(var_list[i]['limit_high_type']) + "\n"
-            message_str += "limit_high_value : " + str(var_list[i]['limit_high_value']) + "\n"
-            message_str += "hysteresis_high : " + str(var_list[i]['hysteresis_high']) + "\n\n"
+            message_str += "Variable : " + str(var_list[i]['name']) + "<br>"
+            message_str += "id : " + str(i) + "<br>"
+            message_str += "type : " + str(var_list[i]['type']) + "<br>"
+            message_str += "value : " + str(var_list[i]['value']) + "<br>"
+            in_limit_str = "<span style='color:red;'>" + str(var_list[i]['in_limit']) + "</span>" if \
+                var_list[i]['in_limit'] else str(var_list[i]['in_limit'])
+            message_str += "in limit : " + in_limit_str + "<br>"
+            message_str += "limit_low_type : " + str(var_list[i]['limit_low_type']) + "<br>"
+            message_str += "limit_low_value : " + str(var_list[i]['limit_low_value']) + "<br>"
+            message_str += "hysteresis_low : " + str(var_list[i]['hysteresis_low']) + "<br>"
+            message_str += "limit_high_type : " + str(var_list[i]['limit_high_type']) + "<br>"
+            message_str += "limit_high_value : " + str(var_list[i]['limit_high_value']) + "<br>"
+            message_str += "hysteresis_high : " + str(var_list[i]['hysteresis_high']) + "<br><br>"
         for i in vp_list:
-            message_str += "Variable property : " + str(vp_list[i]['name']) + "\n"
-            message_str += "id : " + str(i) + "\n"
-            message_str += "type : " + str(vp_list[i]['type']) + "\n"
-            message_str += "value : " + str(vp_list[i]['value']) + "\n"
-            message_str += "in limit : " + str(vp_list[i]['in_limit']) + "\n"
-            message_str += "limit_low_type : " + str(vp_list[i]['limit_low_type']) + "\n"
-            message_str += "limit_low_value : " + str(vp_list[i]['limit_low_value']) + "\n"
-            message_str += "hysteresis_low : " + str(vp_list[i]['hysteresis_low']) + "\n"
-            message_str += "limit_high_type : " + str(vp_list[i]['limit_high_type']) + "\n"
-            message_str += "limit_high_value : " + str(vp_list[i]['limit_high_value']) + "\n"
-            message_str += "hysteresis_high : " + str(vp_list[i]['hysteresis_high']) + "\n"
-        return subject_str, message_str
+            message_str += "Variable property : " + str(vp_list[i]['name']) + "<br>"
+            message_str += "id : " + str(i) + "<br>"
+            message_str += "type : " + str(vp_list[i]['type']) + "<br>"
+            message_str += "value : " + str(vp_list[i]['value']) + "<br>"
+            message_str += "in limit : " + str(vp_list[i]['in_limit']) + "<br>"
+            message_str += "limit_low_type : " + str(vp_list[i]['limit_low_type']) + "<br>"
+            message_str += "limit_low_value : " + str(vp_list[i]['limit_low_value']) + "<br>"
+            message_str += "hysteresis_low : " + str(vp_list[i]['hysteresis_low']) + "<br>"
+            message_str += "limit_high_type : " + str(vp_list[i]['limit_high_type']) + "<br>"
+            message_str += "limit_high_value : " + str(vp_list[i]['limit_high_value']) + "<br>"
+            message_str += "hysteresis_high : " + str(vp_list[i]['hysteresis_high']) + "<br>"
+        return subject_str, "", message_str
 
 
 @python_2_unicode_compatible
@@ -1884,7 +1886,7 @@ class Event(models.Model):
                     # compose and send mail
                     (subject, message,) = compose_mail(True)
                     for recipient in self.mail_recipients.exclude(email=''):
-                        Mail(None, subject, message, recipient.email, time.time()).save()
+                        Mail(None, subject, message, None, recipient.email, time.time()).save()
 
                 if self.action >= 3:
                     # do action
@@ -1901,7 +1903,7 @@ class Event(models.Model):
                     # compose and send mail
                     (subject, message,) = compose_mail(False)
                     for recipient in self.mail_recipients.exclude(email=''):
-                        Mail(None, subject, message, recipient.email, time.time()).save()
+                        Mail(None, subject, message, None, recipient.email, time.time()).save()
 
 
 @python_2_unicode_compatible
@@ -1925,6 +1927,7 @@ class Mail(models.Model):
     id = models.AutoField(primary_key=True)
     subject = models.TextField(default='', blank=True)
     message = models.TextField(default='', blank=True)
+    html_message = models.TextField(null=True, blank=True)
     to_email = models.EmailField(max_length=254)
     timestamp = models.FloatField(default=0)  # TODO DateTimeField
     done = models.BooleanField(default=False, blank=True)
@@ -1942,7 +1945,8 @@ class Mail(models.Model):
             # only try to send an email three times
             return False
         # send the mail
-        if send_mail(self.subject, self.message, settings.DEFAULT_FROM_EMAIL, [self.to_email], fail_silently=True):
+        if send_mail(self.subject, self.message, settings.DEFAULT_FROM_EMAIL, [self.to_email], fail_silently=True,
+                     html_message=self.html_message):
             self.done = True
             self.timestamp = time.time()
             self.save()

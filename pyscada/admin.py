@@ -259,7 +259,7 @@ class RecordedEventAdmin(admin.ModelAdmin):
 
 
 class MailAdmin(admin.ModelAdmin):
-    list_display = ('id', 'subject', 'message', 'last_update', 'done', 'send_fail_count',)
+    list_display = ('id', 'subject', 'message', 'html_message', 'last_update', 'done', 'send_fail_count',)
     list_display_links = ('subject',)
     list_filter = ('done',)
 
