@@ -1543,6 +1543,7 @@ class ComplexEventGroup(models.Model):
                 subject_str += " - Alert! - "
             subject_str += self.label + " - An event is active"
             message_str = "The event group " + self.label + " has been triggered<br>"
+            message_str += "Level : " + item_found.level_choices[item_found.level][1] + "<br>"
             message_str += "Validation : " + item_found.validation_choices[item_found.validation][1] + "<br><br>"
         else:
             subject_str += " - Information - "
@@ -1550,31 +1551,87 @@ class ComplexEventGroup(models.Model):
             message_str = "The event group " + self.label + " has no active events<br>"
 
         for i in var_list:
-            message_str += "Variable : " + str(var_list[i]['name']) + "<br>"
-            message_str += "id : " + str(i) + "<br>"
-            message_str += "type : " + str(var_list[i]['type']) + "<br>"
-            message_str += "value : " + str(var_list[i]['value']) + "<br>"
+            message_str += str(var_list[i]['type']) + "(id=" + str(i) + ") : " + str(var_list[i]['name']) + " = " \
+                           + str(var_list[i]['value']) + "<br>"
             in_limit_str = "<span style='color:red;'>" + str(var_list[i]['in_limit']) + "</span>" if \
                 var_list[i]['in_limit'] else str(var_list[i]['in_limit'])
-            message_str += "in limit : " + in_limit_str + "<br>"
-            message_str += "limit_low_type : " + str(var_list[i]['limit_low_type']) + "<br>"
-            message_str += "limit_low_value : " + str(var_list[i]['limit_low_value']) + "<br>"
-            message_str += "hysteresis_low : " + str(var_list[i]['hysteresis_low']) + "<br>"
-            message_str += "limit_high_type : " + str(var_list[i]['limit_high_type']) + "<br>"
-            message_str += "limit_high_value : " + str(var_list[i]['limit_high_value']) + "<br>"
-            message_str += "hysteresis_high : " + str(var_list[i]['hysteresis_high']) + "<br><br>"
+            message_str += "In limit : " + in_limit_str + "<br>"
+            message_str += "Limit rules : "
+            if var_list[i]['limit_low_type'] == 0:
+                limit_low_type = "<"
+            else:
+                limit_low_type = "<="
+            if var_list[i]['limit_high_type'] == 0:
+                limit_high_type = "<"
+            else:
+                limit_high_type = "<="
+            if var_list[i]['hysteresis_low'] == 0 and var_list[i]['hysteresis_high'] == 0:
+                if var_list[i]['limit_low_value'] is not None:
+                    message_str += str(var_list[i]['limit_low_value']) + str(limit_low_type)
+                message_str += " value "
+                if var_list[i]['limit_high_value'] is not None:
+                    message_str += str(limit_high_type) + str(var_list[i]['limit_high_value'])
+                message_str += "<br>"
+            else:
+                message_str += "To enter the limit : <br>"
+                if var_list[i]['limit_low_value'] is not None:
+                    message_str += str(var_list[i]['limit_low_value'] + var_list[i]['hysteresis_low'])
+                    message_str += str(limit_low_type)
+                message_str += " value "
+                if var_list[i]['limit_high_value'] is not None:
+                    message_str += str(limit_high_type)
+                    message_str += str(var_list[i]['limit_high_value'] - var_list[i]['hysteresis_high'])
+                message_str += "<br>"
+                message_str += "To leave the limit : <br>"
+                if var_list[i]['limit_low_value'] is not None:
+                    message_str += str(var_list[i]['limit_low_value'] - var_list[i]['hysteresis_low'])
+                    message_str += str(limit_low_type)
+                message_str += " value "
+                if var_list[i]['limit_high_value'] is not None:
+                    message_str += str(limit_high_type)
+                    message_str += str(var_list[i]['limit_high_value'] + var_list[i]['hysteresis_high'])
+                message_str += "<br><br>"
         for i in vp_list:
-            message_str += "Variable property : " + str(vp_list[i]['name']) + "<br>"
-            message_str += "id : " + str(i) + "<br>"
-            message_str += "type : " + str(vp_list[i]['type']) + "<br>"
-            message_str += "value : " + str(vp_list[i]['value']) + "<br>"
-            message_str += "in limit : " + str(vp_list[i]['in_limit']) + "<br>"
-            message_str += "limit_low_type : " + str(vp_list[i]['limit_low_type']) + "<br>"
-            message_str += "limit_low_value : " + str(vp_list[i]['limit_low_value']) + "<br>"
-            message_str += "hysteresis_low : " + str(vp_list[i]['hysteresis_low']) + "<br>"
-            message_str += "limit_high_type : " + str(vp_list[i]['limit_high_type']) + "<br>"
-            message_str += "limit_high_value : " + str(vp_list[i]['limit_high_value']) + "<br>"
-            message_str += "hysteresis_high : " + str(vp_list[i]['hysteresis_high']) + "<br>"
+            message_str += str(vp_list[i]['type']) + "(id=" + str(i) + ") : " + str(vp_list[i]['name']) + " = " \
+                           + str(vp_list[i]['value']) + "<br>"
+            in_limit_str = "<span style='color:red;'>" + str(vp_list[i]['in_limit']) + "</span>" if \
+                vp_list[i]['in_limit'] else str(vp_list[i]['in_limit'])
+            message_str += "In limit : " + in_limit_str + "<br>"
+            message_str += "Limit rules : "
+            if vp_list[i]['limit_low_type'] == 0:
+                limit_low_type = "<"
+            else:
+                limit_low_type = "<="
+            if vp_list[i]['limit_high_type'] == 0:
+                limit_high_type = "<"
+            else:
+                limit_high_type = "<="
+            if vp_list[i]['hysteresis_low'] == 0 and vp_list[i]['hysteresis_high'] == 0:
+                if vp_list[i]['limit_low_value'] is not None:
+                    message_str += str(vp_list[i]['limit_low_value']) + str(limit_low_type)
+                message_str += " value "
+                if vp_list[i]['limit_high_value'] is not None:
+                    message_str += str(limit_high_type) + str(vp_list[i]['limit_high_value'])
+                message_str += "<br>"
+            else:
+                message_str += "To enter the limit : <br>"
+                if vp_list[i]['limit_low_value'] is not None:
+                    message_str += str(vp_list[i]['limit_low_value'] + vp_list[i]['hysteresis_low'])
+                    message_str += str(limit_low_type)
+                message_str += " value "
+                if vp_list[i]['limit_high_value'] is not None:
+                    message_str += str(limit_high_type)
+                    message_str += str(vp_list[i]['limit_high_value'] - vp_list[i]['hysteresis_high'])
+                message_str += "<br>"
+                message_str += "To leave the limit : <br>"
+                if vp_list[i]['limit_low_value'] is not None:
+                    message_str += str(vp_list[i]['limit_low_value'] - vp_list[i]['hysteresis_low'])
+                    message_str += str(limit_low_type)
+                message_str += " value "
+                if vp_list[i]['limit_high_value'] is not None:
+                    message_str += str(limit_high_type)
+                    message_str += str(vp_list[i]['limit_high_value'] + vp_list[i]['hysteresis_high'])
+                message_str += "<br><br>"
         return subject_str, "", message_str
 
 
@@ -1699,10 +1756,10 @@ class ComplexEventItem(models.Model):
             var_info = {'value': item_value,
                         'type': item_type,
                         'name': item_name,
-                        'limit_low_type': self.limit_low_type_choices[self.limit_low_type],
+                        'limit_low_type': self.limit_low_type_choices[self.limit_low_type][0],
                         'limit_low_value': limit_low,
                         'hysteresis_low': self.hysteresis_low,
-                        'limit_high_type': self.limit_high_type_choices[self.limit_high_type],
+                        'limit_high_type': self.limit_high_type_choices[self.limit_high_type][0],
                         'limit_high_value': limit_high,
                         'hysteresis_high': self.hysteresis_high,
                         }
