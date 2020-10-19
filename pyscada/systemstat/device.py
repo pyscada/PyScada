@@ -12,6 +12,7 @@ import os
 import concurrent.futures
 from ftplib import FTP, error_perm
 from ipaddress import ip_address
+from socket import gethostbyaddr, gaierror, herror
 
 from time import time
 import logging
@@ -290,8 +291,15 @@ class Device:
                     try:
                         ip_address(param[0])
                     except ValueError:
-                        logger.debug("FTP listing directory : first argument must be IP, it's : " + param[0])
-                        continue
+                        try:
+                            param[0] = gethostbyaddr(param[0])[2][0]
+                            ip_address(param[0])
+                        except herror or gaierror or ValueError:
+                            err = "FTP listing directory : first argument must be IP or known FQDN (/etc/hosts), " \
+                                  "it's : " + param[0]
+                            logger.debug(err)
+                            VariableProperty.objects.update_property(variable_property=vp, value=err)
+                            continue
                     try:
                         ftp = FTP(param[0])
                         ftp.login()

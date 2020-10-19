@@ -518,7 +518,7 @@ function add_notification(message, level,timeout,clearable) {
 
 function update_data_values(key,val,time){
         if (time != null) {
-            t = new Date() - time
+            t = SERVER_TIME - time
             $(".type-numeric." + key).attr('data-original-title','last update ' + msToTime(t) + ' ago')
             $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "]").attr('data-value-timestamp',time)
             polling_interval = $(".variable-config[data-device-polling_interval][data-key=" + key.split("-")[1] + "]").attr('data-device-polling_interval')
@@ -2368,7 +2368,7 @@ function check_min_max(value, min, max, min_strict, max_strict) {
 //form/read-task
 
 $('button.read-task-set').click(function(){
-    t = new Date().valueOf()
+    t = SERVER_TIME
     key = $(this).data('key');
     type = $(this).data('type');
     $(".variable-config[data-key=" + key + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp',t)

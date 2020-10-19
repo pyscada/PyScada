@@ -1669,6 +1669,8 @@ class ComplexEvent(models.Model):
             valid = True
         for item in self.complexeventitem_set.all():
             (in_limit, item_info) = item.in_limit()
+            if in_limit is None:
+                continue
             if in_limit:
                 if self.validation == 0:
                     valid = True
@@ -1724,7 +1726,7 @@ class ComplexEventItem(models.Model):
         item_value = None
         item_type = None
         item_name = None
-        if self.variable is not None:
+        if self.variable is not None and self.variable.active:
             if self.variable.query_prev_value():
                 item_value = self.variable.prev_value
             item_type = 'variable'
@@ -1751,7 +1753,7 @@ class ComplexEventItem(models.Model):
             else:
                 limit_high = self.fixed_limit_high
             if limit_low is None and limit_high is None:
-                return False, {}
+                return None, {}
 
             var_info = {'value': item_value,
                         'type': item_type,
@@ -1785,7 +1787,7 @@ class ComplexEventItem(models.Model):
                 self.active = True
             self.save()
             return self.active, var_info
-        return False, {}
+        return None, {}
 
     def get_id(self):
         if self.variable is not None:
