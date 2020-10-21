@@ -34,6 +34,13 @@ class WidgetContentModel(models.Model):
                            content_str=self.__str__())
         wc.save()
 
+    def update_widget_content_entry(self):
+        def fullname(o):
+            return o.__module__ + "." + o.__class__.__name__
+        wc = WidgetContent.objects.get(content_pk=self.pk, content_model=fullname(self))
+        wc.content_str = self.__str__()
+        wc.save()
+
     class Meta:
         abstract = True
 

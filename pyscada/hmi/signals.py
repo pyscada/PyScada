@@ -39,4 +39,6 @@ def _create_widget_content(sender, instance, created=False, **kwargs):
     # create a WidgetContent Entry
     if created:
         instance.create_widget_content_entry()
-        return
+    else:
+        instance.update_widget_content_entry()
+    return

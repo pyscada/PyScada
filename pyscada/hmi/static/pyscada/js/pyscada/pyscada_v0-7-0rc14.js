@@ -499,36 +499,36 @@ function add_notification(message, level,timeout,clearable) {
     //9 - Information (info)
     if (level === 1) {
         level = 'danger';
-        message_pre = '<strong>Emergency!</strong> ';
+        message_pre = 'Emergency! ';
     } else if (level === 2) {
         level = 'danger';
-        message_pre = '<strong>Critical!</strong> ';
+        message_pre = 'Critical! ';
     } else if (level === 3) {
         level = 'danger';
-        message_pre = '<strong>Error!</strong> ';
+        message_pre = 'Error! ';
     } else if (level === 4) {
         level = 'danger';
-        message_pre = '<strong>Alert!</strong> ';
+        message_pre = 'Alert! ';
     } else if (level === 5) {
         level = 'warning';
-        message_pre = '<strong>Warning!</strong> ';
+        message_pre = 'Warning! ';
     }else if (level === 6) {
         level = 'success';
-        message_pre = '<strong>Notice</strong> ';
+        message_pre = 'Notice ';
     }else if (level === 7) {
         level = 'info';
-        message_pre = '<strong>Info</strong> ';
+        message_pre = 'Info ';
     }else if (level === 8) {
         level = 'success';
-        message_pre = '<strong>Notice</strong> ';
+        message_pre = 'Notice ';
     }else if (level === 9) {
         level = 'info';
-        message_pre = '<strong>Info</strong> ';
+        message_pre = 'Info ';
     }
     if(clearable){
-        $('#notification_area').append('<div id="notification_Nb' + NOTIFICATION_COUNT + '" class="notification alert alert-' + level + ' alert-dismissable" style="position: fixed; top: ' + top + 'px; right: ' + right + 'px; z-index: 2000"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>'+message_pre+ new Date().toLocaleTimeString() + ': ' + message + '</div>');
+        $('#notification_area').append('<div id="notification_Nb' + NOTIFICATION_COUNT + '" class="notification alert alert-' + level + ' alert-dismissable" style="position: fixed; top: ' + top + 'px; right: ' + right + 'px; z-index: 2000"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button><strong>' + message_pre + '</strong>' + new Date().toLocaleTimeString() + ': ' + message + '</div>');
     }else{
-        $('#notification_area_2').append('<div id="notification_Nb' + NOTIFICATION_COUNT + '" class="notification alert alert-' + level + '" >'+message_pre+ new Date().toLocaleTimeString() + ': ' + message + '</div>');
+        $('#notification_area_2').append('<div id="notification_Nb' + NOTIFICATION_COUNT + '" class="notification alert alert-' + level + '" ><strong>'+ message_pre + '</strong>' + new Date().toLocaleTimeString() + ': ' + message + '</div>');
     }
     if (timeout){
         setTimeout('$("#notification_Nb' + NOTIFICATION_COUNT + '").alert("close");', timeout);
@@ -543,10 +543,10 @@ function update_data_values(key,val,time){
             $(".type-numeric." + key).attr('data-original-title','last update ' + msToTime(t) + ' ago')
             $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "]").attr('data-value-timestamp',time)
             polling_interval = $(".variable-config[data-device-polling_interval][data-key=" + key.split("-")[1] + "]").attr('data-device-polling_interval')
-            if (time < SERVER_TIME - 10 * 1000 * Math.max(polling_interval, 2 * REFRESH_RATE)) {
+            if (time < SERVER_TIME - 10 * Math.max(1000 * polling_interval, REFRESH_RATE)) {
                 $(".type-numeric." + key).parent().find('.glyphicon-alert').removeClass("hidden")
                 $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').addClass("hidden")
-            }else if (time < SERVER_TIME - 3 * 1000 * Math.max(polling_interval, 2 * REFRESH_RATE)) {
+            }else if (time < SERVER_TIME - 3 * Math.max(1000 * polling_interval, REFRESH_RATE)) {
                 $(".type-numeric." + key).parent().find('.glyphicon-alert').addClass("hidden")
                 $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').removeClass("hidden")
             }else {
