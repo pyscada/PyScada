@@ -53,6 +53,7 @@ var DataFetchingProcessCount = 0;
 
 
 function show_update_status(){
+    $("#AutoUpdateStatus").css("color", "")
     $("#AutoUpdateStatus").show();
     UPDATE_STATUS_COUNT++;
 }
@@ -62,6 +63,26 @@ function hide_update_status(){
     if (UPDATE_STATUS_COUNT <= 0){
         $("#AutoUpdateStatus").hide();
         UPDATE_STATUS_COUNT = 0;
+    }
+}
+
+function auto_update_click(){
+    if (AUTO_UPDATE_ACTIVE) {
+        // deactivate auto update
+        AUTO_UPDATE_ACTIVE = false;
+        $("#AutoUpdateButton").addClass("glyphicon-play");
+        $("#AutoUpdateButton").removeClass("glyphicon-pause");
+        $("#AutoUpdateButton").attr("data-original-title", "Auto update data OFF");
+        $("#AutoUpdateButton").tooltip('hide')
+    } else {
+        // activate auto update
+        AUTO_UPDATE_ACTIVE = true;
+        $("#AutoUpdateButton ").addClass("glyphicon-pause");
+        $("#AutoUpdateButton ").removeClass("glyphicon-play");
+        $("#AutoUpdateButton").attr("data-original-title", "Auto update data ON");
+        $("#AutoUpdateButton").tooltip('hide')
+        JSON_ERROR_COUNT = 0;
+        //data_handler();
     }
 }
 
@@ -261,6 +282,7 @@ function data_handler(){
 }
 
 function data_handler_ajax(init,variable_keys,variable_property_keys,timestamp_from,timestamp_to){
+    show_update_status();
     FETCH_DATA_PENDING++;
     if(init){show_init_status();}
     request_data = {timestamp_from:timestamp_from, variables: variable_keys, init: init, variable_properties:variable_property_keys};
@@ -362,11 +384,11 @@ function data_handler_done(fetched_data){
     }
     // update all legend tables
     $('.legend table').trigger("update");
-    $("#AutoUpdateButton").removeClass("btn-warning");
     //$("#AutoUpdateButton").addClass("btn-success");
     if (JSON_ERROR_COUNT > 0) {
         JSON_ERROR_COUNT = JSON_ERROR_COUNT - 1;
     }
+    UPDATE_STATUS_COUNT = 0;
     hide_update_status();
     if(request_data.init===1){
         hide_init_status();
@@ -376,21 +398,23 @@ function data_handler_done(fetched_data){
 
 function data_handler_fail(x, t, m) {
     if(JSON_ERROR_COUNT % 5 == 0)
-        add_notification(t, 3);
+        add_notification("Fetching data failed", 3);
 
     JSON_ERROR_COUNT = JSON_ERROR_COUNT + 1;
-    if (JSON_ERROR_COUNT > 60) {
-        AUTO_UPDATE_ACTIVE = false;
-        add_notification("error limit reached", 3);
+    if (JSON_ERROR_COUNT > 15) {
+        $("#AutoUpdateStatus").css("color", "red")
+        auto_update_click();
+        add_notification("Fetching data failed limit reached, auto update deactivated", 2, 0);
     } else if(JSON_ERROR_COUNT > 3){
+        $("#AutoUpdateStatus").css("color", "orange")
         for (var key in VARIABLE_KEYS) {
             key = VARIABLE_KEYS[key];
-            add_fetched_data(key, [[DATA_TO_TIMESTAMP,Number.NaN]]);
+            //add_fetched_data(key, [[DATA_TO_TIMESTAMP,Number.NaN]]);
         }
     }
-    hide_update_status();
+    //hide_update_status();
     //$("#AutoUpdateButton").removeClass("btn-success");
-    $("#AutoUpdateButton").addClass("btn-warning");
+    $("#AutoUpdateButton").css("color", "orange");
     if(request_data.init===1){
         for (key in request_data.variables){
             key = request_data.variables[key];
@@ -502,18 +526,15 @@ function add_notification(message, level,timeout,clearable) {
         message_pre = '<strong>Info</strong> ';
     }
     if(clearable){
-        $('#notification_area').append('<div id="notification_Nb' + NOTIFICATION_COUNT + '" class="notification alert alert-' + level + ' alert-dismissable" style="position: fixed; top: ' + top + 'px; right: ' + right + 'px; "><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>'+message_pre+ new Date().toLocaleTimeString() + ': ' + message + '</div>');
+        $('#notification_area').append('<div id="notification_Nb' + NOTIFICATION_COUNT + '" class="notification alert alert-' + level + ' alert-dismissable" style="position: fixed; top: ' + top + 'px; right: ' + right + 'px; z-index: 2000"><button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>'+message_pre+ new Date().toLocaleTimeString() + ': ' + message + '</div>');
     }else{
         $('#notification_area_2').append('<div id="notification_Nb' + NOTIFICATION_COUNT + '" class="notification alert alert-' + level + '" >'+message_pre+ new Date().toLocaleTimeString() + ': ' + message + '</div>');
     }
     if (timeout){
-        setTimeout('$("#notification_Nb' + NOTIFICATION_COUNT + '").alert("close");', 7000);
-    }else{
-        id = 'notification_Nb' + NOTIFICATION_COUNT;
-        NOTIFICATION_COUNT = NOTIFICATION_COUNT + 1;
-        return id;
+        setTimeout('$("#notification_Nb' + NOTIFICATION_COUNT + '").alert("close");', timeout);
     }
     NOTIFICATION_COUNT = NOTIFICATION_COUNT + 1;
+    console.log(message_pre + new Date().toLocaleTimeString() + ': ' + message);
 }
 
 function update_data_values(key,val,time){
@@ -522,10 +543,10 @@ function update_data_values(key,val,time){
             $(".type-numeric." + key).attr('data-original-title','last update ' + msToTime(t) + ' ago')
             $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "]").attr('data-value-timestamp',time)
             polling_interval = $(".variable-config[data-device-polling_interval][data-key=" + key.split("-")[1] + "]").attr('data-device-polling_interval')
-            if (time < SERVER_TIME - 10 * 1000 * polling_interval) {
+            if (time < SERVER_TIME - 10 * 1000 * Math.max(polling_interval, 2 * REFRESH_RATE)) {
                 $(".type-numeric." + key).parent().find('.glyphicon-alert').removeClass("hidden")
                 $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').addClass("hidden")
-            }else if (time < SERVER_TIME - 3 * 1000 * polling_interval) {
+            }else if (time < SERVER_TIME - 3 * 1000 * Math.max(polling_interval, 2 * REFRESH_RATE)) {
                 $(".type-numeric." + key).parent().find('.glyphicon-alert').addClass("hidden")
                 $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').removeClass("hidden")
             }else {
@@ -978,7 +999,7 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
         xaxis: {
             mode: "time",
             ticks: $('#chart-container-'+id).data('xaxisTicks'),
-            timeformat: "%d/%m/%Y %H:%M:%S",
+            timeformat: "%d/%m/%Y<br>%H:%M:%S",
             timezone: "browser",
             timeBase: "milliseconds",
             autoScale: "none"
@@ -2384,7 +2405,6 @@ $('button.read-task-set').click(function(){
         },
         error: function(data) {
             add_notification('read task failed',3);
-            console.log('read task failed');
         }
     });
     $(this)[0].disabled = false;
@@ -2405,7 +2425,6 @@ $('button.write-task-set').click(function(){
     if (min_type == 'lte') {min_type_char = ">="} else {min_type_char = ">"};
     if (max_type == 'gte') {max_type_char = "<="} else {max_type_char = "<"};
     if (value == "" || value == null) {
-        add_notification('please provide a value',3);
         $(this).parents(".input-group").addClass("has-error");
         $(this).parents(".input-group").find('.help-block').remove()
         $(this).parents(".input-group-btn").after('<span id="helpBlock-' + id + '" class="help-block">Please provide a value !</span>');
@@ -2430,9 +2449,7 @@ $('button.write-task-set').click(function(){
 
                         },
                         error: function(data) {
-                            add_notification('write task failed',3);
-                            $(this).parents(".input-group").addClass("has-error");
-                            $(this).parents(".input-group-btn").after('<span id="helpBlock-' + id + '" class="help-block">The value must be a number ! Use dot not coma.</span>');
+                            add_notification('write property failed',3);
                         }
                     });
                 }else {
@@ -2448,8 +2465,7 @@ $('button.write-task-set').click(function(){
 
                     },
                     error: function(data) {
-                        add_notification('add new write task failed',3);
-                        console.log("add new write task failed");
+                        add_notification('write task failed',3);
                     }
                 });
             };
@@ -2571,7 +2587,7 @@ $('button.write-task-form-set').click(function(){
                 success: function (data) {
                 },
                 error: function(data) {
-                    add_notification('add new write task failed',3);
+                    add_notification('form boolean true write task failed',3);
                 }
             });
         }else if ($(tabinputs[i]).hasClass('btn-default')){
@@ -2584,7 +2600,7 @@ $('button.write-task-form-set').click(function(){
                 success: function (data) {
                 },
                 error: function(data) {
-                    add_notification('add new write task failed',3);
+                    add_notification('form boolean false write task failed',3);
                 }
             });
         }else{
@@ -2596,7 +2612,7 @@ $('button.write-task-form-set').click(function(){
 
                 },
                 error: function(data) {
-                    add_notification('add new write task failed',3);
+                    add_notification('form write task failed',3);
                     alert("Form Set NOK inputs "+data+" - key "+key+" - value "+value+" - item_type "+item_type + " - name "+var_name)
                 }
             });
@@ -2617,11 +2633,11 @@ $('button.write-task-form-set').click(function(){
 
                     },
                     error: function(data) {
-                        add_notification('write plug selected failed',3);
+                        add_notification('form dropdown write property failed',3);
                     }
                 });
             }else {
-                console.log("select is " + item_type + " and not a number");
+                add_notification("select is " + item_type + " and not a number",3);
             };
         }else {
             $.ajax({
@@ -2632,7 +2648,7 @@ $('button.write-task-form-set').click(function(){
 
                 },
                 error: function(data) {
-                    add_notification('add new write task failed',3);
+                    add_notification('form dropdown write task failed',3);
                     alert("Form Set NOK selects "+data+" - key "+key+" - value "+value+" - item_type "+item_type + " - name "+var_name)
                 }
             });
@@ -2667,7 +2683,7 @@ $('button.write-task-btn').click(function(){
                     $('#'+id).addClass('btn-success');
                 },
                 error: function(data) {
-                    add_notification('add new write task failed',3);
+                    add_notification('boolean true write task failed',3);
                 }
             });
         }else if ($(this).hasClass('btn-success')){
@@ -2680,7 +2696,7 @@ $('button.write-task-btn').click(function(){
                     $('#'+id).removeClass('btn-success');
                 },
                 error: function(data) {
-                    add_notification('add new write task failed',3);
+                    add_notification('boolean false write task failed',3);
                 }
             });
         }
@@ -2830,23 +2846,7 @@ $( document ).ready(function() {
     });
     // auto update function
     $('#AutoUpdateButton').click(function(e) {
-        if (AUTO_UPDATE_ACTIVE) {
-            // deactivate auto update
-            AUTO_UPDATE_ACTIVE = false;
-            $("#AutoUpdateButton").addClass("btn-default");
-            $("#AutoUpdateButton .glyphicon").addClass("glyphicon-play");
-            $("#AutoUpdateButton").removeClass("btn-success");
-            $("#AutoUpdateButton .glyphicon").removeClass("glyphicon-pause");
-        } else {
-            // activate auto update
-            AUTO_UPDATE_ACTIVE = true;
-            $("#AutoUpdateButton").addClass("btn-success");
-            $("#AutoUpdateButton .glyphicon").addClass("glyphicon-pause");
-            $("#AutoUpdateButton").removeClass("btn-default");
-            $("#AutoUpdateButton .glyphicon").removeClass("glyphicon-play");
-            JsonErrorCount = 0;
-            //data_handler();
-        }
+        auto_update_click();
     });
     $('#PlusTwoHoursButton').click(function(e) {
 	if (INIT_CHART_VARIABLES_DONE){
@@ -2893,8 +2893,8 @@ $( document ).ready(function() {
         DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
         INIT_CHART_VARIABLES_DONE = false;
         SINGLE_UPDATE = true;
-        if($('#AutoUpdateButton').hasClass('btn-default') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
-            $('#AutoUpdateButton').trigger('click');
+        if($('#AutoUpdateButton').hasClass('glyphicon-play') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
+            auto_update_click();
         };
     }).click(function (e) {
         if (!$('#datetimepicker_from .bootstrap-datetimepicker-widget').length) {
@@ -2903,8 +2903,8 @@ $( document ).ready(function() {
     });
     $("#datetimepicker_from .datetimepicker-input").focusin(function (e) {
         PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = AUTO_UPDATE_ACTIVE
-        if($('#AutoUpdateButton').hasClass('btn-success') && AUTO_UPDATE_ACTIVE){
-            $('#AutoUpdateButton').trigger('click');
+        if($('#AutoUpdateButton').hasClass('glyphicon-pause') && AUTO_UPDATE_ACTIVE){
+            auto_update_click();
         };
     });
 
@@ -2917,8 +2917,8 @@ $( document ).ready(function() {
         DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
         INIT_CHART_VARIABLES_DONE = false;
         SINGLE_UPDATE = true;
-        if($('#AutoUpdateButton').hasClass('btn-default') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
-            $('#AutoUpdateButton').trigger('click');
+        if($('#AutoUpdateButton').hasClass('glyphicon-play') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
+            auto_update_click();
         };
     }).click(function (e) {
         //$('#datetimepicker_to').datetimepicker('maxDate', new Date(SERVER_TIME));
@@ -2928,8 +2928,8 @@ $( document ).ready(function() {
     });
     $("#datetimepicker_to .datetimepicker-input").focusin(function (e) {
         PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = AUTO_UPDATE_ACTIVE
-        if($('#AutoUpdateButton').hasClass('btn-success') && AUTO_UPDATE_ACTIVE){
-            $('#AutoUpdateButton').trigger('click');
+        if($('#AutoUpdateButton').hasClass('glyphicon-pause') && AUTO_UPDATE_ACTIVE){
+            auto_update_click();
         };
     });
 

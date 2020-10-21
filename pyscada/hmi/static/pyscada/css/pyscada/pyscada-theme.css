@@ -43,6 +43,9 @@ html,body {
 }
 
 
+.row {
+    margin-bottom: 15px;
+}
 
 .btn {
 	border-radius: 0px;
@@ -82,6 +85,12 @@ html,body {
 }
 .navbar-brand, .navbar-nav>li>a {
 	text-shadow: none;
+}
+.navbar-right .dropdown-menu {
+    position: fixed;
+    top: auto;
+    min-width: 25vw;
+    max-width: 95vw;
 }
 .theme-dropdown .dropdown-menu {
 	display: block;
@@ -144,7 +153,7 @@ html,body {
 
 }
 .legend-sidebar{
-	min-width:240px;
+	/*min-width:240px;*/
 	position: relative;
 	min-height: 1px;
 	padding-right: 15px;
@@ -182,15 +191,6 @@ html,body {
 	border-top: 1px solid #ddd;
 	padding-top: 6px;
 	padding-left: 20px;
-}
-
-.legend-sidebar{
-	min-width:240px;
-	position: relative;
-	min-height: 1px;
-	padding-right: 15px;
-	float: left;
-	font: 12px/1em "proxima-nova", Helvetica, Arial, sans-serif;
 }
 
 .xylegend-sidebar {

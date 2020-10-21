@@ -648,7 +648,7 @@ class Widget(models.Model):
     def css_class(self):
         widget_size = "col-xs-12 col-sm-12 col-md-12 col-lg-12"
         if self.size == 3:
-            widget_size = "col-xs-12 col-sm-12 col-md-9 col-lg-9"
+            widget_size = "col-xs-12 col-sm-12 col-md-12 col-lg-9"
         elif self.size == 2:
             widget_size = "col-xs-12 col-sm-12 col-md-6 col-lg-6"
         elif self.size == 1:
