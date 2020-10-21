@@ -12,6 +12,7 @@ Device Protocol IDs
 - 8: SMBus
 - 9: Reserved (Jofra350)
 - 10: GPIO
+- 11: PT104
 - 8X: Custom Worker
 - 93 Reserved (Serial)
 - 94 Reserved (WebService)

@@ -4,12 +4,14 @@ from __future__ import unicode_literals
 
 from django.conf import settings
 
-try: 
+try:
     import visa
     driver_ok = True
 except ImportError:
     visa = None
     driver_ok = False
+
+from time import time
 
 import logging
 
@@ -60,6 +62,18 @@ class GenericDevice:
             return True
         return False
 
+    def before_read(self):
+        """
+        will be called before the first read_data
+        """
+        return None
+
+    def after_read(self):
+        """
+        will be called after the last read_data
+        """
+        return None
+
     def read_data(self, variable_instance):
         """
         read values from the device
@@ -67,8 +81,18 @@ class GenericDevice:
 
         return None
 
+    def read_data_and_time(self, variable_instance):
+        """
+        read values and timestamps from the device
+        """
+
+        return self.read_data(variable_instance), self.time()
+
     def write_data(self, variable_id, value, task):
         """
         write values to the device
         """
         return False
+
+    def time(self):
+        return time()

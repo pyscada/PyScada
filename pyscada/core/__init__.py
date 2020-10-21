@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-__version__ = '0.7.0rc16'
+__version__ = '0.7.0rc17'
 __author__ = 'Martin Schröder'
 
 default_app_config = 'pyscada.apps.PyScadaConfig'

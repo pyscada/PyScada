@@ -35,7 +35,7 @@ class Device:
             if not hasattr(var, 'visavariable'):
                 continue
             self.variables[var.pk] = var
-        
+
         if driver_visa_ok and driver_handler_ok:
             self._h.connect()
 
@@ -67,17 +67,18 @@ class Device:
         if not driver_visa_ok:
             logger.info('Cannot import visa')
             return output
-        
+
+        self._h.before_read()
         for item in self.variables.values():
             if not item.visavariable.variable_type == 1:
                 # skip all config values
                 continue
-            
-            value = self._h.read_data(item)
-            
-            if value is not None and item.update_value(value, time()):
-                output.append(item.create_recorded_data_element())
 
+            value, time = self._h.read_data_and_time(item)
+
+            if value is not None and item.update_value(value, time):
+                output.append(item.create_recorded_data_element())
+        self._h.after_read()
         return output
 
     def get_handler_instance(self):
