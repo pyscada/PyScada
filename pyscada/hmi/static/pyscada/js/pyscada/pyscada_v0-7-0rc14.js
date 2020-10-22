@@ -397,6 +397,9 @@ function data_handler_done(fetched_data){
 }
 
 function data_handler_fail(x, t, m) {
+    //check if we are unauthenticated
+    if (x.getResponseHeader("content-type") !== null && x.getResponseHeader("content-type").indexOf("text/html") !== -1) {location.reload();}
+
     if(JSON_ERROR_COUNT % 5 == 0)
         add_notification("Fetching data failed", 3);
 

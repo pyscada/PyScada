@@ -162,8 +162,12 @@ class Device:
                 # disk_usage_disk_percent
                 if hasattr(psutil, 'disk_usage'):
                     try:
-                        value = psutil.disk_usage(item.systemstatvariable.parameter).percent
+                        future = pool.submit(psutil.disk_usage, item.systemstatvariable.parameter)
+                        timeout = 10
+                        value = future.result(timeout).percent
                     except OSError:
+                        value = None
+                    except concurrent.futures.TimeoutError:
                         value = None
                     timestamp = time()
             elif item.systemstatvariable.information == 19:
