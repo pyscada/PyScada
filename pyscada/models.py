@@ -358,9 +358,10 @@ class RecordedDataValueManager(models.Manager):
                     values[pk].insert(0, [first_value[pk]["time"]*f_time_scale, first_value[pk]["value"]])
                 else:
                     last_element = self.last_element(use_date_saved=True, time_min=0, variable_id=pk)
-                    values[pk].append([(time.mktime(last_element.date_saved.utctimetuple()) +
-                                        last_element.date_saved.microsecond / 1e6) * f_time_scale,
-                                       last_element.value()])
+                    if last_element is not None:
+                        values[pk].append([(time.mktime(last_element.date_saved.utctimetuple()) +
+                                            last_element.date_saved.microsecond / 1e6) * f_time_scale,
+                                           last_element.value()])
                 if len(values[pk]) > 1:
                     values[pk].append([values[pk][-1][0], values[pk][-1][1]])
         values['timestamp'] = max(tmp_time_max, time_min) * f_time_scale
