@@ -38,6 +38,7 @@
                     <div class="navbar-collapse collapse">
                         <ul class="nav navbar-nav">
                             {% block top_menu_left %}{% endblock %}
+                            {% block top_menu_left_collapsed %}{% endblock %}
                         </ul>
                         <ul class="nav navbar-right navbar-nav">
                             {% block top_menu_right %}{% endblock %}
@@ -49,7 +50,7 @@
                                     <li><a href="{% url 'pyscada_admin:index' %}" target="{{ link_target }}">Admin</a></li>
                                     <li class="divider"></li>
                                     {% endif %}
-                                    <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.first_name }} {{ user.last_name }}</a></li>	
+                                    <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.first_name }} {{ user.last_name }}</a></li>
                                     <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
                                     <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">change user info</a></li>
                                     <li class="divider"></li>
@@ -64,7 +65,7 @@
                             <li style="width:40px;height:30px;">
                                 <a href="javascript:;" ><span id="AutoUpdateButton" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Auto update data ON" class="glyphicon glyphicon-pause" ></span></a>
                             </li>
-                            <li style="width:40px;height:30px;">
+                            <li style="width:40px;height:40px;">
                                 <a href="javascript:;" ><span id="AutoUpdateStatus" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Data transfer" class="glyphicon glyphicon-transfer"></span></a>
                             </li>
                         </ul>

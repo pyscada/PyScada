@@ -384,7 +384,7 @@ function data_handler_done(fetched_data){
     }
     // update all legend tables
     $('.legend table').trigger("update");
-    //$("#AutoUpdateButton").addClass("btn-success");
+    $("#AutoUpdateButton").css("color", "");
     if (JSON_ERROR_COUNT > 0) {
         JSON_ERROR_COUNT = JSON_ERROR_COUNT - 1;
     }
@@ -407,7 +407,7 @@ function data_handler_fail(x, t, m) {
     if (JSON_ERROR_COUNT > 15) {
         $("#AutoUpdateStatus").css("color", "red")
         auto_update_click();
-        add_notification("Fetching data failed limit reached, auto update deactivated", 2, 0);
+        add_notification("Fetching data failed limit reached, auto update deactivated.<br>Check your connectivity and active auto update in the top right corner.", 2, 0);
     } else if(JSON_ERROR_COUNT > 3){
         $("#AutoUpdateStatus").css("color", "orange")
         for (var key in VARIABLE_KEYS) {

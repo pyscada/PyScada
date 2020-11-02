@@ -1558,20 +1558,21 @@ class ComplexEventGroup(models.Model):
             message_str += "In limit : " + in_limit_str + "<br>"
             message_str += "Limit rules : "
             if var_list[i]['limit_low_type'] == 0:
-                limit_low_type = "<"
+                limit_low_type = "< "
             else:
-                limit_low_type = "<="
+                limit_low_type = "<= "
             if var_list[i]['limit_high_type'] == 0:
-                limit_high_type = "<"
+                limit_high_type = "< "
             else:
-                limit_high_type = "<="
-            if var_list[i]['hysteresis_low'] == 0 and var_list[i]['hysteresis_high'] == 0:
+                limit_high_type = "<= "
+            if (var_list[i]['hysteresis_low'] == 0 or var_list[i]['limit_low_value'] is None) and \
+                    (var_list[i]['hysteresis_high'] == 0 or var_list[i]['limit_high_value'] is None):
                 if var_list[i]['limit_low_value'] is not None:
                     message_str += str(var_list[i]['limit_low_value']) + str(limit_low_type)
                 message_str += " value "
                 if var_list[i]['limit_high_value'] is not None:
                     message_str += str(limit_high_type) + str(var_list[i]['limit_high_value'])
-                message_str += "<br>"
+                message_str += "<br><br>"
             else:
                 message_str += "To enter the limit : <br>"
                 if var_list[i]['limit_low_value'] is not None:
