@@ -201,14 +201,14 @@ def form_read_task(request):
         else:
             if item_type == 'variable':
                 if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
-                                                         control_items__type=5, control_items__variable__pk=key):
+                                                         control_items__type=0, control_items__variable__pk=key):
                     crt = DeviceReadTask(device=Variable.objects.get(pk=key).device, start=time.time(),
                                          user=request.user)
                     crt.save()
                     return HttpResponse(status=200)
             elif item_type == 'variable_property':
                 if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
-                                                         control_items__type=5,
+                                                         control_items__type=0,
                                                          control_items__variable_property__pk=key):
                     crt = DeviceReadTask(device=VariableProperty.objects.get(pk=key).variable.device, start=time.time(),
                                          user=request.user)
@@ -244,7 +244,7 @@ def form_write_task(request):
         else:
             if item_type == 'variable':
                 if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
-                                                         control_items__type=5, control_items__variable__pk=key):
+                                                         control_items__type=0, control_items__variable__pk=key):
                     cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
                                           user=request.user)
                     cwt.save()
@@ -257,7 +257,7 @@ def form_write_task(request):
                     return HttpResponse(status=200)
             elif item_type == 'variable_property':
                 if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
-                                                         control_items__type=5,
+                                                         control_items__type=0,
                                                          control_items__variable_property__pk=key):
                     cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
                                           user=request.user)
@@ -269,6 +269,8 @@ def form_write_task(request):
                                           user=request.user)
                     cwt.save()
                 return HttpResponse(status=200)
+    else:
+        logger.debug("key or value missing in request : %s" % request.POST)
     return HttpResponse(status=404)
 
 

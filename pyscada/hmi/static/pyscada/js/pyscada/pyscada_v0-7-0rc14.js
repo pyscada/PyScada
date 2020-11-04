@@ -1465,7 +1465,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
     var options = {
         yaxes: [],
         xaxis: {
-            mode: (xaxisLinLog == "True" ? "log" : null),
+            mode: (xaxisLinLog == true ? "log" : null),
             autoScale: "exact",
             showTickLabels: "all"
         },
@@ -2487,7 +2487,7 @@ $('button.write-task-form-set').click(function(){
         value = $(tabinputs[i]).val();
         id = $(tabinputs[i]).attr('id');
         var_name = $(tabinputs[i]).attr("name");
-        val=$('.variable-config[data-id='+id.substring(0, id.length - 6)+']')
+        val=$('.variable-config[data-id='+id.replace('-value', '')+']')
         key = parseInt($(val).data('key'));
         item_type = $(val).data('type');
         value_class = $(val).data('value-class');
@@ -2532,7 +2532,7 @@ $('button.write-task-form-set').click(function(){
         value = $(tabselects[i]).val();
         id = $(tabselects[i]).attr('id');
         var_name = $(tabselects[i]).data("name");
-        val=$('.variable-config[data-id='+id.substring(0, id.length - 6)+']')
+        val=$('.variable-config[data-id='+id.replace('-value', '')+']')
         key = parseInt($(val).data('key'));
         item_type = $(val).data('type');
         value_class = $(val).data('value-class');
@@ -2578,7 +2578,7 @@ $('button.write-task-form-set').click(function(){
     for (i=0;i<tabinputs.length;i++){
         value = $(tabinputs[i]).val();
         id = $(tabinputs[i]).attr('id');
-        val=$('.variable-config[data-id='+id.substring(0, id.length - 6)+']')
+        val=$('.variable-config[data-id='+id.replace('-value', '')+']')
         var_name = $(val).data("name");
         key = parseInt($(val).data('key'));
         item_type = $(val).data('type');
@@ -2772,7 +2772,7 @@ $( document ).ready(function() {
         id = val.id.substring(19);
         label = $(val).data('axes0Yaxis').label;
         xaxisVarId = $(val).data('xaxis').id;
-        if ($(val).data('yaxis').linlog == 'True') {xaxisLinLog = true} else {xaxisLinLog = false}
+        if ($(val).data('xaxis').linlog == 'True') {xaxisLinLog = true} else {xaxisLinLog = false}
         if ($(val).data('yaxis').plotpoints == 'True') {plotPoints = true} else {plotPoints = false}
         if ($(val).data('yaxis').plotlines == 'True') {plotLines = true} else {plotLines = false}
         if ($(val).data('yaxis').steplines == 'True') {lineSteps = true} else {lineSteps = false}

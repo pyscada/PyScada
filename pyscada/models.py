@@ -401,7 +401,7 @@ class VariablePropertyManager(models.Manager):
         if property_class is not None:
             kwargs['property_class'] = property_class
         if value_class.upper() in ['STRING']:
-            kwargs['value_string'] = value[:VariableProperty._meta.get_field('value_string').max_length]
+            kwargs['value_string'] = str(value)[:VariableProperty._meta.get_field('value_string').max_length]
         elif value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
             kwargs['value_float64'] = value
         elif value_class.upper() in ['INT64', 'UINT32', 'DWORD']:
