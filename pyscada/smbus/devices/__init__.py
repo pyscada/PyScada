@@ -35,9 +35,9 @@ class GenericDevice:
         try:
             self.inst = smbus.SMBus(int(self._device.smbusdevice.port))
         except:
-            logger.error("SMBus connect failed : %s" % self)
+            logger.error("SMBus connect failed. Port : %s" % self._device.smbusdevice.port)
             return False
-        logger.debug('Connected SMBus device : %s' % self)
+        # logger.debug('Connected SMBus device : %s' % self)
         return True
 
     def disconnect(self):

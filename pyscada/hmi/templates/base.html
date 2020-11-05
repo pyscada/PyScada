@@ -20,6 +20,7 @@
         <link href="{% static "pyscada/css/pyscada/pyscada-theme.css" %}" rel="stylesheet"/>
         <!-- TempusDominus theme -->
         <link href="{% static "pyscada/css/tempusdominus-bootstrap-3.min.css" %}" rel="stylesheet"/>
+        {% block head_css %}{% endblock %}
         <link rel="icon" href="{% static "pyscada/img/favicon.ico" %}" type="image/x-icon">
     </head>
     <body {% block body_confic_data %} {% endblock %}>
@@ -28,6 +29,7 @@
             <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
                 <div class="container">
                     <div class="navbar-header">
+                        {% block navbar_logo %}{% endblock %}
                         <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
                             <span class="icon-bar"></span>
                             <span class="icon-bar"></span>
@@ -36,7 +38,7 @@
                         <a  class="navbar-brand" target="{{ link_target }}" href="{% url 'view-overview'%}">PyScada</a>
                     </div>
                     <div class="navbar-collapse collapse">
-                        <ul class="nav navbar-nav">
+                        <ul class="nav navbar-left navbar-nav">
                             {% block top_menu_left %}{% endblock %}
                             {% block top_menu_left_collapsed %}{% endblock %}
                         </ul>
@@ -61,7 +63,7 @@
                             </li>
                             {% endif %}
                             <!--<li><a href="#page-help">Help</a></li>-->
-                            <li><a href="javascript:;" style="padding-left:0px; padding-right:0px;"><img id="loadingAnimation" style="display: inline-block; height: 14px;" src="/static/pyscada/img/load.gif" alt="loading" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Initialisation"></a></li>
+                            <li><a href="javascript:;" style="padding-left:0px; padding-right:0px;width:40px;height:30px;"><img id="loadingAnimation" style="display: inline-block; height: 14px;" src="/static/pyscada/img/load.gif" alt="loading" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Initialisation"></a></li>
                             <li style="width:40px;height:30px;">
                                 <a href="javascript:;" ><span id="AutoUpdateButton" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Auto update data ON" class="glyphicon glyphicon-pause" ></span></a>
                             </li>
@@ -82,6 +84,7 @@
         </div>
         <footer class="footer">
         <span class="pull-left">{% if version_string %}PyScada Version: {{version_string}}{% endif %}</span>
+        {% block footer_left %}{% endblock %}
         <span class="pull-right server_time"></span>
         </footer>
         <canvas id="myCanvas" width="30" height="15" style="display:none"></canvas>

@@ -128,6 +128,8 @@ def view(request, link_title):
                 continue
             if not widget.visible:
                 continue
+            if widget.content is None:
+                continue
             mc, sbc = widget.content.create_panel_html(widget_pk=widget.pk, user=request.user)
             if mc is not None and mc is not "":
                 main_content.append(dict(html=mc, widget=widget))

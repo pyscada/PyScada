@@ -1114,7 +1114,7 @@ class RecordedDataOld(models.Model):
     value_int32 = models.IntegerField(null=True, blank=True)  # uint8, int16, uint16, int32
     value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64
     value_float64 = models.FloatField(null=True, blank=True)  # float64
-    variable = models.ForeignKey('Variable', null=True, on_delete=models.CASCADE)
+    variable = models.ForeignKey('Variable', null=True, on_delete=models.SET_NULL)
     objects = RecordedDataValueManager()
 
     def __init__(self, *args, **kwargs):
@@ -1220,7 +1220,7 @@ class RecordedData(models.Model):
     value_int32 = models.IntegerField(null=True, blank=True)  # uint8, int16, uint16, int32
     value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64, int48
     value_float64 = models.FloatField(null=True, blank=True)  # float64, float48
-    variable = models.ForeignKey('Variable', null=True, on_delete=models.CASCADE)
+    variable = models.ForeignKey('Variable', null=True, on_delete=models.SET_NULL)
     objects = RecordedDataValueManager()
 
     #

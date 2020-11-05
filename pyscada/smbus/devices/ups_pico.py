@@ -13,37 +13,37 @@ class Handler(GenericDevice):
         """
         read values from the device
         """
-        if variable_instance.info == 'ad1':
-            data = self.inst.read_word_data(0x69, 0x05)
+        if variable_instance.smbusvariable.information == 'ad1':
+            data = self.inst.read_word_data(self._device.smbusdevice.address, 0x05)
             data = format(data, "02x")
             return float(data) / 100  # °C
 
-        if variable_instance.info == 'ad2':
-            data = self.inst.read_word_data(0x69, 0x07)
+        if variable_instance.smbusvariable.information == 'ad2':
+            data = self.inst.read_word_data(self._device.smbusdevice.address, 0x07)
             data = format(data, "02x")
             return float(data) / 100  # °C
 
-        if variable_instance.info == 'rpi_level':
-            data = self.inst.read_word_data(0x69, 0x03)
+        if variable_instance.smbusvariable.information == 'rpi_level':
+            data = self.inst.read_word_data(self._device.smbusdevice.address, 0x03)
             data = format(data, "02x")
             return float(data) / 100  # Volt
 
-        if variable_instance.info == 'bat_level':
-            data = self.inst.read_word_data(0x69, 0x01)
+        if variable_instance.smbusvariable.information == 'bat_level':
+            data = self.inst.read_word_data(self._device.smbusdevice.address, 0x01)
             data = format(data, "02x")
             return float(data) / 100  # Volt
 
-        if variable_instance.info == 'pwr_mode':
-            data = self.inst.read_word_data(0x69, 0x00)
+        if variable_instance.smbusvariable.information == 'pwr_mode':
+            data = self.inst.read_word_data(self._device.smbusdevice.address, 0x00)
             return data & ~(1 << 7)  # 1 RPi, 2 Bat
 
-        if variable_instance.info == 'sot23_temp':
-            data = self.inst.read_byte_data(0x69, 0x0C)
+        if variable_instance.smbusvariable.information == 'sot23_temp':
+            data = self.inst.read_byte_data(self._device.smbusdevice.address, 0x0C)
             data = format(data, "02x")
             return data
 
-        if variable_instance.info == 'to92_temp':
-            data = self.inst.read_byte_data(0x69, 0x0D)
+        if variable_instance.smbusvariable.information == 'to92_temp':
+            data = self.inst.read_byte_data(self._device.smbusdevice.address, 0x0D)
             data = format(data, "02x")
             return data
 
@@ -55,6 +55,5 @@ class Handler(GenericDevice):
         """
         try:
             return float(value)
-
         except:
             return None
