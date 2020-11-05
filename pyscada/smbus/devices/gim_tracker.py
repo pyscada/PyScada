@@ -2,6 +2,12 @@
 from __future__ import unicode_literals
 
 from pyscada.smbus.devices import GenericDevice
+from pyscada.models import VariableProperty, RecordedData
+from time import time
+from django.utils.timezone import now
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Handler(GenericDevice):
@@ -34,9 +40,32 @@ class Handler(GenericDevice):
             lsb = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x07))
             msb2 = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x05))
             msb1 = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x06))
-            return self.parse_value((msb2 * 65536 + msb1 * 256 + lsb) * 0.0673157)
+            return self.parse_value((msb2 * 65536 + msb1 * 256 + lsb) * 0.0673157 / 1000.0)
 
         return None
+
+    def write_data(self, variable_id, value, task):
+        """
+        write values to the device
+        """
+        variable = self._variables[variable_id]
+        if task.variable_property and task.variable_property.name != '':
+            # write the freq property to VariableProperty use that for later read
+            vp = VariableProperty.objects.update_or_create_property(variable=variable, name=task.property_name.upper(),
+                                                                    value=value, value_class='FLOAT64')
+            return True
+        if variable.writeable:
+            if variable.smbusvariable.information == 'raz':
+                task.variable.update_value(1, time())
+                item = task.variable.create_recorded_data_element()
+                item.date_saved = now()
+                RecordedData.objects.bulk_create([item])
+                self.inst.write_byte_data(self._device.smbusdevice.address, 0x01, 2)
+                self.inst.write_byte_data(self._device.smbusdevice.address, 0x01, 0)
+                return self.parse_value(self.inst.read_byte_data(self._device.smbusdevice.address, 0x01))
+        else:
+            logger.debug("Variable %s not writeable" % variable)
+            return None
 
     def parse_value(self, value):
         """

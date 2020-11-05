@@ -8,6 +8,7 @@ except ImportError:
     smbus = None
     driver_ok = False
 import sys
+from time import time
 import logging
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,31 @@ class Device:
                 continue
             self.variables[var.pk] = var
 
+    def write_data(self, variable_id, value, task):
+        """
+        write value to the instrument/device
+        """
+        output = []
+        if not driver_ok:
+            logger.info("Cannot import smbus")
+            return output
+
+        self._h.connect()
+
+        for item in self.variables.values():
+            if item.id != variable_id:
+                continue
+            # read_value = self._h.write_data(item.smbusvariable.device_property, value)
+            read_value = self._h.write_data(variable_id, value, task)
+            if read_value is not None and item.update_value(read_value, time()):
+                output.append(item.create_recorded_data_element())
+            else:
+                logger.info("SMBus write data - Output not ok : %s" % output)
+
+        self._h.disconnect()
+
+        return output
+
     def request_data(self):
         """
         
@@ -54,4 +80,7 @@ class Device:
             if value is not None and item.update_value(value, time):
                 output.append(item.create_recorded_data_element())
         self._h.after_read()
+
+        self._h.disconnect()
+
         return output

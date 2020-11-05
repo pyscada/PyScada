@@ -544,10 +544,12 @@ function add_notification(message, level,timeout,clearable) {
 }
 
 function update_data_values(key,val,time){
+        if (key.split("-")[0] == "var") {type="variable"} else {type="variable_property"}
+
         if (time != null) {
             t = SERVER_TIME - time
             $(".type-numeric." + key).attr('data-original-title','last update ' + msToTime(t) + ' ago')
-            $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "]").attr('data-value-timestamp',time)
+            $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-value-timestamp',time)
             polling_interval = $(".variable-config[data-device-polling_interval][data-key=" + key.split("-")[1] + "]").attr('data-device-polling_interval')
             if (time < SERVER_TIME - 10 * Math.max(1000 * polling_interval, REFRESH_RATE)) {
                 $(".type-numeric." + key).parent().find('.glyphicon-alert').removeClass("hidden")
@@ -559,6 +561,10 @@ function update_data_values(key,val,time){
                 $(".type-numeric." + key).parent().find('.glyphicon-alert').addClass("hidden")
                 $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').addClass("hidden")
             }
+        }
+
+        if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp') != "" && time <= $(".variable-config[data-refresh-requested-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp')) {
+            return;
         }
 
         if (typeof(val)==="number"){
@@ -621,7 +627,7 @@ function update_data_values(key,val,time){
                 $(".label.type-bool.status-red-inv." + key).addClass("label-danger");
                 $(".label.type-bool.status-red-inv." + key).removeClass("label-default");
 
-                $('button.btn-default.write-task-btn.' + key).addClass("update-able");
+                $('button.btn-success.write-task-btn.' + key).addClass("update-able");
                 $('button.update-able.write-task-btn.' + key).addClass("btn-default");
                 $('button.update-able.write-task-btn.' + key).removeClass("btn-success");
                 val = 0
@@ -638,7 +644,7 @@ function update_data_values(key,val,time){
                 $(".label.type-bool.status-red-inv." + key).removeClass("label-danger");
                 $(".label.type-bool.status-red-inv." + key).addClass("label-default");
                 val = 1
-                $('button.btn-success.write-task-btn.' + key).addClass("update-able");
+                $('button.btn-default.write-task-btn.' + key).addClass("update-able");
                 $('button.update-able.write-task-btn.' + key).removeClass("btn-default");
                 $('button.update-able.write-task-btn.' + key).addClass("btn-success");
                 //$(".type-numeric." + key).html(1);
@@ -675,7 +681,6 @@ function update_data_values(key,val,time){
             $('input.'+ key).attr("placeholder",val);
         }
 
-        if (key.split("-")[0] == "var") {type="variable"} else {type="variable_property"}
         refresh_logo(key.split("-")[1], type);
 }
 
@@ -2663,8 +2668,11 @@ $('button.write-task-form-set').click(function(){
 });
 
 $('input.write-task-btn').click(function(){
+        key = $(this).data('key');
         id = $(this).attr('id');
+        item_type = $(this).data('type');
         $('#'+id).removeClass('update-able');
+        $(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "][data-type=" + item_type + "]").attr('data-refresh-requested-timestamp', SERVER_TIME)
         if($(this).hasClass('btn-default')){
             $('#'+id).removeClass('btn-default')
             $('#'+id).addClass('btn-success');
@@ -2679,6 +2687,7 @@ $('button.write-task-btn').click(function(){
         id = $(this).attr('id');
         item_type = $(this).data('type');
         $('#'+id).removeClass('update-able');
+        $(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "][data-type=" + item_type + "]").attr('data-refresh-requested-timestamp', SERVER_TIME)
         if($(this).hasClass('btn-default')){
             $.ajax({
                 type: 'post',

@@ -1,5 +1,13 @@
 {% if item.type == 0 %}<!-- input value -->
-    <div class="input-group control_button"><button type="button" class="btn btn-default update-able write-task-btn type-bool {{ item.web_class_str }}" id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}">{{ item.label }}</button></div>
+    {% if form %}
+        <div class="input-group set_value">
+            <input type="button" class="btn btn-default update-able write-task-btn type-bool {{ item.web_class_str }}" id="{{ form.web_id }}-{{ item.web_id }}-{{ uuid }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}" placeholder="" value="{{ item.label }}">
+        </div>
+    {% else %}
+        <div class="input-group control_button">
+            <button type="button" class="btn btn-default update-able write-task-btn type-bool {{ item.web_class_str }}" id="{{ item.web_id }}-{{ uuid }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}">{{ item.label }}</button>
+        </div>
+    {% endif %}
 {% elif item.type == 1 %}<!-- display value -->
     <div class="input-group set_value">
         <span class="input-group-addon input-group-addon-label control-item type-numeric {{ item.web_class_str }}" id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}" style="border:1px solid #ccc;width:100%;text-align:center;">
