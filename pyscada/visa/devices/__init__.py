@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 from django.conf import settings
 
 try:
-    import visa
+    import pyvisa
     driver_ok = True
 except ImportError:
     visa = None
@@ -37,7 +37,7 @@ class GenericDevice:
             visa_backend = settings.VISA_BACKEND
 
         try:
-            self.rm = visa.ResourceManager(visa_backend)
+            self.rm = pyvisa.ResourceManager(visa_backend)
         except:
             logger.error("Visa ResourceManager cannot load resources : %s" % self)
             return False

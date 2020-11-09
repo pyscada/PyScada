@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import sys
 
 try:
-    import visa
+    import pyvisa
     driver_visa_ok = True
 except ImportError:
     driver_visa_ok = False

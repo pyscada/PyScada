@@ -2759,7 +2759,7 @@ $( document ).ready(function() {
     $('[data-toggle*="tooltip"]').tooltip()
 
     // Setup drop down menu
-    //$('.dropdown-toggle').dropdown();
+    $('.dropdown-toggle').dropdown();
 
     // Fix input element click problem
     $('.dropdown input, .dropdown label, .dropdown button').click(function(e) {
