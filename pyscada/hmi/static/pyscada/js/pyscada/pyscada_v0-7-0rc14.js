@@ -66,21 +66,15 @@ function hide_update_status(){
     }
 }
 
-function auto_update_click(){
+function auto_update_click(toggleState=true){
+    if( toggleState) {
+        $('#AutoUpdateButton').bootstrapSwitch('toggleState');
+    };
+    AUTO_UPDATE_ACTIVE = $('#AutoUpdateButton').bootstrapSwitch('state');
     if (AUTO_UPDATE_ACTIVE) {
         // deactivate auto update
-        AUTO_UPDATE_ACTIVE = false;
-        $("#AutoUpdateButton").addClass("glyphicon-play");
-        $("#AutoUpdateButton").removeClass("glyphicon-pause");
-        $("#AutoUpdateButton").attr("data-original-title", "Auto update data OFF");
-        $("#AutoUpdateButton").tooltip('hide')
     } else {
         // activate auto update
-        AUTO_UPDATE_ACTIVE = true;
-        $("#AutoUpdateButton ").addClass("glyphicon-pause");
-        $("#AutoUpdateButton ").removeClass("glyphicon-play");
-        $("#AutoUpdateButton").attr("data-original-title", "Auto update data ON");
-        $("#AutoUpdateButton").tooltip('hide')
         JSON_ERROR_COUNT = 0;
         //data_handler();
     }
@@ -384,7 +378,6 @@ function data_handler_done(fetched_data){
     }
     // update all legend tables
     $('.legend table').trigger("update");
-    $("#AutoUpdateButton").css("color", "");
     if (JSON_ERROR_COUNT > 0) {
         JSON_ERROR_COUNT = JSON_ERROR_COUNT - 1;
     }
@@ -419,8 +412,6 @@ function data_handler_fail(x, t, m) {
         }
     }
     //hide_update_status();
-    //$("#AutoUpdateButton").removeClass("btn-success");
-    $("#AutoUpdateButton").css("color", "orange");
     if(request_data.init===1){
         for (key in request_data.variables){
             key = request_data.variables[key];
@@ -911,8 +902,8 @@ function update_timeline(){
         $('#timeline').css("left",Math.max(0,Math.min((100-(min_from/min_full * 100)),100)).toString() + "%");
     }
     //$('#timeline-time-left-label').html("-" + min_full.toPrecision(3) + "min");
-    var date = new Date(DATA_FROM_TIMESTAMP);
-    $("#timeline-time-left-label").html(date.toLocaleString());
+    //var date = new Date(DATA_FROM_TIMESTAMP);
+    //$("#timeline-time-left-label").html(date.toLocaleString());
 
     // Update DateTime pickers
     $("#datetimepicker_from").datetimepicker('enable');
@@ -2761,6 +2752,9 @@ $( document ).ready(function() {
     // Setup drop down menu
     $('.dropdown-toggle').dropdown();
 
+    // Setup auto-update switch button
+    $('#AutoUpdateButton').bootstrapSwitch();
+
     // Fix input element click problem
     $('.dropdown input, .dropdown label, .dropdown button').click(function(e) {
         e.stopPropagation();
@@ -2860,8 +2854,8 @@ $( document ).ready(function() {
         stop: progressbarSetWindow,
     });
     // auto update function
-    $('#AutoUpdateButton').click(function(e) {
-        auto_update_click();
+    $("#AutoUpdateButton").on('switchChange.bootstrapSwitch', function(e, d) {
+        auto_update_click(false);
     });
     $('#PlusTwoHoursButton').click(function(e) {
 	if (INIT_CHART_VARIABLES_DONE){
@@ -2908,7 +2902,7 @@ $( document ).ready(function() {
         DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
         INIT_CHART_VARIABLES_DONE = false;
         SINGLE_UPDATE = true;
-        if($('#AutoUpdateButton').hasClass('glyphicon-play') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
+        if(!$('#AutoUpdateButton').bootstrapSwitch('state') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
             auto_update_click();
         };
     }).click(function (e) {
@@ -2918,7 +2912,7 @@ $( document ).ready(function() {
     });
     $("#datetimepicker_from .datetimepicker-input").focusin(function (e) {
         PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = AUTO_UPDATE_ACTIVE
-        if($('#AutoUpdateButton').hasClass('glyphicon-pause') && AUTO_UPDATE_ACTIVE){
+        if($('#AutoUpdateButton').bootstrapSwitch('state') && AUTO_UPDATE_ACTIVE){
             auto_update_click();
         };
     });
@@ -2932,7 +2926,7 @@ $( document ).ready(function() {
         DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
         INIT_CHART_VARIABLES_DONE = false;
         SINGLE_UPDATE = true;
-        if($('#AutoUpdateButton').hasClass('glyphicon-play') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
+        if(!$('#AutoUpdateButton').bootstrapSwitch('state') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
             auto_update_click();
         };
     }).click(function (e) {
@@ -2943,7 +2937,7 @@ $( document ).ready(function() {
     });
     $("#datetimepicker_to .datetimepicker-input").focusin(function (e) {
         PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = AUTO_UPDATE_ACTIVE
-        if($('#AutoUpdateButton').hasClass('glyphicon-pause') && AUTO_UPDATE_ACTIVE){
+        if($('#AutoUpdateButton').bootstrapSwitch('state') && AUTO_UPDATE_ACTIVE){
             auto_update_click();
         };
     });
