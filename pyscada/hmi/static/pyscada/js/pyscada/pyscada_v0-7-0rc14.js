@@ -547,8 +547,10 @@ function update_data_values(key,val,time){
         if (key.split("-")[0] == "var") {type="variable"} else {type="variable_property"}
 
         if (time != null) {
-            t = SERVER_TIME - time
-            $(".type-numeric." + key).attr('data-original-title','last update ' + msToTime(t) + ' ago')
+            t_last_update = SERVER_TIME - time
+            t_next_update = 1000 * $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-device-polling_interval') - t_last_update;
+            t_next_update_string = ((t_next_update < 1000) ? '< 1 sec' : msToTime(t_next_update));
+            $(".type-numeric." + key).attr('data-original-title','last update ' + msToTime(t_last_update) + ' ago<br>next update in ' + t_next_update_string)
             $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-value-timestamp',time)
             polling_interval = $(".variable-config[data-device-polling_interval][data-key=" + key.split("-")[1] + "]").attr('data-device-polling_interval')
             if (time < SERVER_TIME - 10 * Math.max(1000 * polling_interval, REFRESH_RATE)) {
