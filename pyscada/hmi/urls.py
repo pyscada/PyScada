@@ -21,6 +21,7 @@ urlpatterns = [
     url(r'^json/log_data/$', views.log_data),
     url(r'^form/write_task/$', views.form_write_task),
     url(r'^form/read_task/$', views.form_read_task),
+    url(r'^form/read_all_task/$', views.form_read_all_task),
     url(r'^form/write_property2/$', views.form_write_property2),
     url(r'^view/(?P<link_title>[\w,-]+)/$', views.view, name="main-view"),
 ]

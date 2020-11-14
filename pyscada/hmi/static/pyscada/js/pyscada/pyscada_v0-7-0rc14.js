@@ -443,7 +443,7 @@ function update_log() {
                 LOG_LAST_TIMESTAMP = SERVER_TIME;
         }else{
             LOG_FETCH_PENDING_COUNT = false;
-            return false;	
+            return false;
         }
     }
     show_update_status();
@@ -492,7 +492,7 @@ function add_notification(message, level,timeout,clearable) {
         right = 4;
         top = 55;
     }
-    
+
     //<0 - Debug
     //1 - Emergency
     //2 - Critical
@@ -612,7 +612,7 @@ function update_data_values(key,val,time){
             $(".type-numeric.unixtime_utc_date_time." + key).html(date.toUTCString());
             $(".type-numeric.hex_str_full." + key).html(val.toString(16).toUpperCase());
         }
-        
+
         // set value fields
         if (typeof(val)==="boolean"){
             // set button colors
@@ -1061,8 +1061,8 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
     legend_value_id = '#chart-legend-value-' + id + '-',
     variables = {},
     plot = this;
-    
-    
+
+
     // public functions
     plot.update 			= update;
     plot.prepare 			= prepare;
@@ -1138,7 +1138,7 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
     function prepare(){
         // prepare legend table sorter
         $(legend_table_id).tablesorter({sortList: [[2,0]]});
-        
+
         // add onchange function to every checkbox in legend
         $.each(variables,function(key,val){
             $(legend_checkbox_id+key).change(function() {
@@ -1167,11 +1167,11 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
          });
         // expand the chart to the maximum width
         main_chart_area  = $(chart_container_id).closest('.main-chart-area');
-        
-        
+
+
         contentAreaHeight = main_chart_area.parent().height();
         mainChartAreaHeight = main_chart_area.height();
-        
+
         if (contentAreaHeight>mainChartAreaHeight){
             main_chart_area.height(contentAreaHeight);
         }
@@ -2363,7 +2363,7 @@ $.browserQueue = {
         $.browserQueue._queue = [];
     }
 };
-    
+
 function csrfSafeMethod(method) {
     // these HTTP methods do not require CSRF protection
     return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
@@ -2858,6 +2858,29 @@ $( document ).ready(function() {
         drag: timeline_drag,
         start: function( event, ui ) {progressbar_resize_active = true;},
         stop: progressbarSetWindow,
+    });
+    // Send request data to all devices
+    $('#ReadAllTask').click(function(e) {
+      $.ajax({
+          url: ROOT_URL+'form/read_all_task/',
+          type: "POST",
+          data:{},
+          success: function (data) {
+            items = {}
+            $.each($('.hidden.variable-config'), function(k,v) {
+              items[v.attributes['data-type']['value'] + "-" + v.attributes['data-key']['value']] = {'type' : v.attributes['data-type']['value'], 'key' : v.attributes['data-key']['value']};
+              if (typeof($(v).attr('data-refresh-requested-timestamp')) !== 'undefined') {
+                $(v).attr('data-refresh-requested-timestamp',SERVER_TIME);
+              };
+            });
+            $.each(items, function(k,v) {
+              refresh_logo(v['key'], v['type'])
+            });
+          },
+          error: function(x, t, m) {
+              add_notification('Reauest all data failed', 1)
+          },
+        });
     });
     // auto update function
     $('#AutoUpdateButton').click(function(e) {
