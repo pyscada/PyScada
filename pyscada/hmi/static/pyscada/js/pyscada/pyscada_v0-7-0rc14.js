@@ -434,7 +434,7 @@ function update_log() {
                 LOG_LAST_TIMESTAMP = SERVER_TIME;
         }else{
             LOG_FETCH_PENDING_COUNT = false;
-            return false;	
+            return false;
         }
     }
     show_update_status();
@@ -483,7 +483,7 @@ function add_notification(message, level,timeout,clearable) {
         right = 4;
         top = 55;
     }
-    
+
     //<0 - Debug
     //1 - Emergency
     //2 - Critical
@@ -538,8 +538,10 @@ function update_data_values(key,val,time){
         if (key.split("-")[0] == "var") {type="variable"} else {type="variable_property"}
 
         if (time != null) {
-            t = SERVER_TIME - time
-            $(".type-numeric." + key).attr('data-original-title','last update ' + msToTime(t) + ' ago')
+            t_last_update = SERVER_TIME - time
+            t_next_update = 1000 * $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-device-polling_interval') - t_last_update;
+            t_next_update_string = ((t_next_update < 1000) ? '< 1 sec' : msToTime(t_next_update));
+            $(".type-numeric." + key).attr('data-original-title','last update ' + msToTime(t_last_update) + ' ago<br>next update in ' + t_next_update_string)
             $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-value-timestamp',time)
             polling_interval = $(".variable-config[data-device-polling_interval][data-key=" + key.split("-")[1] + "]").attr('data-device-polling_interval')
             if (time < SERVER_TIME - 10 * Math.max(1000 * polling_interval, REFRESH_RATE)) {
@@ -603,7 +605,7 @@ function update_data_values(key,val,time){
             $(".type-numeric.unixtime_utc_date_time." + key).html(date.toUTCString());
             $(".type-numeric.hex_str_full." + key).html(val.toString(16).toUpperCase());
         }
-        
+
         // set value fields
         if (typeof(val)==="boolean"){
             // set button colors
@@ -1052,8 +1054,8 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
     legend_value_id = '#chart-legend-value-' + id + '-',
     variables = {},
     plot = this;
-    
-    
+
+
     // public functions
     plot.update 			= update;
     plot.prepare 			= prepare;
@@ -1129,7 +1131,7 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
     function prepare(){
         // prepare legend table sorter
         $(legend_table_id).tablesorter({sortList: [[2,0]]});
-        
+
         // add onchange function to every checkbox in legend
         $.each(variables,function(key,val){
             $(legend_checkbox_id+key).change(function() {
@@ -1158,11 +1160,11 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
          });
         // expand the chart to the maximum width
         main_chart_area  = $(chart_container_id).closest('.main-chart-area');
-        
-        
+
+
         contentAreaHeight = main_chart_area.parent().height();
         mainChartAreaHeight = main_chart_area.height();
-        
+
         if (contentAreaHeight>mainChartAreaHeight){
             main_chart_area.height(contentAreaHeight);
         }
@@ -2354,7 +2356,7 @@ $.browserQueue = {
         $.browserQueue._queue = [];
     }
 };
-    
+
 function csrfSafeMethod(method) {
     // these HTTP methods do not require CSRF protection
     return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
@@ -2852,6 +2854,29 @@ $( document ).ready(function() {
         drag: timeline_drag,
         start: function( event, ui ) {progressbar_resize_active = true;},
         stop: progressbarSetWindow,
+    });
+    // Send request data to all devices
+    $('#ReadAllTask').click(function(e) {
+      $.ajax({
+          url: ROOT_URL+'form/read_all_task/',
+          type: "POST",
+          data:{},
+          success: function (data) {
+            items = {}
+            $.each($('.hidden.variable-config'), function(k,v) {
+              items[v.attributes['data-type']['value'] + "-" + v.attributes['data-key']['value']] = {'type' : v.attributes['data-type']['value'], 'key' : v.attributes['data-key']['value']};
+              if (typeof($(v).attr('data-refresh-requested-timestamp')) !== 'undefined') {
+                $(v).attr('data-refresh-requested-timestamp',SERVER_TIME);
+              };
+            });
+            $.each(items, function(k,v) {
+              refresh_logo(v['key'], v['type'])
+            });
+          },
+          error: function(x, t, m) {
+              add_notification('Reauest all data failed', 1)
+          },
+        });
     });
     // auto update function
     $("#AutoUpdateButton").on('switchChange.bootstrapSwitch', function(e, d) {

@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from pyscada.core import version as core_version
-from pyscada.models import RecordedData, VariableProperty, Variable
+from pyscada.models import RecordedData, VariableProperty, Variable, Device
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Form
 from pyscada.hmi.models import DropDown
@@ -183,6 +183,12 @@ def log_data(request):
 
     return HttpResponse(jdata, content_type='application/json')
 
+@unauthenticated_redirect
+def form_read_all_task(request):
+    for device in Device.objects.all():
+        crt = DeviceReadTask(device=device, start=time.time(), user=request.user)
+        crt.save()
+    return HttpResponse(status=200)
 
 @unauthenticated_redirect
 def form_read_task(request):

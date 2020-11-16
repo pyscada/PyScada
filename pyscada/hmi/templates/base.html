@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <meta name="description" content="PyScada html5 client application"/>
         <meta name="author" content="Martin Schroeder"/>
-        
+
         <title>{% block title %}{% endblock %}</title>
         <!-- Bootstrap core CSS -->
         <link href='{% static "pyscada/css/bootstrap/bootstrap.min.css" %}' rel="stylesheet"/>
@@ -18,7 +18,7 @@
         <link href='{% static "pyscada/css/jquery-ui/jquery-ui.min.css" %}' rel="stylesheet"/>
         <!-- Bootstrap theme -->
         <link href='{% static "pyscada/css/jquery-ui/jquery-ui.theme.min.css" %}' rel="stylesheet"/>
-        <!-- Custom styles for this template -->    
+        <!-- Custom styles for this template -->
         <link href='{% static "pyscada/css/pyscada/pyscada-theme.css" %}' rel="stylesheet"/>
         <!-- TempusDominus theme -->
         <link href='{% static "pyscada/css/tempusdominus-bootstrap-3.min.css" %}' rel="stylesheet"/>
@@ -69,6 +69,9 @@
                             <li style="width:100px;height:30px;padding-top: 15px;">
                                 <input type="checkbox" id="AutoUpdateButton" data-inverse="true" data-size="mini" data-on-color="success" data-off-color="default" checked>
                             </li>
+                            <li style="width:40px;height:30px;">
+                                <a href="javascript:;" ><span id="ReadAllTask" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Send request data to all devices" class="glyphicon glyphicon-refresh" ></span></a>
+                            </li>
                             <li style="width:40px;height:40px;">
                                 <a href="javascript:;" ><span id="AutoUpdateStatus" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Data transfer" class="glyphicon glyphicon-transfer"></span></a>
                             </li>
@@ -101,7 +104,7 @@
         <script type="text/javascript" src='{% static "pyscada/js/bootstrap/bootstrap.min.js" %}'></script>
         <script type="text/javascript" src='{% static "pyscada/js/bootstrap/bootstrap-switch.min.js" %}'></script>
         {% block include_bottom %}{% endblock %}
-        
+
         <script>
         {% block script_bottom %}{% endblock %}
         </script>
