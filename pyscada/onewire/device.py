@@ -43,7 +43,6 @@ class Device:
 
             output = []
             for item in self.variables:
-                timestamp = time()
                 value = None
                 if item.onewirevariable.address.lower() in w1_slaves:
                     f = open('/sys/bus/w1/devices/' + str('28-' + item.onewirevariable.address) + '/w1_slave')
@@ -54,6 +53,7 @@ class Device:
                         if filecontent.split('\n')[0].split('crc=')[1][3::] == 'YES':
                             value = float(filecontent.split('\n')[1].split('t=')[1]) / 1000
                 # update variable
+                timestamp = time()
                 if value is not None and item.update_value(value, timestamp):
                     output.append(item.create_recorded_data_element())
             return output
@@ -79,7 +79,6 @@ class Device:
 
             output = []
             for item in self.variables:
-                timestamp = time()
                 value = None
                 if item.onewirevariable.sensor_type in ['DS18B20']:
                     if '/28.%s/' % item.onewirevariable.address.lower() in w1_slaves:
@@ -90,6 +89,7 @@ class Device:
                             value = None
 
                 # update variable
+                timestamp = time()
                 if value is not None and item.update_value(value, timestamp):
                     output.append(item.create_recorded_data_element())
             return output
