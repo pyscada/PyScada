@@ -2783,7 +2783,11 @@ $( document ).ready(function() {
     $('.dropdown-toggle').dropdown();
 
     // Setup auto-update switch button
-    $('#AutoUpdateButton').bootstrapSwitch();
+    $('#AutoUpdateButton').bootstrapSwitch({
+        onInit: function(event) {
+            $('.bootstrap-switch-id-AutoUpdateButton').tooltip({title:"Auto update data", placement:"bottom"});
+        }
+      });
 
     // Fix input element click problem
     $('.dropdown input, .dropdown label, .dropdown button').click(function(e) {
