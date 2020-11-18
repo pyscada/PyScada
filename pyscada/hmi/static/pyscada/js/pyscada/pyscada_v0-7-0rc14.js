@@ -1135,7 +1135,7 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
         // add onchange function to every checkbox in legend
         $.each(variables,function(key,val){
             $(legend_checkbox_id+key).change(function() {
-                plot.update(false);
+                plot.update(true);
                 if ($(legend_checkbox_id+key).is(':checked')){
                     $(legend_checkbox_status_id+key).html(1);
                 }else{
@@ -1156,7 +1156,7 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
                     $(legend_checkbox_id+key)[0].checked = false;
                  });
             }
-            plot.update(false);
+            plot.update(true);
          });
         // expand the chart to the maximum width
         main_chart_area  = $(chart_container_id).closest('.main-chart-area');
@@ -1387,6 +1387,8 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
         if($(chart_container_id).is(":visible") || force){
             // only update if plot is visible
             // add the selected data series to the "series" variable
+            old_series = series;
+            new_data = false;
             series = [];
             start_id = 0;
             for (var key in keys){
@@ -1419,34 +1421,41 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
                     //        chart_data.push([DATA_DISPLAY_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
                     //    }
                     //}
+                    for (serie in old_series) {
+                      if (new_data === false && key === old_series[serie]['key'] && chart_data.length !== old_series[serie]['data'].length && (chart_data[0][0] !== old_series[serie]['data'][0][0] || chart_data[0][1] !== old_series[serie]['data'][0][1] || chart_data[chart_data.length-1][0] !== old_series[serie]['data'][old_series[serie]['data'].length-1][0] && chart_data[chart_data.length-1][1] !== old_series[serie]['data'][old_series[serie]['data'].length-1][-1])) {
+                        new_data = true;
+                      }
+                    };
                     series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":variables[key].label,"unit":variables[key].unit, "key":key});
                 }
             }
 
-            // update x window
-            pOpt = flotPlot.getOptions();
+            if (new_data || old_series.length == 0 || force) {
+              // update x window
+              pOpt = flotPlot.getOptions();
 
-            if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
-                pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
-                pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
+              if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
+                  pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
+                  pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
 
-            }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
-                pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
-                pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
-            }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
-                pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
-                pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
-            }else{
-                pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
-                pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
+              }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
+                  pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
+                  pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
+              }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
+                  pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
+                  pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
+              }else{
+                  pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
+                  pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
+              }
+
+              pOpt.xaxes[0].key=0
+
+              // update flot plot
+              flotPlot.setData(series);
+              flotPlot.setupGrid(true);
+              flotPlot.draw();
             }
-
-            pOpt.xaxes[0].key=0
-
-            // update flot plot
-            flotPlot.setData(series);
-            flotPlot.setupGrid(true);
-            flotPlot.draw();
         }
     }
 
@@ -1635,7 +1644,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
         $.each(variables,function(key,val){
             $(legend_checkbox_id+key).change(function() {
                 flotPlot.clearTextCache();
-                plot.update(false);
+                plot.update(true);
                 if ($(legend_checkbox_id+key).is(':checked')){
                     $(legend_checkbox_status_id+key).html(1);
                 }else{
@@ -1657,7 +1666,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
                  });
             }
             flotPlot.clearTextCache();
-            plot.update(false);
+            plot.update(true);
          });
         // expand the chart to the maximum width
         main_chart_area  = $(chart_container_id).closest('.main-chart-area');
@@ -1888,6 +1897,8 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
         if($(chart_container_id).is(":visible") || force){
             // only update if plot is visible
             // add the selected data series to the "series" variable
+            old_series = series;
+            new_data_bool = false;
             series = [];
             start_id = 0;
             j=0;
@@ -1960,6 +1971,15 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
                                     }
                                     ix+=1;
                                 }
+                                if (xf == 0) {
+                                    fx = linearInterpolation(chart_data[iy][0], chart_x_data[chart_x_data.length-2][0], chart_x_data[chart_x_data.length-2][1], chart_x_data[chart_x_data.length-1][0], chart_x_data[chart_x_data.length-1][1]);
+                                    new_data.push([fx,chart_data[iy][1]]);
+                                    chart_data_min = Math.min(chart_data_min, chart_data[iy][1])
+                                    chart_data_max = Math.max(chart_data_max, chart_data[iy][1])
+                                    x_data_min = Math.min(x_data_min, fx)
+                                    x_data_max = Math.max(x_data_max, fx)
+                                    xf=1;
+                                }
                             }else if (chart_x_data.length > 0){
                                 new_data.push([chart_x_data[0][1],chart_data[iy][1]]);
                                 chart_data_min = Math.min(chart_data_min, chart_data[iy][1])
@@ -1982,76 +2002,84 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
                         j += 1;
                         if (yaxisUniqueScale) {yj = 1} else {yj = jk}
                         //plot Y with defferents axis
+                        for (serie in old_series) {
+                          if (new_data_bool === false && key === old_series[serie]['key'] && new_data.length !== old_series[serie]['data'].length && (new_data[0][0] !== old_series[serie]['data'][0][0] || new_data[0][1] !== old_series[serie]['data'][0][1] || new_data[new_data.length-1][0] !== old_series[serie]['data'][old_series[serie]['data'].length-1][0] && new_data[new_data.length-1][1] !== old_series[serie]['data'][old_series[serie]['data'].length-1][-1] || chart_x_data[0][0] !== old_series[serie]['xdata'][0][0] || chart_x_data[0][1] !== old_series[serie]['xdata'][0][1] || chart_x_data[chart_x_data.length-1][0] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][0] && chart_x_data[chart_x_data.length-1][1] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][-1])) {
+                            new_data_bool = true;
+                          }
+                        };
                         series.push({"data":new_data, "xdata":chart_x_data,"color":variables[key].color,"yaxis":yj,"label":variables[key].label,"unit":variables[key].unit,"chart_data_min":chart_data_min,"chart_data_max":chart_data_max,"x_data_min":x_data_min,"x_data_max":x_data_max, "key":key});
                     };
                 };
                 jk += 1;
             };
 
-            //update y window
-            pOpt = flotPlot.getOptions();
-            if (j != 0){
-                for (k = 1;k <= j;k++){
-                    S = series[k-1]
-                    if (typeof S !== 'undefined') {
-                        if (yaxisUniqueScale == false || $(legend_table_id + ' .variable-config').length == 1) {
-                            pOpt.yaxes[S['yaxis']-1].unit = S['unit'];
-                        }else {
-                            options.yaxes[S['yaxis']-1].unit = ""
-                        }
-                        pOpt.alignTicksWithAxis = 1;
-                        if (k==1) {
-                            pOpt.yaxes[S['yaxis']-1].chart_data_min = S['chart_data_min'];
-                            pOpt.yaxes[S['yaxis']-1].chart_data_max = S['chart_data_max'];
-                        }else {
-                            pOpt.yaxes[S['yaxis']-1].chart_data_min = Math.min(S['chart_data_min'],pOpt.yaxes[S['yaxis']-1].chart_data_min);
-                            pOpt.yaxes[S['yaxis']-1].chart_data_max = Math.max(S['chart_data_max'],pOpt.yaxes[S['yaxis']-1].chart_data_max);
-                        }
-                    }
-                }
-            }
+            if (new_data_bool || old_series.length == 0 || force) {
 
-            // Reset min and max for xaxis and yaxes when no data
-            allYAxesEmpty = true;
-            for (y = 0;y < pOpt.yaxes.length;y++){
-                if (j != 0){
-                    yAxesEmpty = true;
-                    for (k = 1;k <= j;k++){
-                        S = series[k-1];
-                        if (S['yaxis']-1 == y) {yAxesEmpty = false;}
-                    }
-                    if (yAxesEmpty == true) {
-                        pOpt.yaxes[y].min = null;
-                        pOpt.yaxes[y].max = null;
-                    }else {allYAxesEmpty = false;}
-                }else {
-                    pOpt.yaxes[y].min = null;
-                    pOpt.yaxes[y].max = null;
-                    pOpt.xaxes[0].min = null;
-                    pOpt.xaxes[0].max = null;
-                }
-            }
-            if (allYAxesEmpty == true) {
-                pOpt.xaxes[0].min = null;
-                pOpt.xaxes[0].max = null;
-            }
+              //update y window
+              pOpt = flotPlot.getOptions();
+              if (j != 0){
+                  for (k = 1;k <= j;k++){
+                      S = series[k-1]
+                      if (typeof S !== 'undefined') {
+                          if (yaxisUniqueScale == false || $(legend_table_id + ' .variable-config').length == 1) {
+                              pOpt.yaxes[S['yaxis']-1].unit = S['unit'];
+                          }else {
+                              options.yaxes[S['yaxis']-1].unit = ""
+                          }
+                          pOpt.alignTicksWithAxis = 1;
+                          if (k==1) {
+                              pOpt.yaxes[S['yaxis']-1].chart_data_min = S['chart_data_min'];
+                              pOpt.yaxes[S['yaxis']-1].chart_data_max = S['chart_data_max'];
+                          }else {
+                              pOpt.yaxes[S['yaxis']-1].chart_data_min = Math.min(S['chart_data_min'],pOpt.yaxes[S['yaxis']-1].chart_data_min);
+                              pOpt.yaxes[S['yaxis']-1].chart_data_max = Math.max(S['chart_data_max'],pOpt.yaxes[S['yaxis']-1].chart_data_max);
+                          }
+                      }
+                  }
+              }
 
-            pOpt.xaxes[0].key=xkey
+              // Reset min and max for xaxis and yaxes when no data
+              allYAxesEmpty = true;
+              for (y = 0;y < pOpt.yaxes.length;y++){
+                  if (j != 0){
+                      yAxesEmpty = true;
+                      for (k = 1;k <= j;k++){
+                          S = series[k-1];
+                          if (S['yaxis']-1 == y) {yAxesEmpty = false;}
+                      }
+                      if (yAxesEmpty == true) {
+                          pOpt.yaxes[y].min = null;
+                          pOpt.yaxes[y].max = null;
+                      }else {allYAxesEmpty = false;}
+                  }else {
+                      pOpt.yaxes[y].min = null;
+                      pOpt.yaxes[y].max = null;
+                      pOpt.xaxes[0].min = null;
+                      pOpt.xaxes[0].max = null;
+                  }
+              }
+              if (allYAxesEmpty == true) {
+                  pOpt.xaxes[0].min = null;
+                  pOpt.xaxes[0].max = null;
+              }
 
-            // update flot plot
-            flotPlot.setData(series);
-            flotPlot.setupGrid(true);
-            flotPlot.draw();
+              pOpt.xaxes[0].key=xkey
 
-            // Change the color of the axis
-            if (jk != 1 && yaxisUniqueScale == false){
-                for (k = 1;k <= jk;k++){
-                    S = series[k-1]
-                    if (typeof S !== 'undefined') {
-                        $(chart_container_id + ' .axisLabels.y' + S['yaxis'] + 'Label').css('fill',S['color'])
-                        $(chart_container_id + ' .flot-y' + S['yaxis'] + '-axis text').css('fill',S['color'])
-                    }
-                }
+              // update flot plot
+              flotPlot.setData(series);
+              flotPlot.setupGrid(true);
+              flotPlot.draw();
+
+              // Change the color of the axis
+              if (jk != 1 && yaxisUniqueScale == false){
+                  for (k = 1;k <= jk;k++){
+                      S = series[k-1]
+                      if (typeof S !== 'undefined') {
+                          $(chart_container_id + ' .axisLabels.y' + S['yaxis'] + 'Label').css('fill',S['color'])
+                          $(chart_container_id + ' .flot-y' + S['yaxis'] + '-axis text').css('fill',S['color'])
+                      }
+                  }
+              }
             }
         }
     }
@@ -2142,7 +2170,7 @@ function Pie(id){
         // add onchange function to every checkbox in legend
         $.each(variables,function(key,val){
             $(legend_checkbox_id+key).change(function() {
-                plot.update(false);
+                plot.update(true);
                 if ($(legend_checkbox_id+key).is(':checked')){
                     $(legend_checkbox_status_id+key).html(1);
                 }else{
@@ -2163,7 +2191,7 @@ function Pie(id){
                     $(legend_checkbox_id+key)[0].checked = false;
                  });
             }
-            plot.update(false);
+            plot.update(true);
         });
         // expand the pie to the maximum width
         main_chart_area = $(chart_container_id).closest('.main-chart-area');
