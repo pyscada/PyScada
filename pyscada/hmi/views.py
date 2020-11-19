@@ -263,6 +263,8 @@ def form_write_task(request):
                                           user=request.user)
                     cwt.save()
                     return HttpResponse(status=200)
+                else:
+                    logger.debug("Missing group display permission for write task variable")
             elif item_type == 'variable_property':
                 if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
                                                          control_items__type=0,
@@ -276,7 +278,9 @@ def form_write_task(request):
                     cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
                                           user=request.user)
                     cwt.save()
-                return HttpResponse(status=200)
+                    return HttpResponse(status=200)
+                else:
+                    logger.debug("Missing group display permission for write task VP")
     else:
         logger.debug("key or value missing in request : %s" % request.POST)
     return HttpResponse(status=404)

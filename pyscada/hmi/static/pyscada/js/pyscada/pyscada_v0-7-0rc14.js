@@ -1265,9 +1265,12 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
             }
             flotPlot.clearSelection();
             if ($(chart_container_id + " .activate_zoom_x").is(':checked') && ranges.xaxis != null) {
-                DATA_DISPLAY_TO_TIMESTAMP = ranges.xaxis.to;
-                DATA_DISPLAY_FROM_TIMESTAMP = ranges.xaxis.from;
-                DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP-DATA_DISPLAY_FROM_TIMESTAMP;
+                DATA_DISPLAY_TO_TIMESTAMP = ((DATA_TO_TIMESTAMP == ranges.xaxis.to) ? DATA_DISPLAY_TO_TIMESTAMP : ranges.xaxis.to);
+                DATA_DISPLAY_FROM_TIMESTAMP = ((DATA_FROM_TIMESTAMP == ranges.xaxis.from) ? DATA_DISPLAY_FROM_TIMESTAMP : ranges.xaxis.from);
+                if (DATA_DISPLAY_TO_TIMESTAMP < 0 && DATA_DISPLAY_FROM_TIMESTAMP < 0) {DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP}
+                else if (DATA_DISPLAY_TO_TIMESTAMP < 0) {DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_DISPLAY_FROM_TIMESTAMP}
+                else if (DATA_DISPLAY_FROM_TIMESTAMP < 0) {DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP - DATA_FROM_TIMESTAMP}
+                else {DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP-DATA_DISPLAY_FROM_TIMESTAMP};
                 set_x_axes();
             }
         });
@@ -1422,7 +1425,7 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
                     //    }
                     //}
                     for (serie in old_series) {
-                      if (new_data === false && key === old_series[serie]['key'] && chart_data.length !== old_series[serie]['data'].length && (chart_data[0][0] !== old_series[serie]['data'][0][0] || chart_data[0][1] !== old_series[serie]['data'][0][1] || chart_data[chart_data.length-1][0] !== old_series[serie]['data'][old_series[serie]['data'].length-1][0] && chart_data[chart_data.length-1][1] !== old_series[serie]['data'][old_series[serie]['data'].length-1][-1])) {
+                      if (new_data === false && chart_data.length > 0 && key === old_series[serie]['key'] && chart_data.length !== old_series[serie]['data'].length && (chart_data[0][0] !== old_series[serie]['data'][0][0] || chart_data[0][1] !== old_series[serie]['data'][0][1] || chart_data[chart_data.length-1][0] !== old_series[serie]['data'][old_series[serie]['data'].length-1][0] && chart_data[chart_data.length-1][1] !== old_series[serie]['data'][old_series[serie]['data'].length-1][-1])) {
                         new_data = true;
                       }
                     };
@@ -2003,7 +2006,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
                         if (yaxisUniqueScale) {yj = 1} else {yj = jk}
                         //plot Y with defferents axis
                         for (serie in old_series) {
-                          if (new_data_bool === false && key === old_series[serie]['key'] && new_data.length !== old_series[serie]['data'].length && (new_data[0][0] !== old_series[serie]['data'][0][0] || new_data[0][1] !== old_series[serie]['data'][0][1] || new_data[new_data.length-1][0] !== old_series[serie]['data'][old_series[serie]['data'].length-1][0] && new_data[new_data.length-1][1] !== old_series[serie]['data'][old_series[serie]['data'].length-1][-1] || chart_x_data[0][0] !== old_series[serie]['xdata'][0][0] || chart_x_data[0][1] !== old_series[serie]['xdata'][0][1] || chart_x_data[chart_x_data.length-1][0] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][0] && chart_x_data[chart_x_data.length-1][1] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][-1])) {
+                          if (new_data_bool === false &&  new_data.length > 0 && key === old_series[serie]['key'] && new_data.length !== old_series[serie]['data'].length && (new_data[0][0] !== old_series[serie]['data'][0][0] || new_data[0][1] !== old_series[serie]['data'][0][1] || new_data[new_data.length-1][0] !== old_series[serie]['data'][old_series[serie]['data'].length-1][0] && new_data[new_data.length-1][1] !== old_series[serie]['data'][old_series[serie]['data'].length-1][-1] || chart_x_data[0][0] !== old_series[serie]['xdata'][0][0] || chart_x_data[0][1] !== old_series[serie]['xdata'][0][1] || chart_x_data[chart_x_data.length-1][0] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][0] && chart_x_data[chart_x_data.length-1][1] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][-1])) {
                             new_data_bool = true;
                           }
                         };
