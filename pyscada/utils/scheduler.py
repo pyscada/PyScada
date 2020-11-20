@@ -7,7 +7,7 @@
      - > export task A
      - > export task B
     - > event master
-    
+
     - > modbus master(registers a process for every device/port)
      - > modbus device A (IP 1)
      - > modbus device B (IP 2)
@@ -20,7 +20,7 @@
     - > systemstat master
     - > smbus (registers a process for every device/port)
     - > jofra350 (registers a process for every device/port)
-    
+
 
 """
 from __future__ import unicode_literals
@@ -77,7 +77,7 @@ class Scheduler(object):
                  run_as_daemon=True, stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr,
                  pid_file_name='/tmp/pyscada_daemon.pid'):
         """
-        
+
         """
         self.pid_file_name = pid_file_name
         self.run_as_daemon = run_as_daemon
@@ -356,7 +356,7 @@ class Scheduler(object):
 
     def manage_processes(self):
         """
-        
+
         """
         # check for new processes to spawn
         process_list = []
@@ -493,7 +493,7 @@ class Scheduler(object):
 
     def kill_process(self, process_id, sig=signal.SIGTERM):
         """
-        
+
         """
         p = self.PROCESSES[process_id]
         try:
@@ -519,7 +519,7 @@ class Scheduler(object):
 
     def kill_processes(self, sig=signal.SIGTERM):
         """
-        
+
         """
         process_ids = list(self.PROCESSES.keys())
         for process_id in process_ids:
@@ -1063,19 +1063,32 @@ class MultiDeviceDAQProcess(Process):
                     task.failed = True
                     task.finished = time()
                     task.save()
-        if time() - self.last_query > self.dt_query_data:
+        if time() - self.last_query > self.dt_query_data or \
+                DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
+                                              device_id__in=self.device_ids).count():
             self.last_query = time()
             for device_id, device in self.devices.items():
                 # Query data
                 tmp_data = device.request_data()
                 if isinstance(tmp_data, list):
                     if len(tmp_data) > 0:
+                        for task in DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
+                                                                  device_id=device_id).order_by('start'):
+                            task.done = True
+                            task.finished = time()
+                            task.save()
                         if len(data[-1]) + len(tmp_data) < 998:
                             # add to the last write job
                             data[-1] += tmp_data
                         else:
                             # add to next write job
                             data.append(tmp_data)
+                    else:
+                        for task in DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
+                                                                  device_idS=device_id).order_by('start'):
+                            task.failed = True
+                            task.finished = time()
+                            task.save()
             return 1, data
         else:
             return 1, None
