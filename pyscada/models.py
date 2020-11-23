@@ -772,7 +772,7 @@ class Variable(models.Model):
     M: Mantissa
     E: Exponent
     S: Sign
-    uint 0            uint 1 
+    uint 0            uint 1
     byte 0   byte 1   byte 2   byte 3
     1-0-3-2 MMMMMMMM MMMMMMMM SEEEEEEE EMMMMMMM
     0-1-2-3 MMMMMMMM MMMMMMMM EMMMMMMM SEEEEEEE
@@ -1060,8 +1060,8 @@ class Variable(models.Model):
 @python_2_unicode_compatible
 class DeviceWriteTask(models.Model):
     id = models.AutoField(primary_key=True)
-    variable = models.ForeignKey('Variable', blank=True, null=True, on_delete=models.CASCADE)
-    variable_property = models.ForeignKey('VariableProperty', blank=True, null=True, on_delete=models.CASCADE)
+    variable = models.ForeignKey('Variable', blank=True, null=True, on_delete=models.SET_NULL)
+    variable_property = models.ForeignKey('VariableProperty', blank=True, null=True, on_delete=models.SET_NULL)
     value = models.FloatField()
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     start = models.FloatField(default=0)  # TODO DateTimeField
@@ -1079,9 +1079,9 @@ class DeviceWriteTask(models.Model):
 @python_2_unicode_compatible
 class DeviceReadTask(models.Model):
     id = models.AutoField(primary_key=True)
-    device = models.ForeignKey('Device', blank=True, null=True, on_delete=models.CASCADE)
-    variable = models.ForeignKey('Variable', blank=True, null=True, on_delete=models.CASCADE)
-    variable_property = models.ForeignKey('VariableProperty', blank=True, null=True, on_delete=models.CASCADE)
+    device = models.ForeignKey('Device', blank=True, null=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey('Variable', blank=True, null=True, on_delete=models.SET_NULL)
+    variable_property = models.ForeignKey('VariableProperty', blank=True, null=True, on_delete=models.SET_NULL)
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     start = models.FloatField(default=0)  # TODO DateTimeField
     finished = models.FloatField(default=0, blank=True)  # TODO DateTimeField
@@ -1354,8 +1354,8 @@ class BackgroundProcess(models.Model):
     process_class = models.CharField(max_length=400, blank=True, default='pyscada.utils.scheduler.Process',
                                      help_text="from pyscada.utils.scheduler import Process")
     process_class_kwargs = models.CharField(max_length=400, default='{}', blank=True,
-                                            help_text='''arguments in json format will be passed as kwargs while the 
-                                            init of the process instance, example: 
+                                            help_text='''arguments in json format will be passed as kwargs while the
+                                            init of the process instance, example:
                                             {"keywordA":"value1", "keywordB":7}''')
     last_update = models.DateTimeField(null=True, blank=True)
     running_since = models.DateTimeField(null=True, blank=True)
@@ -1696,9 +1696,9 @@ class ComplexEventItem(models.Model):
     id = models.AutoField(primary_key=True)
     fixed_limit_low = models.FloatField(default=0, blank=True, null=True)
     variable_limit_low = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
-                                           related_name="variable_limit_low", help_text='''you can choose either an 
-                                            fixed limit or an variable limit that is dependent on the current value of 
-                                            an variable, if you choose a value other than  none for variable limit the 
+                                           related_name="variable_limit_low", help_text='''you can choose either an
+                                            fixed limit or an variable limit that is dependent on the current value of
+                                            an variable, if you choose a value other than  none for variable limit the
                                             fixed limit would be ignored''')
     limit_low_type_choices = (
         (0, 'limit < value',),
@@ -1711,9 +1711,9 @@ class ComplexEventItem(models.Model):
     variable_property = models.ForeignKey(VariableProperty, blank=True, null=True, on_delete=models.CASCADE)
     fixed_limit_high = models.FloatField(default=0, blank=True, null=True)
     variable_limit_high = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
-                                            related_name="variable_limit_high", help_text='''you can choose either an 
-                                            fixed limit or an variable limit that is dependent on the current value of 
-                                            an variable, if you choose a value other than  none for variable limit the 
+                                            related_name="variable_limit_high", help_text='''you can choose either an
+                                            fixed limit or an variable limit that is dependent on the current value of
+                                            an variable, if you choose a value other than  none for variable limit the
                                             fixed limit would be ignored''')
     limit_high_type_choices = (
         (0, 'value < limit',),
@@ -1820,7 +1820,7 @@ class Event(models.Model):
     variable_limit = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
                                        related_name="variable_limit",
                                        help_text='''you can choose either an fixed limit or an variable limit that is
-                                        dependent on the current value of an variable, if you choose a value other than 
+                                        dependent on the current value of an variable, if you choose a value other than
                                         none for variable limit the fixed limit would be ignored''')
     limit_type_choices = (
         (0, 'value < limit',),
