@@ -1085,7 +1085,7 @@ class MultiDeviceDAQProcess(Process):
                             data.append(tmp_data)
                     else:
                         for task in DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
-                                                                  device_idS=device_id).order_by('start'):
+                                                                  device_id=device_id).order_by('start'):
                             task.failed = True
                             task.finished = time()
                             task.save()
