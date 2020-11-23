@@ -1393,7 +1393,7 @@ class BackgroundProcess(models.Model):
 
         :return:
         """
-        if self.pid is not 0 and self.pid is not None:
+        if self.pid != 0 and self.pid is not None:
 
             try:
                 kill(self.pid, signal.SIGUSR1)
@@ -1408,7 +1408,7 @@ class BackgroundProcess(models.Model):
 
         :return:
         """
-        if self.pid is not 0 and self.pid is not None:
+        if self.pid != 0 and self.pid is not None:
             logger.debug('send sigterm to daemon')
             try:
                 kill(self.pid, signum)
