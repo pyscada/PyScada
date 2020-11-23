@@ -2508,9 +2508,8 @@ $('button.write-task-set').click(function(){
     };
 });
 
-$('button.write-task-form-set').click(function(){
+function check_form(id_form) {
     err = false;
-    id_form = $(this.form).attr('id');
     tabinputs = $.merge($('#'+id_form+ ' :text'),$('#'+id_form+ ' :input:hidden'));
     for (i=0;i<tabinputs.length;i++){ //test if there is an empty or non numeric value
         value = $(tabinputs[i]).val();
@@ -2601,7 +2600,12 @@ $('button.write-task-form-set').click(function(){
             }
         }
     };
-    if (err) {return;}
+    return err;
+}
+
+$('button.write-task-form-set').click(function(){
+    id_form = $(this.form).attr('id');
+    if (check_form(id_form)) {return;}
 
     tabinputs = $.merge(tabinputs,$('#'+id_form+ ' :input:button.type-bool'));
     for (i=0;i<tabinputs.length;i++){
