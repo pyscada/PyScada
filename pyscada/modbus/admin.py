@@ -19,6 +19,23 @@ class ModbusDeviceAdminInline(admin.StackedInline):
 
 
 class ModbusDeviceAdmin(DeviceAdmin):
+    list_display = ('id', 'short_name', 'description', 'protocol', 'active', 'polling_interval', 'protocol', 'framer', 'ip_address', 'port', 'unit_id')
+
+    def protocol(self, instance):
+        return instance.modbusdevice.protocol
+
+    def framer(self, instance):
+        return instance.modbusdevice.framer
+
+    def ip_address(self, instance):
+        return instance.modbusdevice.ip_address
+
+    def port(self, instance):
+        return instance.modbusdevice.port
+
+    def unit_id(self, instance):
+        return instance.modbusdevice.unit_id
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'protocol':
             kwargs['queryset'] = DeviceProtocol.objects.filter(pk=PROTOCOL_ID)
@@ -40,7 +57,7 @@ class ModbusVariableAdminInline(admin.StackedInline):
 
 
 class ModbusVariableAdmin(VariableAdmin):
-    list_display = ('id', 'name', 'description', 'unit', 'device_name', 'value_class', 'active', 'writeable', 'address',
+    list_display = ('id', 'name', 'description', 'unit', 'scaling', 'device_name', 'value_class', 'active', 'writeable', 'address',
                     'function_code_read',)
     list_editable = ('active', 'writeable',)
     list_display_links = ('name',)
