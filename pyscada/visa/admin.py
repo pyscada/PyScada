@@ -6,7 +6,7 @@ from pyscada.visa.models import VISAVariable
 from pyscada.visa.models import VISADevice
 from pyscada.visa.models import VISADeviceHandler, ExtendedVISADevice, ExtendedVISAVariable
 from pyscada.admin import DeviceAdmin
-from pyscada.admin import VariableAdmin
+from pyscada.admin import CoreVariableAdmin
 from pyscada.admin import admin_site
 from pyscada.models import Device, DeviceProtocol
 
@@ -21,6 +21,14 @@ class DeviceAdminInline(admin.StackedInline):
 
 
 class VISADeviceAdmin(DeviceAdmin):
+    list_display = DeviceAdmin.list_display + ('resource_name', 'instrument',)
+
+    def resource_name(self, instance):
+        return instance.visadevice.resource_name
+
+    def instrument(self, instance):
+        return instance.visadevice.instrument
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'protocol':
             kwargs['queryset'] = DeviceProtocol.objects.filter(pk=PROTOCOL_ID)
@@ -41,7 +49,18 @@ class VISAVariableAdminInline(admin.StackedInline):
     model = VISAVariable
 
 
-class VISAVariableAdmin(VariableAdmin):
+class VISAVariableAdmin(CoreVariableAdmin):
+    list_display = CoreVariableAdmin.list_display + ('device_property', 'variable_type',)
+
+    def device_property(self, instance):
+        return instance.visavariable.device_property
+
+    def variable_type(self, instance):
+        try:
+            return instance.visavariable.variable_type_choices[instance.visavariable.variable_type][1]
+        except TypeError:
+            return ""
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'device':
             kwargs['queryset'] = Device.objects.filter(protocol=PROTOCOL_ID)

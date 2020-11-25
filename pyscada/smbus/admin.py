@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from pyscada.admin import admin_site
 from pyscada.admin import DeviceAdmin
-from pyscada.admin import VariableAdmin
+from pyscada.admin import CoreVariableAdmin
 from pyscada.models import Device, DeviceProtocol
 
 from pyscada.smbus import PROTOCOL_ID
@@ -21,6 +21,19 @@ class SMBusDeviceAdminInline(admin.StackedInline):
 
 
 class SMBusDeviceAdmin(DeviceAdmin):
+    list_display = DeviceAdmin.list_display + ('instrument', 'port', 'address',)
+
+    def address(self, instance):
+        try:
+            return instance.smbusdevice.address_choices[instance.smbusdevice.address][1]
+        except TypeError:
+            return ""
+
+    def instrument(self, instance):
+        return instance.smbusdevice.instrument
+
+    def port(self, instance):
+        return instance.smbusdevice.port
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'protocol':
@@ -42,7 +55,12 @@ class SMBusVariableAdminInline(admin.StackedInline):
     model = SMBusVariable
 
 
-class SMBusVariableAdmin(VariableAdmin):
+class SMBusVariableAdmin(CoreVariableAdmin):
+    list_display = CoreVariableAdmin.list_display + ('information',)
+
+    def information(self, instance):
+        return instance.smbusvariable.information
+
     def name(self, instance):
         return instance.smbus_variable.name
 

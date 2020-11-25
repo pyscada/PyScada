@@ -22,7 +22,10 @@ class ModbusDeviceAdmin(DeviceAdmin):
     list_display = DeviceAdmin.list_display + ('protocol_modbus', 'framer', 'ip_address', 'port', 'unit_id')
 
     def protocol_modbus(self, instance):
-        return instance.modbusdevice.protocol_choices[instance.modbusdevice.protocol][1]
+        try:
+            return instance.modbusdevice.protocol_choices[instance.modbusdevice.protocol][1]
+        except TypeError:
+            return ""
 
     def framer(self, instance):
         try:
