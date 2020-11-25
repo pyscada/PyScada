@@ -24,7 +24,10 @@ class OneWireDeviceAdmin(DeviceAdmin):
 
     def adapter_type(self, instance):
         try:
-            return instance.onewiredevice.adapter_type_choices[instance.onewiredevice.adapter_type][1]
+            for choice in instance.onewiredevice.adapter_type_choices:
+                if choice[0] == instance.onewiredevice.adapter_type:
+                    return choice[1]
+            return ""
         except TypeError:
             return ""
 
@@ -59,7 +62,10 @@ class OneWireVariableAdmin(CoreVariableAdmin):
 
     def sensor_type(self, instance):
         try:
-            return instance.onewirevariable.sensor_type_choices[instance.onewirevariable.sensor_type][1]
+            for choice in instance.onewirevariable.sensor_type_choices:
+                if choice[0] == instance.onewirevariable.sensor_type:
+                    return choice[1]
+            return ""
         except TypeError:
             return ""
 

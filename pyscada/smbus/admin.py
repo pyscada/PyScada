@@ -25,7 +25,10 @@ class SMBusDeviceAdmin(DeviceAdmin):
 
     def address(self, instance):
         try:
-            return instance.smbusdevice.address_choices[instance.smbusdevice.address][1]
+            for choice in instance.smbusdevice.address_choices:
+                if choice[0] == instance.smbusdevice.address:
+                    return choice[1]
+            return ""
         except TypeError:
             return ""
 

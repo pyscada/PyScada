@@ -57,7 +57,10 @@ class VISAVariableAdmin(CoreVariableAdmin):
 
     def variable_type(self, instance):
         try:
-            return instance.visavariable.variable_type_choices[instance.visavariable.variable_type][1]
+            for choice in instance.visavariable.variable_type_choices:
+                if choice[0] == instance.visavariable.variable_type:
+                    return choice[1]
+            return ""
         except TypeError:
             return ""
 

@@ -23,13 +23,19 @@ class ModbusDeviceAdmin(DeviceAdmin):
 
     def protocol_modbus(self, instance):
         try:
-            return instance.modbusdevice.protocol_choices[instance.modbusdevice.protocol][1]
+            for choice in instance.modbusdevice.protocol_choices:
+                if choice[0] == instance.modbusdevice.protocol:
+                    return choice[1]
+            return ""
         except TypeError:
             return ""
 
     def framer(self, instance):
         try:
-            return instance.modbusdevice.framer_choices[instance.modbusdevice.framer][1]
+            for choice in instance.modbusdevice.framer_choices:
+                if choice[0] == instance.modbusdevice.framer:
+                    return choice[1]
+            return ""
         except TypeError:
             return ""
 

@@ -36,7 +36,10 @@ class SystemStatVariableAdmin(CoreVariableAdmin):
 
     def information(self, instance):
         try:
-            return instance.systemstatvariable.information_choices[instance.systemstatvariable.information][1]
+            for choice in instance.systemstatvariable.information_choices:
+                if choice[0] == instance.systemstatvariable.information:
+                    return choice[1]
+            return ""
         except TypeError:
             return ""
 
