@@ -5,7 +5,7 @@ from pyscada.modbus import PROTOCOL_ID
 from pyscada.modbus.models import ModbusDevice, ExtendedModbusDevice
 from pyscada.modbus.models import ModbusVariable, ExtendedModbusVariable
 from pyscada.admin import DeviceAdmin
-from pyscada.admin import VariableAdmin
+from pyscada.admin import CoreVariableAdmin
 from pyscada.admin import admin_site
 from pyscada.models import Device, DeviceProtocol
 from django.contrib import admin
@@ -19,7 +19,7 @@ class ModbusDeviceAdminInline(admin.StackedInline):
 
 
 class ModbusDeviceAdmin(DeviceAdmin):
-    list_display = ('id', 'short_name', 'description', 'protocol', 'active', 'polling_interval', 'protocol_modbus', 'framer', 'ip_address', 'port', 'unit_id')
+    list_display = DeviceAdmin.list_display + ('protocol_modbus', 'framer', 'ip_address', 'port', 'unit_id')
 
     def protocol_modbus(self, instance):
         return instance.modbusdevice.protocol_choices[instance.modbusdevice.protocol][1]
@@ -59,11 +59,8 @@ class ModbusVariableAdminInline(admin.StackedInline):
     model = ModbusVariable
 
 
-class ModbusVariableAdmin(VariableAdmin):
-    list_display = ('id', 'name', 'description', 'unit', 'scaling', 'device_name', 'value_class', 'active', 'writeable', 'address',
-                    'function_code_read',)
-    list_editable = ('active', 'writeable',)
-    list_display_links = ('name',)
+class ModbusVariableAdmin(CoreVariableAdmin):
+    list_display = CoreVariableAdmin.list_display + ('address', 'function_code_read',)
 
     def address(self, instance):
         return instance.modbusvariable.address

@@ -174,7 +174,7 @@ class VariableAdmin(admin.ModelAdmin):
 
 
 class CoreVariableAdmin(VariableAdmin):
-    list_display = ('id', 'name', 'description', 'unit', 'device_name', 'value_class', 'active', 'writeable',)
+    list_display = ('id', 'name', 'description', 'unit', 'scaling', 'device_name', 'value_class', 'active', 'writeable',)
     list_editable = ('active', 'writeable',)
     list_display_links = ('name',)
 
