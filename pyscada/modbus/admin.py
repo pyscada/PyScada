@@ -19,9 +19,9 @@ class ModbusDeviceAdminInline(admin.StackedInline):
 
 
 class ModbusDeviceAdmin(DeviceAdmin):
-    list_display = ('id', 'short_name', 'description', 'protocol', 'active', 'polling_interval', 'protocol', 'framer', 'ip_address', 'port', 'unit_id')
+    list_display = ('id', 'short_name', 'description', 'protocol', 'active', 'polling_interval', 'protocol_modbus', 'framer', 'ip_address', 'port', 'unit_id')
 
-    def protocol(self, instance):
+    def protocol_modbus(self, instance):
         return instance.modbusdevice.protocol
 
     def framer(self, instance):
