@@ -240,9 +240,9 @@ class Handler(GenericDevice):
         recovered_time_shift = dt[np.argmax(xcorr)]
 
         # force the phase shift to be in [-pi:pi]
-        recovered_phase_shift = -1 * 2 * np.pi * (((0.5 + recovered_time_shift / period) % 1.0) - 0.5)
-        recovered_phase_shift_before = -1 * 2 * np.pi * (((0.5 + dt[np.argmax(xcorr) - 1] / period) % 1.0) - 0.5)
-        recovered_phase_shift_after = -1 * 2 * np.pi * (((0.5 + dt[np.argmax(xcorr) + 1] / period) % 1.0) - 0.5)
+        recovered_phase_shift = 2 * np.pi * (((0.5 + recovered_time_shift / period) % 1.0) - 0.5)
+        recovered_phase_shift_before = 2 * np.pi * (((0.5 + dt[np.argmax(xcorr) - 1] / period) % 1.0) - 0.5)
+        recovered_phase_shift_after = 2 * np.pi * (((0.5 + dt[np.argmax(xcorr) + 1] / period) % 1.0) - 0.5)
         #logger.debug('phase - 1 = %s - phase = %s - phase + 1 = %s' %
         #             (recovered_phase_shift_before * 180 / np.pi, recovered_phase_shift * 180 / np.pi,
         #              recovered_phase_shift_after * 180 / np.pi))
