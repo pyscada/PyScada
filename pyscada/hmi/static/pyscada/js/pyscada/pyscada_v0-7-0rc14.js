@@ -1686,7 +1686,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
         flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series, options)
         set_chart_selection_mode();
         // update the plot
-        update(false);
+        update(true);
 
         //add info on mouse over a point and position of the mouse
         $(chart_container_id + ' .chart-placeholder').bind("plothover", function (event, pos, item) {
@@ -1729,59 +1729,59 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
             setCrosshairs(flotPlot, id);
 
         }).bind("mouseleave", function (event, pos, item) {
-            if(! flotPlot.getOptions().crosshair.locked) {
-                delCrosshairs(flotPlot);
-            }
+          if(! flotPlot.getOptions().crosshair.locked) {
+              delCrosshairs(flotPlot);
+          }
         }).bind("mousedown", function (e) {
-            var offset = flotPlot.getPlaceholder().offset();
-            var plotOffset = flotPlot.getPlotOffset();
-            pos={};
-            pos.x = clamp(0, e.pageX - offset.left - plotOffset.left, flotPlot.width());
-            pos.y = clamp(0, e.pageY - offset.top - plotOffset.top, flotPlot.height());
-			flotPlot.getOptions().crosshair.lastPositionMouseDown = pos
-		}).bind("mouseup", function (e) {
-			var offset = flotPlot.getPlaceholder().offset();
-            var plotOffset = flotPlot.getPlotOffset();
-            pos={};
-            pos.x = clamp(0, e.pageX - offset.left - plotOffset.left, flotPlot.width());
-            pos.y = clamp(0, e.pageY - offset.top - plotOffset.top, flotPlot.height());
-			old_pos = flotPlot.getOptions().crosshair.lastPositionMouseDown
-			if (flotPlot.getOptions().crosshair.locked) {
-			    flotPlot.getOptions().crosshair.lastPosition.x = pos.x
-			    flotPlot.getOptions().crosshair.lastPosition.y = pos.y
-			    unlockCrosshairs(flotPlot);
-                setCrosshairs(flotPlot, id);
-			} else if (pos.x == old_pos.x && pos.y == old_pos.y) {
-                setCrosshairs(flotPlot, id)
-                lockCrosshairs();
-			}
-		}).bind("plotselected", function(event, ranges) {
-            pOpt = flotPlot.getOptions();
-            if ($(chart_container_id + " .activate_zoom_y").is(':checked')) {
-                for (range in ranges) {
-                    if (~range.indexOf('y')) {
-                        if (range.match(/\d+/) != null) {
-                            y_number = range.match(/\d+/)[0];
-                            pOpt.yaxes[y_number-1].min = ranges[range].from;
-                            pOpt.yaxes[y_number-1].max = ranges[range].to;
-                            pOpt.yaxes[y_number-1].autoScale = "none";
-                        }else {
-                            pOpt.yaxes[0].min = ranges[range].from;
-                            pOpt.yaxes[0].max = ranges[range].to;
-                            pOpt.yaxes[0].autoScale = "none";
-                        }
-                    }
-                }
-                update(false);
-            }
-            pOpt = flotPlot.getOptions();
-            if ($(chart_container_id + " .activate_zoom_x").is(':checked') && ranges.xaxis != null) {
-                pOpt.xaxes[0].min = ranges.xaxis.from;
-                pOpt.xaxes[0].max = ranges.xaxis.to;
-                pOpt.xaxes[0].autoScale = "none";
-                update(false);
-            }
-            flotPlot.clearSelection();
+          var offset = flotPlot.getPlaceholder().offset();
+          var plotOffset = flotPlot.getPlotOffset();
+          pos={};
+          pos.x = clamp(0, e.pageX - offset.left - plotOffset.left, flotPlot.width());
+          pos.y = clamp(0, e.pageY - offset.top - plotOffset.top, flotPlot.height());
+          flotPlot.getOptions().crosshair.lastPositionMouseDown = pos
+    		}).bind("mouseup", function (e) {
+    			var offset = flotPlot.getPlaceholder().offset();
+          var plotOffset = flotPlot.getPlotOffset();
+          pos={};
+          pos.x = clamp(0, e.pageX - offset.left - plotOffset.left, flotPlot.width());
+          pos.y = clamp(0, e.pageY - offset.top - plotOffset.top, flotPlot.height());
+    			old_pos = flotPlot.getOptions().crosshair.lastPositionMouseDown
+    			if (flotPlot.getOptions().crosshair.locked) {
+    			    flotPlot.getOptions().crosshair.lastPosition.x = pos.x
+    			    flotPlot.getOptions().crosshair.lastPosition.y = pos.y
+    			    unlockCrosshairs(flotPlot);
+              setCrosshairs(flotPlot, id);
+    			} else if (pos.x == old_pos.x && pos.y == old_pos.y) {
+              setCrosshairs(flotPlot, id)
+              lockCrosshairs();
+    			}
+    		}).bind("plotselected", function(event, ranges) {
+          pOpt = flotPlot.getOptions();
+          if ($(chart_container_id + " .activate_zoom_y").is(':checked')) {
+              for (range in ranges) {
+                  if (~range.indexOf('y')) {
+                      if (range.match(/\d+/) != null) {
+                          y_number = range.match(/\d+/)[0];
+                          pOpt.yaxes[y_number-1].min = ranges[range].from;
+                          pOpt.yaxes[y_number-1].max = ranges[range].to;
+                          pOpt.yaxes[y_number-1].autoScale = "none";
+                      }else {
+                          pOpt.yaxes[0].min = ranges[range].from;
+                          pOpt.yaxes[0].max = ranges[range].to;
+                          pOpt.yaxes[0].autoScale = "none";
+                      }
+                  }
+              }
+              update(true);
+          }
+          pOpt = flotPlot.getOptions();
+          if ($(chart_container_id + " .activate_zoom_x").is(':checked') && ranges.xaxis != null) {
+              pOpt.xaxes[0].min = ranges.xaxis.from;
+              pOpt.xaxes[0].max = ranges.xaxis.to;
+              pOpt.xaxes[0].autoScale = "none";
+              update(true);
+          }
+          flotPlot.clearSelection();
         });
 
         // Since CSS transforms use the top-left corner of the label as the transform origin,
@@ -1878,12 +1878,12 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
             for (y in pOpt.yaxes){
                 pOpt.yaxes[y].autoScale = "loose";
             }
-            update(false);
+            update(true);
         });
         $(chart_container_id + " .btn.btn-default.chart-ZoomXToFit").click(function() {
             pOpt = flotPlot.getOptions();
             pOpt.xaxes[0].autoScale = "exact";
-            update(false);
+            update(true);
         });
     }
 
