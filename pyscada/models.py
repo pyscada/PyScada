@@ -1074,6 +1074,8 @@ class DeviceWriteTask(models.Model):
             return self.variable.name
         elif self.variable_property:
             return self.variable_property.variable.name + ' : ' + self.variable_property.name
+        else:
+            return self.id
 
 
 @python_2_unicode_compatible
@@ -1093,8 +1095,10 @@ class DeviceReadTask(models.Model):
             return self.variable.name
         elif self.variable_property:
             return self.variable_property.variable.name + ' : ' + self.variable_property.name
-        else:
+        elif self.device:
             return self.device.short_name
+        else:
+            return self.id
 
 
 @python_2_unicode_compatible
