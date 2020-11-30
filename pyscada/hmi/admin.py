@@ -83,6 +83,10 @@ class XYChartAdmin(admin.ModelAdmin):
     def name(self, instance):
         return instance.variables.name
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        kwargs['empty_label'] = "Time chart"
+        return super(XYChartAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+
 
 class PieForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
