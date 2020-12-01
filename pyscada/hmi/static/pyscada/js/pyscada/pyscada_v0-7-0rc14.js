@@ -1118,7 +1118,6 @@ function PyScadaPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSte
     }
 
     //Show interpolated value in legend
-
     function updateLegend() {
         var pos = flotPlot.c2p({left:flotPlot.getOptions().crosshair.lastPosition.x, top:flotPlot.getOptions().crosshair.lastPosition.y});
         var axes = flotPlot.getAxes();
@@ -1155,7 +1154,6 @@ function PyScadaPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSte
             }
         }
     }
-
 
     function prepare(){
         // prepare legend table sorter
@@ -1421,7 +1419,6 @@ function PyScadaPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSte
         });
     }
 
-
     function update(force){
         if(!prepared ){
             if($(chart_container_id).is(":visible")){
@@ -1548,7 +1545,7 @@ function PyScadaPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSte
                             if (yaxisUniqueScale) {yj = 1} else {yj = jk}
                             //plot Y with defferents axis
                             for (serie in old_series) {
-                              if (new_data_bool === false &&  new_data.length > 0 && key === old_series[serie]['key'] && new_data.length !== old_series[serie]['data'].length && (new_data[0][0] !== old_series[serie]['data'][0][0] || new_data[0][1] !== old_series[serie]['data'][0][1] || new_data[new_data.length-1][0] !== old_series[serie]['data'][old_series[serie]['data'].length-1][0] && new_data[new_data.length-1][1] !== old_series[serie]['data'][old_series[serie]['data'].length-1][-1] || chart_x_data[0][0] !== old_series[serie]['xdata'][0][0] || chart_x_data[0][1] !== old_series[serie]['xdata'][0][1] || chart_x_data[chart_x_data.length-1][0] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][0] && chart_x_data[chart_x_data.length-1][1] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][-1])) {
+                              if (new_data_bool === false && new_data.length > 0 && key === old_series[serie]['key'] && new_data.length !== old_series[serie]['data'].length && (new_data[0][0] !== old_series[serie]['data'][0][0] || new_data[0][1] !== old_series[serie]['data'][0][1] || new_data[new_data.length-1][0] !== old_series[serie]['data'][old_series[serie]['data'].length-1][0] && new_data[new_data.length-1][1] !== old_series[serie]['data'][old_series[serie]['data'].length-1][-1] || chart_x_data[0][0] !== old_series[serie]['xdata'][0][0] || chart_x_data[0][1] !== old_series[serie]['xdata'][0][1] || chart_x_data[chart_x_data.length-1][0] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][0] && chart_x_data[chart_x_data.length-1][1] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][-1])) {
                                 new_data_bool = true;
                               }
                             };
