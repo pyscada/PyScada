@@ -74,7 +74,6 @@ def view(request, link_title):
         visible_widget_list = Widget.objects.filter(page__in=page_list.iterator()).values_list('pk', flat=True)
         # visible_custom_html_panel_list = CustomHTMLPanel.objects.all().values_list('pk', flat=True)
         # visible_chart_list = Chart.objects.all().values_list('pk', flat=True)
-        # visible_xy_chart_list = XYChart.objects.all().values_list('pk', flat=True)
         visible_control_element_list = ControlItem.objects.all().values_list('pk', flat=True)
         visible_form_list = Form.objects.all().values_list('pk', flat=True)
         visible_dropdown_list = DropDown.objects.all().values_list('pk', flat=True)
@@ -92,8 +91,6 @@ def view(request, link_title):
         visible_custom_html_panel_list = CustomHTMLPanel.objects.filter(
             groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
         visible_chart_list = Chart.objects.filter(
-            groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
-        visible_xy_chart_list = XYChart.objects.filter(
             groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
         """
         visible_control_element_list = GroupDisplayPermission.objects.filter(
@@ -138,8 +135,6 @@ def view(request, link_title):
             if sbc is not None:
                 sidebar_content.append(dict(html=sbc, widget=widget))
             if widget.content.content_model == "pyscada.hmi.models.Chart":
-                has_chart = True
-            elif widget.content.content_model == "pyscada.hmi.models.XYChart":
                 has_chart = True
 
         widget_rows_html += widget_row_template.render(
@@ -328,9 +323,6 @@ def get_cache_data(request):
         active_variables = list(
             GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator()).values_list(
                 'charts__variables', flat=True))
-        active_variables += list(
-            GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator()).values_list(
-                'xy_charts__variables', flat=True))
         active_variables += list(
             GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator()).values_list(
                 'control_items__variable', flat=True))

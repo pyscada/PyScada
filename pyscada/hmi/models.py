@@ -230,7 +230,10 @@ class Chart(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
     x_axis_label = models.CharField(max_length=400, default='', blank=True)
+    x_axis_var = models.ForeignKey(Variable, default=None, related_name='x_axis_var', null=True, blank=True,
+                                   on_delete=models.SET_NULL)
     x_axis_ticks = models.PositiveSmallIntegerField(default=6)
+    x_axis_linlog = models.BooleanField(default=False, help_text="False->Lin / True->Log")
     y_axis_label = models.CharField(max_length=400, default='', blank=True)
     y_axis_min = models.FloatField(default=0)
     y_axis_max = models.FloatField(default=100)
@@ -263,47 +266,6 @@ class Chart(WidgetContentModel):
         sidebar_template = get_template('chart_legend.html')
         main_content = main_template.render(dict(chart=self, widget_pk=widget_pk))
         sidebar_content = sidebar_template.render(dict(chart=self, widget_pk=widget_pk))
-        return main_content, sidebar_content
-
-
-@python_2_unicode_compatible
-class XYChart(WidgetContentModel):
-    id = models.AutoField(primary_key=True)
-    title = models.CharField(max_length=400, default='')
-    x_axis_label = models.CharField(max_length=400, default='', blank=True)
-    x_axis_var = models.ForeignKey(Variable, default=None, related_name='x_axis_var', null=True,
-                                   on_delete=models.SET_NULL)
-    x_axis_linlog = models.BooleanField(default=False, help_text="False->Lin / True->Log")
-    y_axis_label = models.CharField(max_length=400, default='', blank=True)
-    show_plot_points = models.BooleanField(default=False, help_text="Show the plots points")
-    show_plot_lines_choices = (
-        (0, 'No'),
-        (1, 'Yes'),
-        (2, 'Yes as steps'),)
-    show_plot_lines = models.PositiveSmallIntegerField(default=1, help_text="Show the plot lines",
-                                                       choices=show_plot_lines_choices)
-    y_axis_uniquescale = models.BooleanField(default=True, help_text="To have a unique scale for all the y axis")
-    variables = models.ManyToManyField(Variable, related_name='variables_xy_chart')
-
-    def __str__(self):
-        return text_type(str(self.id) + ': ' + self.title)
-
-    def visible(self):
-        return True
-
-    def variables_list(self, exclude_list=[]):
-        return [item.pk for item in self.variables.exclude(pk__in=exclude_list)]
-
-    def gen_html(self, **kwargs):
-        """
-
-        :return: main panel html and sidebar html as
-        """
-        widget_pk = kwargs['widget_pk'] if 'widget_pk' in kwargs else 0
-        main_template = get_template('xy_chart.html')
-        sidebar_template = get_template('xy_chart_legend.html')
-        main_content = main_template.render(dict(xy_chart=self, widget_pk=widget_pk))
-        sidebar_content = sidebar_template.render(dict(xy_chart=self, widget_pk=widget_pk))
         return main_content, sidebar_content
 
 
@@ -689,7 +651,6 @@ class GroupDisplayPermission(models.Model):
     pages = models.ManyToManyField(Page, blank=True)
     sliding_panel_menus = models.ManyToManyField(SlidingPanelMenu, blank=True)
     charts = models.ManyToManyField(Chart, blank=True)
-    xy_charts = models.ManyToManyField(XYChart, blank=True)
     control_items = models.ManyToManyField(ControlItem, blank=True)
     forms = models.ManyToManyField(Form, blank=True)
     dropdowns = models.ManyToManyField(DropDown, blank=True)

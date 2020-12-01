@@ -46,7 +46,6 @@ var FETCH_DATA_PENDING = 0;
 var INIT_STATUS_VARIABLES_DONE = false;
 var INIT_CHART_VARIABLES_DONE = false;
 var INIT_CHART_VARIABLES_COUNT = 0;
-var X_AXIS = 0; // id of xaxis for XY charts
 // the code
 var debug = 0;
 var DataFetchingProcessCount = 0;
@@ -971,15 +970,10 @@ function timeline_drag( event, ui ) {
     update_timeline();
 }
 
-function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
+function PyScadaPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
     var options = {
         legend: {
-            position: "nw",
             show: false,
-            container: null,
-            //container: document.getElementById("legendContainer"),
-            //container: $(".legendContainer")[0],
-            //container: $('#chart-legend-' + id + ' .legend')[0],
         },
         series: {
             shadowSize: 0,
@@ -1001,12 +995,13 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
             },
         },
         xaxis: {
-            mode: "time",
-            ticks: $('#chart-container-'+id).data('xaxisTicks'),
+            mode: (xaxisVarId == null ? "time" : (xaxisLinLog == true ? "log" : null)),
+            ticks: (xaxisVarId == null ? $('#chart-container-'+id).data('xaxisTicks') : null),
             timeformat: "%d/%m/%Y<br>%H:%M:%S",
             timezone: "browser",
             timeBase: "milliseconds",
-            autoScale: "none"
+            autoScale: (xaxisVarId == null ? "none" : "exact"),
+            showTickLabels: (xaxisVarId == null ? "major" : "all")
         },
         yaxis: {
             position: "left",
@@ -1015,6 +1010,7 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
             min: null,
             max: null,
         },
+        yaxes: [],
         selection: {
             mode: "y"
         },
@@ -1025,6 +1021,7 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
                 bottom: 8,
                 left: 20
             },
+            borderWidth: 0,
             hoverable: true,
             clickable: true
         },
@@ -1070,6 +1067,7 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
     plot.getId				= function () {return id};
     plot.getChartContainerId= function () {return chart_container_id};
     // init data
+    k=1
     $.each($(legend_table_id + ' .variable-config'),function(key,val){
         val_inst = $(val);
         variable_name = val_inst.data('name');
@@ -1086,7 +1084,38 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
                 variables[variable_key].unit = val_inst.find(".legendUnit").text().replace(/\s/g, '');
             }
         });
+        if (options.yaxes[k-1] == null) {
+            options.yaxes[k-1] = {};
+        };
+        if(k%2){pos="left";}else{pos="right";};
+        tf = function (value, axis) {
+            return value.toFixed(axis.tickDecimals) + ((typeof axis.options.unit != "undefined") ? axis.options.unit : '');
+        };
+        if (variables[variable_key].unit != "") {
+            lb = variables[variable_key].label.replace(/\s/g, '') + " (" + variables[variable_key].unit + ")";
+        }else{
+            lb = variables[variable_key].label.replace(/\s/g, '');
+        }
+        options.yaxes[k-1].position = pos;
+        options.yaxes[k-1].tickFormatter = tf;
+        if (yaxisUniqueScale == false) {
+            options.yaxes[k-1].axisLabel = lb;
+        }
+        if (yaxisUniqueScale == false || $(legend_table_id + ' .variable-config').length == 1) {
+            options.yaxes[k-1].unit = variables[variable_key].unit;
+        }else {
+            options.yaxes[k-1].unit = ""
+        }
+        options.yaxes[k-1].labelWidth = null;
+        options.yaxes[k-1].reserveSpace = false;
+        k += 1;
     });
+
+    function linearInterpolation (x, x0, y0, x1, y1) {
+      var a = (y1 - y0) / (x1 - x0)
+      var b = -a * x0 + y0
+      return a * x + b
+    }
 
     //Show interpolated value in legend
 
@@ -1172,7 +1201,7 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
         flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series, options);
         set_chart_selection_mode();
         // update the plot
-        update(false);
+        update(true);
 
         //add info on mouse over a point and position of the mouse
         $(chart_container_id + ' .chart-placeholder').bind("plothover", function (event, pos, item) {
@@ -1265,523 +1294,21 @@ function PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
             }
             flotPlot.clearSelection();
             if ($(chart_container_id + " .activate_zoom_x").is(':checked') && ranges.xaxis != null) {
-                DATA_DISPLAY_TO_TIMESTAMP = ((DATA_TO_TIMESTAMP == ranges.xaxis.to) ? DATA_DISPLAY_TO_TIMESTAMP : ranges.xaxis.to);
-                DATA_DISPLAY_FROM_TIMESTAMP = ((DATA_FROM_TIMESTAMP == ranges.xaxis.from) ? DATA_DISPLAY_FROM_TIMESTAMP : ranges.xaxis.from);
-                if (DATA_DISPLAY_TO_TIMESTAMP < 0 && DATA_DISPLAY_FROM_TIMESTAMP < 0) {DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP}
-                else if (DATA_DISPLAY_TO_TIMESTAMP < 0) {DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_DISPLAY_FROM_TIMESTAMP}
-                else if (DATA_DISPLAY_FROM_TIMESTAMP < 0) {DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP - DATA_FROM_TIMESTAMP}
-                else {DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP-DATA_DISPLAY_FROM_TIMESTAMP};
-                set_x_axes();
-            }
-        });
-
-        // Since CSS transforms use the top-left corner of the label as the transform origin,
-        // we need to center the y-axis label by shifting it down by half its width.
-        // Subtract 20 to factor the chart's bottom margin into the centering.
-        var chartTitle = $(chart_container_id + ' .chartTitle');
-        chartTitle.css("margin-left", -chartTitle.width() / 2);
-        var xaxisLabel = $(chart_container_id + ' .axisLabel.xaxisLabel');
-        xaxisLabel.css("margin-left", -xaxisLabel.width() / 2);
-        var yaxisLabel = $(chart_container_id + ' .axisLabel.yaxisLabel');
-        yaxisLabel.css("margin-top", yaxisLabel.width() / 2 - 20);
-
-        // The download function takes a CSV string, the filename and mimeType as parameters
-        // Scroll/look down at the bottom of this snippet to see how download is called
-        var download = function(content, fileName, mimeType) {
-            var a = document.createElement('a');
-            mimeType = mimeType || 'application/octet-stream';
-
-            if (mimeType == 'image/png' && 'download' in a) {
-                a.href = content;
-                a.setAttribute('download', fileName);
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            } else if (navigator.msSaveBlob) { // IE10
-                navigator.msSaveBlob(new Blob([content], {
-                type: mimeType
-                }), fileName);
-            } else if (URL && 'download' in a) { //html5 A[download]
-                a.href = URL.createObjectURL(new Blob([content], {
-                  type: mimeType
-                }));
-                a.setAttribute('download', fileName);
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            } else {
-                location.href = 'data:application/octet-stream,' + encodeURIComponent(content); // only this mime type is supported
-            }
-        }
-
-        $(chart_container_id + " .btn.btn-default.chart-save-csv").click(function() {
-            // Example data given in question text
-            var data = [['Label'], ['Unité'], ['Couleur'], ['Données']];
-            mode = flotPlot.getXAxes()[0].options.mode;
-            for (s=0; s<series.length; s++){
-                data[0][(s+1)*2-1] = "x";
-                data[1][(s+1)*2-1] = (mode = "time") ? "ms" : "";
-                data[2][(s+1)*2-1] = "";
-                data[0][(s+1)*2] = series[s].label;
-                data[1][(s+1)*2] = series[s].unit;
-                data[2][(s+1)*2] = series[s].color;
-                for (l=0; l<series[s].data.length; l++) {
-                    data.push([]);
-                    data[3+l][(s+1)*2-1] = series[s].data[l][0]
-                    data[3+l][(s+1)*2] = series[s].data[l][1]
-                }
-            }
-
-            // Building the CSV from the Data two-dimensional array
-            // Each column is separated by ";" and new line "\n" for next row
-            var csvContent = '';
-            data.forEach(function(infoArray, index) {
-              dataString = infoArray.join(';');
-              csvContent += index < data.length ? dataString + '\n' : dataString;
-            });
-
-            download(csvContent, 'download.csv', 'text/csv;encoding:utf-8');
-        });
-
-        $(chart_container_id + " .btn.btn-default.chart-save-picture").click(function() {
-            var originalCanvas1 = $(chart_container_id + ' .flot-base')[0]
-            var originalCanvas2 = $(chart_container_id + ' .flot-overlay')[0]
-            var originalCanvas3 = $(chart_container_id + ' .flot-svg')[0].children[0]
-            var ctx = originalCanvas2.getContext("2d");
-            ctx.fillStyle = "#FFFFFF";
-            ctx.fillRect(0, 0, originalCanvas2.width, originalCanvas2.height);
-            var sources = [originalCanvas2, originalCanvas1, originalCanvas3]
-            var destinationCanvas = document.getElementById("myCanvas");
-            $.plot.composeImages(sources, destinationCanvas)
-            //setTimeout(function() {window.open($('#myCanvas')[0].toDataURL('image/png'));}, 500);
-            setTimeout(function() {download($('#myCanvas')[0].toDataURL('image/png'), 'image.png', 'image/png');}, 500);
-            ctx.fillRect(0, 0, 0, 0);
-        });
-
-        $(chart_container_id + " .btn.btn-default.chart-ResetSelection").click(function() {
-            e = jQuery.Event( "click" );
-            jQuery(chart_container_id + " .btn.btn-default.chart-ZoomYToFit").trigger(e);
-            jQuery(chart_container_id + " .btn.btn-default.chart-ZoomXToFit").trigger(e);
-        });
-
-        $(chart_container_id + " .btn.btn-default.chart-ZoomYToFit").click(function() {
-            pOpt = flotPlot.getOptions();
-            pOpt.yaxes[0].autoScale = "loose";
-            update(false);
-        });
-        $(chart_container_id + " .btn.btn-default.chart-ZoomXToFit").click(function() {
-            DATA_DISPLAY_FROM_TIMESTAMP = -1;
-            DATA_DISPLAY_TO_TIMESTAMP = -1;
-            DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
-            set_x_axes();
-        });
-    }
-
-
-    function update(force){
-        if(!prepared ){
-            if($(chart_container_id).is(":visible")){
-                prepared = true;
-                prepare();
-            }else{
-                return;
-            }
-        }
-        if($(chart_container_id).is(":visible") || force){
-            // only update if plot is visible
-            // add the selected data series to the "series" variable
-            old_series = series;
-            new_data = false;
-            series = [];
-            start_id = 0;
-            for (var key in keys){
-                key = keys[key];
-                if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object'){
-                    if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
-                        start_id = find_index_sub_gte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
-                        stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
-                    }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
-                        start_id = find_index_sub_gte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
-                        stop_id = find_index_sub_lte(DATA[key],DATA_TO_TIMESTAMP,0);
-                    }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
-                        if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
-                        start_id = find_index_sub_gte(DATA[key],DATA_FROM_TIMESTAMP,0);
-                        stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
-                    }else {
-                        start_id = find_index_sub_gte(DATA[key],DATA_FROM_TIMESTAMP,0);
-                        stop_id = find_index_sub_lte(DATA[key],DATA_TO_TIMESTAMP,0);
-                    }
-                    if (typeof(start_id) == "undefined") {
-                        continue;
-                    }else {
-                        chart_data = DATA[key].slice(start_id,stop_id+1);
-                    };
-                    // append last value
-                    //if (chart_data.length >= 1){
-                    //    if (DATA_DISPLAY_TO_TIMESTAMP < 0){
-                    //        chart_data.push([DATA_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
-                    //    }else{
-                    //        chart_data.push([DATA_DISPLAY_TO_TIMESTAMP,chart_data[chart_data.length-1][1]]);
-                    //    }
-                    //}
-                    for (serie in old_series) {
-                      if (new_data === false && chart_data.length > 0 && key === old_series[serie]['key'] && chart_data.length !== old_series[serie]['data'].length && (chart_data[0][0] !== old_series[serie]['data'][0][0] || chart_data[0][1] !== old_series[serie]['data'][0][1] || chart_data[chart_data.length-1][0] !== old_series[serie]['data'][old_series[serie]['data'].length-1][0] && chart_data[chart_data.length-1][1] !== old_series[serie]['data'][old_series[serie]['data'].length-1][-1])) {
-                        new_data = true;
-                      }
-                    };
-                    series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":variables[key].label,"unit":variables[key].unit, "key":key});
-                }
-            }
-
-            if (new_data || old_series.length == 0 || force) {
-              // update x window
-              pOpt = flotPlot.getOptions();
-
-              if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
-                  pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
-                  pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
-
-              }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
-                  pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
-                  pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
-              }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
-                  pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
-                  pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
-              }else{
-                  pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
-                  pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
-              }
-
-              pOpt.xaxes[0].key=0
-
-              // update flot plot
-              flotPlot.setData(series);
-              flotPlot.setupGrid(true);
-              flotPlot.draw();
-            }
-        }
-    }
-
-    function resize() {
-        if (typeof(flotPlot) !== 'undefined') {
-            flotPlot.resize();
-            flotPlot.setupGrid(true);
-            flotPlot.draw();
-        }
-    }
-}
-
-function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, yaxisUniqueScale){
-    var options = {
-        yaxes: [],
-        xaxis: {
-            mode: (xaxisLinLog == true ? "log" : null),
-            autoScale: "exact",
-            showTickLabels: "all"
-        },
-        series: {
-            lines: {
-                show: plotLines,
-                lineWidth: 3,
-                steps: lineSteps,
-            },
-            points: {
-                show: plotPoints,
-                radius: 4,
-                symbol: "cross",
-            }
-        },
-        legend: {
-            show: false
-        },
-        selection: {
-            mode: "y"
-        },
-        grid: {
-            labelMargin: 10,
-            margin: {
-                top: 20,
-                bottom: 8,
-                left: 20
-            },
-            borderWidth: 0,
-            //to show points informations
-            hoverable: true,
-            clickable: true
-        },
-        axisvalues: {
-            mode: "xy",
-        },
-        crosshair: {
-            mode: "xy"
-        },
-    },
-    series = [],		// just the active data series
-    keys   = [],		// list of variable keys (ids)
-    variable_names = [], // list of all variable names
-    flotPlot,			// handle to plot
-    prepared = false,	//
-    legend_id = '#chart-legend-' + id,
-    legend_table_id = '#chart-legend-table-' + id,
-    chart_container_id = '#xy-chart-container-'+id,
-    legend_checkbox_id = '#chart-legend-checkbox-' + id + '-',
-    legend_checkbox_status_id = '#chart-legend-checkbox-status-' + id + '-',
-    legend_value_id = '#chart-legend-value-' + id + '-',
-    variables = {},
-    plot = this;
-
-
-    // public functions
-    plot.update 			= update;
-    plot.prepare 			= prepare;
-    plot.resize 			= resize;
-    plot.updateLegend 		= updateLegend;
-    plot.getSeries 			= function () { return series };
-    plot.getFlotObject		= function () { return flotPlot};
-    plot.getKeys			= function (){ return keys};
-    plot.getVariableNames	= function (){ return variable_names};
-
-    plot.getInitStatus		= function () { if(InitDone){return InitRetry}else{return false}};
-    plot.getId				= function () {return id};
-    plot.getChartContainerId= function () {return chart_container_id};
-    // init data
-    k=1
-    $.each($(legend_table_id + ' .variable-config'),function(key,val){
-        val_inst = $(val);
-        variable_name = val_inst.data('name');
-        variable_key = val_inst.data('key');
-        variables[variable_key] = {'color':val_inst.data('color'),'yaxis':k}
-        keys.push(variable_key);
-        variable_names.push(variable_name);
-        unit = "";
-        label = "";
-        $.each($(legend_table_id + ' .legendSeries'),function(kkey,val){
-            val_inst = $(val);
-            if (variable_key == val_inst.find(".variable-config").data('key')){
-                variables[variable_key].label = val_inst.find(".legendLabel").text().replace(/\s/g, '');
-                variables[variable_key].unit = val_inst.find(".legendUnit").text().replace(/\s/g, '');
-            }
-        });
-        if (options.yaxes[k-1] == null) {
-            options.yaxes[k-1] = {};
-        };
-        if(k%2){pos="left";}else{pos="right";};
-        tf = function (value, axis) {
-            return value.toFixed(axis.tickDecimals) + ((typeof axis.options.unit != "undefined") ? axis.options.unit : '');
-        };
-        if (variables[variable_key].unit != "") {
-            lb = variables[variable_key].label.replace(/\s/g, '') + " (" + variables[variable_key].unit + ")";
-        }else{
-            lb = variables[variable_key].label.replace(/\s/g, '');
-        }
-        options.yaxes[k-1].position = pos;
-        options.yaxes[k-1].tickFormatter = tf;
-        if (yaxisUniqueScale == false) {
-            options.yaxes[k-1].axisLabel = lb;
-            //options.yaxes[k-1].axisLabelUseCanvas = true;
-            //options.yaxes[k-1].axisLabelFontSizePixels = 12;
-            //options.yaxes[k-1].axisLabelFontFamily = 'Verdana, Arial';
-            //options.yaxes[k-1].axisLabelPadding = 3;
-            //options.yaxes[k-1].axisLabelColour = variables[variable_key]['color'];
-        }
-        if (yaxisUniqueScale == false || $(legend_table_id + ' .variable-config').length == 1) {
-            options.yaxes[k-1].unit = variables[variable_key].unit;
-        }else {
-            options.yaxes[k-1].unit = ""
-        }
-        options.yaxes[k-1].labelWidth = null;
-        options.yaxes[k-1].reserveSpace = false;
-        k += 1;
-    });
-
-
-    function linearInterpolation (x, x0, y0, x1, y1) {
-      var a = (y1 - y0) / (x1 - x0)
-      var b = -a * x0 + y0
-      return a * x + b
-    }
-
-    //Show interpolated value in legend
-
-    function updateLegend() {
-        var pos = flotPlot.c2p({left:flotPlot.getOptions().crosshair.lastPosition.x, top:flotPlot.getOptions().crosshair.lastPosition.y});
-        var axes = flotPlot.getAxes();
-
-        if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max ||
-            pos.y < axes.yaxis.min || pos.y > axes.yaxis.max) {
-            return;
-        }
-
-        var i, j, dataset = flotPlot.getData();
-
-        for (i = 0; i < dataset.length; ++i) {
-            var series = dataset[i];
-            var key = series.key
-            // Find the nearest points, x-wise
-            for (j = 0; j < series.data.length; ++j) {
-                if (series.data[j][0] > pos.x) {
-                    break;
-                }
-            }
-            // Now Interpolate
-            var y,
-                p1 = series.data[j - 1],
-                p2 = series.data[j];
-            if (p1 == null) {
-                y = p2[1];
-            } else if (p2 == null) {
-                y = p1[1];
-            } else {
-                y = p1[1] + (p2[1] - p1[1]) * (pos.x - p1[0]) / (p2[0] - p1[0]);
-            }
-            if(typeof(y) === "number"){$(legend_value_id+key).text(y.toFixed(2));};
-        }
-    }
-
-
-    function prepare(){
-        // prepare legend table sorter
-        $(legend_table_id).tablesorter({sortList: [[2,0]]});
-
-        // add onchange function to every checkbox in legend
-        $.each(variables,function(key,val){
-            $(legend_checkbox_id+key).change(function() {
-                flotPlot.clearTextCache();
-                plot.update(true);
-                if ($(legend_checkbox_id+key).is(':checked')){
-                    $(legend_checkbox_status_id+key).html(1);
-                }else{
-                    $(legend_checkbox_status_id+key).html(0);
-                }
-            });
-        });
-        //
-        $(legend_checkbox_id+'make_all_none').change(function() {
-            if ($(legend_checkbox_id+'make_all_none').is(':checked')){
-                $.each(variables,function(key,val){
-                    $(legend_checkbox_status_id+key).html(1);
-                    $(legend_checkbox_id+key)[0].checked = true;
-                });
-            }else{
-                $.each(variables,function(key,val){
-                    $(legend_checkbox_status_id+key).html(0);
-                    $(legend_checkbox_id+key)[0].checked = false;
-                 });
-            }
-            flotPlot.clearTextCache();
-            plot.update(true);
-         });
-        // expand the chart to the maximum width
-        main_chart_area  = $(chart_container_id).closest('.main-chart-area');
-
-
-        contentAreaHeight = main_chart_area.parent().height();
-        mainChartAreaHeight = main_chart_area.height();
-
-        if (contentAreaHeight>mainChartAreaHeight){
-            main_chart_area.height(contentAreaHeight);
-        }
-
-        //
-        flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series, options)
-        set_chart_selection_mode();
-        // update the plot
-        update(true);
-
-        //add info on mouse over a point and position of the mouse
-        $(chart_container_id + ' .chart-placeholder').bind("plothover", function (event, pos, item) {
-            if(!pos) {
-                //$(".axes-tooltips").hide();
-            }
-            for (axis in pos) {
-                if (!$("#" + axis + "-tooltip").length) {
-                    $("<div id='" + axis + "-tooltip' class='axes-tooltips'></div>").css({
-                        position: "absolute",
-                        display: "none",
-                        border: "1px solid #fdd",
-                        padding: "2px",
-                        "background-color": "#fee",
-                        opacity: 0.90,
-                        "z-index": 90,
-                        "font-size": "14px"
-                    }).appendTo("body");
-                }
-            }
-            if (item && typeof item.datapoint != 'undefined' && item.datapoint.length > 1) {
-                opts = item.series.xaxis.options
-                if (opts.mode == "time") {
-                    dG = $.plot.dateGenerator(Number(item.datapoint[0].toFixed(0)), opts)
-                    dF = $.plot.formatDate(dG, opts.timeformat, opts.monthNames, opts.dayNames);
-                    var x = dF,
-                        y = item.datapoint[1].toFixed(2);
+                if (xaxisVarId == null) {
+                    DATA_DISPLAY_TO_TIMESTAMP = ((DATA_TO_TIMESTAMP == ranges.xaxis.to) ? DATA_DISPLAY_TO_TIMESTAMP : ranges.xaxis.to);
+                    DATA_DISPLAY_FROM_TIMESTAMP = ((DATA_FROM_TIMESTAMP == ranges.xaxis.from) ? DATA_DISPLAY_FROM_TIMESTAMP : ranges.xaxis.from);
+                    if (DATA_DISPLAY_TO_TIMESTAMP < 0 && DATA_DISPLAY_FROM_TIMESTAMP < 0) {DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP}
+                    else if (DATA_DISPLAY_TO_TIMESTAMP < 0) {DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_DISPLAY_FROM_TIMESTAMP}
+                    else if (DATA_DISPLAY_FROM_TIMESTAMP < 0) {DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP - DATA_FROM_TIMESTAMP}
+                    else {DATA_DISPLAY_WINDOW = DATA_DISPLAY_TO_TIMESTAMP-DATA_DISPLAY_FROM_TIMESTAMP};
+                    set_x_axes();
                 }else {
-                    var x = item.datapoint[0].toFixed(2),
-                        y = item.datapoint[1].toFixed(2);
+                  pOpt.xaxes[0].min = ranges.xaxis.from;
+	              pOpt.xaxes[0].max = ranges.xaxis.to;
+	              pOpt.xaxes[0].autoScale = "none";
+	              update(true);
                 }
-                $("#tooltip").html(item.series.label + "(" + x + ") = " + y + " " + item.series.unit)
-                    .css({top: item.pageY+5, left: item.pageX+5, "z-index": 91})
-                    .show();
-                    //.fadeIn(200);
-            } else {
-                $("#tooltip").hide();
             }
-
-            setCrosshairs(flotPlot, id);
-
-        }).bind("mouseleave", function (event, pos, item) {
-          if(! flotPlot.getOptions().crosshair.locked) {
-              delCrosshairs(flotPlot);
-          }
-        }).bind("mousedown", function (e) {
-          var offset = flotPlot.getPlaceholder().offset();
-          var plotOffset = flotPlot.getPlotOffset();
-          pos={};
-          pos.x = clamp(0, e.pageX - offset.left - plotOffset.left, flotPlot.width());
-          pos.y = clamp(0, e.pageY - offset.top - plotOffset.top, flotPlot.height());
-          flotPlot.getOptions().crosshair.lastPositionMouseDown = pos
-    		}).bind("mouseup", function (e) {
-    			var offset = flotPlot.getPlaceholder().offset();
-          var plotOffset = flotPlot.getPlotOffset();
-          pos={};
-          pos.x = clamp(0, e.pageX - offset.left - plotOffset.left, flotPlot.width());
-          pos.y = clamp(0, e.pageY - offset.top - plotOffset.top, flotPlot.height());
-    			old_pos = flotPlot.getOptions().crosshair.lastPositionMouseDown
-    			if (flotPlot.getOptions().crosshair.locked) {
-    			    flotPlot.getOptions().crosshair.lastPosition.x = pos.x
-    			    flotPlot.getOptions().crosshair.lastPosition.y = pos.y
-    			    unlockCrosshairs(flotPlot);
-              setCrosshairs(flotPlot, id);
-    			} else if (pos.x == old_pos.x && pos.y == old_pos.y) {
-              setCrosshairs(flotPlot, id)
-              lockCrosshairs();
-    			}
-    		}).bind("plotselected", function(event, ranges) {
-          pOpt = flotPlot.getOptions();
-          if ($(chart_container_id + " .activate_zoom_y").is(':checked')) {
-              for (range in ranges) {
-                  if (~range.indexOf('y')) {
-                      if (range.match(/\d+/) != null) {
-                          y_number = range.match(/\d+/)[0];
-                          pOpt.yaxes[y_number-1].min = ranges[range].from;
-                          pOpt.yaxes[y_number-1].max = ranges[range].to;
-                          pOpt.yaxes[y_number-1].autoScale = "none";
-                      }else {
-                          pOpt.yaxes[0].min = ranges[range].from;
-                          pOpt.yaxes[0].max = ranges[range].to;
-                          pOpt.yaxes[0].autoScale = "none";
-                      }
-                  }
-              }
-              update(true);
-          }
-          pOpt = flotPlot.getOptions();
-          if ($(chart_container_id + " .activate_zoom_x").is(':checked') && ranges.xaxis != null) {
-              pOpt.xaxes[0].min = ranges.xaxis.from;
-              pOpt.xaxes[0].max = ranges.xaxis.to;
-              pOpt.xaxes[0].autoScale = "none";
-              update(true);
-          }
-          flotPlot.clearSelection();
         });
 
         // Since CSS transforms use the top-left corner of the label as the transform origin,
@@ -1881,9 +1408,16 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
             update(true);
         });
         $(chart_container_id + " .btn.btn-default.chart-ZoomXToFit").click(function() {
-            pOpt = flotPlot.getOptions();
-            pOpt.xaxes[0].autoScale = "exact";
-            update(true);
+            if (xaxisVarId == null) {
+                DATA_DISPLAY_FROM_TIMESTAMP = -1;
+                DATA_DISPLAY_TO_TIMESTAMP = -1;
+                DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
+                set_x_axes();
+            }else {
+                pOpt = flotPlot.getOptions();
+	            pOpt.xaxes[0].autoScale = "exact";
+	            update(true);
+            }
         });
     }
 
@@ -1909,7 +1443,7 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
             for (var key in keys){
                 key = keys[key];
                 xkey = xaxisVarId
-                if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object' && typeof(DATA[xkey]) === 'object'){
+                if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object'){
                     if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
                         start_id = find_index_sub_gte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
                         stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0);
@@ -1929,42 +1463,61 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
                     }else {
                         chart_data = DATA[key].slice(start_id,stop_id+1);
                     };
-                    if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
-                        start_xid = find_index_sub_gte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
-                        stop_xid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_TO_TIMESTAMP,0);
-                    }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
-                        start_xid = find_index_sub_gte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
-                        stop_xid = find_index_sub_lte(DATA[xkey],DATA_TO_TIMESTAMP,0);
-                    }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
-                        if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
-                        start_xid = find_index_sub_gte(DATA[xkey],DATA_FROM_TIMESTAMP,0);
-                        stop_xid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_TO_TIMESTAMP,0);
-                    }else {
-                        start_xid = find_index_sub_gte(DATA[xkey],DATA_FROM_TIMESTAMP,0);
-                        stop_xid = find_index_sub_lte(DATA[xkey],DATA_TO_TIMESTAMP,0);
-                    }
-                    if (typeof(start_xid) == "undefined") {
-                        continue;
-                    }else {
-                        chart_x_data = DATA[xkey].slice(start_xid,stop_xid+1);
-                    };
-                    new_data=[];
-                    if (chart_data.length > 0 && chart_x_data.length > 0){
-                        chart_data_min = chart_data[0][1]
-                        chart_data_max = chart_data[0][1]
-                        x_data_min = chart_x_data[0][1]
-                        x_data_max = chart_x_data[0][1]
-                        for (iy=0; iy < chart_data.length; iy++) {
-                            ix=0;
-                            xf=0;
-                            if (chart_x_data.length > 1){
-                                while (ix < chart_x_data.length && xf == 0) {
-                                    if (chart_x_data[ix][0] >= chart_data[iy][0]) {
-                                        if (ix == 0) {
-                                            fx = linearInterpolation(chart_data[iy][0], chart_x_data[ix][0], chart_x_data[ix][1], chart_x_data[ix+1][0], chart_x_data[ix+1][1]);
-                                        }else {
-                                            fx = linearInterpolation(chart_data[iy][0], chart_x_data[ix-1][0], chart_x_data[ix-1][1], chart_x_data[ix][0], chart_x_data[ix][1]);
+                    if (xkey == null) {
+                        for (serie in old_series) {
+	                      if (new_data_bool === false && chart_data.length > 0 && key === old_series[serie]['key'] && chart_data.length !== old_series[serie]['data'].length && (chart_data[0][0] !== old_series[serie]['data'][0][0] || chart_data[0][1] !== old_series[serie]['data'][0][1] || chart_data[chart_data.length-1][0] !== old_series[serie]['data'][old_series[serie]['data'].length-1][0] && chart_data[chart_data.length-1][1] !== old_series[serie]['data'][old_series[serie]['data'].length-1][-1])) {
+	                        new_data_bool = true;
+	                      }
+                        };
+                        series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":variables[key].label,"unit":variables[key].unit, "key":key});
+                    }else if (xkey !== null && typeof(DATA[xkey]) === 'object'){
+                        if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
+                            start_xid = find_index_sub_gte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                            stop_xid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_TO_TIMESTAMP,0);
+                        }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
+                            start_xid = find_index_sub_gte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
+                            stop_xid = find_index_sub_lte(DATA[xkey],DATA_TO_TIMESTAMP,0);
+                        }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
+                            if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){continue;}
+                            start_xid = find_index_sub_gte(DATA[xkey],DATA_FROM_TIMESTAMP,0);
+                            stop_xid = find_index_sub_lte(DATA[xkey],DATA_DISPLAY_TO_TIMESTAMP,0);
+                        }else {
+                            start_xid = find_index_sub_gte(DATA[xkey],DATA_FROM_TIMESTAMP,0);
+                            stop_xid = find_index_sub_lte(DATA[xkey],DATA_TO_TIMESTAMP,0);
+                        }
+                        if (typeof(start_xid) == "undefined") {
+                            continue;
+                        }else {
+                            chart_x_data = DATA[xkey].slice(start_xid,stop_xid+1);
+                        };
+                        new_data=[];
+                        if (chart_data.length > 0 && chart_x_data.length > 0){
+                            chart_data_min = chart_data[0][1]
+                            chart_data_max = chart_data[0][1]
+                            x_data_min = chart_x_data[0][1]
+                            x_data_max = chart_x_data[0][1]
+                            for (iy=0; iy < chart_data.length; iy++) {
+                                ix=0;
+                                xf=0;
+                                if (chart_x_data.length > 1){
+                                    while (ix < chart_x_data.length && xf == 0) {
+                                        if (chart_x_data[ix][0] >= chart_data[iy][0]) {
+                                            if (ix == 0) {
+                                                fx = linearInterpolation(chart_data[iy][0], chart_x_data[ix][0], chart_x_data[ix][1], chart_x_data[ix+1][0], chart_x_data[ix+1][1]);
+                                            }else {
+                                                fx = linearInterpolation(chart_data[iy][0], chart_x_data[ix-1][0], chart_x_data[ix-1][1], chart_x_data[ix][0], chart_x_data[ix][1]);
+                                            }
+                                            new_data.push([fx,chart_data[iy][1]]);
+                                            chart_data_min = Math.min(chart_data_min, chart_data[iy][1])
+                                            chart_data_max = Math.max(chart_data_max, chart_data[iy][1])
+                                            x_data_min = Math.min(x_data_min, fx)
+                                            x_data_max = Math.max(x_data_max, fx)
+                                            xf=1;
                                         }
+                                        ix+=1;
+                                    }
+                                    if (xf == 0) {
+                                        fx = linearInterpolation(chart_data[iy][0], chart_x_data[chart_x_data.length-2][0], chart_x_data[chart_x_data.length-2][1], chart_x_data[chart_x_data.length-1][0], chart_x_data[chart_x_data.length-1][1]);
                                         new_data.push([fx,chart_data[iy][1]]);
                                         chart_data_min = Math.min(chart_data_min, chart_data[iy][1])
                                         chart_data_max = Math.max(chart_data_max, chart_data[iy][1])
@@ -1972,45 +1525,35 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
                                         x_data_max = Math.max(x_data_max, fx)
                                         xf=1;
                                     }
-                                    ix+=1;
-                                }
-                                if (xf == 0) {
-                                    fx = linearInterpolation(chart_data[iy][0], chart_x_data[chart_x_data.length-2][0], chart_x_data[chart_x_data.length-2][1], chart_x_data[chart_x_data.length-1][0], chart_x_data[chart_x_data.length-1][1]);
-                                    new_data.push([fx,chart_data[iy][1]]);
+                                }else if (chart_x_data.length > 0){
+                                    new_data.push([chart_x_data[0][1],chart_data[iy][1]]);
                                     chart_data_min = Math.min(chart_data_min, chart_data[iy][1])
                                     chart_data_max = Math.max(chart_data_max, chart_data[iy][1])
-                                    x_data_min = Math.min(x_data_min, fx)
-                                    x_data_max = Math.max(x_data_max, fx)
-                                    xf=1;
+                                    iy = chart_data.length;
                                 }
-                            }else if (chart_x_data.length > 0){
-                                new_data.push([chart_x_data[0][1],chart_data[iy][1]]);
-                                chart_data_min = Math.min(chart_data_min, chart_data[iy][1])
-                                chart_data_max = Math.max(chart_data_max, chart_data[iy][1])
-                                iy = chart_data.length;
                             }
-                        }
-                    }else {
-                        chart_data_min = null;
-                        chart_data_max = null;
-                    };
-                    $.each($(legend_table_id + ' .legendSeries'),function(kkey,val){
-                        val_inst = $(val);
-                        if (key == val_inst.find(".variable-config").data('key')){
-                            label = val_inst.find(".legendLabel").text();
-                            unit = val_inst.find(".legendUnit").text();
-                        }
-                    });
-                    if (new_data.length > 0){
-                        j += 1;
-                        if (yaxisUniqueScale) {yj = 1} else {yj = jk}
-                        //plot Y with defferents axis
-                        for (serie in old_series) {
-                          if (new_data_bool === false &&  new_data.length > 0 && key === old_series[serie]['key'] && new_data.length !== old_series[serie]['data'].length && (new_data[0][0] !== old_series[serie]['data'][0][0] || new_data[0][1] !== old_series[serie]['data'][0][1] || new_data[new_data.length-1][0] !== old_series[serie]['data'][old_series[serie]['data'].length-1][0] && new_data[new_data.length-1][1] !== old_series[serie]['data'][old_series[serie]['data'].length-1][-1] || chart_x_data[0][0] !== old_series[serie]['xdata'][0][0] || chart_x_data[0][1] !== old_series[serie]['xdata'][0][1] || chart_x_data[chart_x_data.length-1][0] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][0] && chart_x_data[chart_x_data.length-1][1] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][-1])) {
-                            new_data_bool = true;
-                          }
+                        }else {
+                            chart_data_min = null;
+                            chart_data_max = null;
                         };
-                        series.push({"data":new_data, "xdata":chart_x_data,"color":variables[key].color,"yaxis":yj,"label":variables[key].label,"unit":variables[key].unit,"chart_data_min":chart_data_min,"chart_data_max":chart_data_max,"x_data_min":x_data_min,"x_data_max":x_data_max, "key":key});
+                        $.each($(legend_table_id + ' .legendSeries'),function(kkey,val){
+                            val_inst = $(val);
+                            if (key == val_inst.find(".variable-config").data('key')){
+                                label = val_inst.find(".legendLabel").text();
+                                unit = val_inst.find(".legendUnit").text();
+                            }
+                        });
+                        if (new_data.length > 0){
+                            j += 1;
+                            if (yaxisUniqueScale) {yj = 1} else {yj = jk}
+                            //plot Y with defferents axis
+                            for (serie in old_series) {
+                              if (new_data_bool === false &&  new_data.length > 0 && key === old_series[serie]['key'] && new_data.length !== old_series[serie]['data'].length && (new_data[0][0] !== old_series[serie]['data'][0][0] || new_data[0][1] !== old_series[serie]['data'][0][1] || new_data[new_data.length-1][0] !== old_series[serie]['data'][old_series[serie]['data'].length-1][0] && new_data[new_data.length-1][1] !== old_series[serie]['data'][old_series[serie]['data'].length-1][-1] || chart_x_data[0][0] !== old_series[serie]['xdata'][0][0] || chart_x_data[0][1] !== old_series[serie]['xdata'][0][1] || chart_x_data[chart_x_data.length-1][0] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][0] && chart_x_data[chart_x_data.length-1][1] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][-1])) {
+                                new_data_bool = true;
+                              }
+                            };
+                            series.push({"data":new_data, "xdata":chart_x_data,"color":variables[key].color,"yaxis":yj,"label":variables[key].label,"unit":variables[key].unit,"chart_data_min":chart_data_min,"chart_data_max":chart_data_max,"x_data_min":x_data_min,"x_data_max":x_data_max, "key":key});
+                        };
                     };
                 };
                 jk += 1;
@@ -2020,61 +1563,78 @@ function XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, y
 
               //update y window
               pOpt = flotPlot.getOptions();
-              if (j != 0){
-                  for (k = 1;k <= j;k++){
-                      S = series[k-1]
-                      if (typeof S !== 'undefined') {
-                          if (yaxisUniqueScale == false || $(legend_table_id + ' .variable-config').length == 1) {
-                              pOpt.yaxes[S['yaxis']-1].unit = S['unit'];
-                          }else {
-                              options.yaxes[S['yaxis']-1].unit = ""
-                          }
-                          pOpt.alignTicksWithAxis = 1;
-                          if (k==1) {
-                              pOpt.yaxes[S['yaxis']-1].chart_data_min = S['chart_data_min'];
-                              pOpt.yaxes[S['yaxis']-1].chart_data_max = S['chart_data_max'];
-                          }else {
-                              pOpt.yaxes[S['yaxis']-1].chart_data_min = Math.min(S['chart_data_min'],pOpt.yaxes[S['yaxis']-1].chart_data_min);
-                              pOpt.yaxes[S['yaxis']-1].chart_data_max = Math.max(S['chart_data_max'],pOpt.yaxes[S['yaxis']-1].chart_data_max);
+              if (xaxisVarId == null) {
+                if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
+	                  pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
+	                  pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
+
+	              }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
+	                  pOpt.xaxes[0].min = DATA_DISPLAY_FROM_TIMESTAMP;
+	                  pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
+	              }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
+	                  pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
+	                  pOpt.xaxes[0].max = DATA_DISPLAY_TO_TIMESTAMP;
+	              }else{
+	                  pOpt.xaxes[0].min = DATA_FROM_TIMESTAMP;
+	                  pOpt.xaxes[0].max = DATA_TO_TIMESTAMP;
+                  }
+                  pOpt.xaxes[0].key=0
+              }else {
+                  if (j != 0){
+                      for (k = 1;k <= j;k++){
+                          S = series[k-1]
+                          if (typeof S !== 'undefined') {
+                              if (yaxisUniqueScale == false || $(legend_table_id + ' .variable-config').length == 1) {
+                                  pOpt.yaxes[S['yaxis']-1].unit = S['unit'];
+                              }else {
+                                  options.yaxes[S['yaxis']-1].unit = ""
+                              }
+                              pOpt.alignTicksWithAxis = 1;
+                              if (k==1) {
+                                  pOpt.yaxes[S['yaxis']-1].chart_data_min = S['chart_data_min'];
+                                  pOpt.yaxes[S['yaxis']-1].chart_data_max = S['chart_data_max'];
+                              }else {
+                                  pOpt.yaxes[S['yaxis']-1].chart_data_min = Math.min(S['chart_data_min'],pOpt.yaxes[S['yaxis']-1].chart_data_min);
+                                  pOpt.yaxes[S['yaxis']-1].chart_data_max = Math.max(S['chart_data_max'],pOpt.yaxes[S['yaxis']-1].chart_data_max);
+                              }
                           }
                       }
                   }
-              }
 
-              // Reset min and max for xaxis and yaxes when no data
-              allYAxesEmpty = true;
-              for (y = 0;y < pOpt.yaxes.length;y++){
-                  if (j != 0){
-                      yAxesEmpty = true;
-                      for (k = 1;k <= j;k++){
-                          S = series[k-1];
-                          if (S['yaxis']-1 == y) {yAxesEmpty = false;}
-                      }
-                      if (yAxesEmpty == true) {
+                  // Reset min and max for xaxis and yaxes when no data
+                  allYAxesEmpty = true;
+                  for (y = 0;y < pOpt.yaxes.length;y++){
+                      if (j != 0){
+                          yAxesEmpty = true;
+                          for (k = 1;k <= j;k++){
+                              S = series[k-1];
+                              if (S['yaxis']-1 == y) {yAxesEmpty = false;}
+                          }
+                          if (yAxesEmpty == true) {
+                              pOpt.yaxes[y].min = null;
+                              pOpt.yaxes[y].max = null;
+                          }else {allYAxesEmpty = false;}
+                      }else {
                           pOpt.yaxes[y].min = null;
                           pOpt.yaxes[y].max = null;
-                      }else {allYAxesEmpty = false;}
-                  }else {
-                      pOpt.yaxes[y].min = null;
-                      pOpt.yaxes[y].max = null;
+                          pOpt.xaxes[0].min = null;
+                          pOpt.xaxes[0].max = null;
+                      }
+                  }
+                  if (allYAxesEmpty == true) {
                       pOpt.xaxes[0].min = null;
                       pOpt.xaxes[0].max = null;
                   }
-              }
-              if (allYAxesEmpty == true) {
-                  pOpt.xaxes[0].min = null;
-                  pOpt.xaxes[0].max = null;
-              }
 
-              pOpt.xaxes[0].key=xkey
-
+                  pOpt.xaxes[0].key=xkey
+              };
               // update flot plot
               flotPlot.setData(series);
               flotPlot.setupGrid(true);
               flotPlot.draw();
 
               // Change the color of the axis
-              if (jk != 1 && yaxisUniqueScale == false){
+              if (xaxisVarId !== null && jk != 1 && yaxisUniqueScale == false){
                   for (k = 1;k <= jk;k++){
                       S = series[k-1]
                       if (typeof S !== 'undefined') {
@@ -2804,27 +2364,14 @@ $( document ).ready(function() {
     $.each($('.chart-container'),function(key,val){
         // get identifier of the chart
         id = val.id.substring(16);
-        if ($(val).data('yaxis').plotpoints == 'True') {plotPoints = true} else {plotPoints = false}
-        if ($(val).data('yaxis').plotlines == 'True') {plotLines = true} else {plotLines = false}
-        if ($(val).data('yaxis').steplines == 'True') {lineSteps = true} else {lineSteps = false}
-        if ($(val).data('yaxis').uniquescale == 'True') {yaxisUniqueScale = true} else {yaxisUniqueScale = false}
-        // add a new Plot
-        PyScadaPlots.push(new PyScadaPlot(id, plotPoints, plotLines, lineSteps, yaxisUniqueScale));
-    });
-    $.each($('.xy-chart-container'),function(key,val){
-        // get identifier of the chart
-        id = val.id.substring(19);
-        label = $(val).data('axes0Yaxis').label;
-        xaxisVarId = $(val).data('xaxis').id;
+        if ($(val).data('xaxis').id == 'False') {xaxisVarId = null} else {xaxisVarId = $(val).data('xaxis').id}
         if ($(val).data('xaxis').linlog == 'True') {xaxisLinLog = true} else {xaxisLinLog = false}
         if ($(val).data('yaxis').plotpoints == 'True') {plotPoints = true} else {plotPoints = false}
         if ($(val).data('yaxis').plotlines == 'True') {plotLines = true} else {plotLines = false}
         if ($(val).data('yaxis').steplines == 'True') {lineSteps = true} else {lineSteps = false}
         if ($(val).data('yaxis').uniquescale == 'True') {yaxisUniqueScale = true} else {yaxisUniqueScale = false}
-        CHART_VARIABLE_KEYS[xaxisVarId]=0;
-        X_AXIS = xaxisVarId;
-        // add a new XYPlot
-        PyScadaPlots.push(new XYPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, yaxisUniqueScale));
+        // add a new Plot
+        PyScadaPlots.push(new PyScadaPlot(id, xaxisVarId, xaxisLinLog, plotPoints, plotLines, lineSteps, yaxisUniqueScale));
     });
     $.each($('.pie-container'),function(key,val){
         // get identifier of the chart

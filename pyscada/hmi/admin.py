@@ -7,7 +7,6 @@ from pyscada.models import Variable
 from pyscada.models import Color
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Chart
-from pyscada.hmi.models import XYChart
 from pyscada.hmi.models import DropDown
 from pyscada.hmi.models import Dictionary
 from pyscada.hmi.models import DictionaryItem
@@ -48,7 +47,7 @@ class ChartAdmin(admin.ModelAdmin):
     search_fields = ['title', ]
     filter_horizontal = ('variables',)
     List_display_link = ('title',)
-    list_display = ('id', 'title',)
+    list_display = ('id', 'title', 'x_axis_label', 'x_axis_linlog', 'y_axis_label')
     #list_filter = ('widget__page__title', 'widget__title',)
     form = ChartForm
     save_as = True
@@ -57,35 +56,10 @@ class ChartAdmin(admin.ModelAdmin):
     def name(self, instance):
         return instance.variables.name
 
-
-class XYChartForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super(XYChartForm, self).__init__(*args, **kwargs)
-        wtf = Variable.objects.all()
-        w = self.fields['variables'].widget
-        choices = []
-        for choice in wtf:
-            choices.append((choice.id, choice.name + '( ' + choice.unit.description + ' )'))
-        w.choices = choices
-
-
-class XYChartAdmin(admin.ModelAdmin):
-    list_per_page = 100
-    # ordering = ['position',]
-    search_fields = ['name', ]
-    filter_horizontal = ('variables',)
-    List_display_link = ('title',)
-    list_display = ('id', 'title', 'x_axis_label', 'x_axis_linlog', 'y_axis_label')
-    form = XYChartForm
-    save_as = True
-    save_as_continue = True
-
-    def name(self, instance):
-        return instance.variables.name
-
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        kwargs['empty_label'] = "Time chart"
-        return super(XYChartAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+        if db_field.name == 'x_axis_var':
+            kwargs['empty_label'] = "Time series"
+        return super(ChartAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 class PieForm(forms.ModelForm):
@@ -245,7 +219,7 @@ class WidgetAdmin(admin.ModelAdmin):
 
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
     filter_horizontal = (
-        'pages', 'sliding_panel_menus', 'charts', 'xy_charts', 'control_items', 'widgets', 'views',
+        'pages', 'sliding_panel_menus', 'charts', 'control_items', 'widgets', 'views',
         'custom_html_panels', 'process_flow_diagram', 'forms', 'dropdowns')
     save_as = True
     save_as_continue = True
@@ -293,7 +267,6 @@ class ProcessFlowDiagramAdmin(admin.ModelAdmin):
 
 admin_site.register(ControlItem, ControlItemAdmin)
 admin_site.register(Chart, ChartAdmin)
-admin_site.register(XYChart, XYChartAdmin)
 admin_site.register(Pie, PieAdmin)
 admin_site.register(Dictionary, DictionaryAdmin)
 admin_site.register(DropDown, DropDownAdmin)
