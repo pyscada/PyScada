@@ -2,7 +2,7 @@
 
 from django.db import migrations, models
 
-from pyscada.hmi.models import Chart, ChartAxis
+from pyscada.hmi.models import ChartAxis
 from pyscada.models import Variable
 
 from time import time
@@ -11,6 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 def move_chart_axis(apps, schema_editor):
+    Chart = apps.get_model("hmi.Chart")
     chart_set = Chart.objects.all()
     count = 0
     timeout = time() + 60 * 5
