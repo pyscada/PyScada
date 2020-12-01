@@ -15,12 +15,12 @@ def move_chart_axis(apps, schema_editor):
     count = 0
     timeout = time() + 60 * 5
     for item in chart_set:
-        axis = ChartAxis(label=item.label,
-                         min=item.min,
-                         max=item.max,
+        axis = ChartAxis(label=item.y_axis_label,
+                         min=item.y_axis_min,
+                         max=item.y_axis_max,
                          show_plot_points=item.show_plot_points,
                          show_plot_lines=item.show_plot_lines,
-                         stack=item.stack,
+                         stack=False,
                          chart=item,
                          )
         axis.save()
