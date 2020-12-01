@@ -23,16 +23,15 @@
             <tbody>
 
             {% for axe in chart.chartaxis_set.all %}
+             <div class="hidden axis-config" data-label="{{axe.label}}" data-key="{{axe.pk}}" data-min="{{ axe.min }}" data-max="{{ axe.max }}" data-show-plot-points="{{ axe.show_plot_points }}" data-show-plot-lines="{{ axe.show_plot_lines }}" data-stack="{{ axe.stack }}"></div>
+
               {% for var in axe.variables.all %}
-                  <tr class="legendAxis" title="{{axe.label}}">
-                    {{ axe.label }}
-                  </tr>
                   {% if var.active and var.device.active %}
                   <tr class="legendSeries" title="{{var.description}}">
                       <td>
                           <span class="hidden" id="chart-legend-checkbox-status-{{widget_pk}}-{{chart.pk}}-{{var.pk}}" >1</span>
                           <input type="checkbox" checked="checked" id="chart-legend-checkbox-{{widget_pk}}-{{ chart.pk }}-{{ var.pk }}">
-                          <div class="hidden variable-config" data-name="{{var.name}}" data-key="{{var.pk}}" data-color="{{ var.chart_line_color_code }}" data-init-type="1" data-type="variable"></div>
+                          <div class="hidden variable-config" data-name="{{var.name}}" data-key="{{var.pk}}" data-color="{{ var.chart_line_color_code }}" data-init-type="1" data-type="variable" data-axis-id="{{ axe.pk }}"></div>
                       </td>
                       <td class="legendColorBox">
                           <div style="border:1px solid #ccc;padding:1px">

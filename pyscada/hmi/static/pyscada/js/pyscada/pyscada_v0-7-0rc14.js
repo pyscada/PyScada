@@ -391,8 +391,8 @@ function data_handler_done(fetched_data){
 function data_handler_fail(x, t, m) {
     //check if we are unauthenticated
     if (x.status !== 0 && x.getResponseHeader("content-type") !== null && x.getResponseHeader("content-type").indexOf("text/html") !== -1) {
-        add_notification("Authentication failed, reload the page", 2, 0);
-        location.reload();
+        add_notification("Authentication failed, please reload the page", 2, 0);
+        //location.reload();
     }
 
     if(JSON_ERROR_COUNT % 5 == 0)

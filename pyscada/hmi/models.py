@@ -277,6 +277,10 @@ class ChartAxis(models.Model):
     variables = models.ManyToManyField(Variable)
     chart = models.ForeignKey(Chart, on_delete=models.CASCADE)
 
+    class Meta:
+        verbose_name = 'Y Axis'
+        verbose_name_plural = 'Y Axis'
+
 
 @python_2_unicode_compatible
 class Pie(WidgetContentModel):
