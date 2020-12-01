@@ -22,27 +22,32 @@
             </thead>
             <tbody>
 
-            {% for var in chart.variables.all %}
-                {% if var.active and var.device.active %}
-                <tr class="legendSeries" title="{{var.description}}">
-                    <td>
-                        <span class="hidden" id="chart-legend-checkbox-status-{{widget_pk}}-{{chart.pk}}-{{var.pk}}" >1</span>
-                        <input type="checkbox" checked="checked" id="chart-legend-checkbox-{{widget_pk}}-{{ chart.pk }}-{{ var.pk }}">
-                        <div class="hidden variable-config" data-name="{{var.name}}" data-key="{{var.pk}}" data-color="{{ var.chart_line_color_code }}" data-init-type="1" data-type="variable"></div>
-                    </td>
-                    <td class="legendColorBox">
-                        <div style="border:1px solid #ccc;padding:1px">
-                            <div style="width:4px;height:0;border:5px solid {{ var.chart_line_color_code }};overflow:hidden">
-                            </div>
-                        </div>
-                    </td>
-                    <td class="legendLabel" style="word-wrap: break-word">
-                        {{ var.hmi_name }}
-                    </td>
-                    <td class="legendValue type-numeric chart-legend-value-{{widget_pk}}-{{chart.pk}} var-{{ var.pk }}" id="chart-legend-value-{{widget_pk}}-{{chart.pk}}-{{var.pk}}" style="text-align:right"></td>
-                    <td class="legendUnit">{{ var.unit.unit }}</td>
-                </tr>
-                {% endif %}
+            {% for axe in chart.chartaxis_set.all %}
+              {% for var in axe.variables.all %}
+                  <tr class="legendAxis" title="{{axe.label}}">
+                    {{ axe.label }}
+                  </tr>
+                  {% if var.active and var.device.active %}
+                  <tr class="legendSeries" title="{{var.description}}">
+                      <td>
+                          <span class="hidden" id="chart-legend-checkbox-status-{{widget_pk}}-{{chart.pk}}-{{var.pk}}" >1</span>
+                          <input type="checkbox" checked="checked" id="chart-legend-checkbox-{{widget_pk}}-{{ chart.pk }}-{{ var.pk }}">
+                          <div class="hidden variable-config" data-name="{{var.name}}" data-key="{{var.pk}}" data-color="{{ var.chart_line_color_code }}" data-init-type="1" data-type="variable"></div>
+                      </td>
+                      <td class="legendColorBox">
+                          <div style="border:1px solid #ccc;padding:1px">
+                              <div style="width:4px;height:0;border:5px solid {{ var.chart_line_color_code }};overflow:hidden">
+                              </div>
+                          </div>
+                      </td>
+                      <td class="legendLabel" style="word-wrap: break-word">
+                          {{ var.hmi_name }}
+                      </td>
+                      <td class="legendValue type-numeric chart-legend-value-{{widget_pk}}-{{chart.pk}} var-{{ var.pk }}" id="chart-legend-value-{{widget_pk}}-{{chart.pk}}-{{var.pk}}" style="text-align:right"></td>
+                      <td class="legendUnit">{{ var.unit.unit }}</td>
+                  </tr>
+                  {% endif %}
+              {% endfor %}
             {% endfor %}
             </tbody>
         </table>

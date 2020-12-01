@@ -234,18 +234,6 @@ class Chart(WidgetContentModel):
                                    on_delete=models.SET_NULL)
     x_axis_ticks = models.PositiveSmallIntegerField(default=6)
     x_axis_linlog = models.BooleanField(default=False, help_text="False->Lin / True->Log")
-    y_axis_label = models.CharField(max_length=400, default='', blank=True)
-    y_axis_min = models.FloatField(default=0)
-    y_axis_max = models.FloatField(default=100)
-    show_plot_points = models.BooleanField(default=False, help_text="Show the plots points")
-    show_plot_lines_choices = (
-        (0, 'No'),
-        (1, 'Yes'),
-        (2, 'Yes as steps'),)
-    show_plot_lines = models.PositiveSmallIntegerField(default=2, help_text="Show the plot lines",
-                                                       choices=show_plot_lines_choices)
-    y_axis_uniquescale = models.BooleanField(default=True, help_text="To have a unique scale for all the y axis")
-    variables = models.ManyToManyField(Variable)
 
     def __str__(self):
         return text_type(str(self.id) + ': ' + self.title)
@@ -254,7 +242,11 @@ class Chart(WidgetContentModel):
         return True
 
     def variables_list(self, exclude_list=[]):
-        return [item.pk for item in self.variables.exclude(pk__in=exclude_list)]
+        list = []
+        for axe in self.chart_set.all():
+            for item in axe.variables.exclude(pk__in=exclude_list):
+                list.append(item)
+        return list
 
     def gen_html(self, **kwargs):
         """
@@ -267,6 +259,23 @@ class Chart(WidgetContentModel):
         main_content = main_template.render(dict(chart=self, widget_pk=widget_pk))
         sidebar_content = sidebar_template.render(dict(chart=self, widget_pk=widget_pk))
         return main_content, sidebar_content
+
+
+@python_2_unicode_compatible
+class ChartAxis(models.Model):
+    label = models.CharField(max_length=400, default='', blank=True)
+    min = models.FloatField(default=0)
+    max = models.FloatField(default=100)
+    show_plot_points = models.BooleanField(default=False, help_text="Show the plots points")
+    show_plot_lines_choices = (
+        (0, 'No'),
+        (1, 'Yes'),
+        (2, 'Yes as steps'),)
+    show_plot_lines = models.PositiveSmallIntegerField(default=2, help_text="Show the plot lines",
+                                                       choices=show_plot_lines_choices)
+    stack = models.BooleanField(default=False, help_text="Stack all variables of this axis")
+    variables = models.ManyToManyField(Variable)
+    chart = models.ForeignKey(Chart, on_delete=models.CASCADE)
 
 
 @python_2_unicode_compatible

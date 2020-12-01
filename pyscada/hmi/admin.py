@@ -6,7 +6,7 @@ from pyscada.admin import admin_site
 from pyscada.models import Variable
 from pyscada.models import Color
 from pyscada.hmi.models import ControlItem
-from pyscada.hmi.models import Chart
+from pyscada.hmi.models import Chart, ChartAxis
 from pyscada.hmi.models import DropDown
 from pyscada.hmi.models import Dictionary
 from pyscada.hmi.models import DictionaryItem
@@ -41,17 +41,22 @@ class ChartForm(forms.ModelForm):
         w.choices = choices
 
 
+class ChartAxisInline(admin.TabularInline):
+    model = ChartAxis
+    extra = 1
+
+
 class ChartAdmin(admin.ModelAdmin):
     list_per_page = 100
     # ordering = ['position',]
     search_fields = ['title', ]
-    filter_horizontal = ('variables',)
     List_display_link = ('title',)
-    list_display = ('id', 'title', 'x_axis_label', 'x_axis_linlog', 'y_axis_label')
+    list_display = ('id', 'title', 'x_axis_label', 'x_axis_linlog',)
     #list_filter = ('widget__page__title', 'widget__title',)
     form = ChartForm
     save_as = True
     save_as_continue = True
+    inlines = [ChartAxisInline]
 
     def name(self, instance):
         return instance.variables.name
