@@ -264,6 +264,11 @@ class Chart(WidgetContentModel):
 @python_2_unicode_compatible
 class ChartAxis(models.Model):
     label = models.CharField(max_length=400, default='', blank=True)
+    position_choices = (
+        (0, 'left'),
+        (1, 'right'),
+        )
+    position = models.PositiveSmallIntegerField(default=0, choices=position_choices)
     min = models.FloatField(default=0)
     max = models.FloatField(default=100)
     show_plot_points = models.BooleanField(default=False, help_text="Show the plots points")
@@ -274,6 +279,7 @@ class ChartAxis(models.Model):
     show_plot_lines = models.PositiveSmallIntegerField(default=2, help_text="Show the plot lines",
                                                        choices=show_plot_lines_choices)
     stack = models.BooleanField(default=False, help_text="Stack all variables of this axis")
+    fill = models.BooleanField(default=False, help_text="Fill all variables of this axis")
     variables = models.ManyToManyField(Variable)
     chart = models.ForeignKey(Chart, on_delete=models.CASCADE)
 

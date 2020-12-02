@@ -2,7 +2,7 @@
 
 from django.db import migrations, models
 
-from pyscada.hmi.models import Chart, ChartAxis
+from pyscada.hmi.models import ChartAxis
 from pyscada.models import Variable
 
 from time import time
@@ -10,24 +10,35 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+charts_dict = {}
+
+
+def move_chart_vars(apps, schema_editor):
+    chart_model = apps.get_model("hmi.Chart")
+    chart_axis_model = apps.get_model("hmi.ChartAxis")
+    for chart in charts_dict:
+        item = chart_model.objects.get(id=chart)
+        axis = chart_axis_model.objects.get(id=charts_dict[chart])
+        axis.variables.set(item.variables.all())
+
+
 def move_chart_axis(apps, schema_editor):
     chart_model = apps.get_model("hmi.Chart")
+    chart_axis_model = apps.get_model("hmi.ChartAxis")
     chart_set = chart_model.objects.all()
     count = 0
     timeout = time() + 60 * 5
     for item in chart_set:
-        axis = ChartAxis(label=item.y_axis_label,
-                         min=item.y_axis_min,
-                         max=item.y_axis_max,
-                         show_plot_points=item.show_plot_points,
-                         show_plot_lines=item.show_plot_lines,
-                         stack=False,
-                         chart=Chart.objects.get(id=item.id),
-                         )
+        axis = chart_axis_model(label=item.y_axis_label,
+                                min=item.y_axis_min,
+                                max=item.y_axis_max,
+                                show_plot_points=item.show_plot_points,
+                                show_plot_lines=item.show_plot_lines,
+                                stack=False,
+                                chart=chart_model.objects.get(id=item.id),
+                                )
         axis.save()
-        for v in item.variables.all():
-            axis.variables.add(Variable.objects.get(id=v.id))
-        axis.save()
+        charts_dict[item.id] = axis.id
 
         if time() > timeout:
             break
@@ -44,7 +55,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(move_chart_axis),
+        migrations.RunPython(move_chart_axis, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(move_chart_vars, reverse_code=migrations.RunPython.noop),
         migrations.RemoveField(
             model_name='chart',
             name='show_plot_lines',

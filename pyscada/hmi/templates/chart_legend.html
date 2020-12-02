@@ -22,9 +22,8 @@
             </thead>
             <tbody>
 
-            {% for axe in chart.chartaxis_set.all %}
-             <div class="hidden axis-config" data-label="{{axe.label}}" data-key="{{axe.pk}}" data-min="{{ axe.min }}" data-max="{{ axe.max }}" data-show-plot-points="{{ axe.show_plot_points }}" data-show-plot-lines="{{ axe.show_plot_lines }}" data-stack="{{ axe.stack }}"></div>
-
+            {% for axe in chart.chartaxis_set.all|dictsort:"id" %}
+             <div class="hidden axis-config" data-label="{{axe.label}}" data-key="{{axe.pk}}" data-position="{{ axe.position }}" data-min="{{ axe.min }}" data-max="{{ axe.max }}" data-show-plot-points="{{ axe.show_plot_points }}" data-show-plot-lines="{{ axe.show_plot_lines }}" data-stack="{{ axe.stack }}" data-fill="{{ axe.fill }}"></div>
               {% for var in axe.variables.all %}
                   {% if var.active and var.device.active %}
                   <tr class="legendSeries" title="{{var.description}}">
@@ -39,11 +38,11 @@
                               </div>
                           </div>
                       </td>
-                      <td class="legendLabel" style="word-wrap: break-word">
+                      <td class="legendLabel" data-key="{{var.pk}}" style="word-wrap: break-word">
                           {{ var.hmi_name }}
                       </td>
                       <td class="legendValue type-numeric chart-legend-value-{{widget_pk}}-{{chart.pk}} var-{{ var.pk }}" id="chart-legend-value-{{widget_pk}}-{{chart.pk}}-{{var.pk}}" style="text-align:right"></td>
-                      <td class="legendUnit">{{ var.unit.unit }}</td>
+                      <td class="legendUnit" data-key="{{var.pk}}">{{ var.unit.unit }}</td>
                   </tr>
                   {% endif %}
               {% endfor %}

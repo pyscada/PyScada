@@ -53,7 +53,7 @@ class ChartAdmin(admin.ModelAdmin):
     List_display_link = ('title',)
     list_display = ('id', 'title', 'x_axis_label', 'x_axis_linlog',)
     #list_filter = ('widget__page__title', 'widget__title',)
-    form = ChartForm
+    #form = ChartForm
     save_as = True
     save_as_continue = True
     inlines = [ChartAxisInline]
