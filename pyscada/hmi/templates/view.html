@@ -24,7 +24,7 @@
                         {% for item in panel.control_panel.items.all %}
                             {% if item.pk in visible_control_element_list %}
                                 {% include "control_element.html" with item=item %}
-                            {% endif %}	
+                            {% endif %}
                         {% endfor %}
                         {% for form in panel.control_panel.forms.all %}
                             {% if form.pk in visible_form_list %}
@@ -142,11 +142,11 @@
 <script language="javascript" type="text/javascript" src="{% static "pyscada/js/jquery.flot.axisvalues.js" %}"></script>
 
 <script type="text/javascript" src="{% static "pyscada/js/pyscada/pyscada_v0-7-0rc14.js" %}"></script>
-{% endblock %}        
+{% endblock %}
 {% block script_bottom %}
         $( document ).ready(function() {
             // Handler for .ready() called.
-            
+
             // hide all pages
             $(".sub-page").hide();
             // show page
@@ -173,27 +173,27 @@
                 ow = $(this).outerWidth()
                 $(this).stop().animate({"left":-(ow - 11)},500)
             });
-            
+
             $('.side-menu.right').mouseenter(function(){
                 $(this).stop().animate({"right":0},500)
             }).mouseleave(function(){
                 ow = $(this).outerWidth()
                 $(this).stop().animate({"right":-(ow - 11)},500)
             });
-            
+
             $('.side-menu.bottom').css('margin-left',- $('.side-menu.bottom').outerWidth(true)/2)
-            
+
             $('.side-menu.bottom').stop().animate({"bottom":-($('.side-menu.bottom').outerHeight(true) - 31)},500)
-            
+
             $('.side-menu.bottom').mouseenter(function(){
                 $(this).stop().animate({"bottom":0},500)
             }).mouseleave(function(){
                 oh = $(this).outerHeight(true)
                 $(this).stop().animate({"bottom":-(oh - 31)},500)
             });
-            
 
-            // prevent reloading by existent 
+
+            // prevent reloading by existent
             window.onbeforeunload = function() {
                 return "you realy wan't to reload/leave the page?";
             };
@@ -210,4 +210,3 @@
             });
         });
 {% endblock %}
-

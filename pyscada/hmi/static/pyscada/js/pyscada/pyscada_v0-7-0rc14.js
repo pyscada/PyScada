@@ -1042,6 +1042,7 @@ function PyScadaPlot(id, xaxisVarId, xaxisLinLog){
     legend_value_id = '#chart-legend-value-' + id + '-',
     variables = {},
     axes = {},
+    raxes = {},
     plot = this;
 
 
@@ -1060,61 +1061,56 @@ function PyScadaPlot(id, xaxisVarId, xaxisLinLog){
     plot.getChartContainerId= function () {return chart_container_id};
     // init data
     tf = function (value, axis) {
-        return value.toFixed(axis.tickDecimals) + (((typeof axis.options.unit != "undefined") && axis.options.unit != null) ? axis.options.unit : '');
+        return value.toFixed(axis.tickDecimals) + (((typeof options.yaxes[axis.n-1].unit != "undefined") && options.yaxes[axis.n-1].unit != null) ? options.yaxes[axis.n-1].unit : '');
     };
-    lb = function (value, axis) {
-        return axes[axis_id].label.replace(/\s/g, '') + ((axes[axis_id].unit != "" && axes[axis_id].unit !=  null) ? " (" + axes[axis_id].unit + ")" : '');
-    };
+    options.yaxis.tickFormatter = tf;
+
+    k=0
     $.each($(legend_id + ' .axis-config'),function(key,val){
         axis_inst = $(val);
         axis_id = axis_inst.data('key');
+
         axis_label = axis_inst.data('label');
         axis_position = axis_inst.data('position') == 0 ? "left" : "right";
-        axis_min = axis_inst.data('min');
-        axis_max = axis_inst.data('max');
+        axis_min = axis_inst.data('min') == "None" ? null : axis_inst.data('min');
+        axis_max = axis_inst.data('max') == "None" ? null : axis_inst.data('max');
         axis_points = axis_inst.data('show-plot-points') == "True";
         axis_lines = axis_inst.data('show-plot-lines') >= 1;
         axis_steps = axis_inst.data('show-plot-lines') >= 2;
         axis_stack = axis_inst.data('stack') == "True";
         axis_fill = axis_inst.data('fill') == "True";
-        axes[axis_id] = {'label':axis_label, 'position': axis_position, 'min': axis_min, 'max': axis_max, 'points': axis_points, 'lines': axis_lines, 'steps': axis_steps, 'stack': axis_stack, 'fill': axis_fill, 'unit': null};
-        options.yaxes[axis_id] = {};
-        options.yaxes[axis_id].position = axis_position;
-        options.yaxes[axis_id].tickFormatter = tf;
-        options.yaxes[axis_id].unit = axes[axis_id].unit;
-        options.yaxes[axis_id].labelWidth = null;
-        options.yaxes[axis_id].reserveSpace = false;
-        options.yaxes[axis_id].axisLabel = lb;
-        options.yaxes[axis_id].min = axis_min;
-        options.yaxes[axis_id].max = axis_max;
+        raxes[axis_id] = {'list_id':k,}
+        axes[k] = {'list_id':axis_id, 'label':axis_label, 'position': axis_position, 'min': axis_min, 'max': axis_max, 'points': axis_points, 'lines': axis_lines, 'steps': axis_steps, 'stack': axis_stack, 'fill': axis_fill, 'unit': null};
+        options.yaxes[k] = {};
+        options.yaxes[k].list_id = axis_id;
+        options.yaxes[k].label = axis_label;
+        options.yaxes[k].position = axis_position;
+        //options.yaxes[k].labelWidth = null;
+        //options.yaxes[k].reserveSpace = false;
+        options.yaxes[k].min = axis_min;
+        options.yaxes[k].max = axis_max;
+        k++;
     });
+
     $.each($(legend_table_id + ' .variable-config'),function(key,val){
         val_inst = $(val);
         axis_id = val_inst.data('axis-id')
-        axis_inst = $(legend_table_id + ' .axis-config[data-key=' + axis_id + ']')
+        raxis_id = raxes[axis_id].list_id
         variable_name = val_inst.data('name');
         variable_key = val_inst.data('key');
-        variables[variable_key] = {'color':val_inst.data('color'),'yaxis': axis_id}
+        variables[variable_key] = {'color':val_inst.data('color'),'yaxis': raxis_id, 'axis_id': axis_id}
         keys.push(variable_key);
         variable_names.push(variable_name);
         variables[variable_key].label = $(".legendLabel[data-key=" + variable_key + "]")[0].textContent.replace(/\s/g, '');
         variables[variable_key].unit = $(".legendUnit[data-key=" + variable_key + "]")[0].textContent.replace(/\s/g, '');
-        if (axes[axis_id]['unit'] == null) {
-            axes[axis_id]['unit'] = variables[variable_key].unit;
-        }else if (axes[axis_id]['unit'] !== variables[variable_key].unit) {
-            axes[axis_id]['unit'] = "";
+        if (axes[raxis_id].unit == null) {
+            axes[raxis_id].unit = variables[variable_key].unit;
+        }else if (axes[raxis_id].unit !== variables[variable_key].unit) {
+            axes[raxis_id].unit = "";
         }
+        options.yaxes[raxis_id].unit = axes[raxes[axis_id].list_id].unit
+        options.yaxes[raxis_id].axisLabel = options.yaxes[raxis_id].label.replace(/\s/g, '') + (((typeof options.yaxes[raxis_id].unit != "undefined") && options.yaxes[raxis_id].unit != "" && options.yaxes[raxis_id].unit !=  null) ? " (" + options.yaxes[raxis_id].unit + ")" : '');
     });
-    /*$.each($(legend_table_id + ' .axis-config'),function(key,val){
-        axis_inst = $(val);
-        axis_id = axis_inst.data('key')
-        if (axes[axis_id].unit != "" && axes[axis_id].unit !=  null) {
-            lb = axes[axis_id].label.replace(/\s/g, '') + " (" + axes[axis_id].unit + ")";
-        }else{
-            lb = axes[axis_id].label.replace(/\s/g, '');
-        }
-        options.yaxes[axis_id].axisLabel = lb;
-    }*/
 
     function linearInterpolation (x, x0, y0, x1, y1) {
       var a = (y1 - y0) / (x1 - x0)
@@ -1418,7 +1414,7 @@ function PyScadaPlot(id, xaxisVarId, xaxisLinLog){
                 DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
                 set_x_axes();
             }else {
-                pOpt = flotPlot.getOptions();
+              pOpt = flotPlot.getOptions();
 	            pOpt.xaxes[0].autoScale = "exact";
 	            update(true);
             }
@@ -1472,7 +1468,7 @@ function PyScadaPlot(id, xaxisVarId, xaxisLinLog){
 	                        new_data_bool = true;
 	                      }
                         };
-                        series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis,"label":variables[key].label,"unit":variables[key].unit, "key":key, "points": {"show": axes[variables[key].yaxis].points,}, "stack": axes[variables[key].yaxis].stack, "lines": {"show": axes[variables[key].yaxis].lines, "steps": axes[variables[key].yaxis].steps, "fill": axes[variables[key].yaxis].fill,},});
+                        series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis+1,"label":variables[key].label,"unit":variables[key].unit, "key":key, "points": {"show": axes[variables[key].yaxis].points,}, "stack": axes[variables[key].yaxis].stack, "lines": {"show": axes[variables[key].yaxis].lines, "steps": axes[variables[key].yaxis].steps, "fill": axes[variables[key].yaxis].fill,},});
                     }else if (xkey !== null && typeof(DATA[xkey]) === 'object'){
                         if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
                             start_xid = find_index_sub_gte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
