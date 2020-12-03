@@ -61,6 +61,17 @@ class Dictionary(models.Model):
 
 
 @python_2_unicode_compatible
+class ControlElementOption(models.Model):
+    name = models.CharField(max_length=400)
+    placeholder = models.CharField(max_length=30, default='Enter a value')
+    dictionary = models.ForeignKey(Dictionary, blank=True, null=True, on_delete=models.SET_NULL)
+    empty_dictionary = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.name
+
+
+@python_2_unicode_compatible
 class DisplayValueOption(models.Model):
     name = models.CharField(max_length=400)
     color_type_choices = (
@@ -122,6 +133,7 @@ class ControlItem(models.Model):
     variable = models.ForeignKey(Variable, null=True, blank=True, on_delete=models.CASCADE)
     variable_property = models.ForeignKey(VariableProperty, null=True, blank=True, on_delete=models.CASCADE)
     display_value_options = models.ForeignKey(DisplayValueOption, null=True, blank=True, on_delete=models.SET_NULL)
+    control_element_options = models.ForeignKey(ControlElementOption, null=True, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
         ordering = ['position']

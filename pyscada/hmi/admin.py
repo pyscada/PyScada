@@ -43,7 +43,7 @@ class ChartForm(forms.ModelForm):
 
 class ChartAxisInline(admin.TabularInline):
     model = ChartAxis
-    filter_vertical = ('variables')
+    filter_vertical = ['variables']
     extra = 1
 
 
