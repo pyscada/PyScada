@@ -4,9 +4,6 @@
         {% for item in control_panel.items.all %}
             {% include "control_element.html" %}
         {% endfor %}
-        {% for dropdown in control_panel.dropdowns.all %}
-            {% include "dropdown.html" with form="0" %}
-        {% endfor %}
         {% for form in control_panel.forms.all %}
             {% include "form.html" %}
         {% endfor %}

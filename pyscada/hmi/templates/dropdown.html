@@ -1,24 +1,24 @@
 <!-- Dropdown {{ dropdown.name }} -->
-{% if dropdown.active == 1 %}
-    <div class="hidden variable-config" data-id="{% if form != '0' %}{{ form.web_id }}-{% endif %}{{ dropdown.web_id }}-{{ uuid }}" data-name="{{ dropdown.name }}" data-key="{{ dropdown.key }}" data-init-type="0" data-type="{{ dropdown.item_type}}" data-min="{{ dropdown.min }}" data-max="{{ dropdown.max }}" data-value-class="{{ dropdown.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}"></div>
+{% if item.active == 1 %}
+    <div class="hidden variable-config" data-id="{% if form != '0' %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}" data-name="{{ item.name }}" data-key="{{ item.key }}" data-init-type="0" data-type="{{ item.item_type}}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-value-class="{{ item.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}"></div>
     <div class="input-group set_value">
-        <span class="input-group-addon input-group-addon-label" style="width:40%;height:34px;">{{ dropdown.label }}</span>
-        <span class="input-group-addon input-group-addon-label" style="{% if dropdown.unit and form == '0' %}width:40%;{% elif dropdown.unit or form == '0' %}width: 50%;{% else %}width:60%;{% endif %}padding:0;border:0;">
-            <select class="form-control select {{ dropdown.web_class_str }}" id="{% if form != '0' %}{{ form.web_id }}-{% endif %}{{ dropdown.web_id }}-{{ uuid }}-value" data-key="{{ dropdown.key }}" data-type="{{ dropdown.item_type }}" data-name="{{ dropdown.name }}">
-                {% if dropdown.empty == 1 %}
-                    <option disabled selected value> {{ dropdown.empty_value }} </option>
+        <span class="input-group-addon input-group-addon-label" style="width:40%;height:34px;">{{ item.label }}</span>
+        <span class="input-group-addon input-group-addon-label" style="{% if item.unit and form == '0' %}width:40%;{% elif item.unit or form == '0' %}width: 50%;{% else %}width:60%;{% endif %}padding:0;border:0;">
+            <select class="form-control select {{ item.web_class_str }}" id="{% if form != '0' %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}-value" data-key="{{ item.key }}" data-type="{{ item.item_type }}" data-name="{{ item.name }}">
+                {% if item.control_element_options.empty_dictionary == 1 %}
+                    <option disabled selected value> {{ item.control_element_options.placeholder }} </option>
                 {% endif %}
-                {% for dropdown_item in dropdown.dictionary.dictionaryitem_set.all %}
-                    <option class="select-item {{ dropdown.web_class_str }}" id="{{ dropdown_item.pk }}" data-value="{{ dropdown_item.value }}" value="{{ dropdown_item.value }}">{{ dropdown_item.label }}</option>
+                {% for item in item.control_element_options.dictionary.dictionaryitem_set.all %}
+                    <option class="select-item {{ item.web_class_str }}" id="{{ item.pk }}" data-value="{{ item.value }}" value="{{ item.value }}">{{ item.label }}</option>
                 {% endfor %}
                 </select>
             </span>
-        {% if dropdown.unit %}
-            <span class="input-group-addon" style="width: 10%;display: inline-block;height: 34px;">{{ dropdown.unit }}</span>
+        {% if item.unit %}
+            <span class="input-group-addon" style="width: 10%;display: inline-block;height: 34px;">{{ item.unit }}</span>
         {% endif %}
         {% if form == "0" %}
             <span class="input-group-btn" style="display:inline-block;width:10%;">
-                <button class="btn btn-default write-task-set set-{{ dropdown.key }}" data-key="{{ dropdown.key }}" data-type="{{ dropdown.item_type}}" id="{{ dropdown.web_id }}-{{ uuid }}" type="button" style="width:100%;height:34px;padding-top:0;padding-bottom:0;">set</button>
+                <button class="btn btn-default write-task-set set-{{ item.key }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}" id="{{ item.web_id }}-{{ uuid }}" type="button" style="width:100%;height:34px;padding-top:0;padding-bottom:0;">set</button>
             </span>
         {% endif %}
     </div>

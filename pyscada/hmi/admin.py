@@ -7,7 +7,6 @@ from pyscada.models import Variable
 from pyscada.models import Color
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Chart, ChartAxis
-from pyscada.hmi.models import DropDown
 from pyscada.hmi.models import Dictionary
 from pyscada.hmi.models import DictionaryItem
 from pyscada.hmi.models import Form
@@ -15,7 +14,7 @@ from pyscada.hmi.models import SlidingPanelMenu
 from pyscada.hmi.models import Page
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import ControlPanel
-from pyscada.hmi.models import DisplayValueOption
+from pyscada.hmi.models import DisplayValueOption, ControlElementOption
 from pyscada.hmi.models import CustomHTMLPanel
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
@@ -101,7 +100,7 @@ class DictionaryItemInline(admin.TabularInline):
 
 class DictionaryAdmin(admin.ModelAdmin):
     list_display = ('id', 'name',)
-    list_filter = ('displayvalueoption', 'dropdown',)
+    list_filter = ('displayvalueoption', 'controlelementoption',)
     save_as = True
     save_as_continue = True
     inlines = [DictionaryItemInline]
@@ -110,15 +109,8 @@ class DictionaryAdmin(admin.ModelAdmin):
         return False
 
 
-class DropDownAdmin(admin.ModelAdmin):
-    list_display = ('id', 'label', 'empty', 'empty_value',)
-    list_filter = ('controlpanel', 'dropdowns_form',)
-    save_as = True
-    save_as_continue = True
-
-
 class FormAdmin(admin.ModelAdmin):
-    filter_horizontal = ('control_items', 'hidden_control_items_to_true', 'dropdowns')
+    filter_horizontal = ('control_items', 'hidden_control_items_to_true',)
     list_filter = ('controlpanel',)
     save_as = True
     save_as_continue = True
@@ -226,13 +218,13 @@ class WidgetAdmin(admin.ModelAdmin):
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
     filter_horizontal = (
         'pages', 'sliding_panel_menus', 'charts', 'control_items', 'widgets', 'views',
-        'custom_html_panels', 'process_flow_diagram', 'forms', 'dropdowns')
+        'custom_html_panels', 'process_flow_diagram', 'forms',)
     save_as = True
     save_as_continue = True
 
 
 class ControlPanelAdmin(admin.ModelAdmin):
-    filter_horizontal = ('items', 'forms', 'dropdowns')
+    filter_horizontal = ('items', 'forms',)
     save_as = True
     save_as_continue = True
 
@@ -275,12 +267,12 @@ admin_site.register(ControlItem, ControlItemAdmin)
 admin_site.register(Chart, ChartAdmin)
 admin_site.register(Pie, PieAdmin)
 admin_site.register(Dictionary, DictionaryAdmin)
-admin_site.register(DropDown, DropDownAdmin)
 admin_site.register(Form, FormAdmin)
 admin_site.register(SlidingPanelMenu, SlidingPanelMenuAdmin)
 admin_site.register(Page, PageAdmin)
 admin_site.register(GroupDisplayPermission, GroupDisplayPermissionAdmin)
 admin_site.register(DisplayValueOption, DisplayValueOptionAdmin)
+admin_site.register(ControlElementOption,)
 admin_site.register(ControlPanel, ControlPanelAdmin)
 admin_site.register(CustomHTMLPanel, CustomHTMLPanelAdmin)
 admin_site.register(Widget, WidgetAdmin)

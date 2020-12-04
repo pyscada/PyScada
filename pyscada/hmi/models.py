@@ -330,105 +330,6 @@ class Pie(WidgetContentModel):
 
 
 @python_2_unicode_compatible
-class DropDown(models.Model):
-    id = models.AutoField(primary_key=True)
-    label = models.CharField(max_length=400, default='')
-    variable = models.ForeignKey(Variable, null=True, blank=True, on_delete=models.CASCADE)
-    variable_property = models.ForeignKey(VariableProperty, null=True, blank=True, on_delete=models.CASCADE)
-    empty = models.BooleanField(default=False)
-    empty_value = models.CharField(max_length=30, default='------')
-    dictionary = models.ForeignKey(Dictionary, blank=True, null=True, on_delete=models.SET_NULL)
-
-    def __str__(self):
-        return text_type(str(self.id) + ': ' + self.label)
-
-    def visible(self):
-        return True
-
-    def web_id(self):
-        if self.variable_property:
-            return "dropdown-" + self.id.__str__() + "-" + self.variable_property.name.replace(' ', '_')
-        elif self.variable:
-            return "dropdown-" + self.id.__str__() + "-" + self.variable.name.replace(' ', '_')
-
-    def web_class_str(self):
-        if self.variable_property:
-            return 'prop-%d' % self.variable_property_id
-        elif self.variable:
-            return 'var-%d' % self.variable_id
-
-    def active(self):
-        if self.variable_property:
-            return self.variable_property.variable.active and self.variable_property.variable.device.active
-        elif self.variable:
-            return self.variable.active and self.variable.device.active
-        return False
-
-    def key(self):
-        if self.variable_property:
-            return self.variable_property_id
-        elif self.variable:
-            return self.variable_id
-
-    def name(self):
-        if self.variable_property:
-            return self.variable_property.name
-        elif self.variable:
-            return self.variable.name
-
-    def item_type(self):
-        if self.variable_property:
-            return "variable_property"
-        elif self.variable:
-            return "variable"
-
-    def unit(self):
-        if self.variable_property:
-            if self.variable_property.unit is not None:
-                return self.variable_property.unit.unit
-            else:
-                return ''
-        elif self.variable:
-            return self.variable.unit.unit
-
-    def min(self):
-        if self.variable_property:
-            return self.variable_property.value_min
-        elif self.variable:
-            return self.variable.value_min
-
-    def max(self):
-        if self.variable_property:
-            return self.variable_property.value_max
-        elif self.variable:
-            return self.variable.value_max
-
-    def value(self):
-        if self.variable_property:
-            return self.variable_property.value
-        elif self.variable:
-            return self.variable.prev_value
-
-    def value_class(self):
-        if self.variable_property:
-            return self.variable_property.value_class
-        elif self.variable:
-            return self.variable.value_class
-
-    def min_type(self):
-        if self.variable_property:
-            return self.variable_property.min_type
-        elif self.variable:
-            return self.variable.min_type
-
-    def max_type(self):
-        if self.variable_property:
-            return self.variable_property.max_type
-        elif self.variable:
-            return self.variable.max_type
-
-
-@python_2_unicode_compatible
 class DictionaryItem(models.Model):
     id = models.AutoField(primary_key=True)
     label = models.CharField(max_length=400, default='')
@@ -446,7 +347,6 @@ class Form(models.Model):
     button = models.CharField(max_length=50, default='Ok')
     control_items = models.ManyToManyField(ControlItem, related_name='control_items_form',
                                            limit_choices_to={'type': '0'}, blank=True)
-    dropdowns = models.ManyToManyField(DropDown, related_name='dropdowns_form', blank=True)
     hidden_control_items_to_true = models.ManyToManyField(ControlItem, related_name='hidden_control_items_form',
                                                           limit_choices_to={'type': '0'}, blank=True)
 
@@ -464,9 +364,6 @@ class Form(models.Model):
 
     def hidden_control_items_to_true_list(self):
         return [item.pk for item in self.hidden_control_items_to_true]
-
-    def dropdown_list(self):
-        return [item.pk for item in self.dropdowns]
 
 
 @python_2_unicode_compatible
@@ -488,7 +385,6 @@ class ControlPanel(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
     items = models.ManyToManyField(ControlItem, blank=True)
-    dropdowns = models.ManyToManyField(DropDown, blank=True)
     forms = models.ManyToManyField(Form, blank=True)
 
     def __str__(self):
@@ -684,7 +580,6 @@ class GroupDisplayPermission(models.Model):
     charts = models.ManyToManyField(Chart, blank=True)
     control_items = models.ManyToManyField(ControlItem, blank=True)
     forms = models.ManyToManyField(Form, blank=True)
-    dropdowns = models.ManyToManyField(DropDown, blank=True)
     widgets = models.ManyToManyField(Widget, blank=True)
     custom_html_panels = models.ManyToManyField(CustomHTMLPanel, blank=True)
     views = models.ManyToManyField(View, blank=True)

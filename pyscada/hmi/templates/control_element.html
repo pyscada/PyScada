@@ -33,6 +33,8 @@
         {% if item.value_class == 'BOOL' or item.value_class == 'BOOLEAN' %}
             <!-- input button -->
             {% include "button.html" %}
+        {% elif item.control_element_options.dictionary %}<!-- dropdown -->
+            {% include "dropdown.html" %}
         {% else %}
             <!-- input field -->
             {% include "value_field.html" %}

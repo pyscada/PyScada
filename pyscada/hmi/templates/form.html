@@ -14,9 +14,6 @@
             {% endif %}
         {% endif %}
     {% endfor %}
-    {% for dropdown in form.dropdowns.all %}
-        {% include "dropdown.html" with dropdown=dropdown form=form %}
-    {% endfor %}
 
     <div class="input-group set_value">
         <span class="input-group-btn">
