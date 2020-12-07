@@ -597,7 +597,9 @@ function update_data_values(key,val,time){
             }else if (DATA_TO_TIMESTAMP > 0 && time > DATA_TO_TIMESTAMP) {
             }else { $(".legendValue.type-numeric." + key).html(r_val); };
             $(".label .type-numeric." + key).html(r_val);
-            $('input.'+ key).attr("placeholder",r_val);
+            if ($('input.'+ key).attr("placeholder") == "") {
+                $('input.'+ key).attr("placeholder",r_val);
+            }
             // unixtime
             var date = new Date(val*1000);
             $(".type-numeric.unixtime_local_date_time." + key).html(date.toLocaleString());
@@ -624,7 +626,9 @@ function update_data_values(key,val,time){
                 $('button.update-able.write-task-btn.' + key).removeClass("btn-success");
                 val = 0
                 //$(".type-numeric." + key).html(0);
-                $('input.'+ key).attr("placeholder",0);
+                if ($('input.'+ key).attr("placeholder") == "") {
+                    $('input.'+ key).attr("placeholder",0);
+                }
             } else {
                 $(".label.type-bool." + key).removeClass("label-default");
                 $(".label.type-bool.status-blue." + key).addClass("label-primary");
@@ -640,7 +644,9 @@ function update_data_values(key,val,time){
                 $('button.update-able.write-task-btn.' + key).removeClass("btn-default");
                 $('button.update-able.write-task-btn.' + key).addClass("btn-success");
                 //$(".type-numeric." + key).html(1);
-                $('input.'+ key).attr("placeholder",1);
+                if ($('input.'+ key).attr("placeholder") == "") {
+                    $('input.'+ key).attr("placeholder",1);
+                }
             }
             $(".label .type-numeric." + key).html(val);
             if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && time < DATA_DISPLAY_FROM_TIMESTAMP) {
@@ -666,11 +672,15 @@ function update_data_values(key,val,time){
         }
         if (typeof(val)==="object" && val === null){
             $(".type-numeric." + key).html(val);
-            $('input.'+ key).attr("placeholder",val);
+            if ($('input.'+ key).attr("placeholder") == "") {
+                $('input.'+ key).attr("placeholder",val);
+            }
         }
         if (typeof(val)==="string"){
             $(".type-numeric." + key).html(val);
-            $('input.'+ key).attr("placeholder",val);
+            if ($('input.'+ key).attr("placeholder") == "") {
+                $('input.'+ key).attr("placeholder",val);
+            }
         }
 
         refresh_logo(key.split("-")[1], type);

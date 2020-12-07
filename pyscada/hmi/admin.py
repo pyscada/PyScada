@@ -176,10 +176,20 @@ class DisplayValueOptionAdmin(admin.ModelAdmin):
         return False
 
 
+class ControlElementOptionAdmin(admin.ModelAdmin):
+    save_as = True
+    save_as_continue = True
+
+    def has_module_permission(self, request):
+        return False
+
+
 class ControlItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'position', 'label', 'type', 'variable', 'variable_property', 'display_value_options')
-    list_filter = ('controlpanel', 'control_items_form',)
-    list_editable = ('position', 'label', 'type', 'variable', 'variable_property', 'display_value_options')
+    list_display = ('id', 'position', 'label', 'type', 'variable', 'variable_property', 'display_value_options',
+                    'control_element_options')
+    list_filter = ('controlpanel', 'control_items_form', 'type',)
+    list_editable = ('position', 'label', 'type', 'variable', 'variable_property', 'display_value_options',
+                     'control_element_options')
     raw_id_fields = ('variable',)
     save_as = True
     save_as_continue = True
@@ -272,7 +282,7 @@ admin_site.register(SlidingPanelMenu, SlidingPanelMenuAdmin)
 admin_site.register(Page, PageAdmin)
 admin_site.register(GroupDisplayPermission, GroupDisplayPermissionAdmin)
 admin_site.register(DisplayValueOption, DisplayValueOptionAdmin)
-admin_site.register(ControlElementOption,)
+admin_site.register(ControlElementOption, ControlElementOptionAdmin)
 admin_site.register(ControlPanel, ControlPanelAdmin)
 admin_site.register(CustomHTMLPanel, CustomHTMLPanelAdmin)
 admin_site.register(Widget, WidgetAdmin)

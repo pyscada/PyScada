@@ -2,7 +2,7 @@
     {% if item.type == 0 %}<!-- input value -->
         <span class="input-group-addon input-group-addon-label input-group-addon-label-left" style="width:40%;height:34px;">{{ item.label }}</span>
         <span class="input-group-addon input-group-addon-label input-group-addon-label-right" style="{% if item.unit and not form %}width:40%;{% elif item.unit or not form %}width: 50%;{% else %}width:60%;{% endif %}padding:0;border:0;">
-            <input type="text" class="form-control {{ item.web_class_str }}" id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}-value" placeholder="">
+            <input type="text" class="form-control {{ item.web_class_str }}" id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}-value" placeholder="{% if item.control_element_options is not None %}{{ item.control_element_options.placeholder }}{% endif %}">
         </span>
         {% if item.unit %}<span class="input-group-addon" style="width: 10%;display: inline-block;height: 34px;">{{ item.unit }}</span>{% endif %}
         {% if not form %}
