@@ -47,12 +47,12 @@ class GenericDevice:
             if hasattr(settings, 'VISA_DEVICE_SETTINGS'):
                 if resource_prefix in settings.VISA_DEVICE_SETTINGS:
                     extras = settings.VISA_DEVICE_SETTINGS[resource_prefix]
-            logger.debug('VISA_DEVICE_SETTINGS for %s: %r' % (resource_prefix, extras))
             self.inst = self.rm.open_resource(self._device.visadevice.resource_name, **extras)
         except:
-            logger.error("Visa ResourceManager cannot open resource : %s" % self._device.visadevice.resource_name)
+            # logger.error("Visa ResourceManager cannot open resource : %s" % self._device.visadevice.resource_name)
             return False
-        logger.debug('Connected visa device : %s' % self)
+        logger.debug('Connected visa device : %s with VISA_DEVICE_SETTINGS for %s: %r' %
+                     (self._device.visadevice.resource_name, resource_prefix, extras))
         return True
 
     def disconnect(self):

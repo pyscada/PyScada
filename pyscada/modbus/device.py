@@ -91,9 +91,7 @@ class RegisterBlock:
         elif hasattr(result, 'bits'):
             return self.decode_data(result.bits)
         else:
-            logger.error("Modbus requested data has no bits nor registers, it's : %s" % result)
-            logger.error(self.__dict__)
-            logger.error("Modbus requested data has no bits nor registers, it's : %s %s" % (first_address, quantity))
+            logger.warning("Modbus requested data has no bits nor registers, it's : %s - %s" % (result, self.variables))
             return None
 
     def decode_data(self, result):
