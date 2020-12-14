@@ -876,7 +876,7 @@ function set_x_axes(){
     if(!progressbar_resize_active){
         $.each(PyScadaPlots,function(plot_id){
             var self = this, doBind = function() {
-                PyScadaPlots[plot_id].update(false);
+                PyScadaPlots[plot_id].update(true);
             };
             $.browserQueue.add(doBind, this);
         });
