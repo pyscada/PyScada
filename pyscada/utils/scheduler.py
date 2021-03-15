@@ -979,30 +979,22 @@ class SingleDeviceDAQProcess(Process):
             if len(data) > 0:
                 return 1, data
 
-        if (time() - self.last_query > self.dt_query_data) or \
-                DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
-                                              device_id=self.device_id).count():
+        device_read_tasks = DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
+                                                          device_id=self.device_id)
+
+        if (time() - self.last_query > self.dt_query_data) or len(device_read_tasks):
             # TODO : Read data for a variable or a VP only
 
             self.last_query = time()
             # Query data
             if self.device is not None:
                 tmp_data = self.device.request_data()
-            else:
-                for task in DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
-                                                          device_id=self.device_id).order_by('start'):
-                    task.failed = True
-                    task.finished = time()
-                    task.save()
-                return 1, None
-            if isinstance(tmp_data, list):
-                if len(tmp_data) > 0:
-                    for task in DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
-                                                              device_id=self.device_id).order_by('start'):
-                        task.done = True
-                        task.finished = time()
-                        task.save()
-                    return 1, [tmp_data, ]
+                if isinstance(tmp_data, list):
+                    if len(tmp_data) > 0:
+                        device_read_tasks.update(done=True, finished=time())
+                        return 1, [tmp_data, ]
+
+            device_read_tasks.update(failed=True, finished=time())
 
         return 1, None
 

@@ -37,9 +37,18 @@ class WidgetContentModel(models.Model):
     def update_widget_content_entry(self):
         def fullname(o):
             return o.__module__ + "." + o.__class__.__name__
+        self.delete_duplicates()
         wc = WidgetContent.objects.get(content_pk=self.pk, content_model=fullname(self))
         wc.content_str = self.__str__()
         wc.save()
+
+    def delete_duplicates(self):
+        for i in WidgetContent.objects.all():
+            c = WidgetContent.objects.filter(content_pk=i.content_pk, content_model=i.content_model).count()
+            if c > 1:
+                logger.debug("%s WidgetContent for %s ( %s )" % (c, i.content_model, i.content_pk))
+                for j in range(0, c-1):
+                    WidgetContent.objects.filter(content_pk=i.content_pk, content_model=i.content_model)[j].delete()
 
     class Meta:
         abstract = True
@@ -139,14 +148,19 @@ class ControlItem(models.Model):
         ordering = ['position']
 
     def __str__(self):
+        type_str = ""
+        for i in self.type_choices:
+            if i[0] == self.type:
+                type_str = i[1]
+
         if self.variable_property:
-            return self.id.__str__() + "-" + self.label.replace(' ', '_') + "-" + \
+            return self.id.__str__() + "-" + type_str.replace(' ', '_') + "-" + self.label.replace(' ', '_') + "-" + \
                    self.variable_property.name.replace(' ', '_')
         elif self.variable:
-            return self.id.__str__() + "-" + self.label.replace(' ', '_') + "-" + "-" + \
+            return self.id.__str__() + "-" + type_str.replace(' ', '_') + "-" + "-" + self.label.replace(' ', '_') + "-" + "-" + \
                    self.variable.name.replace(' ', '_')
         else:
-            return "No variable nor property is attached to this control item"
+            return "Empty control item with id " + self.id.__str__()
 
     def web_id(self):
         if self.variable_property:

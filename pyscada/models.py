@@ -392,6 +392,8 @@ class VariablePropertyManager(models.Manager):
         elif type(variable) == int or type(variable) == float:
             kwargs = {'name': name.upper(), 'variable_id': variable}
         else:
+            logger.debug("update_or_create_property failed with variable : " + str(variable) +
+                         " - and property name : " + str(name))
             return None
 
         vp = super(VariablePropertyManager, self).get_queryset().filter(**kwargs).first()

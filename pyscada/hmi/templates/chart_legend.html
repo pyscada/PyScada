@@ -30,7 +30,7 @@
                       <td>
                           <span class="hidden" id="chart-legend-checkbox-status-{{widget_pk}}-{{chart.pk}}-{{var.pk}}" >1</span>
                           <input type="checkbox" checked="checked" id="chart-legend-checkbox-{{widget_pk}}-{{ chart.pk }}-{{ var.pk }}">
-                          <div class="hidden variable-config" data-name="{{var.name}}" data-key="{{var.pk}}" data-color="{{ var.chart_line_color_code }}" data-init-type="1" data-type="variable" data-axis-id="{{ axe.pk }}"></div>
+                          <div class="hidden variable-config" data-name="{{var.name}}" data-key="{{var.pk}}" data-color="{{ var.chart_line_color_code }}" data-init-type="1" data-type="variable" data-axis-id="{{ axe.pk }}" data-device-polling_interval="{{ var.device.polling_interval }}"></div>
                       </td>
                       <td class="legendColorBox">
                           <div style="border:1px solid #ccc;padding:1px">
