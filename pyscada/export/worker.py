@@ -194,7 +194,7 @@ class MasterProcess(BaseProcess):
                 failed=False,
                 datetime_start__lte=datetime.now(UTC)).first()  # get all jobs
             if job:
-                bp = BackgroundProcess(label='pyscada.export.ExportProcess-%d' % job.pk,
+                bp = BackgroundProcess(label='pyscada.export-%d' % job.pk,
                                        message='waiting..',
                                        enabled=True,
                                        parent_process_id=self.parent_process_id,

@@ -658,12 +658,12 @@ class Process(object):
                         # todo handle
                         # raise StopIteration
                         BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=now(),
-                                                                                    failed=True)
+                                                                                    failed=True, message='failed')
                         exec_loop = False
                     elif status == 0:
                         # loop is done exit
                         BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=now(),
-                                                                                    done=True)
+                                                                                    done=True, message='done')
                         #raise StopIteration
                         exec_loop = False
                     else:
@@ -756,6 +756,20 @@ class SingleDeviceDAQProcessWorker(Process):
     def __init__(self, dt=5, **kwargs):
         super(Process, self).__init__(dt=dt, **kwargs)
 
+    def create_bp(self, item):
+        bp = BackgroundProcess(label=self.bp_label % item.pk,
+                               message='waiting..',
+                               enabled=True,
+                               parent_process_id=self.process_id,
+                               process_class=self.process_class,
+                               process_class_kwargs=json.dumps(
+                                   {'device_id': item.pk}))
+        bp.save()
+        self.processes.append({'id': bp.id,
+                               'key': item.pk,
+                               'device_id': item.pk,
+                               'failed': 0})
+
     def init_process(self):
         self.processes = []
         for process in BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False):
@@ -769,22 +783,11 @@ class SingleDeviceDAQProcessWorker(Process):
             process.stop(cleanup=True)
 
         # clean up
-        BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False).delete()
+        BackgroundProcess.objects.filter(parent_process__pk=self.process_id).delete()
 
         grouped_ids = {}
         for item in Device.objects.filter(active=True, **self.device_filter):
-            bp = BackgroundProcess(label=self.bp_label % item.pk,
-                                   message='waiting..',
-                                   enabled=True,
-                                   parent_process_id=self.process_id,
-                                   process_class=self.process_class,
-                                   process_class_kwargs=json.dumps(
-                                       {'device_id': item.pk}))
-            bp.save()
-            self.processes.append({'id': bp.id,
-                                   'key': item.pk,
-                                   'device_id': item.pk,
-                                   'failed': 0})
+            self.create_bp(item)
 
     def loop(self):
         """
@@ -794,11 +797,11 @@ class SingleDeviceDAQProcessWorker(Process):
         for process in self.processes:
             try:
                 BackgroundProcess.objects.get(pk=process['id'])
-            except BackgroundProcess.DoesNotExist or BackgroundProcess.MultipleObjectsReturned:
+            except (BackgroundProcess.DoesNotExist, BackgroundProcess.MultipleObjectsReturned):
 
                 # Process is dead, spawn new instance
                 if process['failed'] < 3:
-                    bp = BackgroundProcess(label=self.bp_label % process['id'],
+                    bp = BackgroundProcess(label=self.bp_label % process['key'],
                                            message='waiting..',
                                            enabled=True,
                                            parent_process_id=self.process_id,
@@ -881,7 +884,7 @@ class MultiDeviceDAQProcessWorker(Process):
         for process in self.processes:
             try:
                 BackgroundProcess.objects.get(pk=process['id'])
-            except BackgroundProcess.DoesNotExist or BackgroundProcess.MultipleObjectsReturned:
+            except (BackgroundProcess.DoesNotExist, BackgroundProcess.MultipleObjectsReturned):
 
                 # Process is dead, spawn new instance
                 if process['failed'] < 3:
@@ -1008,6 +1011,7 @@ class SingleDeviceDAQProcess(Process):
         """
         just re-init
         """
+        self.stop()
         return self.init_process()
 
 
@@ -1095,4 +1099,5 @@ class MultiDeviceDAQProcess(Process):
         """
         just re-init
         """
+        self.stop()
         return self.init_process()

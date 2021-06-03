@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.models import Device, DeviceProtocol
+from pyscada.models import Device, DeviceProtocol, DeviceHandler
 from pyscada.models import Variable, VariableProperty
 from pyscada.models import Scaling, Color
 from pyscada.models import Unit
@@ -19,6 +19,10 @@ from django.contrib.admin import AdminSite
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.utils.translation import ugettext_lazy as _
+from django.db.models.fields.related import OneToOneRel
+
+from django import forms
+from django.core.exceptions import ValidationError
 
 import datetime
 import signal
@@ -105,6 +109,49 @@ class BackgroundProcessFilter(admin.SimpleListFilter):
                 return queryset.filter(parent_process_id=self.value())
 
 
+class VariableAdminFrom(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(VariableAdminFrom, self).__init__(*args, **kwargs)
+        if isinstance(self.instance, Variable):
+            wtf = Color.objects.all()
+            w = self.fields['chart_line_color'].widget
+            color_choices = []
+            for choice in wtf:
+                color_choices.append((choice.id, choice.color_code()))
+            w.choices = color_choices
+
+            def create_option_color(self, name, value, label, selected, index, subindex=None, attrs=None):
+                font_color = hex(int('ffffff', 16) - int(label[1::], 16))[2::]
+                # attrs = self.build_attrs(attrs,{'style':'background: %s; color: #%s'%(label,font_color)})
+                self.option_inherits_attrs = True
+                return self._create_option(name, value, label, selected, index, subindex,
+                                           attrs={'style': 'background: %s; color: #%s' % (label, font_color)})
+
+            import types
+            # from django.forms.widgets import Select
+            w.widget._create_option = w.widget.create_option  # copy old method
+            w.widget.create_option = types.MethodType(create_option_color, w.widget)  # replace old with new
+
+    def has_changed(self):
+        # Force save inline for the good protocol if selected device and protocol_id exists
+        if self.data.get("device", None) != '':
+            d = Device.objects.get(id=int(self.data.get("device", None)))
+            if hasattr(self.instance, "protocol_id") and d is not None and \
+                    d.protocol.id == self.instance.protocol_id:
+                logger.error("Saving new inline for %s" % self.data.get('protocol', None))
+                return True
+        return super().has_changed()
+
+    def clean(self):
+        # on device change delete protocol variable that doesn't correspond
+        if self.has_changed() and self.instance.pk and "device" in self.changed_data:
+            related_variables = [field for field in Variable._meta.get_fields() if issubclass(type(field), OneToOneRel)]
+            for v in related_variables:
+                if hasattr(self.instance, v.name):
+                    if getattr(self.instance, v.name).protocol_id != self.cleaned_data["device"].protocol.id:
+                        getattr(self.instance, v.name).delete()
+
+
 class VariableState(Variable):
     class Meta:
         proxy = True
@@ -117,6 +164,22 @@ class VariableStateAdmin(admin.ModelAdmin):
     list_per_page = 10
     actions = None
     search_fields = ('name',)
+    form = VariableAdminFrom
+
+    # Add inlines for any model with OneToOne relation with Device
+    related_variables = [field for field in Variable._meta.get_fields() if issubclass(type(field), OneToOneRel)]
+    inlines = []
+    for v in related_variables:
+        cl = type(v.name, (admin.StackedInline,), dict(model=v.related_model, form=VariableAdminFrom))  # classes=['collapse']
+        inlines.append(cl)
+
+    class Media:
+        js = (
+            # To be sure the jquery files are loaded before our js file
+            'admin/js/vendor/jquery/jquery.min.js',
+            'admin/js/jquery.init.js',
+            'pyscada/js/admin/display_inline_protocols_variable.js',
+        )
 
     def last_value(self, instance):
         element = RecordedData.objects.last_element(variable_id=instance.pk)
@@ -128,35 +191,52 @@ class VariableStateAdmin(admin.ModelAdmin):
             return ' - : NaN ' + instance.unit.unit
 
 
+class DeviceForm(forms.ModelForm):
+    def has_changed(self):
+        # Force save inline for the good protocol if parent_device() and protocol_id exists
+        if self.data.get('protocol', None) is not None:
+            if hasattr(self.instance, "protocol_id") and \
+                    self.data.get('protocol', None) == str(self.instance.protocol_id):
+                logger.error("Saving new inline for %s" % self.data.get('protocol', None))
+                return True
+        else:
+            if hasattr(self.instance, "protocol_id") and \
+                    hasattr(self.instance, "parent_device") and \
+                    self.instance.parent_device().protocol.id == self.instance.protocol_id:
+                logger.error("Saving existing inline for %s" % self.instance.parent_device())
+                return True
+        return super().has_changed()
+
+
 class DeviceAdmin(admin.ModelAdmin):
     list_display = ('id', 'short_name', 'description', 'protocol', 'active', 'polling_interval')
     list_editable = ('active', 'polling_interval')
     list_display_links = ('short_name', 'description')
     save_as = True
     save_as_continue = True
+    form = DeviceForm
 
+    # Add inlines for any model with OneToOne relation with Device
+    devices = [field for field in Device._meta.get_fields() if issubclass(type(field), OneToOneRel)]
+    inlines = []
+    for d in devices:
+        cl = type(d.name, (admin.StackedInline,), dict(model=d.related_model, form=DeviceForm))  # classes=['collapse']
+        inlines.append(cl)
 
-class VariableAdminFrom(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        super(VariableAdminFrom, self).__init__(*args, **kwargs)
-        wtf = Color.objects.all()
-        w = self.fields['chart_line_color'].widget
-        color_choices = []
-        for choice in wtf:
-            color_choices.append((choice.id, choice.color_code()))
-        w.choices = color_choices
+    # Disable changing protocol
+    def get_readonly_fields(self, request, obj=None):
+        if obj is not None and obj.protocol is not None:
+            return ['protocol']
+        return []
 
-        def create_option_color(self, name, value, label, selected, index, subindex=None, attrs=None):
-            font_color = hex(int('ffffff', 16) - int(label[1::], 16))[2::]
-            # attrs = self.build_attrs(attrs,{'style':'background: %s; color: #%s'%(label,font_color)})
-            self.option_inherits_attrs = True
-            return self._create_option(name, value, label, selected, index, subindex,
-                                       attrs={'style': 'background: %s; color: #%s' % (label, font_color)})
-
-        import types
-        # from django.forms.widgets import Select
-        w.widget._create_option = w.widget.create_option  # copy old method
-        w.widget.create_option = types.MethodType(create_option_color, w.widget)  # replace old with new
+    # Add JS file to display the right inline
+    class Media:
+        js = (
+            # To be sure the jquery files are loaded before our js file
+            'admin/js/vendor/jquery/jquery.min.js',
+            'admin/js/jquery.init.js',
+            'pyscada/js/admin/display_inline_protocols_device.js',
+        )
 
 
 class VariableAdmin(admin.ModelAdmin):
@@ -165,6 +245,22 @@ class VariableAdmin(admin.ModelAdmin):
     form = VariableAdminFrom
     save_as = True
     save_as_continue = True
+
+    # Add inlines for any model with OneToOne relation with Device
+    related_variables = [field for field in Variable._meta.get_fields() if issubclass(type(field), OneToOneRel)]
+    inlines = []
+    for v in related_variables:
+        cl = type(v.name, (admin.StackedInline,), dict(model=v.related_model, form=VariableAdminFrom))  # classes=['collapse']
+        inlines.append(cl)
+
+    # Add JS file to display the right inline
+    class Media:
+        js = (
+            # To be sure the jquery files are loaded before our js file
+            'admin/js/vendor/jquery/jquery.min.js',
+            'admin/js/jquery.init.js',
+            'pyscada/js/admin/display_inline_protocols_variable.js',
+        )
 
     def device_name(self, instance):
         return instance.device.short_name
@@ -341,6 +437,7 @@ class VariablePropertyAdmin(admin.ModelAdmin):
 
 admin_site = PyScadaAdminSite(name='pyscada_admin')
 admin_site.register(Device, DeviceAdmin)
+admin_site.register(DeviceHandler)
 admin_site.register(Variable, CoreVariableAdmin)
 admin_site.register(VariableProperty, VariablePropertyAdmin)
 admin_site.register(Scaling)

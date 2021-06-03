@@ -62,7 +62,7 @@ def view(request, link_title):
 
     try:
         v = View.objects.get(link_title=link_title)
-    except View.DoesNotExist or View.MultipleObjectsReturned:
+    except (View.DoesNotExist, View.MultipleObjectsReturned):
         return HttpResponse(status=404)
 
     if GroupDisplayPermission.objects.count() == 0:

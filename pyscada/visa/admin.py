@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 from pyscada.visa import PROTOCOL_ID
 from pyscada.visa.models import VISAVariable
 from pyscada.visa.models import VISADevice
-from pyscada.visa.models import VISADeviceHandler, ExtendedVISADevice, ExtendedVISAVariable
+from pyscada.visa.models import ExtendedVISADevice, ExtendedVISAVariable
 from pyscada.admin import DeviceAdmin
 from pyscada.admin import CoreVariableAdmin
 from pyscada.admin import admin_site
@@ -21,13 +21,13 @@ class DeviceAdminInline(admin.StackedInline):
 
 
 class VISADeviceAdmin(DeviceAdmin):
-    list_display = DeviceAdmin.list_display + ('resource_name', 'instrument',)
+    list_display = DeviceAdmin.list_display + ('resource_name', 'instrument_handler',)
 
     def resource_name(self, instance):
         return instance.visadevice.resource_name
 
-    def instrument(self, instance):
-        return instance.visadevice.instrument
+    def instrument_handler(self, instance):
+        return instance.visadevice.instrument_handler
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'protocol':
@@ -79,6 +79,5 @@ class VISAVariableAdmin(CoreVariableAdmin):
     ]
 
 
-admin_site.register(ExtendedVISADevice, VISADeviceAdmin)
-admin_site.register(ExtendedVISAVariable, VISAVariableAdmin)
-admin_site.register(VISADeviceHandler)
+# admin_site.register(ExtendedVISADevice, VISADeviceAdmin)
+# admin_site.register(ExtendedVISAVariable, VISAVariableAdmin)

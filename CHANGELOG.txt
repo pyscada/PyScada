@@ -214,3 +214,13 @@
   - fixed re-login after logout (#22)
   - added LINK_TARGET option to change the default behaviour of links in view overview (#23)
   - Catching exceptions if DB close while pyscada is running
+
+0.7.0rc17, 0.7.0rc18
+  - add pre_delete signals to stop the background process before deleting a device
+  - move widget post_save signal to the model to remove the global receiver (not filtering by sender)
+  - move device handlers to core
+  - add stop in DAQ Process restart
+  - move the device and variable protocol specific configuration to core
+  - add protocol name in device __str__ for the variable js admin file
+  - add complex events
+

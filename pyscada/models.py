@@ -8,7 +8,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.timezone import now
-
+from django.db.models.signals import post_save
 
 from pyscada.utils import blow_up_data, timestamp_to_datetime
 
@@ -517,7 +517,6 @@ class DeviceProtocol(models.Model):
 class Device(models.Model):
     id = models.AutoField(primary_key=True)
     short_name = models.CharField(max_length=400, default='')
-    protocol = models.ForeignKey(DeviceProtocol, null=True, on_delete=models.CASCADE)
     description = models.TextField(default='', verbose_name="Description", null=True)
     active = models.BooleanField(default=True)
     byte_order_choices = (
@@ -545,9 +544,11 @@ class Device(models.Model):
         (3600.0, '1 Hour'),
     )
     polling_interval = models.FloatField(default=polling_interval_choices[3][0], choices=polling_interval_choices)
+    protocol = models.ForeignKey(DeviceProtocol, null=True, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.short_name
+        # display protocol for the JS filter for inline variables (hmi.static.pyscada.js.admin)
+        return self.protocol.protocol + "-" + self.short_name
 
     def get_device_instance(self):
         try:
@@ -557,6 +558,28 @@ class Device(models.Model):
         except:
             logger.error('%s(%d), unhandled exception\n%s' % (self.short_name, getpid(), traceback.format_exc()))
             return None
+
+
+@python_2_unicode_compatible
+class DeviceHandler(models.Model):
+    name = models.CharField(default='', max_length=255)
+    handler_class = models.CharField(default='pyscada.visa.devices.HP3456A', max_length=255,
+                                     help_text='a Base class to extend can be found at '
+                                               'pyscada.PROTOCOL.devices.GenericDevice. '
+                                               'Exemple : pyscada.visa.devices.HP3456A, '
+                                               'pyscada.smbus.devices.ups_pico, '
+                                               'pyscada.serial.devices.AirLinkGX450')
+    handler_path = models.CharField(default=None, max_length=255, null=True, blank=True,
+                                    help_text='If no handler class, pyscada will look at the path. '
+                                              'Exemple : /home/pi/my_handler.py')
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        # TODO : select only devices of selected variables
+        post_save.send_robust(sender=DeviceHandler, instance=Device.objects.first())
+        super(DeviceHandler, self).save(*args, **kwargs)
 
 
 @python_2_unicode_compatible
@@ -1689,8 +1712,9 @@ class ComplexEvent(models.Model):
                 vars_infos[item.get_id()] = item_info
             elif item.get_type() == 'variable_property' and len(item_info):
                 vp_infos[item.get_id()] = item_info
-        self.active = valid
-        self.save()
+        if self.active != valid:
+            self.active = valid
+            self.save()
         return valid, vars_infos, vp_infos
 
     def __str__(self):
@@ -1774,6 +1798,7 @@ class ComplexEventItem(models.Model):
                         'hysteresis_high': self.hysteresis_high,
                         }
 
+            actived = self.active
             if limit_low is not None and self.limit_low_type == 0 and item_value <= \
                     (limit_low + self.hysteresis_low * np.power(-1, self.active)):
                 var_info['in_limit'] = False
@@ -1793,7 +1818,8 @@ class ComplexEventItem(models.Model):
             else:
                 var_info['in_limit'] = True
                 self.active = True
-            self.save()
+            if actived != self.active:
+                self.save()
             return self.active, var_info
         return None, {}
 

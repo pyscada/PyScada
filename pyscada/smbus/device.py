@@ -18,11 +18,11 @@ class Device:
     def __init__(self, device):
         self.variables = {}
         self.device = device
-        if self.device.smbusdevice.instrument is not None \
-                and self.device.smbusdevice.instrument.handler_path is not None:
-            sys.path.append(self.device.smbusdevice.instrument.handler_path)
+        if self.device.smbusdevice.instrument_handler is not None \
+                and self.device.smbusdevice.instrument_handler.handler_path is not None:
+            sys.path.append(self.device.smbusdevice.instrument_handler.handler_path)
         try:
-            mod = __import__(self.device.smbusdevice.instrument.handler_class, fromlist=['Handler'])
+            mod = __import__(self.device.smbusdevice.instrument_handler.handler_class, fromlist=['Handler'])
             device_handler = getattr(mod, 'Handler')
             self._h = device_handler(self.device, self.variables)
             self.driver_handler_ok = True

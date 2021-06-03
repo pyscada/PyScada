@@ -55,5 +55,5 @@ class PhantVariableAdmin(CoreVariableAdmin):
         return qs.filter(device__protocol_id=PROTOCOL_ID)
 
 
-admin_site.register(ExtendedPhantDevice, PhantDeviceAdmin)
-admin_site.register(ExtendedPhantVariable, PhantVariableAdmin)
+# admin_site.register(ExtendedPhantDevice, PhantDeviceAdmin)
+# admin_site.register(ExtendedPhantVariable, PhantVariableAdmin)

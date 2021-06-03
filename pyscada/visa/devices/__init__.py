@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-
+from .. import PROTOCOL_ID
+from pyscada.models import DeviceProtocol
 
 from django.conf import settings
 
@@ -32,6 +33,13 @@ class GenericDevice:
         if not driver_ok:
             logger.error("Visa driver NOT ok")
             return False
+
+        if self._device.protocol.id != PROTOCOL_ID:
+            logger.error("Wrong handler selected : it's for %s device while device protocol is %s" %
+                         (str(DeviceProtocol.objects.get(id=PROTOCOL_ID)).upper(),
+                          str(self._device.protocol).upper()))
+            return False
+
         visa_backend = '@py'  # use PyVISA-py as backend
         if hasattr(settings, 'VISA_BACKEND'):
             visa_backend = settings.VISA_BACKEND

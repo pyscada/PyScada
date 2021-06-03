@@ -1,7 +1,8 @@
 from __future__ import unicode_literals
 
-from pyscada.models import Device
+from pyscada.models import Device, DeviceHandler
 from pyscada.models import Variable
+from . import PROTOCOL_ID
 
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -14,10 +15,15 @@ logger = logging.getLogger(__name__)
 @python_2_unicode_compatible
 class SMBusDevice(models.Model):
     smbus_device = models.OneToOneField(Device, on_delete=models.CASCADE)
-    instrument = models.ForeignKey('SMBusDeviceHandler', null=True, on_delete=models.SET_NULL)
     port = models.CharField(default='1', max_length=400, )
     address_choices = [(i, '0x%s/%d' % (hex(i), i)) for i in range(256)]
-    address = models.PositiveSmallIntegerField(default=None, choices=address_choices, null=True)
+    address = models.PositiveSmallIntegerField(default=address_choices[0][0], choices=address_choices, null=True)
+    instrument_handler = models.ForeignKey(DeviceHandler, null=True, on_delete=models.SET_NULL)
+
+    protocol_id = PROTOCOL_ID
+
+    def parent_device(self):
+        return self.smbus_device
 
     def __str__(self):
         return self.smbus_device.short_name
@@ -28,24 +34,10 @@ class SMBusVariable(models.Model):
     smbus_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
     information = models.CharField(default='None', max_length=400, )
 
+    protocol_id = PROTOCOL_ID
+
     def __str__(self):
         return self.smbus_variable.short_name
-
-
-@python_2_unicode_compatible
-class SMBusDeviceHandler(models.Model):
-    name = models.CharField(default='', max_length=255)
-    handler_class = models.CharField(default='pyscada.smbus.devices.ups_pico', max_length=255,
-                                     help_text='a Base class to extend can be found at pyscada.smbus.devices.GenericDevice')
-    handler_path = models.CharField(default=None, max_length=255, null=True, blank=True, help_text='')  # todo help
-
-    def __str__(self):
-        return self.name
-
-    def save(self, *args, **kwargs):
-        # TODO : select only devices of selected variables
-        post_save.send_robust(sender=SMBusDeviceHandler, instance=SMBusDevice.objects.first())
-        super(SMBusDeviceHandler, self).save(*args, **kwargs)
 
 
 class ExtendedSMBusDevice(Device):

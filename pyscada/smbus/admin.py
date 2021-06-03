@@ -7,7 +7,7 @@ from pyscada.admin import CoreVariableAdmin
 from pyscada.models import Device, DeviceProtocol
 
 from pyscada.smbus import PROTOCOL_ID
-from pyscada.smbus.models import SMBusDevice, SMBusDeviceHandler
+from pyscada.smbus.models import SMBusDevice
 from pyscada.smbus.models import SMBusVariable, ExtendedSMBusDevice, ExtendedSMBusVariable
 
 from django.contrib import admin
@@ -21,7 +21,7 @@ class SMBusDeviceAdminInline(admin.StackedInline):
 
 
 class SMBusDeviceAdmin(DeviceAdmin):
-    list_display = DeviceAdmin.list_display + ('instrument', 'port', 'address',)
+    list_display = DeviceAdmin.list_display + ('instrument_handler', 'port', 'address',)
 
     def address(self, instance):
         try:
@@ -32,8 +32,8 @@ class SMBusDeviceAdmin(DeviceAdmin):
         except TypeError:
             return ""
 
-    def instrument(self, instance):
-        return instance.smbusdevice.instrument
+    def instrument_handler(self, instance):
+        return instance.smbusdevice.instrument_handler
 
     def port(self, instance):
         return instance.smbusdevice.port
@@ -85,6 +85,5 @@ class SMBusVariableAdmin(CoreVariableAdmin):
     ]
 
 
-admin_site.register(ExtendedSMBusDevice, SMBusDeviceAdmin)
-admin_site.register(ExtendedSMBusVariable, SMBusVariableAdmin)
-admin_site.register(SMBusDeviceHandler)
+# admin_site.register(ExtendedSMBusDevice, SMBusDeviceAdmin)
+# admin_site.register(ExtendedSMBusVariable, SMBusVariableAdmin)

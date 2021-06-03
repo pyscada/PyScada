@@ -60,5 +60,5 @@ class SystemStatVariableAdmin(CoreVariableAdmin):
         SystemStatVariableAdminInline
     ]
 
-admin_site.register(ExtendedSystemStatDevice, SystemStatDeviceAdmin)
-admin_site.register(ExtendedSystemStatVariable, SystemStatVariableAdmin)
+# admin_site.register(ExtendedSystemStatDevice, SystemStatDeviceAdmin)
+# admin_site.register(ExtendedSystemStatVariable, SystemStatVariableAdmin)

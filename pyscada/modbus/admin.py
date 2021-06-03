@@ -92,5 +92,5 @@ class ModbusVariableAdmin(CoreVariableAdmin):
     ]
 
 
-admin_site.register(ExtendedModbusDevice, ModbusDeviceAdmin)
-admin_site.register(ExtendedModbusVariable, ModbusVariableAdmin)
+# admin_site.register(ExtendedModbusDevice, ModbusDeviceAdmin)
+# admin_site.register(ExtendedModbusVariable, ModbusVariableAdmin)

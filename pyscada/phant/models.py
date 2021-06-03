@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from pyscada.models import Device, Variable
+from . import PROTOCOL_ID
 
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -23,6 +24,14 @@ class PhantDevice(models.Model):
     phant_device = models.OneToOneField(Device, on_delete=models.CASCADE)
     public_key = models.SlugField(max_length=20, default=gen_random_key, unique=True)
     private_key = models.CharField(max_length=20, default=gen_random_key)
+
+    protocol_id = PROTOCOL_ID
+
+    def parent_device(self):
+        try:
+            return self.phant_device
+        except:
+            return None
 
     def __str__(self):
         return self.phant_device.short_name

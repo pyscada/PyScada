@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-
-
+from .. import PROTOCOL_ID
+from pyscada.models import DeviceProtocol
 from django.conf import settings
 
 try:
@@ -32,10 +32,17 @@ class GenericDevice:
             logger.error("SMBus driver NOT ok")
             return False
 
+        if self._device.protocol.id != PROTOCOL_ID:
+            logger.error("Wrong handler selected : it's for %s device while device protocol is %s" %
+                         (str(DeviceProtocol.objects.get(id=PROTOCOL_ID)).upper(),
+                          str(self._device.protocol).upper()))
+            return False
+
         try:
             self.inst = smbus.SMBus(int(self._device.smbusdevice.port))
         except:
-            logger.error("SMBus connect failed. Port : %s" % self._device.smbusdevice.port)
+            logger.error("SMBus connect failed. Port : %s - id : %s - name %s" %
+                         (self._device.smbusdevice.port, self._device.id, self._device.short_name))
             return False
         # logger.debug('Connected SMBus device : %s' % self)
         return True

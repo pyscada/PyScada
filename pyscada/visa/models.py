@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.models import Variable, Device
+from pyscada.models import Variable, Device, DeviceHandler
+from . import PROTOCOL_ID
 
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -20,6 +21,8 @@ class VISAVariable(models.Model):
     device_property = models.CharField(default='present_value', max_length=255,
                                        help_text='name of the Property the variable be assigned to')
 
+    protocol_id = PROTOCOL_ID
+
     def __str__(self):
         return self.visa_variable.name
 
@@ -35,26 +38,15 @@ class VISADevice(models.Model):
                                       'ASRL/dev/ttyUSB0::INSTR'\n 
                                       http://pyvisa.readthedocs.io/en/stable/names.html""")
 
-    instrument = models.ForeignKey('VISADeviceHandler', null=True, on_delete=models.SET_NULL)
+    instrument_handler = models.ForeignKey(DeviceHandler, null=True, on_delete=models.SET_NULL)
+
+    protocol_id = PROTOCOL_ID
+
+    def parent_device(self):
+        return self.visa_device
 
     def __str__(self):
         return self.visa_device.short_name
-
-
-@python_2_unicode_compatible
-class VISADeviceHandler(models.Model):
-    name = models.CharField(default='', max_length=255)
-    handler_class = models.CharField(default='pyscada.visa.devices.HP3456A', max_length=255,
-                                     help_text='a Base class to extend can be found at pyscada.visa.devices.GenericDevice')
-    handler_path = models.CharField(default=None, max_length=255, null=True, blank=True, help_text='')  # todo help
-
-    def __str__(self):
-        return self.name
-
-    def save(self, *args, **kwargs):
-        # TODO : select only devices of selected variables
-        post_save.send_robust(sender=VISADeviceHandler, instance=VISADevice.objects.first())
-        super(VISADeviceHandler, self).save(*args, **kwargs)
 
 
 class ExtendedVISADevice(Device):

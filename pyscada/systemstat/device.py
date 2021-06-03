@@ -298,7 +298,7 @@ class Device:
                         try:
                             param[0] = gethostbyaddr(param[0])[2][0]
                             ip_address(param[0])
-                        except herror or gaierror or ValueError:
+                        except (herror, gaierror, ValueError):
                             err = "FTP listing directory : first argument must be IP or known FQDN (/etc/hosts), " \
                                   "it's : " + param[0]
                             logger.debug(err)

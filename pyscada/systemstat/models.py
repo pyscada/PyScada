@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from pyscada.models import Variable, Device
+from . import PROTOCOL_ID
 
 from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
@@ -48,6 +49,8 @@ class SystemStatVariable(models.Model):
                                                              "of the VP")
     parameter = models.CharField(default='', max_length=400, blank=True, null=True,
                                  help_text="For 'disk_usage' insert the path")
+
+    protocol_id = PROTOCOL_ID
 
     def __str__(self):
         return self.system_stat_variable.name

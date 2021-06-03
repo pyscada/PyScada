@@ -89,5 +89,6 @@ class OneWireVariableAdmin(CoreVariableAdmin):
         OneWireVariableAdminInline
     ]
 
-admin_site.register(ExtendedOneWireVariable, OneWireVariableAdmin)
-admin_site.register(ExtendedOneWireDevice,OneWireDeviceAdmin)
+
+# admin_site.register(ExtendedOneWireVariable, OneWireVariableAdmin)
+# admin_site.register(ExtendedOneWireDevice,OneWireDeviceAdmin)

@@ -17,7 +17,44 @@ import json
 logger = logging.getLogger(__name__)
 
 
+def _delete_widget_content(sender, instance, **kwargs):
+    """
+    delete the widget content instance when a WidgetContentModel is deleted
+    """
+    if not issubclass(sender, WidgetContentModel):
+        return
+
+    # delete WidgetContent Entry
+    wcs = WidgetContent.objects.filter(
+        content_pk=instance.pk,
+        content_model=('%s' % instance.__class__).replace("<class '", '').replace("'>", ''))
+    for wc in wcs:
+        logger.debug('delete wc %r' % wc)
+        wc.delete()
+
+
+def _create_widget_content(sender, instance, created=False, **kwargs):
+    """
+    create a widget content instance when a WidgetContentModel is deleted
+    """
+    if not issubclass(sender, WidgetContentModel):
+        return
+
+    # create a WidgetContent Entry
+    if created:
+        instance.create_widget_content_entry()
+    else:
+        instance.update_widget_content_entry()
+    return
+
+
 class WidgetContentModel(models.Model):
+
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        super(WidgetContentModel, cls).__init_subclass__(**kwargs)
+        models.signals.post_save.connect(_create_widget_content, sender=cls)
+        models.signals.pre_delete.connect(_delete_widget_content, sender=cls)
 
     def gen_html(self, **kwargs):
         """
