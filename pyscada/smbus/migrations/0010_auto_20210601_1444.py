@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('smbus', '0008_delete_smbusdevicehandler'),
+        ('smbus', '0009_delete_smbusdevicehandler'),
     ]
 
     operations = [

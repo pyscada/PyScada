@@ -6,8 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('visa', '0009_visadevice_instrument_handler'),
-        ('pyscada', '0080_devicehandler_migration'),
+        ('visa', '0010_devicehandler_migration'),
     ]
 
     operations = [

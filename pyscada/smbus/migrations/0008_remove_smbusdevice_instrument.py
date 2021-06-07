@@ -6,8 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('smbus', '0006_smbusdevice_instrument_handler'),
-        ('pyscada', '0080_devicehandler_migration'),
+        ('smbus', '0007_devicehandler_migration'),
     ]
 
     operations = [

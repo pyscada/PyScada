@@ -6,11 +6,11 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('smbus', '0007_remove_smbusdevice_instrument'),
+        ('visa', '0011_remove_visadevice_instrument'),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='SMBusDeviceHandler',
+            name='VISADeviceHandler',
         ),
     ]
