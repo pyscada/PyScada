@@ -371,6 +371,10 @@ class Scheduler(object):
                     timeout = time() + 60  # wait max 60 seconds
                     while True:
                         if process.pk not in self.PROCESSES or time() > timeout:
+                            try:
+                                self.kill_process(process.pk, signal.SIGKILL)
+                            except:
+                                pass
                             break
                         self.kill_process(process.pk)
                         sleep(1)
@@ -498,12 +502,12 @@ class Scheduler(object):
         p = self.PROCESSES[process_id]
         try:
             kill(p.pid, sig)
-            logger.debug('try to terminate process id %d' % p.pid)
+            logger.debug('try to terminate process id %d - label %s' % (p.pid, p.label))
         except OSError as e:
             if e.errno == errno.ESRCH:
                 try:
                     self.PROCESSES.pop(process_id)
-                    logger.debug('%s: process id %d is terminated' % p.pid)
+                    logger.debug('%s: process id %d is terminated' % (self.label, p.pid))
                     return True
                 except:
                     return False
@@ -718,7 +722,7 @@ class Process(object):
         """
         receive signals
         """
-        logger.debug('PID %d, received signal: %d' %(self.pid, signum))
+        logger.debug('PID %d, received signal: %d' % (self.pid, signum))
         self.SIG_QUEUE.append(signum)
 
     def stop(self, signum=None, frame=None):
@@ -827,7 +831,10 @@ class SingleDeviceDAQProcessWorker(Process):
             try:
                 bp = BackgroundProcess.objects.get(pk=process['id'])
                 if bp.stop(cleanup=True):
+                    process['failed'] -= 1
                     self.processes.remove(process)
+            except BackgroundProcess.DoesNotExist:
+                pass
             except:
                 logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
         self.init_process()
@@ -914,7 +921,10 @@ class MultiDeviceDAQProcessWorker(Process):
             try:
                 bp = BackgroundProcess.objects.get(pk=process['id'])
                 if bp.stop(cleanup=True):
+                    process['failed'] -= 1
                     self.processes.remove(process)
+            except BackgroundProcess.DoesNotExist:
+                pass
             except:
                 logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
         self.init_process()

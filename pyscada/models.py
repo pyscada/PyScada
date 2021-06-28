@@ -686,6 +686,9 @@ class VariableProperty(models.Model):
     min_type = models.CharField(max_length=4, default='lte', choices=min_type_choices)
     max_type = models.CharField(max_length=4, default='gte', choices=max_type_choices)
 
+    last_value = None
+    value_changed = False
+
     class Meta:
         verbose_name_plural = "variable properties"
 
@@ -1438,13 +1441,13 @@ class BackgroundProcess(models.Model):
         :return:
         """
         if self.pid != 0 and self.pid is not None:
-            logger.debug('send sigterm to daemon')
+            logger.debug('send %s to daemon' % signum)
             try:
                 kill(self.pid, signum)
             except OSError as e:
                 if e.errno == errno.ESRCH:
                     try:
-                        logger.debug('%s: process id %d is terminated' % self.pid)
+                        logger.debug('%s: process id %d is terminated' % (self, self.pid))
                         return True
                     except:
                         return False
@@ -1463,10 +1466,10 @@ class BackgroundProcess(models.Model):
             self.save()
             timeout = time.time() + 30  # 30s timeout
             while time.time() < timeout:
-                if not self._stop(signum=signum):
+                if self._stop(signum=signum):
                     return True
                 time.sleep(1)
-            if not self._stop(signum=signal.SIGKILL):
+            if self._stop(signum=signal.SIGKILL):
                 self.delete()
         else:
             return self._stop(signum=signum)

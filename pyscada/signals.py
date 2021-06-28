@@ -1,14 +1,26 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.models import Variable, Device, Scaling, BackgroundProcess, VariableProperty, DeviceHandler
+from pyscada.models import Variable, Device, Scaling, BackgroundProcess, VariableProperty, DeviceHandler, RecordedData
+from pyscada.admin import VariableState
 
 from django.dispatch import receiver
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import post_save, pre_delete, pre_save
 
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+#@receiver(pre_save, sender=VariableProperty)
+def _vp_value_change(sender, instance, **kwargs):
+    if type(instance) is VariableProperty:
+        if instance.id is not None:  # existing object
+            previous = VariableProperty.objects.get(id=instance.id)
+            if str(instance.last_value) != str(previous.value()):
+                logger.debug("VP %s new value = %s - %s" % (str(instance), instance.last_value, previous.value()))
+                instance.last_value = str(previous.value())
+                instance.value_changed = True
 
 
 @receiver(post_save, sender=VariableProperty)
@@ -16,6 +28,7 @@ logger = logging.getLogger(__name__)
 @receiver(post_save, sender=Device)
 @receiver(post_save, sender=Scaling)
 @receiver(post_save, sender=DeviceHandler)
+#@receiver(post_save, sender=RecordedData)
 def _reinit_daq_daemons(sender, instance, **kwargs):
     """
     update the daq daemon configuration when changes be applied in the models
@@ -41,7 +54,7 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
             except:
                 return False
         bp.restart()
-    elif type(instance) is Variable:
+    elif type(instance) is Variable or type(instance) is VariableState:
         try:
             logger.debug("post_save pyscada." + str(instance.device.protocol.protocol) + "-" + str(instance.device_id))
             try:
@@ -70,10 +83,34 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
             bp.restart()
     elif type(instance) is DeviceHandler:
         # todo
+        logger.debug('post_save DeviceHandler from %s' % type(instance))
         pass
     elif type(instance) is VariableProperty:
-        # todo
-        pass
+        logger.debug('post_save from VP %s' % str(instance))
+        return
+        if instance.id is not None:  # existing object
+            if instance.value_changed:
+                instance.value_changed = False
+                try:
+                    logger.debug("post_save pyscada." + str(instance.variable.device.protocol.protocol) + "-" + str(instance.variable.device_id))
+                    try:
+                        bp = BackgroundProcess.objects.get(
+                            label="pyscada." + str(instance.variable.device.protocol.protocol) + "-" + str(instance.variable.device_id))
+                    except BackgroundProcess.DoesNotExist:
+                        # for modbus protocol
+                        bp = BackgroundProcess.objects.get(
+                            label__startswith="pyscada." + str(instance.variable.device.protocol.protocol) + "-" + str(
+                                instance.variable.device_id) + "-")
+                except Exception as e:
+                    logger.debug(e)
+                    # todo select only one device not all for that protocol
+                    try:
+                        bp = BackgroundProcess.objects.get(pk=instance.variable.device.protocol_id)
+                    except:
+                        return False
+                bp.restart()
+            else:
+                logger.debug("VP something changed (not value)")
     else:
         logger.debug('post_save from %s' % type(instance))
 
@@ -103,7 +140,7 @@ def _del_daq_daemons(sender, instance, **kwargs):
             logger.debug(e)
             return False
         bp.stop()
-    elif type(instance) is Variable:
+    elif type(instance) is Variable or type(instance) is VariableState:
         try:
             logger.debug("pre_delete pyscada." + str(instance.device.protocol.protocol) + "-" + str(instance.device_id))
             try:
@@ -128,9 +165,22 @@ def _del_daq_daemons(sender, instance, **kwargs):
             bp.restart()
     elif type(instance) is DeviceHandler:
         # todo
+        logger.debug('pre_delete DeviceHandler from %s' % type(instance))
         pass
     elif type(instance) is VariableProperty:
-        # todo
-        pass
+        try:
+            logger.debug("pre_delete pyscada." + str(instance.variable.device.protocol.protocol) + "-" + str(instance.variable.device_id))
+            try:
+                bp = BackgroundProcess.objects.get(
+                    label="pyscada." + str(instance.variable.device.protocol.protocol) + "-" + str(instance.variable.device_id))
+            except BackgroundProcess.DoesNotExist:
+                # for modbus protocol
+                bp = BackgroundProcess.objects.get(
+                    label__startswith="pyscada." + str(instance.variable.device.protocol.protocol) + "-" + str(
+                        instance.device_id) + "-")
+        except Exception as e:
+            logger.debug(e)
+            return False
+        bp.restart()
     else:
         logger.debug('pre_delete from %s' % type(instance))

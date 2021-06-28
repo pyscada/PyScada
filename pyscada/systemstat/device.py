@@ -14,12 +14,19 @@ from ftplib import FTP, error_perm
 from ipaddress import ip_address
 from socket import gethostbyaddr, gaierror, herror
 
+from django.conf import settings
+
 from time import time
 import logging
 
 logger = logging.getLogger(__name__)
 
 pool = concurrent.futures.ThreadPoolExecutor()
+
+MEDIA_ROOT = settings.MEDIA_ROOT \
+    if hasattr(settings, 'MEDIA_ROOT') else '/var/www/pyscada/http/media/'
+MEDIA_URL = settings.MEDIA_URL \
+    if hasattr(settings, 'MEDIA_URL') else '/media/'
 
 
 class Device:
@@ -256,10 +263,18 @@ class Device:
                             else:
                                 if param[0] == "first":
                                     for i in list_dir[:val]:
-                                        result += str(i) + "<br>"
+                                        if MEDIA_ROOT in vp.name:
+                                            result += '<a href="' + MEDIA_URL + vp.name.replace(MEDIA_ROOT, "") +\
+                                                      str(i) + '" target="_blank">' + str(i) + "</a><br>"
+                                        else:
+                                            result += str(i) + "<br>"
                                 elif param[0] == "last":
                                     for i in list_dir[-val:]:
-                                        result += str(i) + "<br>"
+                                        if MEDIA_ROOT in vp.name:
+                                            result += '<a href="' + MEDIA_URL + vp.name.replace(MEDIA_ROOT, "") +\
+                                                      str(i) + '" target="_blank">' + str(i) + "</a><br>"
+                                        else:
+                                            result += str(i) + "<br>"
                                 else:
                                     VariableProperty.objects.update_property(variable_property=vp,
                                                                              value="Systemstat listing directory "
@@ -325,7 +340,7 @@ class Device:
                         continue
                     if list_dir is None or len(list_dir) == 0:
                         VariableProperty.objects.update_property(variable_property=vp,
-                                                                 value=str("No files in ftp://" + param[0] + "/" +
+                                                                 value=str("No files in ftp://" + param[0] +
                                                                            vp.name))
                         continue
                     if len(param) == 3:

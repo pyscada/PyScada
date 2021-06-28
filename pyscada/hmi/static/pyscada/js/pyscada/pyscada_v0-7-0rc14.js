@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0rc14
+version 0.7.0rc18
 
 Copyright (c) 2013-2019 Martin Schröder, Camille Lavayssière
 Licensed under the GPL.
 
 */
-var version = "0.7.0rc14"
+var version = "0.7.0rc18"
 var NOTIFICATION_COUNT = 0
 var UPDATE_STATUS_COUNT = 0;
 var INIT_STATUS_COUNT = 0;
@@ -37,6 +37,7 @@ var VARIABLE_KEYS = [];
 var VARIABLE_PROPERTY_KEYS = [];
 var STATUS_VARIABLE_KEYS = {count:function(){var c = 0;for (key in this){c++;} return c-2;},keys:function(){var k = [];for (key in this){if (key !=="keys" && key !=="count"){k.push(key);}} return k;}};
 var CHART_VARIABLE_KEYS = {count:function(){var c = 0;for (key in this){c++;} return c-2;},keys:function(){var k = [];for (key in this){if (key !=="keys" && key !=="count"){k.push(key);}} return k;}};
+var CHART_VARIABLE_POLL_RATE = {};
 var DATA = {}; // holds the fetched data from the server
 var VARIABLE_PROPERTIES = {};
 var VARIABLE_PROPERTIES_DATA = {}
@@ -174,7 +175,7 @@ function add_fetched_data(key,value){
                             console.log(key + ' : dropped data');
                         }
                     } else{
-                        console.log(key + ' : no new data');
+                        //console.log(key + ' : no new data');
                     }
                 }
                 if (value[0][0] < DATA_FROM_TIMESTAMP){
@@ -202,6 +203,7 @@ function data_handler(){
             }
             // fetch historic data
             if(FETCH_DATA_PENDING<=1){
+                if(INIT_STATUS_COUNT==0) {show_init_status();};
                 if(!INIT_STATUS_VARIABLES_DONE){
                 // first load STATUS_VARIABLES
                     var var_count = 0;
@@ -236,8 +238,9 @@ function data_handler(){
 
                     for (var key in CHART_VARIABLE_KEYS){
                        if(CHART_VARIABLE_KEYS[key]<=DATA_INIT_STATUS){
-                            CHART_VARIABLE_KEYS[key]++;
+                            //CHART_VARIABLE_KEYS[key]++;
                             var_count++;
+                            var_poll_rate_sum += CHART_VARIABLE_POLL_RATE[key];
                             INIT_CHART_VARIABLES_COUNT++;
                             vars.push(key);
                             if (typeof(DATA[key]) == 'object'){
@@ -259,6 +262,7 @@ function data_handler(){
                     }else{
                         INIT_CHART_VARIABLES_DONE = true;
                         $('#PlusTwoHoursButton').removeClass("disabled");
+                        hide_init_status();
                     }
                 }
             }
@@ -277,7 +281,9 @@ function data_handler(){
 function data_handler_ajax(init,variable_keys,variable_property_keys,timestamp_from,timestamp_to){
     show_update_status();
     FETCH_DATA_PENDING++;
-    if(init){show_init_status();}
+    if(init){
+        //show_init_status();
+    }
     request_data = {timestamp_from:timestamp_from, variables: variable_keys, init: init, variable_properties:variable_property_keys};
     if (typeof(timestamp_to !== 'undefined')){request_data['timestamp_to']=timestamp_to};
     //if (!init){request_data['timestamp_from'] = request_data['timestamp_from'] - REFRESH_RATE;};
@@ -383,7 +389,7 @@ function data_handler_done(fetched_data){
     UPDATE_STATUS_COUNT = 0;
     hide_update_status();
     if(request_data.init===1){
-        hide_init_status();
+        //hide_init_status();
     }
     FETCH_DATA_PENDING--;
 }
@@ -420,7 +426,7 @@ function data_handler_fail(x, t, m) {
                 STATUS_VARIABLE_KEYS[key]--;
             }
         }
-        hide_init_status();
+        //hide_init_status();
     }
     FETCH_DATA_PENDING--;
     }
@@ -555,7 +561,7 @@ function update_data_values(key,val,time){
             }
         }
 
-        if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp') != "" && time <= $(".variable-config[data-refresh-requested-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp')) {
+        if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp') != "" && time != null && time <= $(".variable-config[data-refresh-requested-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp')) {
             return;
         }
 
@@ -2052,7 +2058,7 @@ $('button.write-task-set').click(function(){
 
 function check_form(id_form) {
     err = false;
-    tabinputs = $.merge($('#'+id_form+ ' :text'),$('#'+id_form+ ' :input:hidden'));
+    tabinputs = $.merge($('#'+id_form+ ' :text:visible'),$('#'+id_form+ ' :input:not(:text):hidden'));
     for (i=0;i<tabinputs.length;i++){ //test if there is an empty or non numeric value
         value = $(tabinputs[i]).val();
         id = $(tabinputs[i]).attr('id');
@@ -2362,6 +2368,8 @@ $( document ).ready(function() {
         key = parseInt($(val).data('key'));
         init_type = parseInt($(val).data('init-type'));
         item_type = $(val).data('type');
+        poll_rate = $(val).data('device-polling_interval');
+        name = $(val).data('name');
         if(item_type == '' || typeof(item_type) == 'undefined'){
             item_type = "variable";
         }
@@ -2376,6 +2384,14 @@ $( document ).ready(function() {
         }
         if (typeof(CHART_VARIABLE_KEYS[key]) == 'undefined' && init_type==1 && item_type === "variable"){
             CHART_VARIABLE_KEYS[key] = 0;
+        }
+        if (init_type==1 && item_type === "variable"){
+            if (typeof(poll_rate) != 'undefined'){
+                CHART_VARIABLE_POLL_RATE[key] = parseFloat(poll_rate);
+            }else if (typeof(CHART_VARIABLE_POLL_RATE[key]) == 'undefined') {
+                CHART_VARIABLE_POLL_RATE[key] = 5;
+                add_notification("Can't get device poll rate for variable " + key + " (" + name + ")", 5);
+            }
         }
         if (typeof(VARIABLE_PROPERTIES[key]) == 'undefined' && item_type === "variable_property"){
             VARIABLE_PROPERTIES[key] = 0;
@@ -2438,7 +2454,7 @@ $( document ).ready(function() {
             });
           },
           error: function(x, t, m) {
-              add_notification('Reauest all data failed', 1)
+              add_notification('Request all data failed', 1)
           },
         });
     });
@@ -2485,7 +2501,7 @@ $( document ).ready(function() {
     });
     $("#datetimepicker_from").on("change.datetimepicker", function (e) {
         $('#datetimepicker_to').datetimepicker('minDate', e.date);
-    }).focusout(function (e) {
+    }).on("hide.datetimepicker", function (e) {
         DATA_INIT_STATUS++;
         DATA_FROM_TIMESTAMP = $('#datetimepicker_from').datetimepicker('viewDate').unix() * 1000;
         DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
@@ -2494,6 +2510,10 @@ $( document ).ready(function() {
         if(!$('#AutoUpdateButton').bootstrapSwitch('state') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
             auto_update_click();
         };
+    }).focusout(function (e) {
+        $('#datetimepicker_to').datetimepicker('hide');
+        $('#datetimepicker_from').datetimepicker('hide');
+        e.stopPropagation();
     }).click(function (e) {
         if (!$('#datetimepicker_from .bootstrap-datetimepicker-widget').length) {
             $('#datetimepicker_from').datetimepicker('show');
@@ -2509,7 +2529,7 @@ $( document ).ready(function() {
     $("#datetimepicker_to").on("change.datetimepicker", function (e) {
         $('#datetimepicker_from').datetimepicker('maxDate', e.date);
         PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = false;
-    }).focusout(function (e) {
+    }).on("hide.datetimepicker", function (e) {
         DATA_INIT_STATUS++;
         DATA_TO_TIMESTAMP = Math.min($('#datetimepicker_to').datetimepicker('viewDate').unix() * 1000, SERVER_TIME);
         DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
@@ -2518,6 +2538,10 @@ $( document ).ready(function() {
         if(!$('#AutoUpdateButton').bootstrapSwitch('state') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
             auto_update_click();
         };
+    }).focusout(function (e) {
+        $('#datetimepicker_to').datetimepicker('hide');
+        $('#datetimepicker_from').datetimepicker('hide');
+        e.stopPropagation();
     }).click(function (e) {
         //$('#datetimepicker_to').datetimepicker('maxDate', new Date(SERVER_TIME));
         if (!$('#datetimepicker_to .bootstrap-datetimepicker-widget').length) {

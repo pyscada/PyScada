@@ -23,6 +23,7 @@ from django.db.models.fields.related import OneToOneRel
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.conf import settings
 
 import datetime
 import signal
@@ -222,6 +223,18 @@ class DeviceAdmin(admin.ModelAdmin):
     for d in devices:
         cl = type(d.name, (admin.StackedInline,), dict(model=d.related_model, form=DeviceForm))  # classes=['collapse']
         inlines.append(cl)
+
+    # List only activated protocols
+    protocol_list = []
+    if hasattr(settings, 'INSTALLED_APPS'):
+        for app in settings.INSTALLED_APPS:
+            if 'pyscada' in app:
+                protocol_list.append(app.split(".")[1])
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "protocol":
+            kwargs["queryset"] = DeviceProtocol.objects.filter(protocol__in=self.protocol_list)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     # Disable changing protocol
     def get_readonly_fields(self, request, obj=None):
