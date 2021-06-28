@@ -86,8 +86,8 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
         logger.debug('post_save DeviceHandler from %s' % type(instance))
         pass
     elif type(instance) is VariableProperty:
-        logger.debug('post_save from VP %s' % str(instance))
         return
+        logger.debug('post_save from VP %s' % str(instance))
         if instance.id is not None:  # existing object
             if instance.value_changed:
                 instance.value_changed = False
