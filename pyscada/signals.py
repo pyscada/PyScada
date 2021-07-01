@@ -50,6 +50,8 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
             # new device, add it to the parent process list
             # todo select only one device not all for that protocol
             try:
+                if instance.protocol_id == 1:
+                    return False
                 bp = BackgroundProcess.objects.get(pk=instance.protocol_id)
             except:
                 return False
@@ -69,6 +71,8 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
             logger.debug(e)
             # todo select only one device not all for that protocol
             try:
+                if instance.device.protocol_id == 1:
+                    return False
                 bp = BackgroundProcess.objects.get(pk=instance.device.protocol_id)
             except:
                 return False

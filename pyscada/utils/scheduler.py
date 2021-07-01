@@ -1021,7 +1021,7 @@ class SingleDeviceDAQProcess(Process):
         """
         just re-init
         """
-        self.stop()
+        #self.stop()
         return self.init_process()
 
 
@@ -1038,6 +1038,8 @@ class MultiDeviceDAQProcess(Process):
         init a standard daq process for multiple devices
         """
         self.devices = {}
+        # Reset dt_query_data to allow an increasing change of the polling interval from the admin
+        self.dt_query_data = 3600.0
         for item in Device.objects.filter(protocol__daq_daemon=1, active=1, id__in=self.device_ids):
             try:
                 tmp_device = item.get_device_instance()
@@ -1109,5 +1111,5 @@ class MultiDeviceDAQProcess(Process):
         """
         just re-init
         """
-        self.stop()
+        #self.stop()
         return self.init_process()

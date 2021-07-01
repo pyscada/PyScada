@@ -226,6 +226,7 @@ class DeviceAdmin(admin.ModelAdmin):
 
     # List only activated protocols
     protocol_list = []
+    protocol_list.append("generic")
     if hasattr(settings, 'INSTALLED_APPS'):
         for app in settings.INSTALLED_APPS:
             if 'pyscada' in app:
