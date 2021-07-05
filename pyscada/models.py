@@ -471,6 +471,7 @@ class VariablePropertyManager(models.Manager):
             elif value_class.upper() in ['BOOL', 'BOOLEAN']:
                 value = False if value is None else value
                 vp.value_boolean = value
+            vp.last_modified = now()
             vp.save()
             return vp
         else:
@@ -685,6 +686,7 @@ class VariableProperty(models.Model):
                         )
     min_type = models.CharField(max_length=4, default='lte', choices=min_type_choices)
     max_type = models.CharField(max_length=4, default='gte', choices=max_type_choices)
+    last_modified = models.DateTimeField(auto_now=True)
 
     last_value = None
     value_changed = False

@@ -354,9 +354,11 @@ def get_cache_data(request):
         data = {}
 
     data['variable_properties'] = {}
+    data['variable_properties_last_modified'] = {}
 
     for item in VariableProperty.objects.filter(pk__in=active_variable_properties):
         data['variable_properties'][item.pk] = item.value()
+        data['variable_properties_last_modified'][item.pk] = item.last_modified.timestamp() * 1000
 
     data["server_time"] = time.time() * 1000
     return HttpResponse(json.dumps(data), content_type='application/json')

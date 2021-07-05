@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0rc14
+version 0.7.0rc18
 
 Copyright (c) 2013-2019 Martin Schröder, Camille Lavayssière
 Licensed under the GPL.
 
 */
-var version = "0.7.0rc14"
+var version = "0.7.0rc18"
 var NOTIFICATION_COUNT = 0
 var UPDATE_STATUS_COUNT = 0;
 var INIT_STATUS_COUNT = 0;
@@ -40,6 +40,7 @@ var CHART_VARIABLE_KEYS = {count:function(){var c = 0;for (key in this){c++;} re
 var DATA = {}; // holds the fetched data from the server
 var VARIABLE_PROPERTIES = {};
 var VARIABLE_PROPERTIES_DATA = {}
+var VARIABLE_PROPERTIES_LAST_MODIFIED = {}
 var DATA_INIT_STATUS = 0; // status 0: nothing done, 1:
 var UPDATE_X_AXES_TIME_LINE_STATUS = false;
 var FETCH_DATA_PENDING = 0;
@@ -174,7 +175,7 @@ function add_fetched_data(key,value){
                             console.log(key + ' : dropped data');
                         }
                     } else{
-                        console.log(key + ' : no new data');
+                        //console.log(key + ' : no new data');
                     }
                 }
                 if (value[0][0] < DATA_FROM_TIMESTAMP){
@@ -316,8 +317,11 @@ function data_handler_done(fetched_data){
     if (typeof(fetched_data['variable_properties'])==="object"){
         VARIABLE_PROPERTIES_DATA = fetched_data['variable_properties'];
         delete fetched_data['variable_properties'];
+        VARIABLE_PROPERTIES_LAST_MODIFIED = fetched_data['variable_properties_last_modified'];
+        delete fetched_data['variable_properties_last_modified'];
     }else{
         VARIABLE_PROPERTIES_DATA = {}
+        VARIABLE_PROPERTIES_LAST_MODIFIED = {}
     }
     if(DATA_TO_TIMESTAMP==0){
         //DATA_TO_TIMESTAMP = DATA_FROM_TIMESTAMP = SERVER_TIME;
@@ -360,7 +364,10 @@ function data_handler_done(fetched_data){
         }
         for (var key in VARIABLE_PROPERTIES_DATA) {
             value = VARIABLE_PROPERTIES_DATA[key];
-            update_data_values('prop-' + key,value,null);
+            if (key in VARIABLE_PROPERTIES_LAST_MODIFIED) {
+                time = VARIABLE_PROPERTIES_LAST_MODIFIED[key];
+            }else {time = null};
+            update_data_values('prop-' + key,value,time);
         }
         /*
         DATA_OUT_OF_DATE = (SERVER_TIME - timestamp  > CACHE_TIMEOUT);
@@ -555,7 +562,7 @@ function update_data_values(key,val,time){
             }
         }
 
-        if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp') != "" && time <= $(".variable-config[data-refresh-requested-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp')) {
+        if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp') != "" && time != null && time <= $(".variable-config[data-refresh-requested-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp')) {
             return;
         }
 
@@ -2052,7 +2059,7 @@ $('button.write-task-set').click(function(){
 
 function check_form(id_form) {
     err = false;
-    tabinputs = $.merge($('#'+id_form+ ' :text'),$('#'+id_form+ ' :input:hidden'));
+    tabinputs = $.merge($('#'+id_form+ ' :text:visible'),$('#'+id_form+ ' :input:not(:text):hidden'));
     for (i=0;i<tabinputs.length;i++){ //test if there is an empty or non numeric value
         value = $(tabinputs[i]).val();
         id = $(tabinputs[i]).attr('id');
@@ -2438,7 +2445,7 @@ $( document ).ready(function() {
             });
           },
           error: function(x, t, m) {
-              add_notification('Reauest all data failed', 1)
+              add_notification('Request all data failed', 1)
           },
         });
     });

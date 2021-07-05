@@ -438,10 +438,11 @@ class EventAdmin(admin.ModelAdmin):
 
 
 class VariablePropertyAdmin(admin.ModelAdmin):
-    list_display = ('id', 'variable', 'name', 'property_class', 'value', 'timestamp')
+    list_display = ('id', 'variable', 'name', 'property_class', 'value', 'timestamp', 'last_modified')
     list_display_links = ('id', 'variable', 'name', 'property_class')
     list_filter = ('variable', 'name', 'property_class',)
     raw_id_fields = ('variable',)
+    readonly_fields = ["last_modified"]
     save_as = True
     save_as_continue = True
 
