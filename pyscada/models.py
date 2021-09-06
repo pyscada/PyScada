@@ -862,7 +862,7 @@ class Variable(models.Model):
         get the last value and timestamp from the database
         """
         time_max = time.time() * 2097152 * 1000 + 2097151
-        val = self.recordeddata_set.filter(id__range=(time_max - (3660 * 1000 * 2097152), time_max)).last()
+        val = self.recordeddata_set.filter(id__range=(time_max - (3 * 3660 * 1000 * 2097152), time_max)).last()
         if val:
             self.prev_value = val.value()
             self.timestamp_old = val.timestamp
@@ -1770,7 +1770,7 @@ class ComplexEventItem(models.Model):
             item_name = self.variable.name
         elif self.variable_property is not None:
             item_value = self.variable_property.value()
-            if type(item_value) != int or float:
+            if type(item_value) != int and type(item_value) != float:
                 item_value = None
             item_type = 'variable_property'
             item_name = self.variable_property.name
@@ -1813,11 +1813,11 @@ class ComplexEventItem(models.Model):
                 var_info['in_limit'] = False
                 self.active = False
             elif limit_high is not None and self.limit_high_type == 0 and \
-                    (limit_high - self.hysteresis_low * np.power(-1, self.active)) <= item_value:
+                    (limit_high - self.hysteresis_high * np.power(-1, self.active)) <= item_value:
                 var_info['in_limit'] = False
                 self.active = False
             elif limit_high is not None and self.limit_high_type == 1 and \
-                    (limit_high - self.hysteresis_low * np.power(-1, self.active)) < item_value:
+                    (limit_high - self.hysteresis_high * np.power(-1, self.active)) < item_value:
                 var_info['in_limit'] = False
                 self.active = False
             else:
@@ -2043,13 +2043,20 @@ class Mail(models.Model):
             # only try to send an email three times
             return False
         # send the mail
-        if send_mail(self.subject, self.message, settings.DEFAULT_FROM_EMAIL, [self.to_email], fail_silently=True,
-                     html_message=self.html_message):
-            self.done = True
-            self.timestamp = time.time()
-            self.save()
-            return True
-        else:
+        try:
+            if send_mail(self.subject, self.message, settings.DEFAULT_FROM_EMAIL, [self.to_email], fail_silently=True,
+                         html_message=self.html_message):
+                self.done = True
+                self.timestamp = time.time()
+                self.save()
+                return True
+            else:
+                self.send_fail_count = self.send_fail_count + 1
+                self.timestamp = time.time()
+                self.save()
+                return False
+        except (IndexError, ValueError) as e:
+            logger.debug("Mail exception : %s" % e)
             self.send_fail_count = self.send_fail_count + 1
             self.timestamp = time.time()
             self.save()

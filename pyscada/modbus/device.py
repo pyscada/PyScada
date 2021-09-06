@@ -78,7 +78,9 @@ class RegisterBlock:
         try:
             result = self._request_data(slave, unit, first_address, quantity)
         except ConnectionException as e:
-            logger.info(e)
+            #logger.debug(str(self) + " - " + str(slave) + " - " + str(unit) + " - " + str(first_address) + " - " +
+            #             str(quantity))
+            #logger.info(e)
             return None
         except:
             # something went wrong (ie. Server/Slave is not accessible)

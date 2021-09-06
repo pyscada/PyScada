@@ -181,7 +181,7 @@ def _del_daq_daemons(sender, instance, **kwargs):
                 # for modbus protocol
                 bp = BackgroundProcess.objects.get(
                     label__startswith="pyscada." + str(instance.variable.device.protocol.protocol) + "-" + str(
-                        instance.device_id) + "-")
+                        instance.variable.device_id) + "-")
         except Exception as e:
             logger.debug(e)
             return False
