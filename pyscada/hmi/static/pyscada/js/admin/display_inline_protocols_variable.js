@@ -5,7 +5,7 @@ django.jQuery(
     $("[id^='" + v + "'].js-inline-admin-formset.inline-group").show();
     $("#id_device").on('change', function() {
       value = $("#id_device :selected").text().split("-")[0]
-      $("[id^='" + value + "variable'].js-inline-admin-formset.inline-group").show();
+      $("[id^='" + value + "'].js-inline-admin-formset.inline-group").show();
       $(".js-inline-admin-formset.inline-group").not("[id^='" + value + "']").hide();
     })
   }
