@@ -5,7 +5,7 @@ django.jQuery(
     $("[id^='" + v + "'].js-inline-admin-formset.inline-group").show();
     $("#id_protocol").on('change', function() {
       value = $("#id_protocol :selected").text()
-      $("[id^='" + value + "device'].js-inline-admin-formset.inline-group").show();
+      $("[id^='" + value + "'].js-inline-admin-formset.inline-group").show();
       $(".js-inline-admin-formset.inline-group").not("[id^='" + value + "']").hide();
     })
   }
