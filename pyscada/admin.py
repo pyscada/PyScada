@@ -221,7 +221,14 @@ class DeviceAdmin(admin.ModelAdmin):
     devices = [field for field in Device._meta.get_fields() if issubclass(type(field), OneToOneRel)]
     inlines = []
     for d in devices:
-        cl = type(d.name, (admin.StackedInline,), dict(model=d.related_model, form=DeviceForm))  # classes=['collapse']
+        device_dict = dict(model=d.related_model, form=DeviceForm)
+        if hasattr(d.related_model, "fk_name"):
+            device_dict["fk_name"] = d.related_model.fk_name
+        if hasattr(d.related_model, "FormSet"):
+            device_dict["formset"] = d.related_model.FormSet
+        #if hasattr(d.related_model, "formfield_for_foreignkey"):
+        #    device_dict["formfield_for_foreignkey"] = d.related_model.formfield_for_foreignkey
+        cl = type(d.name, (admin.StackedInline,), device_dict)  # classes=['collapse']
         inlines.append(cl)
 
     # List only activated protocols

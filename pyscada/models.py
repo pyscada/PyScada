@@ -472,7 +472,10 @@ class VariablePropertyManager(models.Manager):
                 value = False if value is None else value
                 vp.value_boolean = value
             vp.last_modified = now()
-            vp.save()
+            try:
+                vp.save()
+            except ValueError as e:
+                logger.error("Error while saving VP value : " + str(e))
             return vp
         else:
             return None

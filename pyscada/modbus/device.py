@@ -93,7 +93,7 @@ class RegisterBlock:
         elif hasattr(result, 'bits'):
             return self.decode_data(result.bits)
         else:
-            logger.warning("Modbus requested data has no bits nor registers, it's : %s - %s" % (result, self.variables))
+            slave.modbus_result = result
             return None
 
     def decode_data(self, result):
@@ -314,6 +314,8 @@ class Device:
                 self._disconnect()
                 self._connect()
                 result = register_block.request_data(self.slave, self._unit_id)
+                if result is None and hasattr(result, 'modbus_result'):
+                    logger.warning("Modbus requested data has no bits nor registers, it's : %s" % result.modbus_result)
 
             if result is not None:
                 for variable_id in register_block.variables:

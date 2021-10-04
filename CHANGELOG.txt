@@ -224,3 +224,5 @@
   - add protocol name in device __str__ for the variable js admin file
   - add complex events
 
+0.7.0rc19
+  - add fk_name in admin for bacnet device with 2 ForeignKey to Device model
