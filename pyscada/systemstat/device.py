@@ -10,7 +10,7 @@ except ImportError:
 
 import os
 import concurrent.futures
-from ftplib import FTP, error_perm
+from ftplib import FTP, error_perm, error_temp, error_reply, error_proto
 from ipaddress import ip_address
 from socket import gethostbyaddr, gaierror, herror
 
@@ -333,6 +333,18 @@ class Device:
                     except error_perm:
                         VariableProperty.objects.update_property(variable_property=vp,
                                                                  value=str(vp.name + " not found"))
+                        continue
+                    except error_temp:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str("Connection error"))
+                        continue
+                    except error_reply:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str("Reply error"))
+                        continue
+                    except error_proto:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str("Protocol error"))
                         continue
                     except OSError:
                         VariableProperty.objects.update_property(variable_property=vp,

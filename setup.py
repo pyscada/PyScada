@@ -39,7 +39,10 @@ setup(
         'pillow',
         'python-daemon>=2.0.0',
         'pytz',
-        'pyserial'
+        'pyserial',
+        'channels',
+        'asgiref',
+        'concurrent',
     ],
     packages=find_packages(exclude=["project", "project.*"]),
     include_package_data=True,

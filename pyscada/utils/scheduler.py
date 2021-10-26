@@ -42,6 +42,10 @@ from django.utils.termcolors import colorize
 from django.db.utils import OperationalError
 from django.db.transaction import TransactionManagementError
 
+import channels.layers
+from asgiref.sync import async_to_sync
+from asgiref.timeout import timeout
+from concurrent.futures._base import TimeoutError as concurrentTimeoutError
 
 from pyscada.models import BackgroundProcess, DeviceWriteTask, Device, RecordedData, DeviceReadTask
 from django.utils.timezone import now
@@ -600,6 +604,7 @@ class Process(object):
         self.process_id = 0
         self.parent_process_id = 0
         self.label = ''
+        self.dwt_received = False
         # register signals
         self.SIG_QUEUE = []
         self.SIGNALS = [signal.SIGTERM, signal.SIGUSR1, signal.SIGHUP, signal.SIGUSR2]
@@ -692,7 +697,14 @@ class Process(object):
 
                 dt = self.dt_set - (time() - t_start)
                 if dt > 0:
-                    sleep(dt)
+                    if hasattr(self, "device_id"):
+                        try:
+                            async_to_sync(self.waiting_action_receiver)(dt)
+                        except concurrentTimeoutError:
+                            pass
+                            #logger.info("timeout " + str(self.process_id))
+                    else:
+                        sleep(dt)
         except StopIteration:
             self.stop()
             sys.exit(0)
@@ -705,6 +717,16 @@ class Process(object):
             logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
             self.stop()
             sys.exit(0)
+
+    async def waiting_action_receiver(self, dt):
+        channel_layer = channels.layers.get_channel_layer()
+        channel_layer.capacity = 1
+        channel_layer.flush()
+        with timeout(dt):
+            if hasattr(self, "device_id"):
+                a = await channel_layer.receive('DeviceAction_for_' + str(self.device_id))
+                self.dwt_received = True
+                logger.debug(a)
 
     def loop(self):
         """
@@ -969,8 +991,17 @@ class SingleDeviceDAQProcess(Process):
         data = []
         # process write tasks
         # Do all the write task for this device starting with the oldest
-        for task in DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False,
-                                                   variable__device_id=self.device_id).order_by('start'):
+        dwts = DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False,
+                                              variable__device_id=self.device_id).order_by('start')
+        if self.dwt_received and len(dwts) == 0:
+            sleep(0.5)
+            logger.info("DeviceWriteTask bul_created but not found, wait 0.5s")
+            dwts = DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False,
+                                                  variable__device_id=self.device_id).order_by('start')
+            if len(dwts) == 0:
+                logger.info("DeviceWriteTask still not found")
+        self.dwt_received = False
+        for task in dwts:
             if task.variable.scaling is not None:
                 task.value = task.variable.scaling.scale_output_value(task.value)
             tmp_data = self.device.write_data(task.variable.id, task.value, task)
@@ -1059,8 +1090,17 @@ class MultiDeviceDAQProcess(Process):
         data = [[]]
         for device_id, device in self.devices.items():
             # process write tasks
-            for task in DeviceWriteTask.objects.filter(done=False, start__lte=time(),
-                                                       failed=False, variable__device_id=device_id):
+            dwts = DeviceWriteTask.objects.filter(done=False, start__lte=time(),
+                                                  failed=False, variable__device_id=device_id).order_by('start')
+            if self.dwt_received and len(dwts) == 0:
+                sleep(0.5)
+                logger.info("DeviceWriteTask bul_created but not found, wait 0.5s")
+                dwts = DeviceWriteTask.objects.filter(done=False, start__lte=time(),
+                                                      failed=False, variable__device_id=device_id).order_by('start')
+                if len(dwts) == 0:
+                    logger.info("DeviceWriteTask still not found")
+            self.dwt_received = False
+            for task in dwts:
                 if task.variable.scaling is not None:
                     task.value = task.variable.scaling.scale_output_value(task.value)
                 if device.write_data(task.variable.id, task.value, task):

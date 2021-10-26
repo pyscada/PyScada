@@ -81,7 +81,7 @@ class Handler(GenericDevice):
                     i = 12
                     # Call Phase Osc
                     # cwt = DeviceWriteTask(variable_id=Variable.objects.get(name='Find_Phase_Osc').id, value=Vseff, start=time.time())
-                    # cwt.save()
+                    # cwt.create_and_notificate(cwt)
                     logger.info("Variable %s - task.property_name : %s - value %s" %(variable, task.property_name.upper(), value))
                     vp = VariableProperty.objects.update_or_create_property(variable=variable,
                                                                    name='VISA:%s' % task.property_name.upper(),

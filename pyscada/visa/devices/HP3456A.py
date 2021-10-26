@@ -35,9 +35,9 @@ class Handler(GenericDevice):
         write values to the device
         """
         variable = self._variables[variable_id]
-        if task.property_name != '':
+        if task.variable.visavariable.device_property != '':
             # write the freq property to VariableProperty use that for later read
-            vp = VariableProperty.objects.update_or_create_property(variable=variable, name=task.property_name.upper(),
+            vp = VariableProperty.objects.update_or_create_property(variable=variable, name=task.variable.visavariable.device_property.upper(),
                                                         value=value, value_class='FLOAT64')
             return True
         if variable.visavariable.variable_type == 0:  # configuration

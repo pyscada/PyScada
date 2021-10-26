@@ -175,9 +175,11 @@ def log_data(request):
 
 @unauthenticated_redirect
 def form_read_all_task(request):
+    crts = []
     for device in Device.objects.all():
-        crt = DeviceReadTask(device=device, start=time.time(), user=request.user)
-        crt.save()
+        crts.append(DeviceReadTask(device=device, start=time.time(), user=request.user))
+    if len(crts) > 0:
+        crts[0].create_and_notificate(crts)
     return HttpResponse(status=200)
 
 @unauthenticated_redirect
@@ -189,12 +191,12 @@ def form_read_task(request):
         if GroupDisplayPermission.objects.count() == 0:
             if item_type == 'variable':
                 crt = DeviceReadTask(device=Variable.objects.get(pk=key).device, start=time.time(), user=request.user)
-                crt.save()
+                crt.create_and_notificate(crt)
                 return HttpResponse(status=200)
             elif item_type == 'variable_property':
                 crt = DeviceReadTask(device=VariableProperty.objects.get(pk=key).variable.device, start=time.time(),
                                      user=request.user)
-                crt.save()
+                crt.create_and_notificate(crt)
                 return HttpResponse(status=200)
         else:
             if item_type == 'variable':
@@ -202,7 +204,7 @@ def form_read_task(request):
                                                          control_items__type=0, control_items__variable__pk=key):
                     crt = DeviceReadTask(device=Variable.objects.get(pk=key).device, start=time.time(),
                                          user=request.user)
-                    crt.save()
+                    crt.create_and_notificate(crt)
                     return HttpResponse(status=200)
             elif item_type == 'variable_property':
                 if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
@@ -210,7 +212,7 @@ def form_read_task(request):
                                                          control_items__variable_property__pk=key):
                     crt = DeviceReadTask(device=VariableProperty.objects.get(pk=key).variable.device, start=time.time(),
                                          user=request.user)
-                    crt.save()
+                    crt.create_and_notificate(crt)
                     return HttpResponse(status=200)
     return HttpResponse(status=404)
 
@@ -232,12 +234,12 @@ def form_write_task(request):
             if item_type == 'variable':
                 cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
                                       user=request.user)
-                cwt.save()
+                cwt.create_and_notificate(cwt)
                 return HttpResponse(status=200)
             elif item_type == 'variable_property':
                 cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
                                       user=request.user)
-                cwt.save()
+                cwt.create_and_notificate(cwt)
                 return HttpResponse(status=200)
         else:
             if item_type == 'variable':
@@ -245,7 +247,7 @@ def form_write_task(request):
                                                          control_items__type=0, control_items__variable__pk=key):
                     cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
                                           user=request.user)
-                    cwt.save()
+                    cwt.create_and_notificate(cwt)
                     return HttpResponse(status=200)
                 else:
                     logger.debug("Missing group display permission for write task variable")
@@ -255,7 +257,7 @@ def form_write_task(request):
                                                          control_items__variable_property__pk=key):
                     cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
                                           user=request.user)
-                    cwt.save()
+                    cwt.create_and_notificate(cwt)
                     return HttpResponse(status=200)
                 else:
                     logger.debug("Missing group display permission for write task VP")

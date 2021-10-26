@@ -10,6 +10,10 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.timezone import now
 from django.db.models.signals import post_save
 
+import channels.layers
+from channels.exceptions import ChannelFull
+from asgiref.sync import async_to_sync
+
 from pyscada.utils import blow_up_data, timestamp_to_datetime
 
 import traceback
@@ -1110,6 +1114,28 @@ class DeviceWriteTask(models.Model):
         else:
             return self.id
 
+    def device_id(self):
+        if self.variable:
+            return self.variable.device.pk
+        elif self.variable_property:
+            return self.variable_property.variable.device.pk
+        else:
+            return 0
+
+    def create_and_notificate(self, dwts):
+        if type(dwts) != list:
+            dwts = [dwts]
+        DeviceWriteTask.objects.bulk_create(dwts)
+        channel_layer = channels.layers.get_channel_layer()
+        channel_layer.capacity = 1
+        for dwt in dwts:
+            try:
+                async_to_sync(channel_layer.send)('DeviceAction_for_' + str(dwt.device_id()),
+                                                  {'DeviceWriteTask': str(dwt.device_id())})
+            except ChannelFull:
+                logger.info("Channel full : " + 'DeviceAction_for_' + str(dwt.device_id()))
+                pass
+
 
 @python_2_unicode_compatible
 class DeviceReadTask(models.Model):
@@ -1132,6 +1158,28 @@ class DeviceReadTask(models.Model):
             return self.device.short_name
         else:
             return self.id
+
+    def device_id(self):
+        if self.variable:
+            return self.variable.device.pk
+        elif self.variable_property:
+            return self.variable_property.variable.device.pk
+        else:
+            return 0
+
+    def create_and_notificate(self, drts):
+        if type(drts) != list:
+            drts = [drts]
+        DeviceReadTask.objects.bulk_create(drts)
+        channel_layer = channels.layers.get_channel_layer()
+        channel_layer.capacity = 1
+        for drt in drts:
+            try:
+                async_to_sync(channel_layer.send)('DeviceAction_for_' + str(drt.device_id()),
+                                                  {'DeviceReadTask': str(drt.device_id())})
+            except ChannelFull:
+                logger.info("Channel full : " + 'DeviceAction_for_' + str(drt.device_id()))
+                pass
 
 
 @python_2_unicode_compatible
