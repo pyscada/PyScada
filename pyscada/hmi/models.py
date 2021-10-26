@@ -513,7 +513,11 @@ class ProcessFlowDiagram(WidgetContentModel):
         :return: main panel html and sidebar html as
         """
         main_template = get_template('process_flow_diagram.html')
-        main_content = main_template.render(dict(process_flow_diagram=self))
+        try:
+            main_content = main_template.render(dict(process_flow_diagram=self))
+        except ValueError:
+            logger.info("ProcessFlowDiagram (%s) has no background image defined" % self)
+            main_content = None
         sidebar_content = None
         return main_content, sidebar_content
 
