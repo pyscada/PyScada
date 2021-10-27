@@ -16,15 +16,15 @@ Using Git.
 
 ::
 
-    git clone https://github.com/trombastic/PyScada.git
+    git clone https://github.com/clavay/PyScada.git
     cd PyScada/docker
 
 Using wget.
 
 ::
 
-    wget -qO- -O tmp.zip https://github.com/trombastic/PyScada/archive/dev/0.7.x.zip && unzip tmp.zip && rm tmp.zip
-    cd PyScada-dev-0.7.x/docker
+    wget -qO- -O tmp.zip https://github.com/clavay/PyScada/archive/refs/heads/master.zip && unzip tmp.zip && rm tmp.zip
+    cd PyScada-master/docker
 
 
 Generating SSL Certificates
@@ -34,6 +34,7 @@ Generate ssl certificates for using ssl.
 
 ::
 
+    mkdir nginx/ssl
     cd nginx/ssl
     openssl req -x509 -nodes -days 1780 -newkey rsa:2048 -keyout ./pyscada_server.key -out ./pyscada_server.crt
 
