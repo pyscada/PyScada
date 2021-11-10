@@ -76,10 +76,14 @@ class Scheduler(object):
     PROCESSES = {}
     SIG_QUEUE = []
     SIGNALS = [signal.SIGTERM, signal.SIGUSR1, signal.SIGHUP, signal.SIGUSR2]
+    if hasattr(settings, 'PID_FILE_NAME'):
+        pid_file_name = str(settings.PID_FILE_NAME)
+    else:
+        pid_file_name = '/tmp/pyscada_daemon.pid'
 
     def __init__(self, daemon_name='pyscada.utils.scheduler.Scheduler',
                  run_as_daemon=True, stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr,
-                 pid_file_name='/tmp/pyscada_daemon.pid'):
+                 pid_file_name=pid_file_name):
         """
 
         """
