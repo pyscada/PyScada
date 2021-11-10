@@ -5,6 +5,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.conf import settings
 
+from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.timezone import now
@@ -727,6 +728,65 @@ class VariableProperty(models.Model):
         return "variable_property"
 
 
+def validate_nonzero(value):
+    if value == 0:
+        raise ValidationError(
+            _('Quantity %(value)s is not allowed'),
+            params={'value': value},
+        )
+
+
+@python_2_unicode_compatible
+class PeriodField(models.Model):
+    """
+    Auto calculate and store value related to a Variable for a time range.
+    Example: - store the min of each month.
+             - store difference of each day between 9am an 8:59am
+    """
+    type_choices = ((0, 'min'),
+                    (1, 'max'),
+                    (2, 'total'),
+                    (3, 'difference'),
+                    (4, 'difference percent'),
+                    (5, 'delta'),
+                    (6, 'mean'),
+                    (7, 'first'),
+                    (8, 'last'),
+                    (9, 'count'),
+                    (10, 'count value'),
+                    (11, 'range'),
+                    (12, 'step'),
+                    (13, 'change count'),
+                    (14, 'distinct count'),
+                    )
+    type = models.SmallIntegerField(choices=type_choices)
+    property = models.CharField(default='', max_length=255, help_text='used for count value for exemple')
+    offset_second = models.IntegerField(default=0, help_text='Offset in second. Of set to 30 and length is minute will '
+                                                             'calculate between 1min30 and 2min30 etc.')
+    period_choices = ((0, 'second'),
+                      (1, 'minute'),
+                      (2, 'hour'),
+                      (3, 'day'),
+                      (4, 'week'),
+                      (5, 'month'),
+                      (6, 'year'),
+                      )
+    period = models.SmallIntegerField(choices=period_choices)
+    period_factor = models.PositiveSmallIntegerField(default=1, validators=[validate_nonzero],
+                                             help_text='Example: set to 2 and choose minute to have a 2 minutes period')
+
+    def __str__(self):
+        s = self.type_choices[self.type][1] + "-"
+        if self.property != '':
+            s += self.property + "-"
+        s += str(self.period_factor) + self.period_choices[self.period][1]
+        if self.period_factor > 1:
+            s += "s"
+        if self.offset_second != '':
+            s += "-offset:" + str(self.offset_second) + "s"
+        return s
+
+
 @python_2_unicode_compatible
 class Variable(models.Model):
     id = models.AutoField(primary_key=True)
@@ -818,6 +878,9 @@ class Variable(models.Model):
     '''
 
     byte_order = models.CharField(max_length=15, default='default', choices=byte_order_choices)
+
+    calculate_fields = models.ManyToManyField(PeriodField, blank=True)
+
     # for RecodedVariable
     value = None
     prev_value = None
@@ -1092,6 +1155,30 @@ class Variable(models.Model):
         except:
             logger.error(
                 '%s, unhandled exception in COV Receiver application\n%s' % (self.name, traceback.format_exc()))
+
+
+@python_2_unicode_compatible
+class PeriodVariable(models.Model):
+    store_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
+    main_variable = models.ForeignKey(Variable, on_delete=models.CASCADE)
+    period = models.ForeignKey(PeriodField, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.store_variable.name
+
+    def create_period(self, main_var, period):
+        v = main_var
+        v.id = None
+        v.name = main_var.name + "-" + str(period)
+        v.description = str(period)
+        v.writeable = False
+        v.cov_increment = -1
+        v.save()
+        pv = PeriodVariable(store_variable=v, main_variable=main_var, period=period)
+        return pv
+
+    def create_all_period(self):
+        PeriodVariable.objects.bulk_create([pv])
 
 
 @python_2_unicode_compatible
