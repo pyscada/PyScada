@@ -1,43 +1,18 @@
 <div class="widget-body" >
-    <div class="panel panel-primary" style="height: {{ process_flow_diagram.background_image.height|add:"68" }}px; width: {{ process_flow_diagram.background_image.width|add:"30" }}px; margin-left:15px;">
+    <!--<div class="panel panel-primary" style="height: {{ process_flow_diagram.background_image.height|add:"68" }}px; width: {{ process_flow_diagram.background_image.width|add:"30" }}px; margin-left:15px;">-->
+    <div class="panel panel-primary">
         {% if process_flow_diagram.title %}
         <div class="panel-heading">
             <h3 class="panel-title">{{ process_flow_diagram.title }}</h3>
         </div>
         {% endif %}
         <div class="panel-body" style="height:inherit;">
-            <div style="width: {{ process_flow_diagram.background_image.width }}px; position:relative;top:0; left:0; ">
-                <div style=" top:0px; left:0;position:absolute;" ><img src="{{ process_flow_diagram.background_image.url }}" alt="process flow diagram"></div>
-                {% for item in process_flow_diagram.process_flow_diagram_items.all %}
-                    <div class="hidden variable-config" data-id="{{ item.control_item.web_id }}-{{ uuid }}" data-name="{{ item.control_item.name }}" data-key="{{ item.control_item.key }}" data-color="{{ control_item.chart_line_color_code }}" data-init-type="0" data-type="{{ item.control_item.item_type}}" data-min="{{ item.control_item.min }}" data-max="{{ item.control_item.max }}" data-value-class="{{ item.control_item.value_class }}"  data-min-type="{{ item.control_item.min_type }}" data-max-type="{{ item.control_item.max_type }}" data-unit="{% if item.control_item.unit %}{{ item.control_item.unit }}{% endif %}" data-device-polling_interval="{{ item.control_item.variable.device.polling_interval }}"
-                    {% if item.control_item.display_value_options %}
-                         data-color-type="{{ item.control_item.display_value_options.color_type }}"
-                         data-color-mode="{{ item.control_item.display_value_options.mode }}"
-                         data-level-1-type="{{ item.control_item.display_value_options.color_level_1_type }}"
-                         data-level-2-type="{{ item.control_item.display_value_options.color_level_2_type }}"
-                         data-level-1="{{ item.control_item.display_value_options.color_level_1 }}"
-                         data-level-2="{{ item.control_item.display_value_options.color_level_2 }}"
-                         data-color-1="{{ item.control_item.display_value_options.color_1 }}"
-                         data-color-2="{{ item.control_item.display_value_options.color_2 }}"
-                         data-color-3="{{ item.control_item.display_value_options.color_3 }}"
-                         data-timestamp-conversion="{{ item.control_item.display_value_options.timestamp_conversion }}"
-                         data-dictionary="{{ item.control_item.display_value_options.dictionary.dict_as_json }}"
-                     {% endif %}
-                    ></div>
-                    {% if item.control_item.type == 0 %}<!-- input -->
-                        {% if item.control_item.value_class == 'BOOL' %}
-                        <div style="top:{{ item.top }}px; 	left:{{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
-                            <div  class="input-group control_label" style="width: {{ item.width }}px; height: {{ item.height }}px;"><div style="width: 100%;" class="label label-default type-bool status-green {{ item.control_item.web_class_str }}">{{ item.control_item.label }}</div></div></br>
-                        </div>
-                        {% else %}
-                            <div style="top:{{ item.top }}px; 	left: {{ item.left }}px;	position:absolute;	font-size: 12px;"><span class="type-unit"><span class="type-numeric {{ item.control_item.web_class_str }} var-{{ item.control_item.web_id }}">-</span> {{ item.control_item.unit }}</span></div>
-                        {% endif %}
-                    {% elif item.control_item.type == 1 %}<!-- display value -->
-                        <div style="top:{{ item.top }}px; 	left: {{ item.left }}px;	position:absolute;	font-size: 12px;"><span class="type-unit"><span class="type-numeric {{ item.control_item.web_class_str }} var-{{ item.control_item.web_id }}">-</span> {{ item.control_item.unit }}</span></div>
-                    {% endif %}
-                {% endfor %}
-            
-            </div>
+          <img src="{{ process_flow_diagram.background_image.url }}" style="width: 100%;" alt="process flow diagram">
         </div>
+        {% for item in process_flow_diagram.process_flow_diagram_items.all %}
+            <div style="width: {{ item.width }}px; height: {{ item.height }}px; top: {{ item.top }}px; left: {{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
+              {% include "control_element.html" with item=item.control_item %}
+            </div>
+        {% endfor %}
     </div>
 </div>
