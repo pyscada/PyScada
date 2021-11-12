@@ -81,6 +81,9 @@ class Scheduler(object):
     else:
         pid_file_name = '/tmp/pyscada_daemon.pid'
 
+    if channels.layers.get_channel_layer() is None:
+        logger.warning("Django Channels is not working. Missing config in settings ?")
+
     def __init__(self, daemon_name='pyscada.utils.scheduler.Scheduler',
                  run_as_daemon=True, stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr,
                  pid_file_name=pid_file_name):
@@ -724,13 +727,18 @@ class Process(object):
 
     async def waiting_action_receiver(self, dt):
         channel_layer = channels.layers.get_channel_layer()
-        channel_layer.capacity = 1
-        channel_layer.flush()
+
         with timeout(dt):
             if hasattr(self, "device_id"):
-                a = await channel_layer.receive('DeviceAction_for_' + str(self.device_id))
-                self.dwt_received = True
-                logger.debug(a)
+                if channel_layer is not None:
+                    channel_layer.capacity = 1
+                    channel_layer.flush()
+                    a = await channel_layer.receive('DeviceAction_for_' + str(self.device_id))
+                    self.dwt_received = True
+                    logger.debug(a)
+                else:
+                    #logger.info("channel_layer is None")
+                    sleep(dt)
 
     def loop(self):
         """

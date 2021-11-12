@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.models import Variable, Device, Scaling, BackgroundProcess, VariableProperty, DeviceHandler, RecordedData
+from pyscada.models import Variable, Device, Scaling, BackgroundProcess, VariableProperty, DeviceHandler, RecordedData, VariableCalculatedFields
 from pyscada.admin import VariableState
 
 from django.dispatch import receiver
@@ -21,6 +21,22 @@ def _vp_value_change(sender, instance, **kwargs):
                 logger.debug("VP %s new value = %s - %s" % (str(instance), instance.last_value, previous.value()))
                 instance.last_value = str(previous.value())
                 instance.value_changed = True
+
+
+@receiver(post_save, sender=VariableCalculatedFields)
+def _create_calculated_variables(sender, instance, **kwargs):
+    """
+    Create calculated variables
+    """
+    if type(instance) is VariableCalculatedFields:
+        try:
+            logger.debug(str(sender) + " post_save pyscada." + str(instance) + "-" + str(instance.id))
+
+        except Exception as e:
+            logger.debug("post_save pyscada " + str(e))
+        instance.create_all_calculated_variables()
+    else:
+        logger.debug('post_save from %s to %s' %(type(sender), type(instance)))
 
 
 @receiver(post_save, sender=VariableProperty)
@@ -116,7 +132,7 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
             else:
                 logger.debug("VP something changed (not value)")
     else:
-        logger.debug('post_save from %s' % type(instance))
+        logger.debug('post_save from %s to %s' %(type(sender), type(instance)))
 
 
 @receiver(pre_delete, sender=VariableProperty)
@@ -187,4 +203,4 @@ def _del_daq_daemons(sender, instance, **kwargs):
             return False
         bp.restart()
     else:
-        logger.debug('pre_delete from %s' % type(instance))
+        logger.debug('pre_delete from %s to %s' %(type(sender), type(instance)))

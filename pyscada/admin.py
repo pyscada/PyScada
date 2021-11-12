@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 from pyscada.models import Device, DeviceProtocol, DeviceHandler
 from pyscada.models import Variable, VariableProperty
+from pyscada.models import PeriodField, VariableCalculatedFields, CalculatedVariable
 from pyscada.models import Scaling, Color
 from pyscada.models import Unit
 from pyscada.models import DeviceWriteTask, DeviceReadTask
@@ -191,6 +192,13 @@ class VariableStateAdmin(admin.ModelAdmin):
         else:
             return ' - : NaN ' + instance.unit.unit
 
+
+class VariableCalculatedFieldsAdmin(admin.ModelAdmin):
+    list_display = ('id', 'main_variable',)
+    list_display_links = ('main_variable',)
+    raw_id_fields = ('main_variable',)
+    save_as = True
+    save_as_continue = True
 
 class DeviceForm(forms.ModelForm):
     def has_changed(self):
@@ -462,6 +470,9 @@ admin_site.register(Device, DeviceAdmin)
 admin_site.register(DeviceHandler)
 admin_site.register(Variable, CoreVariableAdmin)
 admin_site.register(VariableProperty, VariablePropertyAdmin)
+admin_site.register(VariableCalculatedFields, VariableCalculatedFieldsAdmin)
+admin_site.register(PeriodField)
+admin_site.register(CalculatedVariable)
 admin_site.register(Scaling)
 admin_site.register(Unit)
 admin_site.register(ComplexEventGroup, ComplexEventGroupAdmin)
