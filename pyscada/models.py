@@ -1174,9 +1174,11 @@ class CalculatedVariableSelector(models.Model):
             short_name=dname,
             description="Device used to store calculated variables",
             protocol_id=1)
-        if len(Variable.objects.filter(name=v.name + "-" + str(period))) == 0:
+        sv_name = v.name + "-" + str(period).replace(":", "-")
+        logger.debug(sv_name)
+        if len(Variable.objects.filter(name=sv_name)) == 0:
             v.id=None
-            v.name += "-" + str(period)
+            v.name = sv_name
             v.description = str(period)
             v.writeable = False
             v.cov_increment = -1
