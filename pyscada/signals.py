@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.models import Variable, Device, Scaling, BackgroundProcess, VariableProperty, DeviceHandler, RecordedData, VariableCalculatedFields
+from pyscada.models import Variable, Device, Scaling, BackgroundProcess, VariableProperty, DeviceHandler, RecordedData, CalculatedVariableSelector
 from pyscada.admin import VariableState
 
 from django.dispatch import receiver
-from django.db.models.signals import post_save, pre_delete, pre_save
+from django.db.models.signals import post_save, pre_delete, pre_save, m2m_changed
 
 import logging
 
@@ -23,20 +23,17 @@ def _vp_value_change(sender, instance, **kwargs):
                 instance.value_changed = True
 
 
-@receiver(post_save, sender=VariableCalculatedFields)
-def _create_calculated_variables(sender, instance, **kwargs):
+@receiver(m2m_changed, sender=CalculatedVariableSelector.period_fields.through)
+def _create_calculated_variables(sender, instance, action, **kwargs):
     """
     Create calculated variables
     """
-    if type(instance) is VariableCalculatedFields:
+    if type(instance) is CalculatedVariableSelector and action == 'post_add':
         try:
-            logger.debug(str(sender) + " post_save pyscada." + str(instance) + "-" + str(instance.id))
-
+            logger.debug(str(sender) + " m2m post_add pyscada." + str(instance) + "-" + str(instance.id))
         except Exception as e:
-            logger.debug("post_save pyscada " + str(e))
+            logger.debug("post_add pyscada " + str(e))
         instance.create_all_calculated_variables()
-    else:
-        logger.debug('post_save from %s to %s' %(type(sender), type(instance)))
 
 
 @receiver(post_save, sender=VariableProperty)

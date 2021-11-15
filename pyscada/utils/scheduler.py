@@ -264,9 +264,15 @@ class Scheduler(object):
         if connection.connection is not None:
             connection.connection.close()
             connection.connection = None
-        master_process = BackgroundProcess.objects.filter(parent_process__isnull=True,
-                                                          label=self.label,
-                                                          enabled=True).first()
+
+        try:
+            master_process = BackgroundProcess.objects.filter(parent_process__isnull=True,
+                                                              label=self.label,
+                                                              enabled=True).first()
+        except OperationalError as e:
+            logger.error("Cant't connect to the DB : " + str(e))
+            #self.delete_pid(force_del=True)
+            sys.exit(0)
         self.pid = getpid()
         if not master_process:
             self.delete_pid(force_del=True)
@@ -471,7 +477,12 @@ class Scheduler(object):
         if self.pid is None:
             self.pid = self.read_pid()
         if self.pid is None:
-            sp = BackgroundProcess.objects.filter(pk=1).first()
+            try:
+                sp = BackgroundProcess.objects.filter(pk=1).first()
+            except OperationalError as e:
+                logger.error("Cant't connect to the DB : " + str(e))
+                self.delete_pid(force_del=True)
+                sys.exit(0)
             if sp:
                 self.pid = sp.pid
         if self.pid is None or self.pid == 0:

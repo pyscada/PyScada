@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from pyscada.models import Device, DeviceProtocol, DeviceHandler
 from pyscada.models import Variable, VariableProperty
-from pyscada.models import PeriodField, VariableCalculatedFields, CalculatedVariable
+from pyscada.models import PeriodicField, CalculatedVariableSelector, CalculatedVariable
 from pyscada.models import Scaling, Color
 from pyscada.models import Unit
 from pyscada.models import DeviceWriteTask, DeviceReadTask
@@ -193,12 +193,24 @@ class VariableStateAdmin(admin.ModelAdmin):
             return ' - : NaN ' + instance.unit.unit
 
 
-class VariableCalculatedFieldsAdmin(admin.ModelAdmin):
+class CalculatedVariableSelectorAdmin(admin.ModelAdmin):
     list_display = ('id', 'main_variable',)
     list_display_links = ('main_variable',)
     raw_id_fields = ('main_variable',)
+    filter_horizontal = ('period_fields',)
     save_as = True
     save_as_continue = True
+
+
+class CalculatedVariableAdmin(admin.ModelAdmin):
+    save_as = True
+    save_as_continue = True
+
+
+class PeriodicFieldAdmin(admin.ModelAdmin):
+    save_as = True
+    save_as_continue = True
+
 
 class DeviceForm(forms.ModelForm):
     def has_changed(self):
@@ -310,6 +322,8 @@ class DeviceWriteTaskAdmin(admin.ModelAdmin):
     list_display_links = ('name',)
     list_filter = ('done', 'failed',)
     raw_id_fields = ('variable',)
+    save_as = True
+    save_as_continue = True
 
     def name(self, instance):
         return instance.__str__()
@@ -332,6 +346,8 @@ class DeviceReadTaskAdmin(admin.ModelAdmin):
     list_display_links = ('name',)
     list_filter = ('done', 'failed',)
     raw_id_fields = ('variable',)
+    save_as = True
+    save_as_continue = True
 
     def name(self, instance):
         return instance.__str__()
@@ -381,6 +397,8 @@ class RecordedEventAdmin(admin.ModelAdmin):
     list_display_links = ('event', 'complex_event_group',)
     list_filter = ('event', 'active')
     readonly_fields = ('time_begin', 'time_end',)
+    save_as = True
+    save_as_continue = True
 
 
 class MailAdmin(admin.ModelAdmin):
@@ -439,7 +457,8 @@ class ComplexEventItemAdmin(admin.ModelAdmin):
                     'fixed_limit_high', 'variable_limit_high', 'limit_high_type', 'hysteresis_high',)
     list_display_links = ('id',)
     list_filter = ('variable',)
-
+    save_as = True
+    save_as_continue = True
     raw_id_fields = ('variable',)
 
 
@@ -448,7 +467,8 @@ class EventAdmin(admin.ModelAdmin):
     list_display_links = ('id', 'label',)
     list_filter = ('level', 'limit_type', 'action',)
     filter_horizontal = ('mail_recipients',)
-
+    save_as = True
+    save_as_continue = True
     raw_id_fields = ('variable',)
 
 
@@ -470,9 +490,9 @@ admin_site.register(Device, DeviceAdmin)
 admin_site.register(DeviceHandler)
 admin_site.register(Variable, CoreVariableAdmin)
 admin_site.register(VariableProperty, VariablePropertyAdmin)
-admin_site.register(VariableCalculatedFields, VariableCalculatedFieldsAdmin)
-admin_site.register(PeriodField)
-admin_site.register(CalculatedVariable)
+admin_site.register(CalculatedVariableSelector, CalculatedVariableSelectorAdmin)
+admin_site.register(PeriodicField, PeriodicFieldAdmin)
+admin_site.register(CalculatedVariable, CalculatedVariableAdmin)
 admin_site.register(Scaling)
 admin_site.register(Unit)
 admin_site.register(ComplexEventGroup, ComplexEventGroupAdmin)

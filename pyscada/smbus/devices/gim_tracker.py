@@ -19,28 +19,32 @@ class Handler(GenericDevice):
         """
         read values from the device
         """
-        if variable_instance.smbusvariable.information == 'tension':
-            msb = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x1e)) * 16
-            lsb = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x1f)) / 16
-            return self.parse_value((msb + lsb) * 0.025)
+        try:
+            if variable_instance.smbusvariable.information == 'tension':
+                msb = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x1e)) * 16
+                lsb = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x1f)) / 16
+                return self.parse_value((msb + lsb) * 0.025)
 
-        elif variable_instance.smbusvariable.information == 'courant':
-            msb = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x14)) * 16
-            lsb = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x15)) / 16
-            return self.parse_value((msb + lsb) * 0.0025)
+            elif variable_instance.smbusvariable.information == 'courant':
+                msb = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x14)) * 16
+                lsb = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x15)) / 16
+                return self.parse_value((msb + lsb) * 0.0025)
 
-        elif variable_instance.smbusvariable.information == 'energie':
-            lsb = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x3F))
-            msb3 = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x3C))
-            msb2 = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x3D))
-            msb1 = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x3E))
-            return self.parse_value((lsb + msb1 * 256 + msb2 * 65536 + msb3 * 16777216) * 0.0673157)
+            elif variable_instance.smbusvariable.information == 'energie':
+                lsb = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x3F))
+                msb3 = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x3C))
+                msb2 = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x3D))
+                msb1 = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x3E))
+                return self.parse_value((lsb + msb1 * 256 + msb2 * 65536 + msb3 * 16777216) * 0.0673157)
 
-        elif variable_instance.smbusvariable.information == 'puissance':
-            lsb = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x07))
-            msb2 = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x05))
-            msb1 = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x06))
-            return self.parse_value((msb2 * 65536 + msb1 * 256 + lsb) * 0.0673157 / 1000.0)
+            elif variable_instance.smbusvariable.information == 'puissance':
+                lsb = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x07))
+                msb2 = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x05))
+                msb1 = (self.inst.read_byte_data(self._device.smbusdevice.address, 0x06))
+                return self.parse_value((msb2 * 65536 + msb1 * 256 + lsb) * 0.0673157 / 1000.0)
+                
+        except OSError:
+            pass
 
         return None
 

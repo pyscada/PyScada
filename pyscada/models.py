@@ -2,13 +2,14 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.db.utils import IntegrityError
 from django.contrib.auth.models import User
 from django.conf import settings
 
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.utils.encoding import python_2_unicode_compatible
-from django.utils.timezone import now
+from django.utils.timezone import now, make_aware, is_naive
 from django.db.models.signals import post_save
 
 import channels.layers
@@ -22,6 +23,7 @@ import time
 import datetime
 import json
 import signal
+from monthdelta import monthdelta
 from os import kill, waitpid, WNOHANG
 from struct import *
 from os import getpid
@@ -1106,7 +1108,7 @@ def validate_nonzero(value):
 
 
 @python_2_unicode_compatible
-class PeriodField(models.Model):
+class PeriodicField(models.Model):
     """
     Auto calculate and store value related to a Variable for a time range.
     Example: - store the min of each month.
@@ -1129,9 +1131,10 @@ class PeriodField(models.Model):
                     (14, 'distinct count'),
                     )
     type = models.SmallIntegerField(choices=type_choices)
-    property = models.CharField(default='', blank=True, null=True, max_length=255, help_text='used for count value for exemple')
-    offset_second = models.IntegerField(default=0, help_text='Offset in second. Of set to 30 and length is minute will '
-                                                             'calculate between 1min30 and 2min30 etc.')
+    property = models.CharField(default='', blank=True, null=True,
+     max_length=255, help_text='For count value : enter the value to count')
+    start_from = models.DateTimeField(default=make_aware(datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())),
+     help_text='Calculate from this DateTime and then each period_factor*period')
     period_choices = ((0, 'second'),
                       (1, 'minute'),
                       (2, 'hour'),
@@ -1151,83 +1154,135 @@ class PeriodField(models.Model):
         s += str(self.period_factor) + self.period_choices[self.period][1]
         if self.period_factor > 1:
             s += "s"
-        if self.offset_second != 0:
-            s += "-offset:" + str(self.offset_second) + "s"
+        s += "-from:" + str(self.start_from.date()) + "T" + str(self.start_from.time())
         return s
 
 
 @python_2_unicode_compatible
-class VariableCalculatedFields(models.Model):
+class CalculatedVariableSelector(models.Model):
     main_variable = models.ForeignKey(Variable, on_delete=models.CASCADE)
-    period_fields = models.ManyToManyField(PeriodField)
+    period_fields = models.ManyToManyField(PeriodicField)
+    active = models.BooleanField(default=True)
 
     def get_new_calculated_variable(self, main_var, period):
         v = Variable.objects.get(id=main_var.id)
-        v.id=None
-        v.name += "-" + str(period)
-        v.description = str(period)
-        v.writeable = False
-        v.cov_increment = -1
-        v.save()
-        pv = CalculatedVariable(store_variable=v, variable_calculated_fields=self, period=period)
+        dname = "for_calculated_variables"
+        try:
+            d = Device.objects.get(short_name=dname)
+        except Device.DoesNotExist:
+            d = Device.objects.create(
+            short_name=dname,
+            description="Device used to store calculated variables",
+            protocol_id=1)
+        if len(Variable.objects.filter(name=v.name + "-" + str(period))) == 0:
+            v.id=None
+            v.name += "-" + str(period)
+            v.description = str(period)
+            v.writeable = False
+            v.cov_increment = -1
+            v.device_id = d.id
+            v.save()
+            pv = CalculatedVariable(store_variable=v, variable_calculated_fields=self, period=period)
+        else:
+            pv = None
+
         return pv
 
     def create_all_calculated_variables(self):
         cvs = []
+        self.refresh_from_db()
         for p in self.period_fields.all():
-            cvs.append(self.get_new_calculated_variable(self.main_variable, p))
+            cv = self.get_new_calculated_variable(self.main_variable, p)
+            if cv is not None:
+                cvs.append(cv)
 
-        logger.debug(cvs)
-
+        #logger.debug(cvs)
         CalculatedVariable.objects.bulk_create(cvs)
 
 
 @python_2_unicode_compatible
 class CalculatedVariable(models.Model):
     store_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
-    variable_calculated_fields = models.ForeignKey(VariableCalculatedFields, on_delete=models.CASCADE)
-    period = models.ForeignKey(PeriodField, on_delete=models.CASCADE)
+    variable_calculated_fields = models.ForeignKey(CalculatedVariableSelector, on_delete=models.CASCADE)
+    period = models.ForeignKey(PeriodicField, on_delete=models.CASCADE)
+    last_check = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return self.store_variable.name
 
+    def check_to_now(self):
+        if self.last_check is not None:
+            self.check_period(self.last_check, now())
+        else:
+            self.check_period(self.period.start_from, now())
+
     def check_period(self, d1, d2):
-        period_str = self.period.period_choices[self.period.period][1]
-        if self.period_to_add_value(d1, d2):
-            pass
-        if period_str == 'year':
-            td = monthdelta(12) * self.period.period_factor
-        elif period_str == 'month':
-            td = monthdelta(self.period.period_factor)
-        elif period_str == 'week':
-            td = datetime.timedelta(weeks=self.period.period_factor)
-        elif period_str == 'day':
-            td = datetime.timedelta(days=self.period.period_factor)
-        elif period_str == 'hour':
-            td = datetime.timedelta(hours=self.period.period_factor)
-        elif period_str == 'minute':
-            td = datetime.timedelta(minutes=self.period.period_factor)
-        elif period_str == 'second':
-            td = datetime.timedelta(seconds=self.period.period_factor)
+        logger.debug("Check period of %s [%s - %s]" %(self.store_variable, d1, d2))
+        if is_naive(d1):
+            d1 = make_aware(d1)
+        if is_naive(d2):
+            d2 = make_aware(d2)
         output= []
-        while d2 >= d1 + datetime.timedelta(seconds=self.period.offset_second) + td:
-            logger.debug(d1)
-            calc_value = self.get_value(d1 + datetime.timedelta(seconds=self.period.offset_second), d1 +  datetime.timedelta(seconds=self.period.offset_second) + td)
-            if calc_value is not None and self.store_variable.update_value(calc_value, time.time()):
-                item = self.store_variable.create_recorded_data_element()
-                item.date_saved = d1 + datetime.timedelta(seconds=self.period.offset_second)
-                output.append(item)
+
+        if self.period_diff_quantity(d1, d2) is None:
+            logger.debug("No period in date interval : %s (%s %s)" %(self.period, d1, d2))
+            return None
+
+        td = self.add_timedelta()
+
+        d = self.get_valid_range(d1, d2)
+        if d is None:
+            return None
+        [d1, d2] = d
+
+        if self.period_diff_quantity(d1, d2) is None:
+            logger.debug("No period in new date interval : %s (%s %s)" %(self.period, d1, d2))
+            return None
+
+        #logger.debug("Valid range : %s - %s" % (d1, d2))
+
+        while d2 >= d1 + td and d1 + td <= now():
+            #logger.debug("add for %s - %s" %(d1, d1 + td))
+            td1 = d1.timestamp()
+            try:
+                v_stored = RecordedData.objects.get_values_in_time_range(time_min=td1, time_max=td1 + 1, variable=self.store_variable, add_latest_value=False)
+            except AttributeError:
+                v_stored = []
+            if len(v_stored) and len(v_stored[self.store_variable.id][0]):
+                logger.debug("Value already exist in RecordedData for %s - %s" %(d1, d1 + td))
+                pass
+            else:
+                calc_value = self.get_value(d1, d1 + td)
+                if calc_value is not None and self.store_variable.update_value(calc_value, td1):
+                    item = self.store_variable.create_recorded_data_element()
+                    item.date_saved = d1
+                    if item is not None:
+                        output.append(item)
             d1 = d1 + td
 
+        if len(output):
+            #logger.debug(output)
+            m = "Adding : "
+            for c in output:
+                m += str(c) + " " + str(c.date_saved) + " - "
+            logger.debug(m)
+            RecordedData.objects.bulk_create(output)
+            self.last_check=output[-1].date_saved + td
+        else:
+            logger.debug("Nothing to add")
+            self.last_check=min(d1 + td, d2, now())
 
-        logger.debug(output)
-        RecordedData.objects.bulk_create(output)
+
+        self.save(update_fields=['last_check'])
 
     def get_value(self, d1, d2):
-        tmp = RecordedData.objects.get_values_in_time_range(variable=self.variable_calculated_fields.main_variable,
-        time_min=d1.timestamp(),
-        time_max=d2.timestamp(),
-        time_in_ms=True,)
+        try:
+            tmp = RecordedData.objects.get_values_in_time_range(variable=self.variable_calculated_fields.main_variable,
+            time_min=d1.timestamp(),
+            time_max=d2.timestamp(),
+            time_in_ms=True,)
+        except AttributeError:
+            tmp = []
         values = []
         if len(tmp) > 0:
             for v in tmp[self.variable_calculated_fields.main_variable.id]:
@@ -1290,45 +1345,121 @@ class CalculatedVariable(models.Model):
             elif type_str == 'distinct count':
                 res = len(set(values))
             else:
-                logger.warning ("Period field type unknown")
+                logger.warning ("Periodic field type unknown")
                 res = None
 
-            logger.debug(res)
+            #logger.debug(str(d1) + " " + str(self.period) + " " + str(res))
             return res
         else:
-            logger.debug("No values for this period")
+            #logger.debug("No values for this period")
             return None
 
-    def period_to_add_value(self, d1, d2):
-        period_str = self.period.period_choices[self.period.period][1]
-        d1off = d1 - datetime.timedelta(seconds=self.period.offset_second)
-        d2off = d2 - datetime.timedelta(seconds=self.period.offset_second)
-        if period_str == 'year':
-            res = self.years_diff_quantity(d1off, d2off)
-        elif period_str == 'month':
-            res = self.months_diff_quantity(d1off, d2off)
-        elif period_str == 'week':
-            res = self.weeks_diff_quantity(d1off, d2off)
-        elif period_str == 'day':
-            res = self.days_diff_quantity(d1off, d2off)
-        elif period_str == 'hour':
-            res = self.hours_diff_quantity(d1off, d2off)
-        elif period_str == 'minute':
-            res = self.minutes_diff_quantity(d1off, d2off)
-        elif period_str == 'second':
-            res = self.seconds_diff_quantity(d1off, d2off)
-
-        if res >= self.period.period_factor:
-            return True
+    def get_valid_range(self, d1, d2):
+        if is_naive(d1):
+            d1 = make_aware(d1)
+        if is_naive(d2):
+            d2 = make_aware(d2)
+        if d2 <= d1:
+            logger.warning("Use get_valid_range with d_start > d_end")
+            return None
+        if self.period.start_from == d1:
+            d_start = 0
         else:
-            return False
+            d_start = self.period_diff_quantity(self.period.start_from, d1)
+            if d_start is not None:
+                if d_start != int(d_start):
+                    d_start = int(d_start) + 1
+                else:
+                    d_start = int(d_start)
+            else:
+                logger.debug("d_start - start_from < period_factor*period")
+                return None
+        d_end = self.period_diff_quantity(self.period.start_from, d2)
+        if d_end is not None:
+            d_end = int(d_end)
+        else:
+            logger.debug("d_end - start_from < period_factor*period")
+            return None
+        if d_end <= d_start:
+            logger.debug("d_end - d_start < period_factor*period")
+            return None
+
+        td=self.add_timedelta()
+
+        d_start = d_start / self.period.period_factor
+        if d_start != int(d_start):
+            d_start = int(d_start) + 1
+        else:
+            d_start = int(d_start)
+
+        d_end = d_end / self.period.period_factor
+        if d_end != int(d_end):
+            d_end = int(d_end) + 1
+        else:
+            d_end = int(d_end)
+
+        dd_start = d_start * td + self.period.start_from
+        dd_end = d_end * td + self.period.start_from
+
+        if dd_end > d2:
+            logger.debug("%s > %s" %(dd_end, d2))
+            dd_end -= self.add_timedelta(self._period_diff_quantity(d2, dd_end))
+            logger.debug("dd_end : %s" % dd_end)
+
+        return [dd_start, dd_end]
+
+    def add_timedelta(self, delta=None):
+        if delta is None:
+            delta = self.period.period_factor
+        td = None
+        period_str = self.period.period_choices[self.period.period][1]
+        if period_str == 'year':
+            td = monthdelta(12) * delta
+        elif period_str == 'month':
+            td = monthdelta(delta)
+        elif period_str == 'week':
+            td = datetime.timedelta(weeks=delta)
+        elif period_str == 'day':
+            td = datetime.timedelta(days=delta)
+        elif period_str == 'hour':
+            td = datetime.timedelta(hours=delta)
+        elif period_str == 'minute':
+            td = datetime.timedelta(minutes=delta)
+        elif period_str == 'second':
+            td = datetime.timedelta(seconds=delta)
+        return td
+
+    def _period_diff_quantity(self, d1, d2):
+        period_str = self.period.period_choices[self.period.period][1]
+        if period_str == 'year':
+            res = self.years_diff_quantity(d1, d2)
+        elif period_str == 'month':
+            res = self.months_diff_quantity(d1, d2)
+        elif period_str == 'week':
+            res = self.weeks_diff_quantity(d1, d2)
+        elif period_str == 'day':
+            res = self.days_diff_quantity(d1, d2)
+        elif period_str == 'hour':
+            res = self.hours_diff_quantity(d1, d2)
+        elif period_str == 'minute':
+            res = self.minutes_diff_quantity(d1, d2)
+        elif period_str == 'second':
+            res = self.seconds_diff_quantity(d1, d2)
+        return res
+
+    def period_diff_quantity(self, d1, d2):
+        res = self._period_diff_quantity(d1, d2)
+        if res >= self.period.period_factor:
+            return res
+        else:
+            return None
 
     def years_diff_quantity(self, d1, d2):
-        logger.debug("Years:" + str((d1.year - d2.year)))
-        return d1.year - d2.year
+        #logger.debug("Years:" + str((d1.year - d2.year)))
+        return d2.year - d1.year
 
     def months_diff_quantity(self, d1, d2):
-        logger.debug("Months:" + str((d2.year - d1.year) * 12 + d2.month - d1.month))
+        #logger.debug("Months:" + str((d2.year - d1.year) * 12 + d2.month - d1.month))
         return (d2.year - d1.year) * 12 + d2.month - d1.month
 
     def weeks_diff_quantity(self, d1, d2):
@@ -1336,27 +1467,27 @@ class CalculatedVariable(models.Model):
         monday2 = (d2 - datetime.timedelta(days=d2.weekday()))
         diff = monday2 - monday1
         noWeeks = (diff.days / 7.0)  + diff.seconds/86400
-        logger.debug('Weeks:' + str(noWeeks))
+        #logger.debug('Weeks:' + str(noWeeks))
         return noWeeks
 
     def days_diff_quantity(self, d1, d2):
         diff = (d2 - d1).total_seconds() / 60 / 60 / 24
-        logger.debug("Days: " + str(diff))
+        #logger.debug("Days: " + str(diff))
         return diff
 
     def hours_diff_quantity(self, d1, d2):
         diff = (d2 - d1).total_seconds() / 60 / 60
-        logger.debug("Hours: " + str(diff))
+        #logger.debug("Hours: " + str(diff))
         return diff
 
     def minutes_diff_quantity(self, d1, d2):
         diff = (d2 - d1).total_seconds() / 60
-        logger.debug("Minutes: " + str(diff))
+        #logger.debug("Minutes: " + str(diff))
         return diff
 
     def seconds_diff_quantity(self, d1, d2):
         diff = (d2 - d1).total_seconds()
-        logger.debug("Seconds: " + str(diff))
+        #logger.debug("Seconds: " + str(diff))
         return diff
 
 
@@ -1618,7 +1749,10 @@ class RecordedData(models.Model):
 
         # call the django model __init__
         super(RecordedData, self).__init__(*args, **kwargs)
-        self.timestamp = self.time_value()
+        if self.variable is not None:
+            self.timestamp = self.time_value()
+        else:
+            self.timestamp = self.date_saved.timestamp()
 
     def calculate_pk(self, timestamp=None):
         """
@@ -1641,6 +1775,9 @@ class RecordedData(models.Model):
         """
         return the stored value
         """
+        if self.variable is None:
+            return None
+
         if value_class is None:
             value_class = self.variable.value_class
 
