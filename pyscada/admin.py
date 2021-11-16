@@ -194,20 +194,19 @@ class VariableStateAdmin(admin.ModelAdmin):
 
 
 class CalculatedVariableSelectorAdmin(admin.ModelAdmin):
-    list_display = ('id', 'main_variable',)
+    list_display = ('id', 'main_variable', 'active')
     list_display_links = ('main_variable',)
+    list_editable = ('active',)
     raw_id_fields = ('main_variable',)
     filter_horizontal = ('period_fields',)
     save_as = True
     save_as_continue = True
 
 
-class CalculatedVariableAdmin(admin.ModelAdmin):
-    save_as = True
-    save_as_continue = True
-
-
 class PeriodicFieldAdmin(admin.ModelAdmin):
+    list_display = ('id', '__str__', 'type', 'property', 'start_from', 'period', 'period_factor',)
+    list_editable = ('type', 'property', 'start_from', 'period', 'period_factor',)
+    list_display_links = ('__str__',)
     save_as = True
     save_as_continue = True
 
@@ -230,9 +229,10 @@ class DeviceForm(forms.ModelForm):
 
 
 class DeviceAdmin(admin.ModelAdmin):
-    list_display = ('id', 'short_name', 'description', 'protocol', 'active', 'polling_interval')
-    list_editable = ('active', 'polling_interval')
-    list_display_links = ('short_name', 'description')
+    list_display = ('id', 'short_name', 'description', 'protocol', 'active', 'polling_interval',)
+    list_editable = ('active', 'polling_interval',)
+    list_display_links = ('short_name', 'description',)
+    list_filter = ('protocol', 'active', 'polling_interval',)
     save_as = True
     save_as_continue = True
     form = DeviceForm
@@ -280,9 +280,18 @@ class DeviceAdmin(admin.ModelAdmin):
         )
 
 
+class DeviceHandlerAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'handler_class', 'handler_path',)
+    list_editable = ('handler_class', 'handler_path',)
+    list_display_links = ('name',)
+    save_as = True
+    save_as_continue = True
+
+
 class VariableAdmin(admin.ModelAdmin):
-    list_filter = ('device__short_name', 'active', 'writeable', 'unit__unit', 'value_class')
+    list_filter = ('device__protocol', 'device', 'active', 'writeable', 'unit__unit', 'value_class', 'scaling',)
     search_fields = ['name', ]
+    list_per_page = 30
     form = VariableAdminFrom
     save_as = True
     save_as_continue = True
@@ -309,11 +318,73 @@ class VariableAdmin(admin.ModelAdmin):
     def unit(self, instance):
         return instance.unit.unit
 
+    def last_value(self, instance):
+        element = RecordedData.objects.last_element(variable_id=instance.pk)
+        if element:
+            return datetime.datetime.fromtimestamp(
+                element.time_value()).strftime('%Y-%m-%d %H:%M:%S') \
+                   + ' : ' + element.value().__str__() + ' ' + instance.unit.unit
+        else:
+            return ' - : NaN ' + instance.unit.unit
+
+    def get_queryset(self, request):
+        """Limit Pages to those that belong to the request's user."""
+        qs = super(VariableAdmin, self).get_queryset(request)
+        return qs.filter(calculatedvariable__isnull=True)
+
+
+class ExtendedCalculatedVariable(Variable):
+    class Meta:
+        proxy = True
+        verbose_name = 'Calculated Variable'
+        verbose_name_plural = 'Calculated Variable'
+
+
+class CalculatedVariableAdminInline(admin.StackedInline):
+    model = CalculatedVariable
+
+
+class CalculatedVariableAdmin(VariableAdmin):
+    list_display = VariableAdmin.list_display #+ ('store_variable', 'variable_calculated_fields', 'period', 'last_check',)
+    #list_editable = ('store_variable', 'variable_calculated_fields', 'period', 'last_check',)
+    #list_display_links = ('__str__',)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'device':
+            kwargs['queryset'] = Device.objects.filter(short_name=CalculatedVariableSelector.dname)
+        return super(CalculatedVariableAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+
+    def get_queryset(self, request):
+        """Limit Pages to those that belong to the request's user."""
+        qs = super(admin.ModelAdmin, self).get_queryset(request)
+        return qs.filter(calculatedvariable__isnull=False)
+
+    inlines = [
+        CalculatedVariableAdminInline
+    ]
+
+    @property
+    def media(self):
+        response = super(admin.ModelAdmin, self).media
+        return response
+
+    save_as = True
+    save_as_continue = True
+
 
 class CoreVariableAdmin(VariableAdmin):
-    list_display = ('id', 'name', 'description', 'unit', 'scaling', 'device_name', 'value_class', 'active', 'writeable',)
-    list_editable = ('active', 'writeable',)
+    list_display = ('id', 'name', 'description', 'unit', 'scaling', 'device', 'value_class', 'active', 'writeable',
+                    'last_value')
+    list_editable = ('active', 'writeable', 'unit', 'scaling',)
     list_display_links = ('name',)
+
+
+class ScalingAdmin(admin.ModelAdmin):
+    list_display = ('id', 'description', 'input_low', 'input_high', 'output_low', 'output_high', 'limit_input',)
+    list_editable = ('input_low', 'input_high', 'output_low', 'output_high', 'limit_input',)
+    list_display_links = ('description',)
+    save_as = True
+    save_as_continue = True
 
 
 class DeviceWriteTaskAdmin(admin.ModelAdmin):
@@ -487,13 +558,13 @@ class VariablePropertyAdmin(admin.ModelAdmin):
 
 admin_site = PyScadaAdminSite(name='pyscada_admin')
 admin_site.register(Device, DeviceAdmin)
-admin_site.register(DeviceHandler)
+admin_site.register(DeviceHandler, DeviceHandlerAdmin)
 admin_site.register(Variable, CoreVariableAdmin)
 admin_site.register(VariableProperty, VariablePropertyAdmin)
 admin_site.register(CalculatedVariableSelector, CalculatedVariableSelectorAdmin)
 admin_site.register(PeriodicField, PeriodicFieldAdmin)
-admin_site.register(CalculatedVariable, CalculatedVariableAdmin)
-admin_site.register(Scaling)
+admin_site.register(ExtendedCalculatedVariable, CalculatedVariableAdmin)
+admin_site.register(Scaling, ScalingAdmin)
 admin_site.register(Unit)
 admin_site.register(ComplexEventGroup, ComplexEventGroupAdmin)
 admin_site.register(ComplexEvent, ComplexEventAdmin)
@@ -504,6 +575,6 @@ admin_site.register(DeviceWriteTask, DeviceWriteTaskAdmin)
 admin_site.register(DeviceReadTask, DeviceReadTaskAdmin)
 admin_site.register(Log, LogAdmin)
 admin_site.register(BackgroundProcess, BackgroundProcessAdmin)
-admin_site.register(VariableState, VariableStateAdmin)
+#admin_site.register(VariableState, VariableStateAdmin)
 admin_site.register(User, UserAdmin)
 admin_site.register(Group, GroupAdmin)

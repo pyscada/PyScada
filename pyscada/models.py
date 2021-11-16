@@ -1130,11 +1130,28 @@ class PeriodicField(models.Model):
                     (13, 'change count'),
                     (14, 'distinct count'),
                     )
-    type = models.SmallIntegerField(choices=type_choices)
+    type = models.SmallIntegerField(choices=type_choices,
+                                    help_text="Min: Minimum value of a field<br>"
+                                              "Max: Maximum value of a field<br>"
+                                              "Total: Sum of all values in a field<br>"
+                                              "Difference: Difference between first and last value of a field<br>"
+                                              "Difference percent: Percentage change between "
+                                              "first and last value of a field<br>"
+                                              "Delta: Cumulative change in value, only counts increments<br>"
+                                              "Mean: Mean value of all values in a field<br>"
+                                              "First: First value in a field<br>"
+                                              "Last: Last value in a field<br>"
+                                              "Count: Number of values in a field<br>"
+                                              "Count value: Number of a value in a field<br>"
+                                              "Range: Difference between maximum and minimum values of a field<br>"
+                                              "Step: Minimal interval between values of a field<br>"
+                                              "Change count: Number of times the field’s value changes<br>"
+                                              "Distinct count: Number of unique values in a field")
     property = models.CharField(default='', blank=True, null=True,
-     max_length=255, help_text='For count value : enter the value to count')
-    start_from = models.DateTimeField(default=make_aware(datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())),
-     help_text='Calculate from this DateTime and then each period_factor*period')
+                                max_length=255, help_text='For count value : enter the value to count')
+    start_from = models.DateTimeField(default=make_aware(datetime.datetime.combine(datetime.date.today(),
+                                                                                   datetime.datetime.min.time())),
+                                      help_text='Calculate from this DateTime and then each period_factor*period')
     period_choices = ((0, 'second'),
                       (1, 'minute'),
                       (2, 'hour'),
@@ -1145,7 +1162,8 @@ class PeriodicField(models.Model):
                       )
     period = models.SmallIntegerField(choices=period_choices)
     period_factor = models.PositiveSmallIntegerField(default=1, validators=[validate_nonzero],
-                                             help_text='Example: set to 2 and choose minute to have a 2 minutes period')
+                                                     help_text='Example: set to 2 and choose '
+                                                               'minute to have a 2 minutes period')
 
     def __str__(self):
         s = self.type_choices[self.type][1] + "-"
@@ -1163,19 +1181,18 @@ class CalculatedVariableSelector(models.Model):
     main_variable = models.ForeignKey(Variable, on_delete=models.CASCADE)
     period_fields = models.ManyToManyField(PeriodicField)
     active = models.BooleanField(default=True)
+    dname = "for_calculated_variables"
 
     def get_new_calculated_variable(self, main_var, period):
         v = Variable.objects.get(id=main_var.id)
-        dname = "for_calculated_variables"
         try:
-            d = Device.objects.get(short_name=dname)
+            d = Device.objects.get(short_name=self.dname)
         except Device.DoesNotExist:
             d = Device.objects.create(
-            short_name=dname,
+            short_name=self.dname,
             description="Device used to store calculated variables",
             protocol_id=1)
         sv_name = v.name + "-" + str(period).replace(":", "-")
-        logger.debug(sv_name)
         if len(Variable.objects.filter(name=sv_name)) == 0:
             v.id=None
             v.name = sv_name
@@ -1184,6 +1201,7 @@ class CalculatedVariableSelector(models.Model):
             v.cov_increment = -1
             v.device_id = d.id
             v.save()
+            logger.debug("Create CalculatedVariable: " + sv_name)
             pv = CalculatedVariable(store_variable=v, variable_calculated_fields=self, period=period)
         else:
             pv = None
@@ -1224,7 +1242,7 @@ class CalculatedVariable(models.Model):
             d1 = make_aware(d1)
         if is_naive(d2):
             d2 = make_aware(d2)
-        output= []
+        output = []
 
         if self.period_diff_quantity(d1, d2) is None:
             logger.debug("No period in date interval : %s (%s %s)" %(self.period, d1, d2))
@@ -1244,7 +1262,7 @@ class CalculatedVariable(models.Model):
         #logger.debug("Valid range : %s - %s" % (d1, d2))
 
         while d2 >= d1 + td and d1 + td <= now():
-            #logger.debug("add for %s - %s" %(d1, d1 + td))
+            #logger.debug("add for %s - %s" % (d1, d1 + td))
             td1 = d1.timestamp()
             try:
                 v_stored = RecordedData.objects.get_values_in_time_range(time_min=td1, time_max=td1 + 1, variable=self.store_variable, add_latest_value=False)
@@ -1269,7 +1287,7 @@ class CalculatedVariable(models.Model):
                 m += str(c) + " " + str(c.date_saved) + " - "
             logger.debug(m)
             RecordedData.objects.bulk_create(output)
-            self.last_check=output[-1].date_saved + td
+            self.last_check = output[-1].date_saved + td
         else:
             logger.debug("Nothing to add")
             self.last_check=min(d1 + td, d2, now())
