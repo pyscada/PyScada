@@ -205,8 +205,8 @@ class CalculatedVariableSelectorAdmin(admin.ModelAdmin):
 
 class PeriodicFieldAdmin(admin.ModelAdmin):
     list_display = ('id', '__str__', 'type', 'property', 'start_from', 'period', 'period_factor',)
-    list_editable = ('type', 'property', 'start_from', 'period', 'period_factor',)
-    list_display_links = ('__str__',)
+    # list_editable = ('type', 'property', 'start_from', 'period', 'period_factor',)
+    list_display_links = None  # ('__str__',)
     save_as = True
     save_as_continue = True
 
@@ -288,6 +288,68 @@ class DeviceHandlerAdmin(admin.ModelAdmin):
     save_as_continue = True
 
 
+class DeviceListFilter(admin.SimpleListFilter):
+    # Human-readable title which will be displayed in the
+    # right admin sidebar just above the filter options.
+    title = _('main device')
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'device'
+
+    def lookups(self, request, model_admin):
+        """
+        Returns a list of tuples. The first element in each
+        tuple is the coded value for the option that will
+        appear in the URL query. The second element is the
+        human-readable name for the option that will appear
+        in the right sidebar.
+        """
+        devices = set([d.device
+                       for d in model_admin.model.objects.filter(calculatedvariableselector__isnull=False)])
+        return [(d.id, d.__str__) for d in devices]
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value
+        provided in the query string and retrievable via
+        `self.value()`.
+        """
+        if self.value():
+            return queryset.filter(
+                calculatedvariable__variable_calculated_fields__main_variable__device_id=self.value())
+
+
+class ProtocolListFilter(admin.SimpleListFilter):
+    # Human-readable title which will be displayed in the
+    # right admin sidebar just above the filter options.
+    title = _('main protocol')
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'protocol'
+
+    def lookups(self, request, model_admin):
+        """
+        Returns a list of tuples. The first element in each
+        tuple is the coded value for the option that will
+        appear in the URL query. The second element is the
+        human-readable name for the option that will appear
+        in the right sidebar.
+        """
+        protocols = set([p.device.protocol
+                         for p in model_admin.model.objects.filter(calculatedvariableselector__isnull=False)])
+        return [(p.id, p.protocol) for p in protocols]
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value
+        provided in the query string and retrievable via
+        `self.value()`.
+        """
+        if self.value():
+            return queryset.filter(
+                calculatedvariable__variable_calculated_fields__main_variable__device__protocol__id=self.value())
+
+
 class VariableAdmin(admin.ModelAdmin):
     list_filter = ('device__protocol', 'device', 'active', 'writeable', 'unit__unit', 'value_class', 'scaling',)
     search_fields = ['name', ]
@@ -333,11 +395,18 @@ class VariableAdmin(admin.ModelAdmin):
         return qs.filter(calculatedvariable__isnull=True)
 
 
+class CoreVariableAdmin(VariableAdmin):
+    list_display = ('id', 'name', 'description', 'unit', 'scaling', 'device', 'value_class', 'active', 'writeable',
+                    'last_value')
+    list_editable = ('active', 'writeable', 'unit', 'scaling',)
+    list_display_links = ('name',)
+
+
 class ExtendedCalculatedVariable(Variable):
     class Meta:
         proxy = True
-        verbose_name = 'Calculated Variable'
-        verbose_name_plural = 'Calculated Variable'
+        verbose_name = 'Calculated variable'
+        verbose_name_plural = 'Calculated variables'
 
 
 class CalculatedVariableAdminInline(admin.StackedInline):
@@ -345,9 +414,21 @@ class CalculatedVariableAdminInline(admin.StackedInline):
 
 
 class CalculatedVariableAdmin(VariableAdmin):
-    list_display = VariableAdmin.list_display #+ ('store_variable', 'variable_calculated_fields', 'period', 'last_check',)
-    #list_editable = ('store_variable', 'variable_calculated_fields', 'period', 'last_check',)
-    #list_display_links = ('__str__',)
+    list_display = ('name', 'last_check', 'state', 'last_value')
+    list_filter = (ProtocolListFilter, DeviceListFilter, 'active', 'writeable', 'unit__unit',)
+    list_display_links = None
+
+    def last_check(self, instance):
+        return instance.calculatedvariable.last_check
+
+    def state(self, instance):
+        return instance.calculatedvariable.state
+
+    def store_variable(self, instance):
+        return instance.calculatedvariable.store_variable
+
+    def main_device(self, instance):
+        return instance.calculatedvariable.store_variable.device
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'device':
@@ -370,13 +451,6 @@ class CalculatedVariableAdmin(VariableAdmin):
 
     save_as = True
     save_as_continue = True
-
-
-class CoreVariableAdmin(VariableAdmin):
-    list_display = ('id', 'name', 'description', 'unit', 'scaling', 'device', 'value_class', 'active', 'writeable',
-                    'last_value')
-    list_editable = ('active', 'writeable', 'unit', 'scaling',)
-    list_display_links = ('name',)
 
 
 class ScalingAdmin(admin.ModelAdmin):

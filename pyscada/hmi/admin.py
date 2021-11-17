@@ -43,7 +43,9 @@ class ChartForm(forms.ModelForm):
 class ChartAxisInline(admin.TabularInline):
     model = ChartAxis
     filter_vertical = ['variables']
-    extra = 1
+
+    def get_extra(self, request, obj=None, **kwargs):
+        return 0 if obj else 1
 
 
 class ChartAdmin(admin.ModelAdmin):

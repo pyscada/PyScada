@@ -734,7 +734,7 @@ class VariableProperty(models.Model):
 @python_2_unicode_compatible
 class Variable(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.SlugField(max_length=80, verbose_name="variable name", unique=True)
+    name = models.SlugField(max_length=200, verbose_name="variable name", unique=True)
     description = models.TextField(default='', verbose_name="Description")
     device = models.ForeignKey(Device, null=True, on_delete=models.CASCADE)
     active = models.BooleanField(default=True)
@@ -1175,6 +1175,11 @@ class PeriodicField(models.Model):
         s += "-from:" + str(self.start_from.date()) + "T" + str(self.start_from.time())
         return s
 
+    def clean(self):
+        # Don't allow duplicate
+        if not self.validate_unique():
+            raise ValidationError('This periodic field already exist.')
+
 
 @python_2_unicode_compatible
 class CalculatedVariableSelector(models.Model):
@@ -1192,14 +1197,18 @@ class CalculatedVariableSelector(models.Model):
             short_name=self.dname,
             description="Device used to store calculated variables",
             protocol_id=1)
-        sv_name = v.name + "-" + str(period).replace(":", "-")
+        sv_name = v.name[:Variable._meta.get_field('name').max_length - len(str(period).replace(":", "-")) - 1] \
+            + "-" + str(period).replace(":", "-")
+        sv_name = sv_name[:Variable._meta.get_field('name').max_length]
         if len(Variable.objects.filter(name=sv_name)) == 0:
-            v.id=None
+            v.id = None
             v.name = sv_name
             v.description = str(period)
             v.writeable = False
             v.cov_increment = -1
             v.device_id = d.id
+            v.scaling = None
+            v.value_class = 'FLOAT64'
             v.save()
             logger.debug("Create CalculatedVariable: " + sv_name)
             pv = CalculatedVariable(store_variable=v, variable_calculated_fields=self, period=period)
@@ -1226,6 +1235,7 @@ class CalculatedVariable(models.Model):
     variable_calculated_fields = models.ForeignKey(CalculatedVariableSelector, on_delete=models.CASCADE)
     period = models.ForeignKey(PeriodicField, on_delete=models.CASCADE)
     last_check = models.DateTimeField(blank=True, null=True)
+    state = models.CharField(default='', max_length=100)
 
     def __str__(self):
         return self.store_variable.name
@@ -1237,7 +1247,11 @@ class CalculatedVariable(models.Model):
             self.check_period(self.period.start_from, now())
 
     def check_period(self, d1, d2):
-        logger.debug("Check period of %s [%s - %s]" %(self.store_variable, d1, d2))
+        logger.debug("Check period of %s [%s - %s]" % (self.store_variable, d1, d2))
+        self.state = "Checking [%s to %s]" % (d1, d2)
+        self.state = self.state[0:100]
+        self.save(update_fields=['state'])
+
         if is_naive(d1):
             d1 = make_aware(d1)
         if is_naive(d2):
@@ -1245,18 +1259,29 @@ class CalculatedVariable(models.Model):
         output = []
 
         if self.period_diff_quantity(d1, d2) is None:
-            logger.debug("No period in date interval : %s (%s %s)" %(self.period, d1, d2))
+            logger.debug("No period in date interval : %s (%s %s)" % (self.period, d1, d2))
+            self.state = "[%s to %s] < %s" % (d1, d2, str(self.period.period_factor) +
+                                              self.period.period_choices[self.period.period][1])
+            self.state = self.state[0:100]
+            self.save(update_fields=['state'])
             return None
 
         td = self.add_timedelta()
 
         d = self.get_valid_range(d1, d2)
         if d is None:
+            self.state = "No time range found [%s to %s] %s" % (d1, d2, self.period)
+            self.state = self.state[0:100]
+            self.save(update_fields=['state'])
             return None
         [d1, d2] = d
 
         if self.period_diff_quantity(d1, d2) is None:
-            logger.debug("No period in new date interval : %s (%s %s)" %(self.period, d1, d2))
+            logger.debug("No period in new date interval : %s (%s %s)" % (self.period, d1, d2))
+            self.state = "[%s to %s] < %s" % (d1, d2, str(self.period.period_factor) +
+                                              self.period.period_choices[self.period.period][1])
+            self.state = self.state[0:100]
+            self.save(update_fields=['state'])
             return None
 
         #logger.debug("Valid range : %s - %s" % (d1, d2))
@@ -1265,7 +1290,9 @@ class CalculatedVariable(models.Model):
             #logger.debug("add for %s - %s" % (d1, d1 + td))
             td1 = d1.timestamp()
             try:
-                v_stored = RecordedData.objects.get_values_in_time_range(time_min=td1, time_max=td1 + 1, variable=self.store_variable, add_latest_value=False)
+                v_stored = RecordedData.objects.get_values_in_time_range(time_min=td1, time_max=td1 + 1,
+                                                                         variable=self.store_variable,
+                                                                         add_latest_value=False)
             except AttributeError:
                 v_stored = []
             if len(v_stored) and len(v_stored[self.store_variable.id][0]):
@@ -1286,21 +1313,21 @@ class CalculatedVariable(models.Model):
             for c in output:
                 m += str(c) + " " + str(c.date_saved) + " - "
             logger.debug(m)
-            RecordedData.objects.bulk_create(output)
+            RecordedData.objects.bulk_create(output, batch_size=100)
             self.last_check = output[-1].date_saved + td
         else:
             logger.debug("Nothing to add")
-            self.last_check=min(d1 + td, d2, now())
+            self.last_check = min(d1 + td, d2, now())
 
-
-        self.save(update_fields=['last_check'])
+        self.state = "Checked [%s to %s]" % (d1, d2)
+        self.state = self.state[0:100]
+        self.save(update_fields=['last_check', 'state'])
 
     def get_value(self, d1, d2):
         try:
             tmp = RecordedData.objects.get_values_in_time_range(variable=self.variable_calculated_fields.main_variable,
-            time_min=d1.timestamp(),
-            time_max=d2.timestamp(),
-            time_in_ms=True,)
+                                                                time_min=d1.timestamp(), time_max=d2.timestamp(),
+                                                                time_in_ms=True,)
         except AttributeError:
             tmp = []
         values = []

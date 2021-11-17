@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.models import Variable, Device, Scaling, BackgroundProcess, VariableProperty, DeviceHandler, RecordedData, CalculatedVariableSelector
+from pyscada.models import Variable, Device, Scaling, BackgroundProcess, VariableProperty, DeviceHandler, \
+    RecordedData, CalculatedVariableSelector, CalculatedVariable
 from pyscada.admin import VariableState
 
 from django.dispatch import receiver
-from django.db.models.signals import post_save, pre_delete, pre_save, m2m_changed
+from django.db.models.signals import post_save, pre_delete, pre_save, m2m_changed, post_delete
 
 import logging
 
@@ -35,6 +36,12 @@ def _create_calculated_variables(sender, instance, action, **kwargs):
         except Exception as e:
             logger.debug("post_add pyscada " + str(e))
         instance.create_all_calculated_variables()
+
+
+@receiver(post_delete, sender=CalculatedVariable)
+def post_delete_user(sender, instance, *args, **kwargs):
+    if instance.store_variable:
+        instance.store_variable.delete()
 
 
 @receiver(post_save, sender=VariableProperty)
