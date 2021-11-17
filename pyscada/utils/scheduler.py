@@ -718,7 +718,7 @@ class Process(object):
                     if hasattr(self, "device_id"):
                         try:
                             async_to_sync(self.waiting_action_receiver)(dt)
-                        except concurrentTimeoutError:
+                        except (concurrentTimeoutError, ConnectionRefusedError):
                             pass
                             #logger.info("timeout " + str(self.process_id))
                     else:

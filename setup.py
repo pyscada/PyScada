@@ -41,6 +41,7 @@ setup(
         'pytz',
         'pyserial',
         'channels',
+        'channels-redis',
         'asgiref',
         'monthdelta',
     ],
