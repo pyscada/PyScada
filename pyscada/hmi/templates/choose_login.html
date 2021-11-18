@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+
+{% if form.errors %}
+<p>Your username and password didn't match. Please try again.</p>
+{% endif %}
+
+{% csrf_token %}
+<p style="text-align: center;">
+    <button class="btn btn-lg btn-primary" type="button" onclick="window.location.href='/accounts/login/?next=/'">Se connecter avec Django</button>
+    <button class="btn btn-lg btn-primary" type="button" onclick="window.location.href='/accounts/CASlogin/?next=/&server_url=https://sso.univ-pau.fr/cas/&version=2'">Se connecter avec IUT GIM</button>
+</p>
+</div>
+</div>
+{% endblock %}
+{% block script_bottom %}
+        $( document ).ready(function() {
+            // Handler for .ready() called.
+            $("#loadingAnimation").hide();
+            $("#AutoUpdateStatus").hide();
+            $("#ReadAllTask").hide();
+            $("#AutoUpdateButton").hide();
+        });
+{% endblock %}

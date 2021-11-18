@@ -173,6 +173,7 @@ def log_data(request):
 
     return HttpResponse(jdata, content_type='application/json')
 
+
 @unauthenticated_redirect
 def form_read_all_task(request):
     crts = []
@@ -181,6 +182,7 @@ def form_read_all_task(request):
     if len(crts) > 0:
         crts[0].create_and_notificate(crts)
     return HttpResponse(status=200)
+
 
 @unauthenticated_redirect
 def form_read_task(request):

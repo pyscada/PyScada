@@ -13,6 +13,8 @@ urlpatterns = [
     #url(r'^accounts/logout/$', views.logout_view),
     url(r'^accounts/logout/$', auth_views.LogoutView.as_view()),
     url(r'^accounts/login/$', auth_views.LoginView.as_view(template_name='login.html'), name='login_view'),
+    url(r'^accounts/choose_login/$', auth_views.LoginView.as_view(template_name='choose_login.html'),
+        name='choose_login_view'),
     url(r'^accounts/password_change/$', auth_views.PasswordChangeView.as_view(template_name='password_change.html'),
         name='password_change'),
     url(r'^accounts/password_change_done/$',
