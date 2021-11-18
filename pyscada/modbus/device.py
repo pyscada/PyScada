@@ -102,11 +102,15 @@ class RegisterBlock:
         for idx in self.registers:
             self.registers_data[idx] = result.pop(0)
         for v_id in self.variables:
-            out[v_id] = self.variables[v_id]['decode_function'](
-                [self.registers_data[k] for k in self.variables[v_id]['registers']])
-            if type(out[v_id]) is float:
-                if isnan(out[v_id]) or isinf(out[v_id]):
-                    out[v_id] = None
+            try:
+                out[v_id] = self.variables[v_id]['decode_function'](
+                    [self.registers_data[k] for k in self.variables[v_id]['registers']])
+                if type(out[v_id]) is float:
+                    if isnan(out[v_id]) or isinf(out[v_id]):
+                        out[v_id] = None
+            except IndexError as e:
+                logger.error("IndexError while unpacking : %s - registers_data : %s" % (e, str(self.registers_data)))
+                out[v_id] = None
         return out
 
 

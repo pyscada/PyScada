@@ -853,7 +853,8 @@ class Variable(models.Model):
         `FLOAT48` 'INT48'                  	48	3 WORD
         `FLOAT64` `LREAL` `FLOAT` `DOUBLE`	64	4 WORD
         """
-        if self.value_class.upper() in ['FLOAT64', 'DOUBLE', 'FLOAT', 'LREAL', 'UNIXTIMEI64', 'UNIXTIMEF64']:
+        if self.value_class.upper() in ['FLOAT64', 'DOUBLE', 'FLOAT', 'LREAL', 'UNIXTIMEI64', 'UNIXTIMEF64', 'INT64',
+                                        'UINT64']:
             return 64
         if self.value_class.upper() in ['FLOAT48', 'INT48']:
             return 48
@@ -1570,14 +1571,16 @@ class DeviceWriteTask(models.Model):
         if type(dwts) != list:
             dwts = [dwts]
         DeviceWriteTask.objects.bulk_create(dwts)
-        channel_layer = channels.layers.get_channel_layer()
-        channel_layer.capacity = 1
         for dwt in dwts:
             try:
+                channel_layer = channels.layers.get_channel_layer()
+                channel_layer.capacity = 1
                 async_to_sync(channel_layer.send)('DeviceAction_for_' + str(dwt.device_id()),
                                                   {'DeviceWriteTask': str(dwt.device_id())})
             except ChannelFull:
                 logger.info("Channel full : " + 'DeviceAction_for_' + str(dwt.device_id()))
+                pass
+            except AttributeError:
                 pass
 
 
@@ -1615,14 +1618,16 @@ class DeviceReadTask(models.Model):
         if type(drts) != list:
             drts = [drts]
         DeviceReadTask.objects.bulk_create(drts)
-        channel_layer = channels.layers.get_channel_layer()
-        channel_layer.capacity = 1
         for drt in drts:
             try:
+                channel_layer = channels.layers.get_channel_layer()
+                channel_layer.capacity = 1
                 async_to_sync(channel_layer.send)('DeviceAction_for_' + str(drt.device_id()),
                                                   {'DeviceReadTask': str(drt.device_id())})
             except ChannelFull:
                 logger.info("Channel full : " + 'DeviceAction_for_' + str(drt.device_id()))
+                pass
+            except AttributeError:
                 pass
 
 
