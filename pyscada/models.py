@@ -1580,7 +1580,7 @@ class DeviceWriteTask(models.Model):
             except ChannelFull:
                 logger.info("Channel full : " + 'DeviceAction_for_' + str(dwt.device_id))
                 pass
-            except AttributeError:
+            except (AttributeError, ConnectionRefusedError):
                 pass
 
 
@@ -1627,7 +1627,7 @@ class DeviceReadTask(models.Model):
             except ChannelFull:
                 logger.info("Channel full : " + 'DeviceAction_for_' + str(drt.device_id))
                 pass
-            except AttributeError:
+            except (AttributeError, ConnectionRefusedError):
                 pass
 
 
