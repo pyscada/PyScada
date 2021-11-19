@@ -7,7 +7,7 @@ from django.db import models
 from django.contrib.auth.models import Group
 from django.utils.encoding import python_2_unicode_compatible
 from django.template.loader import get_template
-
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 from six import text_type
 import traceback
@@ -102,7 +102,7 @@ class Dictionary(models.Model):
     def dict_as_json(self):
         items_list = dict()
         for item in self.dictionaryitem_set.all():
-            items_list[item.value] = item.label
+            items_list[int(item.value)] = item.label
         return json.dumps(items_list)
 
 
@@ -120,6 +120,13 @@ class ControlElementOption(models.Model):
 @python_2_unicode_compatible
 class DisplayValueOption(models.Model):
     name = models.CharField(max_length=400)
+    type_choices = (
+        (0, 'Classic (Div)'),
+        (1, 'Horizontal gauge'),
+        (2, 'Vertical gauge'),
+        (3, 'Circular gauge'),
+    )
+    type = models.PositiveSmallIntegerField(default=0, choices=type_choices)
     color_type_choices = (
         (0, 'No color'),
         (1, '2 color'),
@@ -287,6 +294,24 @@ class ControlItem(models.Model):
         elif self.variable:
             return self.variable.device
 
+    def threshold_values(self):
+        tv = dict()
+        if self.display_value_options is not None and self.display_value_options.mode > 0:
+            if self.display_value_options.color_type == 1 or self.display_value_options.color_type == 2:
+                tv[self.display_value_options.color_level_1] = self.display_value_options.color_1.color_code()
+                tv[self.display_value_options.color_level_2] = self.display_value_options.color_2.color_code()
+            if self.display_value_options.color_type == 2:
+                tv[self.display_value_options.color_level_3] = self.display_value_options.color_3.color_code()
+        return json.dumps(tv)
+
+    def gauge_params(self):
+        d = dict()
+        d["min"] = self.min()
+        d["max"] = self.max()
+        d["threshold_values"] = self.threshold_values()
+        return json.dumps(d)
+
+
 
 @python_2_unicode_compatible
 class Chart(WidgetContentModel):
@@ -355,9 +380,10 @@ class ChartAxis(models.Model):
 class Pie(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
-    radius = models.CharField(max_length=10, default='auto', help_text="auto or between 0 and 1 or value in pixel")
-    innerRadius = models.PositiveSmallIntegerField(default=0, help_text="between 0 and 1 or value in pixel")
-    variables = models.ManyToManyField(Variable)
+    radius = models.PositiveSmallIntegerField(default=100, validators=[MaxValueValidator(100), MinValueValidator(1)])
+    innerRadius = models.PositiveSmallIntegerField(default=0, validators=[MaxValueValidator(100), MinValueValidator(0)])
+    variables = models.ManyToManyField(Variable, blank=True)
+    variable_properties = models.ManyToManyField(VariableProperty, blank=True)
 
     def __str__(self):
         return text_type(str(self.id) + ': ' + self.title)
@@ -376,7 +402,7 @@ class Pie(WidgetContentModel):
         main_template = get_template('pie.html')
         sidebar_template = get_template('chart_legend.html')
         main_content = main_template.render(dict(pie=self, widget_pk=widget_pk))
-        sidebar_content = sidebar_template.render(dict(chart=self, widget_pk=widget_pk))
+        sidebar_content = sidebar_template.render(dict(chart=self, pie=1, widget_pk=widget_pk))
         return main_content, sidebar_content
 
 
@@ -446,11 +472,12 @@ class ControlPanel(WidgetContentModel):
 
         :return: main panel html and sidebar html as
         """
+        widget_pk = kwargs['widget_pk'] if 'widget_pk' in kwargs else 0
         visible_element_list = kwargs['visible_control_element_list'] if 'visible_control_element_list' in kwargs else []
         main_template = get_template('control_panel.html')
         main_content = main_template.render(dict(control_panel=self,
                                                  visible_control_element_list=visible_element_list,
-                                                 uuid=uuid4().hex))
+                                                 uuid=uuid4().hex, widget_pk=widget_pk))
         sidebar_content = None
         return main_content, sidebar_content
 

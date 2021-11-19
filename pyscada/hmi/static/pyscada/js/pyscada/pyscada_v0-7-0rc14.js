@@ -1645,15 +1645,130 @@ function PyScadaPlot(id, xaxisVarId, xaxisLinLog){
     }
 }
 
-function Pie(id){
+function Gauge(id, min_value, max_value, threshold_values){
+    var options = {
+        series: {
+            gauges: {
+                show: true,
+                frame: {
+                    show: false
+                },
+                gauge: {
+                    min: min_value,
+                    max: max_value,
+                },
+                cell: {
+                    border: {
+                        show: false,
+                    },
+                },
+                label: {
+                    show: false,
+                },
+                threshold: {
+                    values: threshold_values,
+                }
+            },
+        },
+    },
+    series = [],		// just the active data series
+    keys   = [],		// list of variable keys (ids)
+    variable_names = [], // list of all variable names
+    flotPlot,			// handle to plot
+    prepared = false,	//
+    chart_container_id = '#chart-container-'+id,
+    legend_table_id = '#chart-legend-table-' + id,
+    legend_checkbox_id = '#chart-legend-checkbox-' + id + '-',
+    legend_checkbox_status_id = '#chart-legend-checkbox-status-' + id + '-',
+    variables = {},
+    plot = this;
+
+    // public functions
+    plot.update 			= update;
+    plot.prepare 			= prepare;
+    plot.resize 			= resize;
+    plot.getSeries 			= function () { return series };
+    plot.getFlotObject		= function () { return flotPlot};
+    plot.getKeys			= function (){ return keys};
+    plot.getVariableNames	= function (){ return variable_names};
+
+    plot.getInitStatus		= function () { if(InitDone){return InitRetry}else{return false}};
+    plot.getId				= function () {return id};
+    plot.getChartContainerId= function () {return chart_container_id};
+
+    // init data
+    val_id=$(chart_container_id).data('id');
+    val_inst=$(".variable-config[data-id=" + val_id + "]")
+    variable_name = $(val_inst).data('name');
+    variable_key = $(val_inst).data('key');
+    variables[variable_key] = {'color':$(val_inst).data('color'),'yaxis':1}
+    keys.push(variable_key);
+    variable_names.push(variable_name);
+    variables[variable_key].label = variable_name
+    variables[variable_key].unit = $(val_inst).data('unit');
+
+    //options["series"]["gauges"]["gauge"] = {"background": {"color": $(val_inst).data('color')}}
+
+    function labelFormatter(label, series) {
+		return "<div style='font-size:8pt; text-align:center; padding:2px; color:white;'>" + label + "<br/>" + Math.round(series.percent) + "%</div>";
+	}
+
+    function prepare(){
+    };
+
+    function update(force){
+        prepared = true
+        if(prepared && ($(chart_container_id).is(":visible") || force)){
+            // only update if plot is visible
+            // add the selected data series to the "series" variable
+            series = [];
+            for (var key in keys){
+                key = keys[key];
+                data=[[min_value, DATA[key][DATA[key].length - 1][1]]]
+                series.push({"data":data, "label":variables[key].label});
+            };
+            if (series.length > 0) {
+                var plotCanvas = $('<div></div>');
+                elem = $(chart_container_id + ' .chart-placeholder')
+                //mhw = Math.min(elem.parent().height() * 1.3, elem.parent().width());
+                mhw = elem.parent().width();
+                elem.parent().parent().css('height', mhw/1.3);
+                elem.parent().parent().find('.loading-gauge').text("");
+                elem.parent().parent().find('.gauge-title').css("display", "inherit");
+                fontScale = parseInt(30, 10) / 100;
+                fontSize = Math.min(mhw / 5, 100) * fontScale;
+                options["series"]["gauges"]["value"] = {"font": {"size": fontSize}}
+                var plotCss = {
+                    top: '0px',
+                    margin: 'auto',
+                    position: 'relative',
+                    height: (elem.parent().height() * 0.9) + 'px',
+                    width: mhw + 'px'
+                };
+                elem.css(plotCss)
+                //elem.append(plotCanvas);
+                flotPlot = $.plot(elem, series, options);
+            }
+        }
+    }
+
+    function resize() {
+        if (typeof(flotPlot) !== 'undefined') {
+            flotPlot.resize();
+            update();
+        }
+    }
+}
+
+function Pie(id, radius, innerRadius){
     var options = {
         series: {
             pie: {
                 show: true,
-                innerRadius: 0.4,
+                innerRadius: innerRadius,
                 label: {
                     show: true,
-                    //radius: 1,
+                    radius: radius,
                     //formatter: labelFormatter,
                     //threshold: 0.05
                 }
@@ -2361,8 +2476,28 @@ $( document ).ready(function() {
     $.each($('.pie-container'),function(key,val){
         // get identifier of the chart
         id = val.id.substring(16);
+        radius = $(val).data('radius').radius / 100
+        innerRadius = $(val).data('radius').innerRadius / 100
         // add a new Plot
-        PyScadaPlots.push(new Pie(id));
+        PyScadaPlots.push(new Pie(id, radius, innerRadius));
+    });
+    $.each($('.gauge-container'),function(key,val){
+        // get identifier of the chart
+        id = val.id.substring(16);
+        min = $(val).data('params').min
+        max = $(val).data('params').max
+        if ( min === null ) {min = 0}
+        if ( max === null ) {max = 100}
+
+        tv = JSON.parse($(val).data('params').threshold_values)
+
+        threshold_values = []
+        for (v in tv) {
+                threshold_values.push({value:v, color:tv[v]})
+        }
+        if ( threshold_values === "" ) {threshold_values = []}
+        // add a new Plot
+        PyScadaPlots.push(new Gauge(id, min, max, threshold_values));
     });
 
     $.each($('.variable-config'),function(key,val){

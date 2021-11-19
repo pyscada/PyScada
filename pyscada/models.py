@@ -1575,10 +1575,10 @@ class DeviceWriteTask(models.Model):
             try:
                 channel_layer = channels.layers.get_channel_layer()
                 channel_layer.capacity = 1
-                async_to_sync(channel_layer.send)('DeviceAction_for_' + str(dwt.device_id()),
-                                                  {'DeviceWriteTask': str(dwt.device_id())})
+                async_to_sync(channel_layer.send)('DeviceAction_for_' + str(dwt.device_id),
+                                                  {'DeviceWriteTask': str(dwt.device_id)})
             except ChannelFull:
-                logger.info("Channel full : " + 'DeviceAction_for_' + str(dwt.device_id()))
+                logger.info("Channel full : " + 'DeviceAction_for_' + str(dwt.device_id))
                 pass
             except AttributeError:
                 pass
@@ -1622,10 +1622,10 @@ class DeviceReadTask(models.Model):
             try:
                 channel_layer = channels.layers.get_channel_layer()
                 channel_layer.capacity = 1
-                async_to_sync(channel_layer.send)('DeviceAction_for_' + str(drt.device_id()),
-                                                  {'DeviceReadTask': str(drt.device_id())})
+                async_to_sync(channel_layer.send)('DeviceAction_for_' + str(drt.device_id),
+                                                  {'DeviceReadTask': str(drt.device_id)})
             except ChannelFull:
-                logger.info("Channel full : " + 'DeviceAction_for_' + str(drt.device_id()))
+                logger.info("Channel full : " + 'DeviceAction_for_' + str(drt.device_id))
                 pass
             except AttributeError:
                 pass

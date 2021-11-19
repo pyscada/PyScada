@@ -158,7 +158,7 @@ class DisplayValueOptionAdminFrom(forms.ModelForm):
 class DisplayValueOptionAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {
-            'fields': ('name', 'color_type', 'mode', 'timestamp_conversion', 'dictionary',),
+            'fields': ('name', 'type', 'color_type', 'mode', 'timestamp_conversion', 'dictionary',),
         }),
         ('Color 1', {
             'fields': ('color_level_1_type', 'color_level_1', 'color_1',),

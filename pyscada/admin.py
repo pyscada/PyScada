@@ -76,6 +76,13 @@ def kill_process(modeladmin, request, queryset):
 kill_process.short_description = "Kill Processes"
 
 
+def silent_delete(self, request, queryset):
+    queryset.delete()
+
+
+silent_delete.short_description = "Silent delete (lot of records)"
+
+
 ## Custom Filters
 class BackgroundProcessFilter(admin.SimpleListFilter):
     # Human-readable title which will be displayed in the
@@ -145,13 +152,13 @@ class VariableAdminFrom(forms.ModelForm):
         return super().has_changed()
 
     def clean(self):
-        # on device change delete protocol variable that doesn't correspond
+        # on device change, delete protocol variable that doesn't correspond
         if self.has_changed() and self.instance.pk and "device" in self.changed_data:
             related_variables = [field for field in Variable._meta.get_fields() if issubclass(type(field), OneToOneRel)]
             for v in related_variables:
-                if hasattr(self.instance, v.name):
-                    if getattr(self.instance, v.name).protocol_id != self.cleaned_data["device"].protocol.id:
-                        getattr(self.instance, v.name).delete()
+                if hasattr(self.instance, v.name) and hasattr(self, "device") and \
+                        getattr(self.instance, v.name).protocol_id != self.cleaned_data["device"].protocol.id:
+                    getattr(self.instance, v.name).delete()
 
 
 class VariableState(Variable):
@@ -164,7 +171,7 @@ class VariableStateAdmin(admin.ModelAdmin):
     list_filter = ('device__short_name', 'active', 'unit__unit', 'value_class')
     list_display_links = ()
     list_per_page = 10
-    actions = None
+    actions = [silent_delete]
     search_fields = ('name',)
     form = VariableAdminFrom
 
@@ -233,6 +240,7 @@ class DeviceAdmin(admin.ModelAdmin):
     list_editable = ('active', 'polling_interval',)
     list_display_links = ('short_name', 'description',)
     list_filter = ('protocol', 'active', 'polling_interval',)
+    actions = [silent_delete]
     save_as = True
     save_as_continue = True
     form = DeviceForm

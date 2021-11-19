@@ -1018,7 +1018,7 @@ class SingleDeviceDAQProcess(Process):
                                               variable__device_id=self.device_id).order_by('start')
         if self.dwt_received and len(dwts) == 0:
             sleep(0.5)
-            logger.info("DeviceWriteTask bul_created but not found, wait 0.5s")
+            logger.info("DeviceWriteTask bulk_created but not found, wait 0.5s")
             dwts = DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False,
                                                   variable__device_id=self.device_id).order_by('start')
             if len(dwts) == 0:
@@ -1117,7 +1117,7 @@ class MultiDeviceDAQProcess(Process):
                                                   failed=False, variable__device_id=device_id).order_by('start')
             if self.dwt_received and len(dwts) == 0:
                 sleep(0.5)
-                logger.info("DeviceWriteTask bul_created but not found, wait 0.5s")
+                logger.info("DeviceWriteTask bulk_created but not found, wait 0.5s")
                 dwts = DeviceWriteTask.objects.filter(done=False, start__lte=time(),
                                                       failed=False, variable__device_id=device_id).order_by('start')
                 if len(dwts) == 0:
