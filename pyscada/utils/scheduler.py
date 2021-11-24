@@ -623,6 +623,7 @@ class Process(object):
         self.parent_process_id = 0
         self.label = ''
         self.dwt_received = False
+        self.drt_received = False
         # register signals
         self.SIG_QUEUE = []
         self.SIGNALS = [signal.SIGTERM, signal.SIGUSR1, signal.SIGHUP, signal.SIGUSR2]
@@ -673,11 +674,12 @@ class Process(object):
                     status, data = self.loop()
                     if data is not None:
                         # write data to the database
+                        date_now = now()
                         for item in data:
                             for r in item:
-                                r.date_saved = now()
+                                r.date_saved = date_now
                             # todo add date field value
-                            RecordedData.objects.bulk_create(item)
+                            RecordedData.objects.bulk_create(item, batch_size=1000)
                     if status == 1: # Process OK
                         pass
                     elif status == -1:
@@ -715,7 +717,7 @@ class Process(object):
 
                 dt = self.dt_set - (time() - t_start)
                 if dt > 0:
-                    if hasattr(self, "device_id"):
+                    if hasattr(self, "device_id") or hasattr(self, "device_ids"):
                         try:
                             async_to_sync(self.waiting_action_receiver)(dt)
                         except (concurrentTimeoutError, ConnectionRefusedError):
@@ -740,12 +742,17 @@ class Process(object):
         channel_layer = channels.layers.get_channel_layer()
 
         with timeout(dt):
+            if hasattr(self, "device_ids") and not hasattr(self, "device_id") and len(self.device_ids) > 0:
+                self.device_id = self.device_ids[0]
             if hasattr(self, "device_id"):
                 if channel_layer is not None:
                     channel_layer.capacity = 1
                     channel_layer.flush()
                     a = await channel_layer.receive('DeviceAction_for_' + str(self.device_id))
-                    self.dwt_received = True
+                    if 'DeviceReadTask' in a:
+                        self.drt_received = True
+                    if 'DeviceWriteTask' in a:
+                        self.dwt_received = True
                     logger.debug(a)
                 else:
                     #logger.info("channel_layer is None")
@@ -1016,7 +1023,7 @@ class SingleDeviceDAQProcess(Process):
         # Do all the write task for this device starting with the oldest
         dwts = DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False,
                                               variable__device_id=self.device_id).order_by('start')
-        if self.dwt_received and len(dwts) == 0:
+        if hasattr(self, 'dwt_received') and self.dwt_received and len(dwts) == 0:
             sleep(0.5)
             logger.info("DeviceWriteTask bulk_created but not found, wait 0.5s")
             dwts = DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False,
@@ -1032,24 +1039,28 @@ class SingleDeviceDAQProcess(Process):
                 if len(tmp_data) > 0:
                     task.done = True
                     task.finished = time()
-                    task.save()
+                    task.save(update_fields=['done', 'finished'])
                     data.append(tmp_data)
                 else:
                     task.failed = True
                     task.finished = time()
-                    task.save()
+                    task.save(update_fields=['failed', 'finished'])
             else:
                 task.failed = True
                 task.finished = time()
-                task.save()
-        if isinstance(data, list):
-            if len(data) > 0:
-                return 1, data
+                task.save(update_fields=['failed', 'finished'])
 
-        device_read_tasks = DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
+        drts = DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
                                                           device_id=self.device_id)
-
-        if (time() - self.last_query > self.dt_query_data) or len(device_read_tasks):
+        if hasattr(self, 'drt_received') and self.drt_received and len(drts) == 0:
+            sleep(0.5)
+            logger.info("DeviceReadTask bulk_created but not found, wait 0.5s")
+            drts = DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
+                                                  device_id=self.device_id)
+            if len(drts) == 0:
+                logger.info("DeviceReadTask still not found")
+        self.drt_received = False
+        if (time() - self.last_query > self.dt_query_data) or len(drts):
             # TODO : Read data for a variable or a VP only
 
             self.last_query = time()
@@ -1058,11 +1069,16 @@ class SingleDeviceDAQProcess(Process):
                 tmp_data = self.device.request_data()
                 if isinstance(tmp_data, list):
                     if len(tmp_data) > 0:
-                        device_read_tasks.update(done=True, finished=time())
-                        return 1, [tmp_data, ]
+                        drts.update(done=True, finished=time())
+                        data.append(tmp_data)
+                    else:
+                        drts.update(failed=True, finished=time())
+                else:
+                    drts.update(failed=True, finished=time())
 
-            device_read_tasks.update(failed=True, finished=time())
-
+        if isinstance(data, list):
+            if len(data) > 0:
+                return 1, data
         return 1, None
 
     def cleanup(self):
@@ -1115,39 +1131,51 @@ class MultiDeviceDAQProcess(Process):
             # process write tasks
             dwts = DeviceWriteTask.objects.filter(done=False, start__lte=time(),
                                                   failed=False, variable__device_id=device_id).order_by('start')
-            if self.dwt_received and len(dwts) == 0:
+            if hasattr(self, 'dwt_received') and self.dwt_received and len(dwts) == 0:
                 sleep(0.5)
                 logger.info("DeviceWriteTask bulk_created but not found, wait 0.5s")
                 dwts = DeviceWriteTask.objects.filter(done=False, start__lte=time(),
                                                       failed=False, variable__device_id=device_id).order_by('start')
                 if len(dwts) == 0:
                     logger.info("DeviceWriteTask still not found")
-            self.dwt_received = False
             for task in dwts:
                 if task.variable.scaling is not None:
                     task.value = task.variable.scaling.scale_output_value(task.value)
-                if device.write_data(task.variable.id, task.value, task):
-                    task.done = True
-                    task.finished = time()
-                    task.save()
+                tmp_data = device.write_data(task.variable.id, task.value, task)
+                if isinstance(tmp_data, list):
+                    if len(tmp_data) > 0:
+                        task.done = True
+                        task.finished = time()
+                        task.save(update_fields=['done', 'finished'])
+                        data.append(tmp_data)
+                    else:
+                        task.failed = True
+                        task.finished = time()
+                        task.save(update_fields=['failed', 'finished'])
                 else:
                     task.failed = True
                     task.finished = time()
-                    task.save()
-        if time() - self.last_query > self.dt_query_data or \
-                DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
-                                              device_id__in=self.device_ids).count():
+                    task.save(update_fields=['failed', 'finished'])
+        self.dwt_received = False
+
+        drts = DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
+                                                          device_id__in=self.device_ids)
+        if hasattr(self, 'drt_received') and self.drt_received and len(drts) == 0:
+            sleep(0.5)
+            logger.info("DeviceReadTask bulk_created but not found, wait 0.5s")
+            drts = DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
+                                                  device_id__in=self.device_ids)
+            if len(drts) == 0:
+                logger.info("DeviceReadTask still not found")
+        self.drt_received = False
+        if time() - self.last_query > self.dt_query_data or len(drts):
             self.last_query = time()
             for device_id, device in self.devices.items():
                 # Query data
                 tmp_data = device.request_data()
                 if isinstance(tmp_data, list):
                     if len(tmp_data) > 0:
-                        for task in DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
-                                                                  device_id=device_id).order_by('start'):
-                            task.done = True
-                            task.finished = time()
-                            task.save()
+                        drts.filter(device_id=device_id).update(done=True, finished=time())
                         if len(data[-1]) + len(tmp_data) < 998:
                             # add to the last write job
                             data[-1] += tmp_data
@@ -1155,14 +1183,14 @@ class MultiDeviceDAQProcess(Process):
                             # add to next write job
                             data.append(tmp_data)
                     else:
-                        for task in DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
-                                                                  device_id=device_id).order_by('start'):
-                            task.failed = True
-                            task.finished = time()
-                            task.save()
-            return 1, data
-        else:
-            return 1, None
+                        drts.filter(device_id=device_id).update(failed=True, finished=time())
+                else:
+                    drts.filter(device_id=device_id).update(failed=True, finished=time())
+
+        if isinstance(data, list):
+            if len(data) > 0:
+                return 1, data
+        return 1, None
 
     def cleanup(self):
         """
