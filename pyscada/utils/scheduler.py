@@ -46,7 +46,11 @@ import channels.layers
 from asgiref.sync import async_to_sync
 from asgiref.timeout import timeout
 from concurrent.futures._base import TimeoutError as concurrentTimeoutError
-from asyncio.exceptions import TimeoutError as asyncioTimeoutError
+try:
+    from asyncio.exceptions import TimeoutError as asyncioTimeoutError
+except ModuleNotFoundError:
+    # for python version < 3.8
+    from asyncio import TimeoutError as asyncioTimeoutError
 
 from pyscada.models import BackgroundProcess, DeviceWriteTask, Device, RecordedData, DeviceReadTask
 from django.utils.timezone import now
