@@ -54,7 +54,7 @@ class RegisterBlock:
         }
         for idx in range(int(variable_length / self.register_size)):
             if not (variable_address + idx) in self.registers_data:
-                # register will not be queried add register 
+                # register will not be queried add register
                 self.registers_data[variable_address + idx] = None
 
             self.variables[variable_id]['registers'].append(variable_address + idx)
@@ -72,8 +72,11 @@ class RegisterBlock:
         return slave.read_input_registers(first_address, quantity, unit=unit)
 
     def request_data(self, slave, unit=0x00):
-        quantity = max(self.registers) - min(self.registers) + 1
-        first_address = min(self.registers)
+        try:
+            quantity = max(self.registers) - min(self.registers) + 1
+            first_address = min(self.registers)
+        except ValueError:
+            return None
 
         try:
             result = self._request_data(slave, unit, first_address, quantity)
@@ -193,9 +196,9 @@ class Device:
             if f_c == 0:
                 continue
 
-            # add some attr to the var model 
+            # add some attr to the var model
             var.add_attr(accessible=1)
-            # add the var to the list of 
+            # add the var to the list of
             self.variables[var.pk] = var
 
             if f_c == 1:  # coils
@@ -302,7 +305,7 @@ class Device:
 
     def request_data(self):
         """
-    
+
         """
         if not driver_ok:
             return None
@@ -318,8 +321,8 @@ class Device:
                 self._disconnect()
                 self._connect()
                 result = register_block.request_data(self.slave, self._unit_id)
-                if result is None and hasattr(result, 'modbus_result'):
-                    logger.warning("Modbus requested data has no bits nor registers, it's : %s" % result.modbus_result)
+                if result is None and hasattr(self.slave, 'modbus_result'):
+                    logger.warning("Modbus requested data for %s(%s) has no bits nor registers, it's : %s" % (self.device, register_block, self.slave.modbus_result))
 
             if result is not None:
                 for variable_id in register_block.variables:
@@ -337,7 +340,7 @@ class Device:
                         self.variables[variable_id].update_value(None, time())
                     self.variables[variable_id].accessible -= 1
 
-        # reset device not accessible status 
+        # reset device not accessible status
         if self._device_not_accessible <= -1:
             logger.info("device with id: %d is now accessible" % self.device.pk)
         if self._device_not_accessible < 1:

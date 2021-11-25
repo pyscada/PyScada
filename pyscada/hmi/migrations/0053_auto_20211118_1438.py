@@ -2,6 +2,25 @@
 
 import django.core.validators
 from django.db import migrations, models
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def radius_auto(apps, schema_editor):
+    # We can't import the Person model directly as it may be a newer
+    # version than this migration expects. We use the historical version.
+    Pie = apps.get_model("hmi", "Pie")
+    count = 0
+    for item in Pie.objects.using(schema_editor.connection.alias).all():
+        try:
+            int(item.radius)
+        except ValueError:
+            item.radius = 100
+            item.save()
+            count += 1
+
+    logger.info('changed %d Pies\n' % count)
 
 
 class Migration(migrations.Migration):
@@ -12,6 +31,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(radius_auto, reverse_code=migrations.RunPython.noop),
         migrations.AddField(
             model_name='pie',
             name='variable_properties',

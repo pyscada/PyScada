@@ -10,7 +10,7 @@
           <img src="{{ process_flow_diagram.background_image.url }}" style="width: 100%;" alt="process flow diagram">
         </div>
         {% for item in process_flow_diagram.process_flow_diagram_items.all %}
-            <div style="width: {{ item.width }}px; height: {{ item.height }}px; top: {{ item.top }}px; left: {{ item.left }}px;	position:absolute;	font-size: 12px;" class="control-panel">
+            <div style="width: {{ item.width }}px; height: {{ item.height }}px; top: {{ item.top|add:38.6 }}px; left: {{ item.left }}px; position:absolute;	font-size: 12px;" class="control-panel">
               {% include "control_element.html" with item=item.control_item %}
             </div>
         {% endfor %}

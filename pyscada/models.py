@@ -18,6 +18,7 @@ from asgiref.sync import async_to_sync
 
 from pyscada.utils import blow_up_data, timestamp_to_datetime
 
+from six import text_type
 import traceback
 import time
 import datetime
@@ -640,6 +641,32 @@ class Scaling(models.Model):
 
 
 @python_2_unicode_compatible
+class Dictionary(models.Model):
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=400, default='')
+
+    def __str__(self):
+        return text_type(str(self.id) + ': ' + self.name)
+
+    def dict_as_json(self):
+        items_list = dict()
+        for item in self.dictionaryitem_set.all():
+            items_list[int(item.value)] = item.label
+        return json.dumps(items_list)
+
+
+@python_2_unicode_compatible
+class DictionaryItem(models.Model):
+    id = models.AutoField(primary_key=True)
+    label = models.CharField(max_length=400, default='')
+    value = models.CharField(max_length=400, default='')
+    dictionary = models.ForeignKey(Dictionary, blank=True, null=True, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return text_type(str(self.id) + ': ' + self.label)
+
+
+@python_2_unicode_compatible
 class VariableProperty(models.Model):
     id = models.AutoField(primary_key=True)
     variable = models.ForeignKey('Variable', null=True, on_delete=models.CASCADE)
@@ -790,6 +817,7 @@ class Variable(models.Model):
                         )
     min_type = models.CharField(max_length=4, default='lte', choices=min_type_choices)
     max_type = models.CharField(max_length=4, default='gte', choices=max_type_choices)
+    dictionary = models.ForeignKey(Dictionary, blank=True, null=True, on_delete=models.SET_NULL)
 
     def hmi_name(self):
         if self.short_name and self.short_name != '-' and self.short_name != '':
@@ -1099,6 +1127,28 @@ class Variable(models.Model):
             logger.error(
                 '%s, unhandled exception in COV Receiver application\n%s' % (self.name, traceback.format_exc()))
 
+    def convert_string_value(self, value):
+        if self.dictionary is None:
+            d = Dictionary(name=str(self.name) + '_auto_created')
+            d.save()
+            self.dictionary = d
+            Variable.objects.bulk_update([self], ['dictionary'])
+            self.refresh_from_db()
+        if not len(self.dictionary.dictionaryitem_set.filter(label=str(value))):
+            max_value = 0
+            for di in self.dictionary.dictionaryitem_set.all():
+                max_value = max(float(max_value), float(di.value))
+            DictionaryItem(label=str(value), value=int(max_value) + 1, dictionary=self.dictionary).save()
+            #logger.debug('new value : %s' % (int(max_value) + 1))
+            return int(max_value) + 1
+        elif len(self.dictionary.dictionaryitem_set.filter(label=str(value))) == 1:
+            #logger.debug('value found : %s' % self.dictionary.dictionaryitem_set.get(label=str(value)).value)
+            return float(self.dictionary.dictionaryitem_set.get(label=str(value)).value)
+        else:
+            logger.warning('%s duplicate values found of %s in dictionary %s' %
+                           (len(self.dictionary.dictionaryitem_set.filter(label=str(value))), value, self.dictionary))
+            return float(self.dictionary.dictionaryitem_set.filter(label=str(value)).first().value)
+
 
 def validate_nonzero(value):
     if value == 0:
@@ -1106,6 +1156,10 @@ def validate_nonzero(value):
             _('Quantity %(value)s is not allowed'),
             params={'value': value},
         )
+
+
+def start_from_default():
+    return make_aware(datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time()))
 
 
 @python_2_unicode_compatible
@@ -1150,8 +1204,7 @@ class PeriodicField(models.Model):
                                               "Distinct count: Number of unique values in a field")
     property = models.CharField(default='', blank=True, null=True,
                                 max_length=255, help_text='For count value : enter the value to count')
-    start_from = models.DateTimeField(default=make_aware(datetime.datetime.combine(datetime.date.today(),
-                                                                                   datetime.datetime.min.time())),
+    start_from = models.DateTimeField(default=start_from_default,
                                       help_text='Calculate from this DateTime and then each period_factor*period')
     period_choices = ((0, 'second'),
                       (1, 'minute'),
@@ -1176,9 +1229,14 @@ class PeriodicField(models.Model):
         s += "-from:" + str(self.start_from.date()) + "T" + str(self.start_from.time())
         return s
 
-    def clean(self):
-        # Don't allow duplicate
-        if not self.validate_unique():
+    def validate_unique(self, exclude=None):
+        qs = PeriodicField.objects.filter(type=self.type,
+                                          property=self.property,
+                                          start_from=self.start_from,
+                                          period=self.period,
+                                          period_factor=self.period_factor,
+                                          ).exclude(id=self.id)
+        if len(qs):
             raise ValidationError('This periodic field already exist.')
 
 
@@ -1228,6 +1286,9 @@ class CalculatedVariableSelector(models.Model):
 
         #logger.debug(cvs)
         CalculatedVariable.objects.bulk_create(cvs)
+
+    def __str__(self):
+        return self.main_variable.name
 
 
 @python_2_unicode_compatible

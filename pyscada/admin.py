@@ -5,7 +5,7 @@ from pyscada.models import Device, DeviceProtocol, DeviceHandler
 from pyscada.models import Variable, VariableProperty
 from pyscada.models import PeriodicField, CalculatedVariableSelector, CalculatedVariable
 from pyscada.models import Scaling, Color
-from pyscada.models import Unit
+from pyscada.models import Unit, Dictionary, DictionaryItem
 from pyscada.models import DeviceWriteTask, DeviceReadTask
 from pyscada.models import Log
 from pyscada.models import BackgroundProcess
@@ -83,7 +83,7 @@ def silent_delete(self, request, queryset):
 silent_delete.short_description = "Silent delete (lot of records)"
 
 
-## Custom Filters
+# Custom Filters
 class BackgroundProcessFilter(admin.SimpleListFilter):
     # Human-readable title which will be displayed in the
     # right admin sidebar just above the filter options.
@@ -118,6 +118,100 @@ class BackgroundProcessFilter(admin.SimpleListFilter):
                 return queryset.filter(parent_process_id=self.value())
 
 
+class DeviceListFilter(admin.SimpleListFilter):
+    # Human-readable title which will be displayed in the
+    # right admin sidebar just above the filter options.
+    title = _('main device')
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'device'
+
+    def lookups(self, request, model_admin):
+        """
+        Returns a list of tuples. The first element in each
+        tuple is the coded value for the option that will
+        appear in the URL query. The second element is the
+        human-readable name for the option that will appear
+        in the right sidebar.
+        """
+        devices = set([d.device
+                       for d in model_admin.model.objects.filter(calculatedvariableselector__isnull=False)])
+        return [(d.id, d.__str__) for d in devices]
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value
+        provided in the query string and retrievable via
+        `self.value()`.
+        """
+        if self.value():
+            return queryset.filter(
+                calculatedvariable__variable_calculated_fields__main_variable__device_id=self.value())
+
+
+class VariableListFilter(admin.SimpleListFilter):
+    # Human-readable title which will be displayed in the
+    # right admin sidebar just above the filter options.
+    title = _('main variable')
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'variable'
+
+    def lookups(self, request, model_admin):
+        """
+        Returns a list of tuples. The first element in each
+        tuple is the coded value for the option that will
+        appear in the URL query. The second element is the
+        human-readable name for the option that will appear
+        in the right sidebar.
+        """
+        variables = set([v
+                       for v in model_admin.model.objects.filter(calculatedvariableselector__isnull=False)])
+        return [(v.id, v.name) for v in variables]
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value
+        provided in the query string and retrievable via
+        `self.value()`.
+        """
+        if self.value():
+            return queryset.filter(
+                calculatedvariable__variable_calculated_fields__main_variable_id=self.value())
+
+
+class ProtocolListFilter(admin.SimpleListFilter):
+    # Human-readable title which will be displayed in the
+    # right admin sidebar just above the filter options.
+    title = _('main protocol')
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'protocol'
+
+    def lookups(self, request, model_admin):
+        """
+        Returns a list of tuples. The first element in each
+        tuple is the coded value for the option that will
+        appear in the URL query. The second element is the
+        human-readable name for the option that will appear
+        in the right sidebar.
+        """
+        protocols = set([p.device.protocol
+                         for p in model_admin.model.objects.filter(calculatedvariableselector__isnull=False)])
+        return [(p.id, p.protocol) for p in protocols]
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value
+        provided in the query string and retrievable via
+        `self.value()`.
+        """
+        if self.value():
+            return queryset.filter(
+                calculatedvariable__variable_calculated_fields__main_variable__device__protocol__id=self.value())
+
+
+# Admin models
 class VariableAdminFrom(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(VariableAdminFrom, self).__init__(*args, **kwargs)
@@ -212,6 +306,7 @@ class CalculatedVariableSelectorAdmin(admin.ModelAdmin):
 
 class PeriodicFieldAdmin(admin.ModelAdmin):
     list_display = ('id', '__str__', 'type', 'property', 'start_from', 'period', 'period_factor',)
+    list_filter = ('calculatedvariableselector',)
     # list_editable = ('type', 'property', 'start_from', 'period', 'period_factor',)
     list_display_links = None  # ('__str__',)
     save_as = True
@@ -296,68 +391,6 @@ class DeviceHandlerAdmin(admin.ModelAdmin):
     save_as_continue = True
 
 
-class DeviceListFilter(admin.SimpleListFilter):
-    # Human-readable title which will be displayed in the
-    # right admin sidebar just above the filter options.
-    title = _('main device')
-
-    # Parameter for the filter that will be used in the URL query.
-    parameter_name = 'device'
-
-    def lookups(self, request, model_admin):
-        """
-        Returns a list of tuples. The first element in each
-        tuple is the coded value for the option that will
-        appear in the URL query. The second element is the
-        human-readable name for the option that will appear
-        in the right sidebar.
-        """
-        devices = set([d.device
-                       for d in model_admin.model.objects.filter(calculatedvariableselector__isnull=False)])
-        return [(d.id, d.__str__) for d in devices]
-
-    def queryset(self, request, queryset):
-        """
-        Returns the filtered queryset based on the value
-        provided in the query string and retrievable via
-        `self.value()`.
-        """
-        if self.value():
-            return queryset.filter(
-                calculatedvariable__variable_calculated_fields__main_variable__device_id=self.value())
-
-
-class ProtocolListFilter(admin.SimpleListFilter):
-    # Human-readable title which will be displayed in the
-    # right admin sidebar just above the filter options.
-    title = _('main protocol')
-
-    # Parameter for the filter that will be used in the URL query.
-    parameter_name = 'protocol'
-
-    def lookups(self, request, model_admin):
-        """
-        Returns a list of tuples. The first element in each
-        tuple is the coded value for the option that will
-        appear in the URL query. The second element is the
-        human-readable name for the option that will appear
-        in the right sidebar.
-        """
-        protocols = set([p.device.protocol
-                         for p in model_admin.model.objects.filter(calculatedvariableselector__isnull=False)])
-        return [(p.id, p.protocol) for p in protocols]
-
-    def queryset(self, request, queryset):
-        """
-        Returns the filtered queryset based on the value
-        provided in the query string and retrievable via
-        `self.value()`.
-        """
-        if self.value():
-            return queryset.filter(
-                calculatedvariable__variable_calculated_fields__main_variable__device__protocol__id=self.value())
-
-
 class VariableAdmin(admin.ModelAdmin):
     list_filter = ('device__protocol', 'device', 'active', 'writeable', 'unit__unit', 'value_class', 'scaling',)
     search_fields = ['name', ]
@@ -405,8 +438,8 @@ class VariableAdmin(admin.ModelAdmin):
 
 class CoreVariableAdmin(VariableAdmin):
     list_display = ('id', 'name', 'description', 'unit', 'scaling', 'device', 'value_class', 'active', 'writeable',
-                    'last_value')
-    list_editable = ('active', 'writeable', 'unit', 'scaling',)
+                    'dictionary', 'last_value')
+    list_editable = ('active', 'writeable', 'unit', 'scaling', 'dictionary',)
     list_display_links = ('name',)
 
 
@@ -423,7 +456,7 @@ class CalculatedVariableAdminInline(admin.StackedInline):
 
 class CalculatedVariableAdmin(VariableAdmin):
     list_display = ('name', 'last_check', 'state', 'last_value')
-    list_filter = (ProtocolListFilter, DeviceListFilter, 'active', 'writeable', 'unit__unit',)
+    list_filter = (ProtocolListFilter, DeviceListFilter, VariableListFilter, 'active', 'writeable', 'unit__unit',)
     list_display_links = None
 
     def last_check(self, instance):
@@ -638,6 +671,22 @@ class VariablePropertyAdmin(admin.ModelAdmin):
         return instance.value()
 
 
+class DictionaryItemInline(admin.TabularInline):
+    model = DictionaryItem
+    extra = 1
+
+
+class DictionaryAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name',)
+    list_filter = ('variable',)
+    save_as = True
+    save_as_continue = True
+    inlines = [DictionaryItemInline]
+
+    def has_module_permission(self, request):
+        return False
+
+
 admin_site = PyScadaAdminSite(name='pyscada_admin')
 admin_site.register(Device, DeviceAdmin)
 admin_site.register(DeviceHandler, DeviceHandlerAdmin)
@@ -660,3 +709,4 @@ admin_site.register(BackgroundProcess, BackgroundProcessAdmin)
 #admin_site.register(VariableState, VariableStateAdmin)
 admin_site.register(User, UserAdmin)
 admin_site.register(Group, GroupAdmin)
+admin_site.register(Dictionary, DictionaryAdmin)

@@ -7,8 +7,6 @@ from pyscada.models import Variable
 from pyscada.models import Color
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Chart, ChartAxis
-from pyscada.hmi.models import Dictionary
-from pyscada.hmi.models import DictionaryItem
 from pyscada.hmi.models import Form
 from pyscada.hmi.models import SlidingPanelMenu
 from pyscada.hmi.models import Page
@@ -95,22 +93,6 @@ class PieAdmin(admin.ModelAdmin):
         return instance.variables.name
 
 
-class DictionaryItemInline(admin.TabularInline):
-    model = DictionaryItem
-    extra = 1
-
-
-class DictionaryAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name',)
-    list_filter = ('displayvalueoption', 'controlelementoption',)
-    save_as = True
-    save_as_continue = True
-    inlines = [DictionaryItemInline]
-
-    def has_module_permission(self, request):
-        return False
-
-
 class FormAdmin(admin.ModelAdmin):
     filter_horizontal = ('control_items', 'hidden_control_items_to_true',)
     list_filter = ('controlpanel',)
@@ -158,7 +140,7 @@ class DisplayValueOptionAdminFrom(forms.ModelForm):
 class DisplayValueOptionAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {
-            'fields': ('name', 'type', 'color_type', 'mode', 'timestamp_conversion', 'dictionary',),
+            'fields': ('name', 'type', 'color_type', 'mode', 'timestamp_conversion',),
         }),
         ('Color 1', {
             'fields': ('color_level_1_type', 'color_level_1', 'color_1',),
@@ -263,7 +245,8 @@ class PageAdmin(admin.ModelAdmin):
 
 
 class ProcessFlowDiagramItemAdmin(admin.ModelAdmin):
-    list_display = ('id',)
+    list_display = ('id', 'control_item', 'top', 'left', 'width', 'height', 'visible')
+    list_editable = ('control_item', 'top', 'left', 'width', 'height', 'visible')
     # raw_id_fields = ('variable',)
     save_as = True
     save_as_continue = True
@@ -278,7 +261,6 @@ class ProcessFlowDiagramAdmin(admin.ModelAdmin):
 admin_site.register(ControlItem, ControlItemAdmin)
 admin_site.register(Chart, ChartAdmin)
 admin_site.register(Pie, PieAdmin)
-admin_site.register(Dictionary, DictionaryAdmin)
 admin_site.register(Form, FormAdmin)
 admin_site.register(SlidingPanelMenu, SlidingPanelMenuAdmin)
 admin_site.register(Page, PageAdmin)

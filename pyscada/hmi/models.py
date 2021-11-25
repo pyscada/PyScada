@@ -92,26 +92,13 @@ class WidgetContentModel(models.Model):
 
 
 @python_2_unicode_compatible
-class Dictionary(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=400, default='')
-
-    def __str__(self):
-        return text_type(str(self.id) + ': ' + self.name)
-
-    def dict_as_json(self):
-        items_list = dict()
-        for item in self.dictionaryitem_set.all():
-            items_list[int(item.value)] = item.label
-        return json.dumps(items_list)
-
-
-@python_2_unicode_compatible
 class ControlElementOption(models.Model):
     name = models.CharField(max_length=400)
     placeholder = models.CharField(max_length=30, default='Enter a value')
-    dictionary = models.ForeignKey(Dictionary, blank=True, null=True, on_delete=models.SET_NULL)
-    empty_dictionary = models.BooleanField(default=False)
+    dropdown = models.BooleanField(default=False,
+                                   help_text="Show control item as dropdown. The variable must have a dictionary")
+    empty_dropdown_value = models.BooleanField(default=False, help_text='If true, show placeholder as '
+                                                                        'default unelectable text')
 
     def __str__(self):
         return self.name
@@ -167,7 +154,6 @@ class DisplayValueOption(models.Model):
         (3, 'Timestamp to local date and time'),)
     timestamp_conversion = models.PositiveSmallIntegerField(default=0,
                                                             choices=timestamp_conversion_choices)
-    dictionary = models.ForeignKey(Dictionary, blank=True, null=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         return self.name
@@ -311,6 +297,11 @@ class ControlItem(models.Model):
         d["threshold_values"] = self.threshold_values()
         return json.dumps(d)
 
+    def dictionary(self):
+        if self.variable_property:
+            return self.variable_property.dictionary
+        elif self.variable:
+            return self.variable.dictionary
 
 
 @python_2_unicode_compatible
@@ -404,17 +395,6 @@ class Pie(WidgetContentModel):
         main_content = main_template.render(dict(pie=self, widget_pk=widget_pk))
         sidebar_content = sidebar_template.render(dict(chart=self, pie=1, widget_pk=widget_pk))
         return main_content, sidebar_content
-
-
-@python_2_unicode_compatible
-class DictionaryItem(models.Model):
-    id = models.AutoField(primary_key=True)
-    label = models.CharField(max_length=400, default='')
-    value = models.CharField(max_length=400, default='')
-    dictionary = models.ForeignKey(Dictionary, blank=True, null=True, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return text_type(str(self.id) + ': ' + self.label)
 
 
 @python_2_unicode_compatible
