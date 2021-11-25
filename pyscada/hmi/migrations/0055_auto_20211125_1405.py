@@ -6,6 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('pyscada', '0094_move_dictionaries'),
         ('hmi', '0054_displayvalueoption_type'),
     ]
 

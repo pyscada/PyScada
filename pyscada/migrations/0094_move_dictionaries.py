@@ -69,6 +69,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('pyscada', '0093_auto_20211125_1256'),
+        ('hmi', '0054_displayvalueoption_type'),
     ]
 
     operations = [
