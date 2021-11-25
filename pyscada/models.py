@@ -1634,9 +1634,15 @@ class DeviceWriteTask(models.Model):
         DeviceWriteTask.objects.bulk_create(dwts)
         for dwt in dwts:
             try:
+                device_id = dwt.device_id()
+                for bp in BackgroundProcess.objects.all():
+                    _device_id = bp.get_device_id()
+                    if type(_device_id) == list and len(_device_id) > 0 and dwt.device_id in _device_id:
+                        device_id = _device_id[0]
+                        logger.debug(device_id)
                 channel_layer = channels.layers.get_channel_layer()
                 channel_layer.capacity = 1
-                async_to_sync(channel_layer.send)('DeviceAction_for_' + str(dwt.device_id),
+                async_to_sync(channel_layer.send)('DeviceAction_for_' + str(device_id),
                                                   {'DeviceWriteTask': str(dwt.device_id)})
             except ChannelFull:
                 logger.info("Channel full : " + 'DeviceAction_for_' + str(dwt.device_id))
@@ -1681,9 +1687,14 @@ class DeviceReadTask(models.Model):
         DeviceReadTask.objects.bulk_create(drts)
         for drt in drts:
             try:
+                device_id = drt.device_id()
+                for bp in BackgroundProcess.objects.all():
+                    _device_id = bp.get_device_id()
+                    if type(_device_id) == list and len(_device_id) > 0 and drt.device_id in _device_id:
+                        device_id = _device_id[0]
                 channel_layer = channels.layers.get_channel_layer()
                 channel_layer.capacity = 1
-                async_to_sync(channel_layer.send)('DeviceAction_for_' + str(drt.device_id),
+                async_to_sync(channel_layer.send)('DeviceAction_for_' + str(device_id),
                                                   {'DeviceReadTask': str(drt.device_id)})
             except ChannelFull:
                 logger.info("Channel full : " + 'DeviceAction_for_' + str(drt.device_id))
@@ -1966,6 +1977,19 @@ class BackgroundProcess(models.Model):
 
     def __str__(self):
         return self.label + ': ' + self.message
+
+    def get_device_id(self):
+        try:
+            kwargs = json.loads(self.process_class_kwargs)
+        except:
+            kwargs = {}
+        if 'device_id' in kwargs:
+            return kwargs['device_id']
+        elif 'device_ids' in kwargs:
+            return kwargs['device_ids']
+        else:
+            return None
+
 
     def get_process_instance(self):
         # kwargs = dict(s.split("=") for s in self.process_class_kwargs.split())

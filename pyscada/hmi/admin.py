@@ -82,7 +82,7 @@ class PieAdmin(admin.ModelAdmin):
     list_per_page = 100
     # ordering = ['position',]
     search_fields = ['name', ]
-    filter_horizontal = ('variables',)
+    filter_horizontal = ('variables', 'variable_properties')
     List_display_link = ('title',)
     list_display = ('id', 'title')
     form = PieForm
