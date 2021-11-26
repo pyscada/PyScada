@@ -13,6 +13,7 @@ from django.utils.timezone import now, make_aware, is_naive
 from django.db.models.signals import post_save
 
 import channels.layers
+from channels.exceptions import InvalidChannelLayerError
 from channels.exceptions import ChannelFull
 from asgiref.sync import async_to_sync
 
@@ -1634,7 +1635,7 @@ class DeviceWriteTask(models.Model):
         DeviceWriteTask.objects.bulk_create(dwts)
         for dwt in dwts:
             try:
-                device_id = dwt.device_id()
+                device_id = dwt.device_id
                 for bp in BackgroundProcess.objects.all():
                     _device_id = bp.get_device_id()
                     if type(_device_id) == list and len(_device_id) > 0 and dwt.device_id in _device_id:
@@ -1647,7 +1648,7 @@ class DeviceWriteTask(models.Model):
             except ChannelFull:
                 logger.info("Channel full : " + 'DeviceAction_for_' + str(dwt.device_id))
                 pass
-            except (AttributeError, ConnectionRefusedError):
+            except (AttributeError, ConnectionRefusedError, InvalidChannelLayerError):
                 pass
 
 
@@ -1687,7 +1688,7 @@ class DeviceReadTask(models.Model):
         DeviceReadTask.objects.bulk_create(drts)
         for drt in drts:
             try:
-                device_id = drt.device_id()
+                device_id = drt.device_id
                 for bp in BackgroundProcess.objects.all():
                     _device_id = bp.get_device_id()
                     if type(_device_id) == list and len(_device_id) > 0 and drt.device_id in _device_id:
@@ -1699,7 +1700,7 @@ class DeviceReadTask(models.Model):
             except ChannelFull:
                 logger.info("Channel full : " + 'DeviceAction_for_' + str(drt.device_id))
                 pass
-            except (AttributeError, ConnectionRefusedError):
+            except (AttributeError, ConnectionRefusedError, InvalidChannelLayerError):
                 pass
 
 

@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 
 from pyscada.utils.scheduler import MultiDeviceDAQProcessWorker
+from pyscada.modbus import PROTOCOL_ID
 
 import logging
 
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class Process(MultiDeviceDAQProcessWorker):
-    device_filter = dict(modbusdevice__isnull=False)
+    device_filter = dict(modbusdevice__isnull=False, protocol_id=PROTOCOL_ID)
     bp_label = 'pyscada.modbus-%s'
 
     def __init__(self, dt=5, **kwargs):

@@ -43,6 +43,7 @@ from django.db.utils import OperationalError
 from django.db.transaction import TransactionManagementError
 
 import channels.layers
+from channels.exceptions import InvalidChannelLayerError
 from asgiref.sync import async_to_sync
 from asgiref.timeout import timeout
 from concurrent.futures._base import TimeoutError as concurrentTimeoutError
@@ -685,7 +686,7 @@ class Process(object):
                                 r.date_saved = date_now
                             # todo add date field value
                             RecordedData.objects.bulk_create(item, batch_size=1000)
-                    if status == 1: # Process OK
+                    if status == 1:  # Process OK
                         pass
                     elif status == -1:
                         # some thing went wrong
@@ -722,13 +723,21 @@ class Process(object):
 
                 dt = self.dt_set - (time() - t_start)
                 if dt > 0:
-                    if hasattr(self, "device_id") or hasattr(self, "device_ids"):
-                        try:
-                            async_to_sync(self.waiting_action_receiver)(dt)
-                        except (concurrentTimeoutError, ConnectionRefusedError):
-                            pass
-                            #logger.info("timeout " + str(self.process_id))
-                    else:
+                    if hasattr(self, "device_ids") and not hasattr(self, "device_id") and len(self.device_ids) > 0:
+                        self.device_id = self.device_ids[0]
+                    try:
+                        if hasattr(self, "device_id") and self.device_id is not None:
+                            channel_layer = channels.layers.get_channel_layer()
+                            if channel_layer is not None:
+                                async_to_sync(self.waiting_action_receiver)(dt, channel_layer, self.device_id)
+                            else:
+                                #logger.debug("sleep for %s - %s" % (self.process_id, dt))
+                                sleep(dt)
+                        else:
+                            #logger.debug("sleep for %s - %s" % (self.process_id, dt))
+                            sleep(dt)
+                    except (concurrentTimeoutError, ConnectionRefusedError, asyncioTimeoutError, InvalidChannelLayerError):
+                        #logger.debug("sleep for %s - %s" % (self.process_id, dt))
                         sleep(dt)
         except StopIteration:
             self.stop()
@@ -743,28 +752,16 @@ class Process(object):
             self.stop()
             sys.exit(0)
 
-    async def waiting_action_receiver(self, dt):
-        channel_layer = channels.layers.get_channel_layer()
-
-        try:
-            with timeout(dt):
-                if hasattr(self, "device_ids") and not hasattr(self, "device_id") and len(self.device_ids) > 0:
-                    self.device_id = self.device_ids[0]
-                if hasattr(self, "device_id"):
-                    if channel_layer is not None:
-                        channel_layer.capacity = 1
-                        channel_layer.flush()
-                        a = await channel_layer.receive('DeviceAction_for_' + str(self.device_id))
-                        if 'DeviceReadTask' in a:
-                            self.drt_received = True
-                        if 'DeviceWriteTask' in a:
-                            self.dwt_received = True
-                        logger.debug(a)
-                    else:
-                        # logger.info("channel_layer is None")
-                        sleep(dt)
-        except asyncioTimeoutError:
-            pass
+    async def waiting_action_receiver(self, dt, channel_layer, device_id):
+        with timeout(dt):
+            channel_layer.capacity = 1
+            channel_layer.flush()
+            a = await channel_layer.receive('DeviceAction_for_' + str(device_id))
+            if 'DeviceReadTask' in a:
+                self.drt_received = True
+            if 'DeviceWriteTask' in a:
+                self.dwt_received = True
+            logger.debug(a)
 
     def loop(self):
         """
@@ -860,23 +857,21 @@ class SingleDeviceDAQProcessWorker(Process):
         # check if all processes are running
         for process in self.processes:
             try:
-                BackgroundProcess.objects.get(pk=process['id'])
-            except (BackgroundProcess.DoesNotExist, BackgroundProcess.MultipleObjectsReturned):
-
-                # Process is dead, spawn new instance
-                if process['failed'] < 3:
-                    bp = BackgroundProcess(label=self.bp_label % process['key'],
-                                           message='waiting..',
-                                           enabled=True,
-                                           parent_process_id=self.process_id,
-                                           process_class=self.process_class,
-                                           process_class_kwargs=json.dumps(
-                                               {'device_id': process['device_id']}))
-                    bp.save()
-                    process['id'] = bp.id
-                    process['failed'] += 1
-                else:
-                    logger.error('process %s failed more than 3 times' % (self.bp_label % process['key']))
+                if BackgroundProcess.objects.filter(pk=process['id']).count() != 1:
+                    # Process is dead, spawn new instance
+                    if process['failed'] < 3:
+                        bp = BackgroundProcess(label=self.bp_label % process['key'],
+                                               message='waiting..',
+                                               enabled=True,
+                                               parent_process_id=self.process_id,
+                                               process_class=self.process_class,
+                                               process_class_kwargs=json.dumps(
+                                                   {'device_id': process['device_id']}))
+                        bp.save()
+                        process['id'] = bp.id
+                        process['failed'] += 1
+                    else:
+                        logger.error('process %s failed more than 3 times' % (self.bp_label % process['key']))
             except:
                 logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
 
@@ -950,23 +945,21 @@ class MultiDeviceDAQProcessWorker(Process):
         # check if all processes are running
         for process in self.processes:
             try:
-                BackgroundProcess.objects.get(pk=process['id'])
-            except (BackgroundProcess.DoesNotExist, BackgroundProcess.MultipleObjectsReturned):
-
-                # Process is dead, spawn new instance
-                if process['failed'] < 3:
-                    bp = BackgroundProcess(label=self.bp_label % process['key'],
-                                           message='waiting..',
-                                           enabled=True,
-                                           parent_process_id=self.process_id,
-                                           process_class=self.process_class,
-                                           process_class_kwargs=json.dumps(
-                                               {'device_ids': process['device_ids']}))
-                    bp.save()
-                    process['id'] = bp.id
-                    process['failed'] += 1
-                else:
-                    logger.error('process %s failed more then 3 times' % (self.bp_label % process['key']))
+                if BackgroundProcess.objects.filter(pk=process['id']).count() != 1:
+                    # Process is dead, spawn new instance
+                    if process['failed'] < 3:
+                        bp = BackgroundProcess(label=self.bp_label % process['key'],
+                                               message='waiting..',
+                                               enabled=True,
+                                               parent_process_id=self.process_id,
+                                               process_class=self.process_class,
+                                               process_class_kwargs=json.dumps(
+                                                   {'device_ids': process['device_ids']}))
+                        bp.save()
+                        process['id'] = bp.id
+                        process['failed'] += 1
+                    else:
+                        logger.error('process %s failed more then 3 times' % (self.bp_label % process['key']))
             except:
                 logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
 
