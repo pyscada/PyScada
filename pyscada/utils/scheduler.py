@@ -763,8 +763,8 @@ class Process(object):
             self.channel_layer.capacity = 1
             try:
                 a = await wait_for(self.channel_layer.receive(message), timeout=dt)
-            except asyncioTimeoutError:
-                pass
+            except (asyncioTimeoutError, ConnectionRefusedError):
+                sleep(dt)
             else:
                 if 'DeviceReadTask' in a:
                     self.drt_received = True
@@ -815,7 +815,7 @@ class Process(object):
             try:
                 if message is not None:
                     async_to_sync(self.channel_layer.send)(message, {'ProcessSignal': str(signum)})
-            except ChannelFull:
+            except (ChannelFull, ConnectionRefusedError):
                 logger.info("Channel full : " + 'ProcessAction_for_' + str(self.process_id))
                 pass
 
