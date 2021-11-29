@@ -44,14 +44,16 @@ from django.db.transaction import TransactionManagementError
 
 import channels.layers
 from channels.exceptions import InvalidChannelLayerError
+from channels.exceptions import ChannelFull
 from asgiref.sync import async_to_sync
-from asgiref.timeout import timeout
-from concurrent.futures._base import TimeoutError as concurrentTimeoutError
+from asyncio import wait_for
 try:
     from asyncio.exceptions import TimeoutError as asyncioTimeoutError
+    from asyncio.exceptions import CancelledError as asyncioCancelledError
 except ModuleNotFoundError:
     # for python version < 3.8
     from asyncio import TimeoutError as asyncioTimeoutError
+    from asyncio import CancelledError as asyncioCancelledError
 
 from pyscada.models import BackgroundProcess, DeviceWriteTask, Device, RecordedData, DeviceReadTask
 from django.utils.timezone import now
@@ -725,20 +727,16 @@ class Process(object):
                 if dt > 0:
                     if hasattr(self, "device_ids") and not hasattr(self, "device_id") and len(self.device_ids) > 0:
                         self.device_id = self.device_ids[0]
-                    try:
-                        if hasattr(self, "device_id") and self.device_id is not None:
-                            channel_layer = channels.layers.get_channel_layer()
-                            if channel_layer is not None:
-                                async_to_sync(self.waiting_action_receiver)(dt, channel_layer, self.device_id)
-                            else:
-                                #logger.debug("sleep for %s - %s" % (self.process_id, dt))
-                                sleep(dt)
-                        else:
-                            #logger.debug("sleep for %s - %s" % (self.process_id, dt))
-                            sleep(dt)
-                    except (concurrentTimeoutError, ConnectionRefusedError, asyncioTimeoutError, InvalidChannelLayerError):
+                    if hasattr(self, "device_id") and self.device_id is not None:
+                        message = 'DeviceAction_for_' + str(self.device_id)
+                        async_to_sync(self.waiting_action_receiver)(dt, message)
+                    elif hasattr(self, "process_id") and self.process_id != 0:
+                        message = 'ProcessAction_for_' + str(self.process_id)
+                        async_to_sync(self.waiting_action_receiver)(dt, message)
+                    else:
                         #logger.debug("sleep for %s - %s" % (self.process_id, dt))
                         sleep(dt)
+
         except StopIteration:
             self.stop()
             sys.exit(0)
@@ -752,16 +750,35 @@ class Process(object):
             self.stop()
             sys.exit(0)
 
-    async def waiting_action_receiver(self, dt, channel_layer, device_id):
-        with timeout(dt):
-            channel_layer.capacity = 1
-            channel_layer.flush()
-            a = await channel_layer.receive('DeviceAction_for_' + str(device_id))
-            if 'DeviceReadTask' in a:
-                self.drt_received = True
-            if 'DeviceWriteTask' in a:
-                self.dwt_received = True
-            logger.debug(a)
+    async def waiting_action_receiver(self, dt, message):
+        if not hasattr(self, 'channel_layer'):
+            try:
+                self.channel_layer = channels.layers.get_channel_layer()
+            except (ConnectionRefusedError, InvalidChannelLayerError):
+                #logger.debug("sleep for %s - %s" % (self.process_id, dt))
+                sleep(dt)
+                return None
+
+        if self.channel_layer is not None:
+            self.channel_layer.capacity = 1
+            try:
+                a = await wait_for(self.channel_layer.receive(message), timeout=dt)
+            except asyncioTimeoutError:
+                pass
+            else:
+                if 'DeviceReadTask' in a:
+                    self.drt_received = True
+                if 'DeviceWriteTask' in a:
+                    self.dwt_received = True
+                if 'ProcessSignal' in a:
+                    logger.debug("Received ProcessSignal %s on channel_layer for %s" % (a['ProcessSignal'], self.label))
+                logger.debug(a)
+            self.channel_layer.flush()
+        else:
+            #logger.debug("sleep for %s - %s" % (self.process_id, dt))
+            sleep(dt)
+
+
 
     def loop(self):
         """
@@ -781,6 +798,27 @@ class Process(object):
         """
         logger.debug('PID %d, received signal: %d' % (self.pid, signum))
         self.SIG_QUEUE.append(signum)
+        if not hasattr(self, 'channel_layer'):
+            try:
+                self.channel_layer = channels.layers.get_channel_layer()
+            except (ConnectionRefusedError, InvalidChannelLayerError):
+                return None
+
+        if self.channel_layer is not None:
+            self.channel_layer.capacity = 1
+            if hasattr(self, "device_ids") and not hasattr(self, "device_id") and len(self.device_ids) > 0:
+                self.device_id = self.device_ids[0]
+            if hasattr(self, "device_id") and self.device_id is not None:
+                message = 'DeviceAction_for_' + str(self.device_id)
+            elif hasattr(self, "process_id") and self.process_id != 0:
+                message = 'ProcessAction_for_' + str(self.process_id)
+            try:
+                if message is not None:
+                    async_to_sync(self.channel_layer.send)(message, {'ProcessSignal': str(signum)})
+            except ChannelFull:
+                logger.info("Channel full : " + 'ProcessAction_for_' + str(self.process_id))
+                pass
+
 
     def stop(self, signum=None, frame=None):
         """
