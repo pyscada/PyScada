@@ -763,7 +763,10 @@ class Process(object):
             self.channel_layer.capacity = 1
             try:
                 a = await wait_for(self.channel_layer.receive(message), timeout=dt)
-            except (asyncioTimeoutError, ConnectionRefusedError):
+            except asyncioTimeoutError:
+                pass
+            except ConnectionRefusedError:
+                #logger.debug("sleep for %s - %s" % (self.process_id, dt))
                 sleep(dt)
             else:
                 if 'DeviceReadTask' in a:
@@ -777,8 +780,6 @@ class Process(object):
         else:
             #logger.debug("sleep for %s - %s" % (self.process_id, dt))
             sleep(dt)
-
-
 
     def loop(self):
         """
@@ -818,7 +819,6 @@ class Process(object):
             except (ChannelFull, ConnectionRefusedError):
                 logger.info("Channel full : " + 'ProcessAction_for_' + str(self.process_id))
                 pass
-
 
     def stop(self, signum=None, frame=None):
         """
