@@ -754,13 +754,14 @@ class Process(object):
         if not hasattr(self, 'channel_layer'):
             try:
                 self.channel_layer = channels.layers.get_channel_layer()
+                if self.channel_layer is not None:
+                    self.channel_layer.capacity = 1
             except (ConnectionRefusedError, InvalidChannelLayerError):
                 #logger.debug("sleep for %s - %s" % (self.process_id, dt))
                 sleep(dt)
                 return None
 
         if self.channel_layer is not None:
-            self.channel_layer.capacity = 1
             try:
                 a = await wait_for(self.channel_layer.receive(message), timeout=dt)
             except asyncioTimeoutError:
@@ -776,7 +777,6 @@ class Process(object):
                 if 'ProcessSignal' in a:
                     logger.debug("Received ProcessSignal %s on channel_layer for %s" % (a['ProcessSignal'], self.label))
                 logger.debug(a)
-            self.channel_layer.flush()
         else:
             #logger.debug("sleep for %s - %s" % (self.process_id, dt))
             sleep(dt)
@@ -802,11 +802,13 @@ class Process(object):
         if not hasattr(self, 'channel_layer'):
             try:
                 self.channel_layer = channels.layers.get_channel_layer()
+                if self.channel_layer is not None:
+                    self.channel_layer.capacity = 1
             except (ConnectionRefusedError, InvalidChannelLayerError):
                 return None
 
         if self.channel_layer is not None:
-            self.channel_layer.capacity = 1
+            message = None
             if hasattr(self, "device_ids") and not hasattr(self, "device_id") and len(self.device_ids) > 0:
                 self.device_id = self.device_ids[0]
             if hasattr(self, "device_id") and self.device_id is not None:

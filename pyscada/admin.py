@@ -394,7 +394,7 @@ class DeviceHandlerAdmin(admin.ModelAdmin):
 class VariableAdmin(admin.ModelAdmin):
     list_filter = ('device__protocol', 'device', 'active', 'writeable', 'unit__unit', 'value_class', 'scaling',)
     search_fields = ['name', ]
-    list_per_page = 30
+    list_per_page = 10
     form = VariableAdminFrom
     save_as = True
     save_as_continue = True
