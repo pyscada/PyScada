@@ -315,7 +315,7 @@ class PeriodicFieldAdmin(admin.ModelAdmin):
 
 class DeviceForm(forms.ModelForm):
     def has_changed(self):
-        # Force save inline for the good protocol if parent_device() and protocol_id exists
+        # Force save inline for the right protocol if parent_device() and protocol_id exists
         if self.data.get('protocol', None) is not None:
             if hasattr(self.instance, "protocol_id") and \
                     self.data.get('protocol', None) == str(self.instance.protocol_id):
@@ -323,7 +323,7 @@ class DeviceForm(forms.ModelForm):
                 return True
         else:
             if hasattr(self.instance, "protocol_id") and \
-                    hasattr(self.instance, "parent_device") and \
+                    hasattr(self.instance, "parent_device") and self.instance.parent_device() is not None and \
                     self.instance.parent_device().protocol.id == self.instance.protocol_id:
                 logger.error("Saving existing inline for %s" % self.instance.parent_device())
                 return True
@@ -438,7 +438,7 @@ class VariableAdmin(admin.ModelAdmin):
 
 class CoreVariableAdmin(VariableAdmin):
     list_display = ('id', 'name', 'description', 'unit', 'scaling', 'device', 'value_class', 'active', 'writeable',
-                    'dictionary', 'last_value')
+                    'dictionary',)
     list_editable = ('active', 'writeable', 'unit', 'scaling', 'dictionary',)
     list_display_links = ('name',)
 
@@ -706,7 +706,7 @@ admin_site.register(DeviceWriteTask, DeviceWriteTaskAdmin)
 admin_site.register(DeviceReadTask, DeviceReadTaskAdmin)
 admin_site.register(Log, LogAdmin)
 admin_site.register(BackgroundProcess, BackgroundProcessAdmin)
-#admin_site.register(VariableState, VariableStateAdmin)
+admin_site.register(VariableState, VariableStateAdmin)
 admin_site.register(User, UserAdmin)
 admin_site.register(Group, GroupAdmin)
 admin_site.register(Dictionary, DictionaryAdmin)

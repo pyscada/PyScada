@@ -776,7 +776,7 @@ class Process(object):
                     self.dwt_received = True
                 if 'ProcessSignal' in a:
                     logger.debug("Received ProcessSignal %s on channel_layer for %s" % (a['ProcessSignal'], self.label))
-                logger.debug(a)
+                #logger.debug(a)
         else:
             #logger.debug("sleep for %s - %s" % (self.process_id, dt))
             sleep(dt)
@@ -1200,12 +1200,12 @@ class MultiDeviceDAQProcess(Process):
         self.dwt_received = False
 
         drts = DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
-                                                          device_id__in=self.device_ids)
+                                             device_id__in=self.device_ids)
         if hasattr(self, 'drt_received') and self.drt_received and len(drts) == 0:
             sleep(0.5)
             logger.info("DeviceReadTask bulk_created but not found, wait 0.5s")
             drts = DeviceReadTask.objects.filter(done=False, start__lte=time(), failed=False,
-                                                  device_id__in=self.device_ids)
+                                                 device_id__in=self.device_ids)
             if len(drts) == 0:
                 logger.info("DeviceReadTask still not found")
         self.drt_received = False

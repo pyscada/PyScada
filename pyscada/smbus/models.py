@@ -23,7 +23,10 @@ class SMBusDevice(models.Model):
     protocol_id = PROTOCOL_ID
 
     def parent_device(self):
-        return self.smbus_device
+        try:
+            return self.smbus_device
+        except:
+            return None
 
     def __str__(self):
         return self.smbus_device.short_name

@@ -43,7 +43,10 @@ class VISADevice(models.Model):
     protocol_id = PROTOCOL_ID
 
     def parent_device(self):
-        return self.visa_device
+        try:
+            return self.visa_device
+        except:
+            return None
 
     def __str__(self):
         return self.visa_device.short_name

@@ -35,7 +35,10 @@ class OneWireDevice(models.Model):
     protocol_id = PROTOCOL_ID
 
     def parent_device(self):
-        return self.onewire_device
+        try:
+            return self.onewire_device
+        except:
+            return None
 
     def __str__(self):
         return self.onewire_device.short_name
