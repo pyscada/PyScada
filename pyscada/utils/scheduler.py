@@ -1177,12 +1177,12 @@ class MultiDeviceDAQProcess(Process):
         for device_id, device in self.devices.items():
             # process write tasks
             dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                                  (Q(variable_device_id=self.device_id) | Q(variable_property__variable__device_id=self.device_id))).order_by('start')
+                                                  (Q(variable__device_id=device_id) | Q(variable_property__variable__device_id=device_id))).order_by('start')
             if hasattr(self, 'dwt_received') and self.dwt_received and len(dwts) == 0:
                 sleep(0.5)
                 logger.info("DeviceWriteTask bulk_created but not found, wait 0.5s")
                 dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                                      (Q(variable_device_id=self.device_id) | Q(variable_property__variable__device_id=self.device_id))).order_by('start')
+                                                      (Q(variable__device_id=device_id) | Q(variable_property__variable__device_id=device_id))).order_by('start')
                 if len(dwts) == 0:
                     logger.info("DeviceWriteTask still not found")
             for task in dwts:
