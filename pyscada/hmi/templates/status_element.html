@@ -1,6 +1,20 @@
 {% if item.active == 1 %}
-	<li>	
-		<div class="hidden variable-config" data-id="{{ item.web_id }}-{{ uuid }}" data-name="{{ item.name }}" data-key="{{ item.key }}" data-color="{{ var.chart_line_color_code }}" data-init-type="0" data-type="{{ item.item_type}}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-value-class="{{ item.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}" data-unit="{% if item.unit %}{{ item.unit }}{% endif %}" data-device-polling_interval="{{ item.variable.device.polling_interval }}"
+	<li>
+		<div class="hidden variable-config"
+		data-id="{{ item.web_id }}-{{ uuid }}"
+		data-name="{{ item.name }}"
+		data-key="{{ item.key }}" 
+		data-color="{{ var.chart_line_color_code }}"
+		data-init-type="0"
+		data-type="{{ item.item_type}}"
+		data-min="{{ item.min }}"
+		data-max="{{ item.max }}"
+		data-value-class="{{ item.value_class }}"
+		data-min-type="{{ item.min_type }}"
+		data-max-type="{{ item.max_type }}"
+		data-unit="{% if item.unit %}{{ item.unit }}{% endif %}"
+		data-device-polling_interval="{{ item.variable.device.polling_interval }}"
+		data-dictionary="{{ item.dictionary.dict_as_json }}"
         {% if item.display_value_options %}
 			 data-color-type="{{ item.display_value_options.color_type }}"
 			 data-color-mode="{{ item.display_value_options.mode }}"
@@ -12,7 +26,6 @@
 			 data-color-2="{{ item.display_value_options.color_2 }}"
 			 data-color-3="{{ item.display_value_options.color_3 }}"
 			 data-timestamp-conversion="{{ item.display_value_options.timestamp_conversion }}"
-             data-dictionary="{{ item.dictionary.dict_as_json }}"
          {% endif %}
         ></div>
 		{% if item.type == 1 %}<!-- display value -->

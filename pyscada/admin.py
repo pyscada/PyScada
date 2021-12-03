@@ -293,6 +293,11 @@ class VariableStateAdmin(admin.ModelAdmin):
         else:
             return ' - : NaN ' + instance.unit.unit
 
+    def get_queryset(self, request):
+        """Limit Pages to those that belong to the request's user."""
+        qs = super(VariableStateAdmin, self).get_queryset(request)
+        return qs.filter(calculatedvariable__isnull=True)
+
 
 class CalculatedVariableSelectorAdmin(admin.ModelAdmin):
     list_display = ('id', 'main_variable', 'active')
@@ -302,6 +307,12 @@ class CalculatedVariableSelectorAdmin(admin.ModelAdmin):
     filter_horizontal = ('period_fields',)
     save_as = True
     save_as_continue = True
+
+    # Disable changing variable
+    def get_readonly_fields(self, request, obj=None):
+        if obj is not None and obj.main_variable is not None:
+            return ['main_variable']
+        return []
 
 
 class PeriodicFieldAdmin(admin.ModelAdmin):

@@ -1243,7 +1243,7 @@ class PeriodicField(models.Model):
 
 @python_2_unicode_compatible
 class CalculatedVariableSelector(models.Model):
-    main_variable = models.ForeignKey(Variable, on_delete=models.CASCADE)
+    main_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
     period_fields = models.ManyToManyField(PeriodicField)
     active = models.BooleanField(default=True)
     dname = "for_calculated_variables"
@@ -1621,7 +1621,8 @@ class DeviceWriteTask(models.Model):
         else:
             return self.id
 
-    def device_id(self):
+    @property
+    def get_device_id(self):
         if self.variable:
             return self.variable.device.pk
         elif self.variable_property:
@@ -1635,18 +1636,18 @@ class DeviceWriteTask(models.Model):
         DeviceWriteTask.objects.bulk_create(dwts)
         for dwt in dwts:
             try:
-                device_id = dwt.device_id
+                device_id = dwt.get_device_id
                 for bp in BackgroundProcess.objects.all():
                     _device_id = bp.get_device_id()
-                    if type(_device_id) == list and len(_device_id) > 0 and dwt.device_id in _device_id:
+                    if type(_device_id) == list and len(_device_id) > 0 and dwt.get_device_id in _device_id:
                         device_id = _device_id[0]
                         logger.debug(device_id)
                 channel_layer = channels.layers.get_channel_layer()
                 channel_layer.capacity = 1
                 async_to_sync(channel_layer.send)('DeviceAction_for_' + str(device_id),
-                                                  {'DeviceWriteTask': str(dwt.device_id)})
+                                                  {'DeviceWriteTask': str(dwt.get_device_id)})
             except ChannelFull:
-                logger.info("Channel full : " + 'DeviceAction_for_' + str(dwt.device_id))
+                logger.info("Channel full : " + 'DeviceAction_for_' + str(dwt.get_device_id))
                 pass
             except (AttributeError, ConnectionRefusedError, InvalidChannelLayerError):
                 pass
@@ -1674,8 +1675,11 @@ class DeviceReadTask(models.Model):
         else:
             return self.id
 
-    def device_id(self):
-        if self.variable:
+    @property
+    def get_device_id(self):
+        if self.device:
+            return self.device.pk
+        elif self.variable:
             return self.variable.device.pk
         elif self.variable_property:
             return self.variable_property.variable.device.pk
@@ -1688,17 +1692,17 @@ class DeviceReadTask(models.Model):
         DeviceReadTask.objects.bulk_create(drts)
         for drt in drts:
             try:
-                device_id = drt.device_id
+                device_id = drt.get_device_id
                 for bp in BackgroundProcess.objects.all():
                     _device_id = bp.get_device_id()
-                    if type(_device_id) == list and len(_device_id) > 0 and drt.device_id in _device_id:
+                    if type(_device_id) == list and len(_device_id) > 0 and drt.get_device_id in _device_id:
                         device_id = _device_id[0]
                 channel_layer = channels.layers.get_channel_layer()
                 channel_layer.capacity = 1
                 async_to_sync(channel_layer.send)('DeviceAction_for_' + str(device_id),
-                                                  {'DeviceReadTask': str(drt.device_id)})
+                                                  {'DeviceReadTask': str(drt.get_device_id)})
             except ChannelFull:
-                logger.info("Channel full : " + 'DeviceAction_for_' + str(drt.device_id))
+                logger.info("Channel full : " + 'DeviceAction_for_' + str(drt.get_device_id))
                 pass
             except (AttributeError, ConnectionRefusedError, InvalidChannelLayerError):
                 pass
