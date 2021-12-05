@@ -369,8 +369,7 @@ class RecordedDataValueManager(models.Manager):
                 else:
                     last_element = self.last_element(use_date_saved=True, time_min=0, variable_id=pk)
                     if last_element is not None:
-                        values[pk].append([(time.mktime(last_element.date_saved.utctimetuple()) +
-                                            last_element.date_saved.microsecond / 1e6) * f_time_scale,
+                        values[pk].append([(float(last_element.pk - last_element.variable_id) / (2097152.0 * 1000)) * f_time_scale,
                                            last_element.value()])
                 if len(values[pk]) > 1:
                     values[pk].append([values[pk][-1][0], values[pk][-1][1]])
