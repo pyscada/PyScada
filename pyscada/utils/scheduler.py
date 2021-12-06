@@ -1069,12 +1069,16 @@ class SingleDeviceDAQProcess(Process):
         # process write tasks
         # Do all the write task for this device starting with the oldest
         dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                              (Q(variable_device_id=self.device_id) | Q(variable_property__variable__device_id=self.device_id))).order_by('start')
+                                              (Q(variable__device_id=self.device_id) |
+                                               Q(variable_property__variable__device_id=self.device_id)))\
+            .order_by('start')
         if hasattr(self, 'dwt_received') and self.dwt_received and len(dwts) == 0:
             sleep(0.5)
             logger.info("DeviceWriteTask bulk_created but not found, wait 0.5s")
             dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                                  (Q(variable_device_id=self.device_id) | Q(variable_property__variable__device_id=self.device_id))).order_by('start')
+                                                  (Q(variable__device_id=self.device_id) |
+                                                   Q(variable_property__variable__device_id=self.device_id)))\
+                .order_by('start')
             if len(dwts) == 0:
                 logger.info("DeviceWriteTask still not found")
         self.dwt_received = False
@@ -1098,12 +1102,14 @@ class SingleDeviceDAQProcess(Process):
                 task.save(update_fields=['failed', 'finished'])
 
         drts = DeviceReadTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                             (Q(device_id=self.device_id) | Q(variable__device_id=self.device_id) | Q(variable_property__variable__device_id=self.device_id)))
+                                             (Q(device_id=self.device_id) | Q(variable__device_id=self.device_id) |
+                                              Q(variable_property__variable__device_id=self.device_id)))
         if hasattr(self, 'drt_received') and self.drt_received and len(drts) == 0:
             sleep(0.5)
             logger.info("DeviceReadTask bulk_created but not found, wait 0.5s")
             drts = DeviceReadTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                                 (Q(device_id=self.device_id) | Q(variable__device_id=self.device_id) | Q(variable_property__variable__device_id=self.device_id)))
+                                                 (Q(device_id=self.device_id) | Q(variable__device_id=self.device_id) |
+                                                  Q(variable_property__variable__device_id=self.device_id)))
             if len(drts) == 0:
                 logger.info("DeviceReadTask still not found")
         self.drt_received = False
@@ -1177,12 +1183,16 @@ class MultiDeviceDAQProcess(Process):
         for device_id, device in self.devices.items():
             # process write tasks
             dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                                  (Q(variable__device_id=device_id) | Q(variable_property__variable__device_id=device_id))).order_by('start')
+                                                  (Q(variable__device_id=device_id) |
+                                                   Q(variable_property__variable__device_id=device_id)))\
+                .order_by('start')
             if hasattr(self, 'dwt_received') and self.dwt_received and len(dwts) == 0:
                 sleep(0.5)
                 logger.info("DeviceWriteTask bulk_created but not found, wait 0.5s")
                 dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                                      (Q(variable__device_id=device_id) | Q(variable_property__variable__device_id=device_id))).order_by('start')
+                                                      (Q(variable__device_id=device_id) |
+                                                       Q(variable_property__variable__device_id=device_id)))\
+                    .order_by('start')
                 if len(dwts) == 0:
                     logger.info("DeviceWriteTask still not found")
             for task in dwts:
@@ -1206,12 +1216,16 @@ class MultiDeviceDAQProcess(Process):
         self.dwt_received = False
 
         drts = DeviceReadTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                             (Q(device_id__in=self.device_ids) | Q(variable__device_id__in=self.device_ids) | Q(variable_property__variable__device_id__in=self.device_ids)))
+                                             (Q(device_id__in=self.device_ids) |
+                                              Q(variable__device_id__in=self.device_ids) |
+                                              Q(variable_property__variable__device_id__in=self.device_ids)))
         if hasattr(self, 'drt_received') and self.drt_received and len(drts) == 0:
             sleep(0.5)
             logger.info("DeviceReadTask bulk_created but not found, wait 0.5s")
             drts = DeviceReadTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                                 (Q(device_id__in=self.device_ids) | Q(variable__device_id__in=self.device_ids) | Q(variable_property__variable__device_id__in=self.device_ids)))
+                                                 (Q(device_id__in=self.device_ids) |
+                                                  Q(variable__device_id__in=self.device_ids) |
+                                                  Q(variable_property__variable__device_id__in=self.device_ids)))
             if len(drts) == 0:
                 logger.info("DeviceReadTask still not found")
         self.drt_received = False

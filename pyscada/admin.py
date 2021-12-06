@@ -360,6 +360,8 @@ class DeviceAdmin(admin.ModelAdmin):
             device_dict["fk_name"] = d.related_model.fk_name
         if hasattr(d.related_model, "FormSet"):
             device_dict["formset"] = d.related_model.FormSet
+        if hasattr(d.related_model, "fieldsets"):
+            device_dict["fieldsets"] = d.related_model.fieldsets
         #if hasattr(d.related_model, "formfield_for_foreignkey"):
         #    device_dict["formfield_for_foreignkey"] = d.related_model.formfield_for_foreignkey
         cl = type(d.name, (admin.StackedInline,), device_dict)  # classes=['collapse']
