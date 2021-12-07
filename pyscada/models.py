@@ -12,7 +12,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.timezone import now, make_aware, is_naive
 from django.db.models.signals import post_save
 
-from pyscada.utils import blow_up_data, timestamp_to_datetime
+from pyscada.utils import blow_up_data, timestamp_to_datetime, min_pass, max_pass
 
 from six import text_type
 import traceback
@@ -1226,9 +1226,13 @@ class PeriodicField(models.Model):
                                               "Change count: Number of times the field’s value changes<br>"
                                               "Distinct count: Number of unique values in a field")
     property = models.CharField(default='', blank=True, null=True,
-                                max_length=255, help_text='For count value : enter the value to count')
+                                max_length=255, help_text="Min: lower or equal this value, ex: 53.5 "
+                                                          "(use <53.5 for strictly lower)<br>"
+                                                          "Max: superior or equal this value, ex: 53.5 "
+                                                          "(use >53.5 for strictly superior)<br>"
+                                                          "Count value : enter the value to count")
     start_from = models.DateTimeField(default=start_from_default,
-                                      help_text='Calculate from this DateTime and then each period_factor*period')
+                                      help_text="Calculate from this DateTime and then each period_factor*period")
     period_choices = ((0, 'second'),
                       (1, 'minute'),
                       (2, 'hour'),
@@ -1421,9 +1425,41 @@ class CalculatedVariable(models.Model):
                 values.append(v[1])
             type_str = self.period.type_choices[self.period.type][1]
             if type_str == 'min':
-                res = min(values)
+                p = str(self.period.property)
+                if p == '':
+                    res = min(values)
+                elif p.startswith('<'):
+                    try:
+                        p = float(p.split('<')[1])
+                        res = min_pass(values, p, 'lt')
+                    except ValueError:
+                        logger.warning("Period field %s property after < is not a float" % self.period)
+                        res = None
+                else:
+                    try:
+                        p = float(p)
+                        res = min_pass(values, p, 'lte')
+                    except ValueError:
+                        logger.warning("Period field %s property is not a float" % self.period)
+                        res = None
             elif type_str == 'max':
-                res = max(values)
+                p = str(self.period.property)
+                if p == '':
+                    res = max(values)
+                elif p.startswith('>'):
+                    try:
+                        p = float(p.split('>')[1])
+                        res = max_pass(values, p, 'gt')
+                    except ValueError:
+                        logger.warning("Period field %s property after > is not a float" % self.period)
+                        res = None
+                else:
+                    try:
+                        p = float(p)
+                        res = max_pass(values, p, 'gte')
+                    except ValueError:
+                        logger.warning("Period field %s property is not a float" % self.period)
+                        res = None
             elif type_str == 'total':
                 res = sum(values)
             elif type_str == 'difference':
@@ -1447,10 +1483,10 @@ class CalculatedVariable(models.Model):
                 res = len(values)
             elif type_str == 'count value':
                 try:
-                    p = float(self.period.parameter)
+                    p = float(self.period.property)
                     res = values.count(p)
                 except ValueError:
-                    logger.warning("Period field %s parameter is not a float" % self.period)
+                    logger.warning("Period field %s property is not a float" % self.period)
                     res = None
             elif type_str == 'range':
                 res = max(values) - min(values)

@@ -468,7 +468,8 @@ class CalculatedVariableAdminInline(admin.StackedInline):
 
 
 class CalculatedVariableAdmin(VariableAdmin):
-    list_display = ('name', 'last_check', 'state', 'last_value')
+    list_display = ('name', 'last_check', 'state', 'last_value', 'chart_line_color',)
+    list_editable = ('chart_line_color',)
     list_filter = (ProtocolListFilter, DeviceListFilter, VariableListFilter, 'active', 'writeable', 'unit__unit',)
     list_display_links = None
 

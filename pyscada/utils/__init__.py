@@ -152,3 +152,38 @@ def blow_up_data(data,timevalues,mean_value_period,no_mean_value = True):
                 out_data[i] = last_value
     return np.asarray(out_data)
 
+
+def min_pass(my_marks, my_pass, compare='lte'):
+    min_value = None
+    for x in my_marks:
+        if x >= my_pass and compare == 'lte':
+            min_value = x
+            break
+        elif x > my_pass and compare == 'lt':
+            min_value = x
+            break
+    if min_value is not None:
+        for x in my_marks:
+            if min_value > x >= my_pass and compare == 'lte':
+                min_value = x
+            elif min_value > x > my_pass and compare == 'lt':
+                min_value = x
+    return min_value
+
+
+def max_pass(my_marks, my_pass, compare='gte'):
+    max_value = None
+    for x in my_marks:
+        if x <= my_pass and compare == 'gte':
+            max_value = x
+            break
+        elif x < my_pass and compare == 'gt':
+            max_value = x
+            break
+    if max_value is not None:
+        for x in my_marks:
+            if max_value < x <= my_pass and compare == 'gte':
+                max_value = x
+            elif max_value < x < my_pass and compare == 'gt':
+                max_value = x
+    return max_value
