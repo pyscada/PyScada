@@ -44,24 +44,40 @@ from django.db.transaction import TransactionManagementError
 from django.db.models import Q
 from django.db.utils import IntegrityError
 
-import channels.layers
-from channels.exceptions import InvalidChannelLayerError
-from channels.exceptions import ChannelFull
-from asgiref.sync import async_to_sync
-from asyncio import wait_for
-try:
-    from asyncio.exceptions import TimeoutError as asyncioTimeoutError
-    from asyncio.exceptions import CancelledError as asyncioCancelledError
-except ModuleNotFoundError:
-    # for python version < 3.8
-    from asyncio import TimeoutError as asyncioTimeoutError
-    from asyncio import CancelledError as asyncioCancelledError
-
 from pyscada.models import BackgroundProcess, DeviceWriteTask, Device, RecordedData, DeviceReadTask
 from django.utils.timezone import now
 import logging
 
 logger = logging.getLogger(__name__)
+
+try:
+    import channels.layers
+    from channels.exceptions import InvalidChannelLayerError
+    from channels.exceptions import ChannelFull
+    from asgiref.sync import async_to_sync
+    from asyncio import wait_for
+    try:
+        from asyncio.exceptions import TimeoutError as asyncioTimeoutError
+        from asyncio.exceptions import CancelledError as asyncioCancelledError
+    except ModuleNotFoundError:
+        # for python version < 3.8
+        from asyncio import TimeoutError as asyncioTimeoutError
+        from asyncio import CancelledError as asyncioCancelledError
+    if channels.layers.get_channel_layer() is None:
+        logger.warning("Django Channels is not working. Missing config in settings ?")
+        raise ConnectionRefusedError
+    else:
+        async def channels_test():
+            await wait_for(channels.layers.get_channel_layer().receive('test'), timeout=0.1)
+        async_to_sync(channels_test)()
+        channels_driver = True
+except (ImportError, ModuleNotFoundError):
+    channels_driver = False
+except ConnectionRefusedError:
+    logger.warning("Django Channels is not working. redis-server not running ?")
+    channels_driver = False
+except (TimeoutError, asyncioTimeoutError):
+    channels_driver = True
 
 
 def check_db_connection():
@@ -90,9 +106,6 @@ class Scheduler(object):
         pid_file_name = str(settings.PID_FILE_NAME)
     else:
         pid_file_name = '/tmp/pyscada_daemon.pid'
-
-    if channels.layers.get_channel_layer() is None:
-        logger.warning("Django Channels is not working. Missing config in settings ?")
 
     def __init__(self, daemon_name='pyscada.utils.scheduler.Scheduler',
                  run_as_daemon=True, stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr,
@@ -733,10 +746,10 @@ class Process(object):
                 if dt > 0:
                     if hasattr(self, "device_ids") and not hasattr(self, "device_id") and len(self.device_ids) > 0:
                         self.device_id = self.device_ids[0]
-                    if hasattr(self, "device_id") and self.device_id is not None:
+                    if channels_driver and hasattr(self, "device_id") and self.device_id is not None:
                         message = 'DeviceAction_for_' + str(self.device_id)
                         async_to_sync(self.waiting_action_receiver)(dt, message)
-                    elif hasattr(self, "process_id") and self.process_id != 0:
+                    elif channels_driver and hasattr(self, "process_id") and self.process_id != 0:
                         message = 'ProcessAction_for_' + str(self.process_id)
                         async_to_sync(self.waiting_action_receiver)(dt, message)
                     else:
@@ -805,28 +818,29 @@ class Process(object):
         """
         logger.debug('PID %d, received signal: %d' % (self.pid, signum))
         self.SIG_QUEUE.append(signum)
-        if not hasattr(self, 'channel_layer'):
-            try:
-                self.channel_layer = channels.layers.get_channel_layer()
-                if self.channel_layer is not None:
-                    self.channel_layer.capacity = 1
-            except (ConnectionRefusedError, InvalidChannelLayerError):
-                return None
+        if channels_driver:
+            if not hasattr(self, 'channel_layer'):
+                try:
+                    self.channel_layer = channels.layers.get_channel_layer()
+                    if self.channel_layer is not None:
+                        self.channel_layer.capacity = 1
+                except (ConnectionRefusedError, InvalidChannelLayerError):
+                    return None
 
-        if self.channel_layer is not None:
-            message = None
-            if hasattr(self, "device_ids") and not hasattr(self, "device_id") and len(self.device_ids) > 0:
-                self.device_id = self.device_ids[0]
-            if hasattr(self, "device_id") and self.device_id is not None:
-                message = 'DeviceAction_for_' + str(self.device_id)
-            elif hasattr(self, "process_id") and self.process_id != 0:
-                message = 'ProcessAction_for_' + str(self.process_id)
-            try:
-                if message is not None:
-                    async_to_sync(self.channel_layer.send)(message, {'ProcessSignal': str(signum)})
-            except (ChannelFull, ConnectionRefusedError):
-                logger.info("Channel full : " + 'ProcessAction_for_' + str(self.process_id))
-                pass
+            if self.channel_layer is not None:
+                message = None
+                if hasattr(self, "device_ids") and not hasattr(self, "device_id") and len(self.device_ids) > 0:
+                    self.device_id = self.device_ids[0]
+                if hasattr(self, "device_id") and self.device_id is not None:
+                    message = 'DeviceAction_for_' + str(self.device_id)
+                elif hasattr(self, "process_id") and self.process_id != 0:
+                    message = 'ProcessAction_for_' + str(self.process_id)
+                try:
+                    if message is not None:
+                        async_to_sync(self.channel_layer.send)(message, {'ProcessSignal': str(signum)})
+                except (ChannelFull, ConnectionRefusedError):
+                    logger.info("Channel full : " + 'ProcessAction_for_' + str(self.process_id))
+                    pass
 
     def stop(self, signum=None, frame=None):
         """

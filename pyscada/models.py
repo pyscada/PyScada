@@ -12,11 +12,6 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.timezone import now, make_aware, is_naive
 from django.db.models.signals import post_save
 
-import channels.layers
-from channels.exceptions import InvalidChannelLayerError
-from channels.exceptions import ChannelFull
-from asgiref.sync import async_to_sync
-
 from pyscada.utils import blow_up_data, timestamp_to_datetime
 
 from six import text_type
@@ -36,11 +31,39 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+try:
+    import channels.layers
+    from channels.exceptions import InvalidChannelLayerError
+    from channels.exceptions import ChannelFull
+    from asgiref.sync import async_to_sync
+    from asyncio import wait_for
+    try:
+        from asyncio.exceptions import TimeoutError as asyncioTimeoutError
+        from asyncio.exceptions import CancelledError as asyncioCancelledError
+    except ModuleNotFoundError:
+        # for python version < 3.8
+        from asyncio import TimeoutError as asyncioTimeoutError
+        from asyncio import CancelledError as asyncioCancelledError
+    if channels.layers.get_channel_layer() is None:
+        logger.warning("Django Channels is not working. Missing config in settings ?")
+        channels_driver = False
+    else:
+        async def channels_test():
+            await wait_for(channels.layers.get_channel_layer().receive('test'), timeout=0.1)
+        async_to_sync(channels_test)()
+        channels_driver = True
+except (ImportError, ModuleNotFoundError):
+    channels_driver = False
+except ConnectionRefusedError:
+    logger.warning("Django Channels is not working. redis-server not running ?")
+    channels_driver = False
+except (TimeoutError, asyncioTimeoutError):
+    channels_driver = True
+
+
 #
 # Manager
 #
-
-
 class RecordedDataValueManager(models.Manager):
     def filter_time(self, time_min=None, time_max=None, use_date_saved=True, **kwargs):
         if time_min is None:
@@ -1633,23 +1656,24 @@ class DeviceWriteTask(models.Model):
         if type(dwts) != list:
             dwts = [dwts]
         DeviceWriteTask.objects.bulk_create(dwts)
-        for dwt in dwts:
-            try:
-                device_id = dwt.get_device_id
-                for bp in BackgroundProcess.objects.all():
-                    _device_id = bp.get_device_id()
-                    if type(_device_id) == list and len(_device_id) > 0 and dwt.get_device_id in _device_id:
-                        device_id = _device_id[0]
-                        logger.debug(device_id)
-                channel_layer = channels.layers.get_channel_layer()
-                channel_layer.capacity = 1
-                async_to_sync(channel_layer.send)('DeviceAction_for_' + str(device_id),
-                                                  {'DeviceWriteTask': str(dwt.get_device_id)})
-            except ChannelFull:
-                logger.info("Channel full : " + 'DeviceAction_for_' + str(dwt.get_device_id))
-                pass
-            except (AttributeError, ConnectionRefusedError, InvalidChannelLayerError):
-                pass
+        if channels_driver:
+            for dwt in dwts:
+                try:
+                    device_id = dwt.get_device_id
+                    for bp in BackgroundProcess.objects.all():
+                        _device_id = bp.get_device_id()
+                        if type(_device_id) == list and len(_device_id) > 0 and dwt.get_device_id in _device_id:
+                            device_id = _device_id[0]
+                            logger.debug(device_id)
+                    channel_layer = channels.layers.get_channel_layer()
+                    channel_layer.capacity = 1
+                    async_to_sync(channel_layer.send)('DeviceAction_for_' + str(device_id),
+                                                      {'DeviceWriteTask': str(dwt.get_device_id)})
+                except ChannelFull:
+                    logger.info("Channel full : " + 'DeviceAction_for_' + str(dwt.get_device_id))
+                    pass
+                except (AttributeError, ConnectionRefusedError, InvalidChannelLayerError):
+                    pass
 
 
 @python_2_unicode_compatible
@@ -1689,22 +1713,23 @@ class DeviceReadTask(models.Model):
         if type(drts) != list:
             drts = [drts]
         DeviceReadTask.objects.bulk_create(drts)
-        for drt in drts:
-            try:
-                device_id = drt.get_device_id
-                for bp in BackgroundProcess.objects.all():
-                    _device_id = bp.get_device_id()
-                    if type(_device_id) == list and len(_device_id) > 0 and drt.get_device_id in _device_id:
-                        device_id = _device_id[0]
-                channel_layer = channels.layers.get_channel_layer()
-                channel_layer.capacity = 1
-                async_to_sync(channel_layer.send)('DeviceAction_for_' + str(device_id),
-                                                  {'DeviceReadTask': str(drt.get_device_id)})
-            except ChannelFull:
-                logger.info("Channel full : " + 'DeviceAction_for_' + str(drt.get_device_id))
-                pass
-            except (AttributeError, ConnectionRefusedError, InvalidChannelLayerError):
-                pass
+        if channels_driver:
+            for drt in drts:
+                try:
+                    device_id = drt.get_device_id
+                    for bp in BackgroundProcess.objects.all():
+                        _device_id = bp.get_device_id()
+                        if type(_device_id) == list and len(_device_id) > 0 and drt.get_device_id in _device_id:
+                            device_id = _device_id[0]
+                    channel_layer = channels.layers.get_channel_layer()
+                    channel_layer.capacity = 1
+                    async_to_sync(channel_layer.send)('DeviceAction_for_' + str(device_id),
+                                                      {'DeviceReadTask': str(drt.get_device_id)})
+                except ChannelFull:
+                    logger.info("Channel full : " + 'DeviceAction_for_' + str(drt.get_device_id))
+                    pass
+                except (AttributeError, ConnectionRefusedError, InvalidChannelLayerError):
+                    pass
 
 
 @python_2_unicode_compatible
