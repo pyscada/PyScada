@@ -1226,10 +1226,10 @@ class PeriodicField(models.Model):
                                               "Change count: Number of times the field’s value changes<br>"
                                               "Distinct count: Number of unique values in a field")
     property = models.CharField(default='', blank=True, null=True,
-                                max_length=255, help_text="Min: lower or equal this value, ex: 53.5 "
-                                                          "(use <53.5 for strictly lower)<br>"
-                                                          "Max: superior or equal this value, ex: 53.5 "
+                                max_length=255, help_text="Min: superior or equal this value, ex: 53.5 "
                                                           "(use >53.5 for strictly superior)<br>"
+                                                          "Max: lower or equal this value, ex: 53.5 "
+                                                          "(use <53.5 for strictly lower)<br>"
                                                           "Count value : enter the value to count")
     start_from = models.DateTimeField(default=start_from_default,
                                       help_text="Calculate from this DateTime and then each period_factor*period")
@@ -1249,7 +1249,7 @@ class PeriodicField(models.Model):
     def __str__(self):
         s = self.type_choices[self.type][1] + "-"
         if self.property != '' and self.property is not None:
-            s += str(self.property) + "-"
+            s += str(self.property).replace('<', 'lt').replace('>', 'gt') + "-"
         s += str(self.period_factor) + self.period_choices[self.period][1]
         if self.period_factor > 1:
             s += "s"
@@ -1431,14 +1431,14 @@ class CalculatedVariable(models.Model):
                 elif p.startswith('<'):
                     try:
                         p = float(p.split('<')[1])
-                        res = min_pass(values, p, 'lt')
+                        res = min_pass(values, p, 'gt')
                     except ValueError:
                         logger.warning("Period field %s property after < is not a float" % self.period)
                         res = None
                 else:
                     try:
                         p = float(p)
-                        res = min_pass(values, p, 'lte')
+                        res = min_pass(values, p, 'gte')
                     except ValueError:
                         logger.warning("Period field %s property is not a float" % self.period)
                         res = None
@@ -1449,14 +1449,14 @@ class CalculatedVariable(models.Model):
                 elif p.startswith('>'):
                     try:
                         p = float(p.split('>')[1])
-                        res = max_pass(values, p, 'gt')
+                        res = max_pass(values, p, 'lt')
                     except ValueError:
                         logger.warning("Period field %s property after > is not a float" % self.period)
                         res = None
                 else:
                     try:
                         p = float(p)
-                        res = max_pass(values, p, 'gte')
+                        res = max_pass(values, p, 'lte')
                     except ValueError:
                         logger.warning("Period field %s property is not a float" % self.period)
                         res = None

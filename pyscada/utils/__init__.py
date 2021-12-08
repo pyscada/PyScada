@@ -153,37 +153,37 @@ def blow_up_data(data,timevalues,mean_value_period,no_mean_value = True):
     return np.asarray(out_data)
 
 
-def min_pass(my_marks, my_pass, compare='lte'):
+def min_pass(my_marks, my_pass, compare='gte'):
     min_value = None
     for x in my_marks:
-        if x >= my_pass and compare == 'lte':
+        if x >= my_pass and compare == 'gte':
             min_value = x
             break
-        elif x > my_pass and compare == 'lt':
+        elif x > my_pass and compare == 'gt':
             min_value = x
             break
     if min_value is not None:
         for x in my_marks:
-            if min_value > x >= my_pass and compare == 'lte':
+            if min_value > x >= my_pass and compare == 'gte':
                 min_value = x
-            elif min_value > x > my_pass and compare == 'lt':
+            elif min_value > x > my_pass and compare == 'gt':
                 min_value = x
     return min_value
 
 
-def max_pass(my_marks, my_pass, compare='gte'):
+def max_pass(my_marks, my_pass, compare='lte'):
     max_value = None
     for x in my_marks:
-        if x <= my_pass and compare == 'gte':
+        if x <= my_pass and compare == 'lte':
             max_value = x
             break
-        elif x < my_pass and compare == 'gt':
+        elif x < my_pass and compare == 'lt':
             max_value = x
             break
     if max_value is not None:
         for x in my_marks:
-            if max_value < x <= my_pass and compare == 'gte':
+            if max_value < x <= my_pass and compare == 'lte':
                 max_value = x
-            elif max_value < x < my_pass and compare == 'gt':
+            elif max_value < x < my_pass and compare == 'lt':
                 max_value = x
     return max_value

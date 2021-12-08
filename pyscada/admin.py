@@ -473,6 +473,12 @@ class CalculatedVariableAdmin(VariableAdmin):
     list_filter = (ProtocolListFilter, DeviceListFilter, VariableListFilter, 'active', 'writeable', 'unit__unit',)
     list_display_links = None
 
+    def has_add_permission(self, request):
+        return False
+
+    def get_changelist_form(self, request, **kwargs):
+        return VariableAdminFrom
+
     def last_check(self, instance):
         return instance.calculatedvariable.last_check
 
