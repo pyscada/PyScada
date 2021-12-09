@@ -1426,39 +1426,39 @@ class CalculatedVariable(models.Model):
             type_str = self.period.type_choices[self.period.type][1]
             if type_str == 'min':
                 p = str(self.period.property)
-                if p == '':
+                if p == '' or p is None or p == 'None':
                     res = min(values)
                 elif p.startswith('<'):
                     try:
                         p = float(p.split('<')[1])
                         res = min_pass(values, p, 'gt')
                     except ValueError:
-                        logger.warning("Period field %s property after < is not a float" % self.period)
+                        logger.warning("Period field %s property after < is not a float : %s" % (self.period, self.period.property))
                         res = None
                 else:
                     try:
                         p = float(p)
                         res = min_pass(values, p, 'gte')
                     except ValueError:
-                        logger.warning("Period field %s property is not a float" % self.period)
+                        logger.warning("Period field %s property is not a float : %s" % (self.period, self.period.property))
                         res = None
             elif type_str == 'max':
                 p = str(self.period.property)
-                if p == '':
+                if p == '' or p is None or p == 'None':
                     res = max(values)
                 elif p.startswith('>'):
                     try:
                         p = float(p.split('>')[1])
                         res = max_pass(values, p, 'lt')
                     except ValueError:
-                        logger.warning("Period field %s property after > is not a float" % self.period)
+                        logger.warning("Period field %s property after > is not a float : %s" % (self.period, self.period.property))
                         res = None
                 else:
                     try:
                         p = float(p)
                         res = max_pass(values, p, 'lte')
                     except ValueError:
-                        logger.warning("Period field %s property is not a float" % self.period)
+                        logger.warning("Period field %s property is not a float : %s" % (self.period, self.period.property))
                         res = None
             elif type_str == 'total':
                 res = sum(values)
