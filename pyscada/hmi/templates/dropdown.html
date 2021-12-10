@@ -8,8 +8,8 @@
                 {% if item.control_element_options.empty_dropdown_value == 1 %}
                     <option disabled selected value> {{ item.control_element_options.placeholder }} </option>
                 {% endif %}
-                {% for item in item.dictionary.dictionaryitem_set.all %}
-                    <option class="select-item {{ item.web_class_str }}" id="{{ item.pk }}" data-value="{{ item.value }}" value="{{ item.value }}">{{ item.label }}</option>
+                {% for dict_item in item.dictionary.dictionaryitem_set.all %}
+                    <option {% if item.control_element_options.empty_dropdown_value == 0 and last_value|floatformat:5 == dict_item.value|floatformat:5 %} selected {% endif %} class="select-item {{ item.web_class_str }}" id="{{ dict_item.pk }}" data-value="{{ dict_item.value }}" value="{{ dict_item.value }}">{{ dict_item.label }}</option>
                 {% endfor %}
                 </select>
             </span>

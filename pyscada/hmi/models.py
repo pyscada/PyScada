@@ -252,8 +252,9 @@ class ControlItem(models.Model):
 
     def value(self):
         if self.variable_property:
-            return self.variable_property.value
+            return self.variable_property.value()
         elif self.variable:
+            self.variable.query_prev_value(0)
             return self.variable.prev_value
 
     def value_class(self):

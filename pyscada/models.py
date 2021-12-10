@@ -677,6 +677,17 @@ class Dictionary(models.Model):
             items_list[int(item.value)] = item.label
         return json.dumps(items_list)
 
+    def get_label(self, value):
+        label_found = None
+        for item in self.dictionaryitem_set.all():
+            if float(item.value) == float(value):
+                if label_found is None:
+                    label_found = item.label
+                else:
+                    logger.info('Dictionary %s has various items with value = %s' % (str(self), value))
+                    return None
+        return label_found
+
 
 @python_2_unicode_compatible
 class DictionaryItem(models.Model):
@@ -748,6 +759,7 @@ class VariableProperty(models.Model):
     min_type = models.CharField(max_length=4, default='lte', choices=min_type_choices)
     max_type = models.CharField(max_length=4, default='gte', choices=max_type_choices)
     last_modified = models.DateTimeField(auto_now=True)
+    dictionary = models.ForeignKey(Dictionary, blank=True, null=True, on_delete=models.SET_NULL)
 
     last_value = None
     value_changed = False
@@ -779,6 +791,28 @@ class VariableProperty(models.Model):
 
     def item_type(self):
         return "variable_property"
+
+    def convert_string_value(self, value):
+        if self.dictionary is None:
+            d = Dictionary(name=str(self.name) + '_auto_created')
+            d.save()
+            self.dictionary = d
+            Variable.objects.bulk_update([self], ['dictionary'])
+            self.refresh_from_db()
+        if not len(self.dictionary.dictionaryitem_set.filter(label=str(value))):
+            max_value = 0
+            for di in self.dictionary.dictionaryitem_set.all():
+                max_value = max(float(max_value), float(di.value))
+            DictionaryItem(label=str(value), value=int(max_value) + 1, dictionary=self.dictionary).save()
+            #logger.debug('new value : %s' % (int(max_value) + 1))
+            return int(max_value) + 1
+        elif len(self.dictionary.dictionaryitem_set.filter(label=str(value))) == 1:
+            #logger.debug('value found : %s' % self.dictionary.dictionaryitem_set.get(label=str(value)).value)
+            return float(self.dictionary.dictionaryitem_set.get(label=str(value)).value)
+        else:
+            logger.warning('%s duplicate values found of %s in dictionary %s' %
+                           (len(self.dictionary.dictionaryitem_set.filter(label=str(value))), value, self.dictionary))
+            return float(self.dictionary.dictionaryitem_set.filter(label=str(value)).first().value)
 
 
 @python_2_unicode_compatible
@@ -921,12 +955,14 @@ class Variable(models.Model):
         else:
             return 16
 
-    def query_prev_value(self):
+    def query_prev_value(self, time_min=None):
         """
         get the last value and timestamp from the database
         """
         time_max = time.time() * 2097152 * 1000 + 2097151
-        val = self.recordeddata_set.filter(id__range=(time_max - (3 * 3660 * 1000 * 2097152), time_max)).last()
+        if time_min is None:
+            time_min = time_max - (3 * 3660 * 1000 * 2097152)
+        val = self.recordeddata_set.filter(id__range=(time_min, time_max)).last()
         if val:
             self.prev_value = val.value()
             self.timestamp_old = val.timestamp
@@ -2055,7 +2091,6 @@ class BackgroundProcess(models.Model):
         else:
             return None
 
-
     def get_process_instance(self):
         # kwargs = dict(s.split("=") for s in self.process_class_kwargs.split())
         try:
@@ -2235,18 +2270,27 @@ class ComplexEventGroup(models.Model):
             subject_str += self.label + " - An event is active"
             message_str = "The event group " + self.label + " has been triggered<br>"
             message_str += "Level : " + item_found.level_choices[item_found.level][1] + "<br>"
-            message_str += "Validation : " + item_found.validation_choices[item_found.validation][1] + "<br><br>"
+            message_str += "Validation : " + item_found.validation_choices[item_found.validation][1] + "<br>"
         else:
             subject_str += " - Information - "
             subject_str += self.label + " No active event"
             message_str = "The event group " + self.label + " has no active events<br>"
 
+        message_str += "Date : " + str(datetime.datetime.now().isoformat()) + "<br><br>"
+
         for i in var_list:
-            message_str += str(var_list[i]['type']) + "(id=" + str(i) + ") : " + str(var_list[i]['name']) + " = " \
-                           + str(var_list[i]['value']) + "<br>"
+            message_str += str(var_list[i]['type']) + " : " + str(var_list[i]['name']) + " (" + str(i) + ") : "
             in_limit_str = "<span style='color:red;'>" + str(var_list[i]['in_limit']) + "</span>" if \
                 var_list[i]['in_limit'] else str(var_list[i]['in_limit'])
-            message_str += "In limit : " + in_limit_str + "<br>"
+            message_str += in_limit_str + "<br>"
+            message_str += "Last value on "
+            message_str += str(datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(var_list[i]['datetime'])))
+            message_str += " = "
+            if var_list[i]['label'] is None:
+                message_str += str(var_list[i]['value']) + "<br>"
+            else:
+                message_str += str(var_list[i]['label']) + " (" + str(var_list[i]['value']) + ")<br>"
+
             message_str += "Limit rules : "
             if var_list[i]['limit_low_type'] == 0:
                 limit_low_type = "< "
@@ -2284,11 +2328,17 @@ class ComplexEventGroup(models.Model):
                     message_str += str(var_list[i]['limit_high_value'] + var_list[i]['hysteresis_high'])
                 message_str += "<br><br>"
         for i in vp_list:
-            message_str += str(vp_list[i]['type']) + "(id=" + str(i) + ") : " + str(vp_list[i]['name']) + " = " \
-                           + str(vp_list[i]['value']) + "<br>"
+            message_str += str(vp_list[i]['type']) + " : " + str(vp_list[i]['name']) + " (" + str(i) + ") : "
             in_limit_str = "<span style='color:red;'>" + str(vp_list[i]['in_limit']) + "</span>" if \
                 vp_list[i]['in_limit'] else str(vp_list[i]['in_limit'])
-            message_str += "In limit : " + in_limit_str + "<br>"
+            message_str += in_limit_str + "<br>"
+            message_str += "Last value on "
+            message_str += str(datetime.datetime.isoformat(vp_list[i]['datetime']))
+            message_str += " = "
+            if vp_list[i]['label'] is None:
+                message_str += str(vp_list[i]['value']) + "<br>"
+            else:
+                message_str += str(vp_list[i]['label']) + " (" + str(vp_list[i]['value']) + ")<br>"
             message_str += "Limit rules : "
             if vp_list[i]['limit_low_type'] == 0:
                 limit_low_type = "<"
@@ -2355,13 +2405,15 @@ class ComplexEvent(models.Model):
         valid = False
         vars_infos = {}
         vp_infos = {}
-        if self.validation == 0:
+        if self.validation == 0:  # OR
             valid = False
-        elif self.validation == 1 and self.complexeventitem_set.count():
+        elif self.validation == 1 and self.complexeventitem_set.count():  # AND
             valid = True
         for item in self.complexeventitem_set.all():
             (in_limit, item_info) = item.in_limit()
             if in_limit is None:
+                if self.validation == 1:
+                    valid = False
                 continue
             if in_limit:
                 if self.validation == 0:
@@ -2417,47 +2469,64 @@ class ComplexEventItem(models.Model):
 
     def in_limit(self):
         item_value = None
+        item_date = None
         item_type = None
         item_name = None
+        item_dict_label = None
+        limit_low = None
+        limit_high = None
+
         if self.variable is not None and self.variable.active:
-            if self.variable.query_prev_value():
+            if self.variable.query_prev_value(time_min=0):
                 item_value = self.variable.prev_value
+                item_date = self.variable.timestamp_old
             item_type = 'variable'
             item_name = self.variable.name
         elif self.variable_property is not None:
             item_value = self.variable_property.value()
+            item_date = self.variable_property.last_modified
             if type(item_value) != int and type(item_value) != float:
                 item_value = None
             item_type = 'variable_property'
             item_name = self.variable_property.name
+
+        var_info = {'value': item_value,
+                    'datetime': item_date,
+                    'type': item_type,
+                    'name': item_name,
+                    'limit_low_type': self.limit_low_type_choices[self.limit_low_type][0],
+                    'limit_low_value': limit_low,
+                    'hysteresis_low': self.hysteresis_low,
+                    'limit_high_type': self.limit_high_type_choices[self.limit_high_type][0],
+                    'limit_high_value': limit_high,
+                    'hysteresis_high': self.hysteresis_high,
+                    'label': item_dict_label,
+                    'in_limit': None,
+                    }
+
         if item_value is not None:
             if self.variable_limit_low is not None:
-                if self.variable_limit_low.query_prev_value():
+                if self.variable_limit_low.query_prev_value(time_min=0):
                     limit_low = self.variable_limit_low.prev_value
                 else:
                     limit_low = None
             else:
                 limit_low = self.fixed_limit_low
             if self.variable_limit_high is not None:
-                if self.variable_limit_high.query_prev_value():
+                if self.variable_limit_high.query_prev_value(time_min=0):
                     limit_high = self.variable_limit_high.prev_value
                 else:
                     limit_high = None
             else:
                 limit_high = self.fixed_limit_high
-            if limit_low is None and limit_high is None:
-                return None, {}
-
-            var_info = {'value': item_value,
-                        'type': item_type,
-                        'name': item_name,
-                        'limit_low_type': self.limit_low_type_choices[self.limit_low_type][0],
-                        'limit_low_value': limit_low,
-                        'hysteresis_low': self.hysteresis_low,
-                        'limit_high_type': self.limit_high_type_choices[self.limit_high_type][0],
-                        'limit_high_value': limit_high,
-                        'hysteresis_high': self.hysteresis_high,
-                        }
+            if limit_low is None or limit_high is None:
+                return None, var_info
+            var_info['limit_low'] = limit_low
+            var_info['limit_high'] = limit_high
+            if self.variable is not None and self.variable.dictionary is not None:
+                var_info['label'] = self.variable.dictionary.get_label(item_value)
+            elif self.variable_property is not None and self.variable_property.dictionary is not None:
+                var_info['label'] = self.variable_property.dictionary.get_label(item_value)
 
             actived = self.active
             if limit_low is not None and self.limit_low_type == 0 and item_value <= \
@@ -2482,7 +2551,7 @@ class ComplexEventItem(models.Model):
             if actived != self.active:
                 self.save()
             return self.active, var_info
-        return None, {}
+        return None, var_info
 
     def get_id(self):
         if self.variable is not None:

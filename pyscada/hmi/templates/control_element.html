@@ -34,7 +34,7 @@
             <!-- input button -->
             {% include "button.html" %}
         {% elif item.control_element_options.dropdown and item.dictionary %}<!-- dropdown -->
-            {% include "dropdown.html" %}
+            {% include "dropdown.html" with last_value=item.value %}
         {% else %}
             <!-- input field -->
             {% include "value_field.html" %}
