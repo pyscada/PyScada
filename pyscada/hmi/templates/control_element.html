@@ -52,6 +52,7 @@
         {% else %}
             <!-- Display options -->
             {% if item.display_value_options.type == 0 %}
+                <!-- Classic Div -->
                 {% if item.display_value_options.color_type == 0 %}
                     <!-- No color -->
                     {% if item.display_value_options.mode == 0 %}
@@ -84,6 +85,7 @@
                     {% endif %}
                 {% endif %}
             {% elif item.display_value_options.type == 3 %}
+                <!-- Gauge -->
                 {% include "gauge.html" with gauge=item %}
             {% endif %}
         {% endif %}

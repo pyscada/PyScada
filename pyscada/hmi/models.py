@@ -491,6 +491,7 @@ class ProcessFlowDiagramItem(models.Model):
     control_item = models.ForeignKey(ControlItem, default=None, blank=True, null=True, on_delete=models.SET_NULL)
     top = models.PositiveIntegerField(blank=True, default=0)
     left = models.PositiveIntegerField(blank=True, default=0)
+    font_size = models.PositiveSmallIntegerField(default=14)
     width = models.PositiveIntegerField(blank=True, default=0)
     height = models.PositiveIntegerField(blank=True, default=0)
     visible = models.BooleanField(default=True)
@@ -506,8 +507,15 @@ class ProcessFlowDiagramItem(models.Model):
 class ProcessFlowDiagram(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='', blank=True)
-    background_image = models.ImageField(upload_to="img/", verbose_name="background image", blank=True)
+    background_image = models.ImageField(upload_to="img/", height_field='url_height', width_field='url_width',
+                                         verbose_name="background image", blank=True)
+    type_choices = ((0, 'HTML'), (1, 'SVG'),)
+    type = models.PositiveSmallIntegerField(default=0, choices=type_choices,
+                                            help_text='HTML is not responsive and can display control element<br>'
+                                                      'SVG is responsive and cannot display control element')
     process_flow_diagram_items = models.ManyToManyField(ProcessFlowDiagramItem, blank=True)
+    url_height = models.PositiveIntegerField(editable=False, default="100")
+    url_width = models.PositiveIntegerField(editable=False, default="100")
 
     def __str__(self):
         if self.title:
@@ -522,7 +530,11 @@ class ProcessFlowDiagram(WidgetContentModel):
         """
         main_template = get_template('process_flow_diagram.html')
         try:
-            main_content = main_template.render(dict(process_flow_diagram=self))
+            widget_pk = kwargs['widget_pk'] if 'widget_pk' in kwargs else 0
+            main_content = main_template.render(dict(process_flow_diagram=self,
+                                                     height_width_ratio=100 *
+                                                     float(self.url_height) / float(self.url_width),
+                                                     uuid=uuid4().hex, widget_pk=widget_pk))
         except ValueError:
             logger.info("ProcessFlowDiagram (%s) has no background image defined" % self)
             main_content = None

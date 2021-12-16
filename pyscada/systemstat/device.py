@@ -9,19 +9,26 @@ except ImportError:
     driver_ok = False
 
 import os
-import concurrent.futures
 from ftplib import FTP, error_perm, error_temp, error_reply, error_proto
 from ipaddress import ip_address
 from socket import gethostbyaddr, gaierror, herror
 
 from django.conf import settings
 
+from asgiref.sync import async_to_sync, sync_to_async
+from asyncio import wait_for
+try:
+    from asyncio.exceptions import TimeoutError as asyncioTimeoutError
+    from asyncio.exceptions import CancelledError as asyncioCancelledError
+except ModuleNotFoundError:
+    # for python version < 3.8
+    from asyncio import TimeoutError as asyncioTimeoutError
+    from asyncio import CancelledError as asyncioCancelledError
+
 from time import time
 import logging
 
 logger = logging.getLogger(__name__)
-
-pool = concurrent.futures.ThreadPoolExecutor()
 
 MEDIA_ROOT = settings.MEDIA_ROOT \
     if hasattr(settings, 'MEDIA_ROOT') else '/var/www/pyscada/http/media/'
@@ -33,6 +40,7 @@ class Device:
     def __init__(self, device):
         self.variables = []
         self.device = device
+        self.async_result = None
         for var in device.variable_set.filter(active=1):
             if not hasattr(var, 'systemstatvariable'):
                 continue
@@ -169,12 +177,11 @@ class Device:
                 # disk_usage_disk_percent
                 if hasattr(psutil, 'disk_usage'):
                     try:
-                        future = pool.submit(psutil.disk_usage, item.systemstatvariable.parameter)
-                        timeout = 10
-                        value = future.result(timeout).percent
+                        async_to_sync(self._wait_for)(psutil.disk_usage, 10, item.systemstatvariable.parameter)
+                        value = self.async_result.percent
                     except OSError:
                         value = None
-                    except concurrent.futures.TimeoutError:
+                    except asyncioTimeoutError:
                         value = None
                     timestamp = time()
             elif item.systemstatvariable.information == 19:
@@ -231,12 +238,11 @@ class Device:
                     result = ""
                     try:
                         os.chdir(vp.name)
-                        future = pool.submit(os.listdir, vp.name)
-                        timeout = 10
-                        list_dir = future.result(timeout)
+                        async_to_sync(self._wait_for)(os.listdir, 10, vp.name)
+                        list_dir = self.async_result
                         list_dir = list(filter(os.path.isfile, list_dir))
                         list_dir.sort(key=os.path.getmtime)
-                    except concurrent.futures.TimeoutError:
+                    except asyncioTimeoutError:
                         VariableProperty.objects.update_property(variable_property=vp,
                                                                  value=str("Timeout : " + vp.name))
                         continue
@@ -322,11 +328,10 @@ class Device:
                     try:
                         ftp = FTP(param[0])
                         ftp.login()
-                        future = pool.submit(ftp.nlst, vp.name)
-                        timeout = 10
-                        list_dir = future.result(timeout)
+                        async_to_sync(self._wait_for)(ftp.nlst, 10, vp.name)
+                        list_dir = self.async_result
                         ftp.close()
-                    except concurrent.futures.TimeoutError:
+                    except asyncioTimeoutError:
                         VariableProperty.objects.update_property(variable_property=vp,
                                                                  value=str("Timeout : " + vp.name))
                         continue
@@ -397,6 +402,9 @@ class Device:
                 output.append(item.create_recorded_data_element())
 
         return output
+
+    async def _wait_for(self, cmd, timeout=1, *args):
+        self.async_result = await wait_for(sync_to_async(cmd)(*args), timeout=timeout)
 
 
 def query_apsupsd_status():

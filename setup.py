@@ -42,7 +42,7 @@ setup(
         'pyserial',
         # 'channels',
         # 'channels-redis',
-        # 'asgiref',
+        'asgiref',
         'monthdelta',
     ],
     packages=find_packages(exclude=["project", "project.*"]),

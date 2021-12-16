@@ -1175,8 +1175,9 @@ function PyScadaPlot(id, xaxisVarId, xaxisLinLog){
 
     function prepare(){
         // prepare legend table sorter
-        $(legend_table_id).tablesorter({sortList: [[2,0]]});
-
+        if (keys.length > 0) {
+            $(legend_table_id).tablesorter({sortList: [[2,0]]});
+        };
         // add onchange function to every checkbox in legend
         $.each(variables,function(key,val){
             $(legend_checkbox_id+key).change(function() {
@@ -1832,7 +1833,9 @@ function Pie(id, radius, innerRadius){
 
     function prepare(){
         // prepare legend table sorter
-        $(legend_table_id).tablesorter({sortList: [[2,0]]});
+        if (keys.length > 0) {
+            $(legend_table_id).tablesorter({sortList: [[2,0]]});
+        };
 
         // add onchange function to every checkbox in legend
         $.each(variables,function(key,val){

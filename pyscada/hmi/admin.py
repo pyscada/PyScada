@@ -245,14 +245,16 @@ class PageAdmin(admin.ModelAdmin):
 
 
 class ProcessFlowDiagramItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'control_item', 'top', 'left', 'width', 'height', 'visible')
-    list_editable = ('control_item', 'top', 'left', 'width', 'height', 'visible')
+    list_display = ('id', 'control_item', 'top', 'left', 'width', 'height', 'visible', 'font_size',)
+    list_editable = ('control_item', 'top', 'left', 'width', 'height', 'visible', 'font_size',)
     # raw_id_fields = ('variable',)
     save_as = True
     save_as_continue = True
 
 
 class ProcessFlowDiagramAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'type', 'background_image',)
+    list_editable = ('title', 'type', 'background_image',)
     filter_horizontal = ('process_flow_diagram_items',)
     save_as = True
     save_as_continue = True

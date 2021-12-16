@@ -246,6 +246,7 @@ class VariableAdminFrom(forms.ModelForm):
         return super().has_changed()
 
     def clean(self):
+        super().clean()
         # on device change, delete protocol variable that doesn't correspond
         if self.has_changed() and self.instance.pk and "device" in self.changed_data:
             related_variables = [field for field in Variable._meta.get_fields() if issubclass(type(field), OneToOneRel)]

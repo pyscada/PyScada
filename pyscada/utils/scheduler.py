@@ -56,6 +56,7 @@ try:
     from channels.exceptions import ChannelFull
     from asgiref.sync import async_to_sync
     from asyncio import wait_for
+    from aioredis.errors import ConnectionClosedError
     try:
         from asyncio.exceptions import TimeoutError as asyncioTimeoutError
         from asyncio.exceptions import CancelledError as asyncioCancelledError
@@ -785,8 +786,8 @@ class Process(object):
                 a = await wait_for(self.channel_layer.receive(message), timeout=dt)
             except asyncioTimeoutError:
                 pass
-            except ConnectionRefusedError:
-                #logger.debug("sleep for %s - %s" % (self.process_id, dt))
+            except (ConnectionRefusedError, ConnectionClosedError) as e:
+                logger.debug("Channels or Redis error:" + str(e))
                 sleep(dt)
             else:
                 if 'DeviceReadTask' in a:

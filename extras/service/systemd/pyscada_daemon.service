@@ -2,6 +2,7 @@
 Description=PyScada Daemon
 After=network.target
 After=mysql.service
+After=redis-server.service
 
 [Service]
 Type=forking
