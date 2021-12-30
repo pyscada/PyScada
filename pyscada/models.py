@@ -2519,7 +2519,7 @@ class ComplexEventItem(models.Model):
                     limit_high = None
             else:
                 limit_high = self.fixed_limit_high
-            if limit_low is None or limit_high is None:
+            if limit_low is None and limit_high is None:
                 return None, var_info
             var_info['limit_low'] = limit_low
             var_info['limit_high'] = limit_high
