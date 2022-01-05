@@ -1729,6 +1729,12 @@ class DeviceWriteTask(models.Model):
             dwts = [dwts]
         DeviceWriteTask.objects.bulk_create(dwts)
         if channels_driver:
+            scheduler = BackgroundProcess.objects.filter(id=1)
+            if len(scheduler):
+                scheduler_pid = scheduler.first().pid
+            else:
+                logger.warning("No PID found for the scheduler")
+                scheduler_pid = None
             for dwt in dwts:
                 try:
                     device_id = dwt.get_device_id
@@ -1739,10 +1745,10 @@ class DeviceWriteTask(models.Model):
                             logger.debug(device_id)
                     channel_layer = channels.layers.get_channel_layer()
                     channel_layer.capacity = 1
-                    async_to_sync(channel_layer.send)('DeviceAction_for_' + str(device_id),
+                    async_to_sync(channel_layer.send)(str(scheduler_pid) + '_DeviceAction_for_' + str(device_id),
                                                       {'DeviceWriteTask': str(dwt.get_device_id)})
                 except ChannelFull:
-                    logger.info("Channel full : " + 'DeviceAction_for_' + str(dwt.get_device_id))
+                    logger.info("Channel full : " + str(scheduler_pid) + '_DeviceAction_for_' + str(dwt.get_device_id))
                     pass
                 except (AttributeError, ConnectionRefusedError, InvalidChannelLayerError):
                     pass
@@ -1786,6 +1792,12 @@ class DeviceReadTask(models.Model):
             drts = [drts]
         DeviceReadTask.objects.bulk_create(drts)
         if channels_driver:
+            scheduler = BackgroundProcess.objects.filter(id=1)
+            if len(scheduler):
+                scheduler_pid = scheduler.first().pid
+            else:
+                logger.warning("No PID found for the scheduler")
+                scheduler_pid = None
             for drt in drts:
                 try:
                     device_id = drt.get_device_id
@@ -1795,10 +1807,10 @@ class DeviceReadTask(models.Model):
                             device_id = _device_id[0]
                     channel_layer = channels.layers.get_channel_layer()
                     channel_layer.capacity = 1
-                    async_to_sync(channel_layer.send)('DeviceAction_for_' + str(device_id),
+                    async_to_sync(channel_layer.send)(str(scheduler_pid) + '_DeviceAction_for_' + str(device_id),
                                                       {'DeviceReadTask': str(drt.get_device_id)})
                 except ChannelFull:
-                    logger.info("Channel full : " + 'DeviceAction_for_' + str(drt.get_device_id))
+                    logger.info("Channel full : " + str(scheduler_pid) + '_DeviceAction_for_' + str(drt.get_device_id))
                     pass
                 except (AttributeError, ConnectionRefusedError, InvalidChannelLayerError):
                     pass

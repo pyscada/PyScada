@@ -38,7 +38,7 @@ class VISADevice(models.Model):
                                       'ASRL/dev/ttyUSB0::INSTR'\n 
                                       http://pyvisa.readthedocs.io/en/stable/names.html""")
 
-    instrument_handler = models.ForeignKey(DeviceHandler, null=True, on_delete=models.SET_NULL)
+    instrument_handler = models.ForeignKey(DeviceHandler, null=True, blank=True, on_delete=models.SET_NULL)
 
     protocol_id = PROTOCOL_ID
 

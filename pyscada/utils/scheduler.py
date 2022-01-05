@@ -636,8 +636,8 @@ class Scheduler(object):
         handle signals
         """
         logger.debug('PID %d, received signal: %d' % (self.pid, signum))
-        self.SIG_QUEUE.append(signum)
-
+        if signum not in self.SIG_QUEUE:
+            self.SIG_QUEUE.append(signum)
 
 class Process(object):
     def __init__(self, dt=5, **kwargs):
@@ -651,6 +651,12 @@ class Process(object):
         # register signals
         self.SIG_QUEUE = []
         self.SIGNALS = [signal.SIGTERM, signal.SIGUSR1, signal.SIGHUP, signal.SIGUSR2]
+        scheduler = BackgroundProcess.objects.filter(id=1)
+        if len(scheduler):
+            self.scheduler_pid = scheduler.first().pid
+        else:
+            logger.warning("No PID found for the scheduler")
+            self.scheduler_pid = None
         #
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -748,10 +754,10 @@ class Process(object):
                     if hasattr(self, "device_ids") and not hasattr(self, "device_id") and len(self.device_ids) > 0:
                         self.device_id = self.device_ids[0]
                     if channels_driver and hasattr(self, "device_id") and self.device_id is not None:
-                        message = 'DeviceAction_for_' + str(self.device_id)
+                        message = str(self.scheduler_pid) + '_DeviceAction_for_' + str(self.device_id)
                         async_to_sync(self.waiting_action_receiver)(dt, message)
                     elif channels_driver and hasattr(self, "process_id") and self.process_id != 0:
-                        message = 'ProcessAction_for_' + str(self.process_id)
+                        message = str(self.scheduler_pid) + '_ProcessAction_for_' + str(self.process_id)
                         async_to_sync(self.waiting_action_receiver)(dt, message)
                     else:
                         #logger.debug("sleep for %s - %s" % (self.process_id, dt))
@@ -818,7 +824,8 @@ class Process(object):
         receive signals
         """
         logger.debug('PID %d, received signal: %d' % (self.pid, signum))
-        self.SIG_QUEUE.append(signum)
+        if signum not in self.SIG_QUEUE:
+            self.SIG_QUEUE.append(signum)
         if channels_driver:
             if not hasattr(self, 'channel_layer'):
                 try:
@@ -833,14 +840,14 @@ class Process(object):
                 if hasattr(self, "device_ids") and not hasattr(self, "device_id") and len(self.device_ids) > 0:
                     self.device_id = self.device_ids[0]
                 if hasattr(self, "device_id") and self.device_id is not None:
-                    message = 'DeviceAction_for_' + str(self.device_id)
+                    message = str(self.scheduler_pid) + '_DeviceAction_for_' + str(self.device_id)
                 elif hasattr(self, "process_id") and self.process_id != 0:
-                    message = 'ProcessAction_for_' + str(self.process_id)
+                    message = str(self.scheduler_pid) + '_ProcessAction_for_' + str(self.process_id)
                 try:
                     if message is not None:
                         async_to_sync(self.channel_layer.send)(message, {'ProcessSignal': str(signum)})
                 except (ChannelFull, ConnectionRefusedError):
-                    logger.info("Channel full : " + 'ProcessAction_for_' + str(self.process_id))
+                    logger.info("Channel full : " + str(self.scheduler_pid) + '_ProcessAction_for_' + str(self.process_id))
                     pass
 
     def stop(self, signum=None, frame=None):
