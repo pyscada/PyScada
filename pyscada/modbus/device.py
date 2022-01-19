@@ -310,9 +310,9 @@ class Device:
         if not driver_ok:
             return None
         if not self._connect():
+            self._device_not_accessible -= 1
             if self._device_not_accessible == -1:  #
                 logger.error("device with id: %d is not accessible" % self.device.pk)
-            self._device_not_accessible -= 1
             return []
         output = []
         for register_block in self._variable_config:

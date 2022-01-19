@@ -674,7 +674,7 @@ class Dictionary(models.Model):
     def dict_as_json(self):
         items_list = dict()
         for item in self.dictionaryitem_set.all():
-            items_list[int(item.value)] = item.label
+            items_list[float(item.value)] = item.label
         return json.dumps(items_list)
 
     def get_label(self, value):
@@ -847,6 +847,8 @@ class Variable(models.Model):
                            ('UINT16', 'WORD (UINT16)'),
                            ('UINT16', 'UINT (UINT16)'),
                            ('UINT16', 'UINT16'),
+                           ('INT8', 'INT8'),
+                           ('UINT8', 'UINT8'),
                            ('BOOLEAN', 'BOOL (BOOLEAN)'),
                            ('BOOLEAN', 'BOOLEAN'),
                            )
@@ -2533,8 +2535,8 @@ class ComplexEventItem(models.Model):
                 limit_high = self.fixed_limit_high
             if limit_low is None and limit_high is None:
                 return None, var_info
-            var_info['limit_low'] = limit_low
-            var_info['limit_high'] = limit_high
+            var_info['limit_low_value'] = limit_low
+            var_info['limit_high_value'] = limit_high
             if self.variable is not None and self.variable.dictionary is not None:
                 var_info['label'] = self.variable.dictionary.get_label(item_value)
             elif self.variable_property is not None and self.variable_property.dictionary is not None:

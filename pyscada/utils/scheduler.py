@@ -35,7 +35,6 @@ from time import time, sleep
 from datetime import datetime
 import json
 
-from django import db
 from django.conf import settings
 from django.db import connection, connections
 from django.utils.termcolors import colorize
@@ -94,6 +93,12 @@ def check_db_connection():
         # django will reconnect to the default mysql
         logger.debug('deleted default connection')
         del connections._connections.default
+
+
+def close_db_connection():
+    if connection.connection is not None:
+        connection.connection.close()
+        connection.connection = None
 
 
 class Scheduler(object):
@@ -285,9 +290,7 @@ class Scheduler(object):
                 self.delete_pid()
                 sys.exit(0)
         # recreate the DB connection
-        if connection.connection is not None:
-            connection.connection.close()
-            connection.connection = None
+        close_db_connection()
 
         try:
             master_process = BackgroundProcess.objects.filter(parent_process__isnull=True,
@@ -380,6 +383,7 @@ class Scheduler(object):
                     # write the process status to stdout
                     self.status()
                     pass
+                close_db_connection()
                 sleep(5)
         except StopIteration:
             self.stop()
@@ -639,6 +643,7 @@ class Scheduler(object):
         if signum not in self.SIG_QUEUE:
             self.SIG_QUEUE.append(signum)
 
+
 class Process(object):
     def __init__(self, dt=5, **kwargs):
         self.pid = None
@@ -665,7 +670,7 @@ class Process(object):
         """
         will be executed after process fork
         """
-        db.connections.close_all()
+        connections.close_all()
         # update process info
         BackgroundProcess.objects.filter(pk=self.process_id).update(
             pid=self.pid,
@@ -748,6 +753,8 @@ class Process(object):
                 elif sig == signal.SIGUSR2:
                     # todo handle restart
                     pass
+
+                close_db_connection()
 
                 dt = self.dt_set - (time() - t_start)
                 if dt > 0:

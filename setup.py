@@ -40,6 +40,8 @@ setup(
         'python-daemon>=2.0.0',
         'pytz',
         'pyserial',
+        'pyvisa-py>=0.5.2',
+        'pyvisa',
         # 'channels',
         # 'channels-redis',
         'asgiref',
