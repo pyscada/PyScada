@@ -758,16 +758,19 @@ class Process(object):
 
                 dt = self.dt_set - (time() - t_start)
                 if dt > 0:
-                    if hasattr(self, "device_ids") and not hasattr(self, "device_id") and len(self.device_ids) > 0:
-                        self.device_id = self.device_ids[0]
-                    if channels_driver and hasattr(self, "device_id") and self.device_id is not None:
-                        message = str(self.scheduler_pid) + '_DeviceAction_for_' + str(self.device_id)
-                        async_to_sync(self.waiting_action_receiver)(dt, message)
-                    elif channels_driver and hasattr(self, "process_id") and self.process_id != 0:
-                        message = str(self.scheduler_pid) + '_ProcessAction_for_' + str(self.process_id)
-                        async_to_sync(self.waiting_action_receiver)(dt, message)
-                    else:
-                        #logger.debug("sleep for %s - %s" % (self.process_id, dt))
+                    try:
+                        if hasattr(self, "device_ids") and not hasattr(self, "device_id") and len(self.device_ids) > 0:
+                            self.device_id = self.device_ids[0]
+                        if channels_driver and hasattr(self, "device_id") and self.device_id is not None:
+                            message = str(self.scheduler_pid) + '_DeviceAction_for_' + str(self.device_id)
+                            async_to_sync(self.waiting_action_receiver)(dt, message)
+                        elif channels_driver and hasattr(self, "process_id") and self.process_id != 0:
+                            message = str(self.scheduler_pid) + '_ProcessAction_for_' + str(self.process_id)
+                            async_to_sync(self.waiting_action_receiver)(dt, message)
+                        else:
+                            #logger.debug("sleep for %s - %s" % (self.process_id, dt))
+                            raise ConnectionResetError
+                    except ConnectionResetError:
                         sleep(dt)
 
         except StopIteration:

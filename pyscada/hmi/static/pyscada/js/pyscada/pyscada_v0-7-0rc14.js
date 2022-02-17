@@ -15,8 +15,8 @@ var DATA_OUT_OF_DATE = false;
 var DATA_OUT_OF_DATE_ALERT_ID = '';
 var JSON_ERROR_COUNT = 0;
 var AUTO_UPDATE_ACTIVE = true;
-var SINGLE_UPDATE = false;
 var PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = false;
+var PREVIOUS_END_DATE = 0;
 var LOG_LAST_TIMESTAMP = 0;
 var DATA_TO_TIMESTAMP = 0;
 var DATA_FROM_TIMESTAMP = 0;
@@ -47,10 +47,11 @@ var FETCH_DATA_PENDING = 0;
 var INIT_STATUS_VARIABLES_DONE = false;
 var INIT_CHART_VARIABLES_DONE = false;
 var INIT_CHART_VARIABLES_COUNT = 0;
+var LOADING_PAGE_DONE = 0
 // the code
 var debug = 0;
 var DataFetchingProcessCount = 0;
-
+var loading_percent = 0;
 
 function show_update_status(){
     $("#AutoUpdateStatus").css("color", "")
@@ -81,14 +82,14 @@ function auto_update_click(toggleState=true){
 }
 
 function show_init_status(){
-    $("#loadingAnimation").show();
+    //$("#loadingAnimation").show();
     INIT_STATUS_COUNT = INIT_STATUS_COUNT + 1;
 }
 
 function hide_init_status(){
     INIT_STATUS_COUNT = INIT_STATUS_COUNT -1;
     if (INIT_STATUS_COUNT <= 0){
-        $("#loadingAnimation").hide();
+        //$("#loadingAnimation").hide();
     }
 }
 
@@ -189,10 +190,13 @@ function add_fetched_data(key,value){
     }
 }
 
-function data_handler(){
+function set_loading_percent(value) {
+    loading_percent = Math.min(value, 100);
+    $('#page-load-percent').text(loading_percent);
+}
 
-    if(AUTO_UPDATE_ACTIVE || SINGLE_UPDATE){
-        SINGLE_UPDATE = false
+function data_handler(){
+    if(AUTO_UPDATE_ACTIVE || !INIT_STATUS_VARIABLES_DONE || !INIT_CHART_VARIABLES_DONE){
         if(DATA_TO_TIMESTAMP==0){
         // fetch the SERVER_TIME
             data_handler_ajax(0,[],[],Date.now());
@@ -217,9 +221,10 @@ function data_handler(){
                                 vars.push(key);
                             }
                         }
-                        if(var_count >= 5){SINGLE_UPDATE = true;break;}
+                        if(var_count >= 5){break;}
                     }
                     if(var_count>0){
+                        set_loading_percent(loading_percent + 100*var_count/STATUS_VARIABLE_KEYS.count()/2);
                         data_handler_ajax(1,vars,props,timestamp);
                     }else{
                         INIT_STATUS_VARIABLES_DONE = true;
@@ -244,10 +249,11 @@ function data_handler(){
                             if (typeof(DATA[key]) == 'object'){
                                 timestamp = Math.max(timestamp,DATA[key][0][0])
                             }
-                            if(var_count >= 10){SINGLE_UPDATE = true;break;}
+                            if(var_count >= 10){break;}
                        }
                     }
                     if(var_count>0){
+                        set_loading_percent(loading_percent + 100*var_count/CHART_VARIABLE_KEYS.count()/2);
                         if (timestamp === DATA_FROM_TIMESTAMP){
                             timestamp = DATA_DISPLAY_TO_TIMESTAMP;
                         }
@@ -259,7 +265,7 @@ function data_handler(){
                         data_handler_ajax(1,vars,props,DATA_FROM_TIMESTAMP,timestamp);
                     }else{
                         INIT_CHART_VARIABLES_DONE = true;
-                        $('#PlusTwoHoursButton').removeClass("disabled");
+                        $('#loadingAnimation').hide();
                     }
                 }
             }
@@ -269,8 +275,11 @@ function data_handler(){
     // call the data handler periodically
     if(!INIT_STATUS_VARIABLES_DONE || !INIT_CHART_VARIABLES_DONE){
         // initialisation is active
-        setTimeout(function() {data_handler();}, REFRESH_RATE/2.0);
+        //setTimeout(function() {data_handler();}, REFRESH_RATE/2.0);
+        if (STATUS_VARIABLE_KEYS.count() + CHART_VARIABLE_KEYS.count() == 0 && LOADING_PAGE_DONE == 0) {LOADING_PAGE_DONE = 1;show_page();};
+        setTimeout(function() {data_handler();}, 100);
     }else{
+        if (LOADING_PAGE_DONE == 0) {LOADING_PAGE_DONE = 1;show_page();};
         setTimeout(function() {data_handler();}, REFRESH_RATE);
     }
 }
@@ -924,10 +933,7 @@ function update_timeline(){
     //$("#timeline-time-left-label").html(date.toLocaleString());
 
     // Update DateTime pickers
-    $("#datetimepicker_from").datetimepicker('enable');
-    $('#datetimepicker_from').datetimepicker('date', new Date(DATA_FROM_TIMESTAMP))
-    $("#datetimepicker_to").datetimepicker('enable');
-    $('#datetimepicker_to').datetimepicker('date', new Date(DATA_TO_TIMESTAMP))
+    daterange_set(moment(DATA_FROM_TIMESTAMP), moment(DATA_TO_TIMESTAMP))
 }
 
 function progressbarSetWindow( event, ui ) {
@@ -1482,7 +1488,7 @@ function PyScadaPlot(id, xaxisVarId, xaxisLinLog){
                     };
                     if (xkey == null) {
                         for (serie in old_series) {
-	                      if (new_data_bool === false && chart_data.length > 0 && key === old_series[serie]['key'] && chart_data.length !== old_series[serie]['data'].length && (chart_data[0][0] !== old_series[serie]['data'][0][0] || chart_data[0][1] !== old_series[serie]['data'][0][1] || chart_data[chart_data.length-1][0] !== old_series[serie]['data'][old_series[serie]['data'].length-1][0] && chart_data[chart_data.length-1][1] !== old_series[serie]['data'][old_series[serie]['data'].length-1][-1])) {
+	                      if (new_data_bool === false && chart_data.length > 0 && key === old_series[serie]['key'] && chart_data.length !== old_series[serie]['data'].length && (old_series[serie]['data'].length == 0 || chart_data[0][0] !== old_series[serie]['data'][0][0] || chart_data[0][1] !== old_series[serie]['data'][0][1] || chart_data[chart_data.length-1][0] !== old_series[serie]['data'][old_series[serie]['data'].length-1][0] && chart_data[chart_data.length-1][1] !== old_series[serie]['data'][old_series[serie]['data'].length-1][-1])) {
 	                        new_data_bool = true;
 	                      }
                         };
@@ -1557,7 +1563,7 @@ function PyScadaPlot(id, xaxisVarId, xaxisLinLog){
                             j += 1;
                             //plot Y with different axis
                             for (serie in old_series) {
-                              if (new_data_bool === false && new_data.length > 0 && key === old_series[serie]['key'] && new_data.length !== old_series[serie]['data'].length && (new_data[0][0] !== old_series[serie]['data'][0][0] || new_data[0][1] !== old_series[serie]['data'][0][1] || new_data[new_data.length-1][0] !== old_series[serie]['data'][old_series[serie]['data'].length-1][0] && new_data[new_data.length-1][1] !== old_series[serie]['data'][old_series[serie]['data'].length-1][-1] || chart_x_data[0][0] !== old_series[serie]['xdata'][0][0] || chart_x_data[0][1] !== old_series[serie]['xdata'][0][1] || chart_x_data[chart_x_data.length-1][0] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][0] && chart_x_data[chart_x_data.length-1][1] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][-1])) {
+                              if (new_data_bool === false && new_data.length > 0 && key === old_series[serie]['key'] && new_data.length !== old_series[serie]['data'].length && (old_series[serie]['data'].length == 0 || new_data[0][0] !== old_series[serie]['data'][0][0] || new_data[0][1] !== old_series[serie]['data'][0][1] || new_data[new_data.length-1][0] !== old_series[serie]['data'][old_series[serie]['data'].length-1][0] && new_data[new_data.length-1][1] !== old_series[serie]['data'][old_series[serie]['data'].length-1][-1] || chart_x_data[0][0] !== old_series[serie]['xdata'][0][0] || chart_x_data[0][1] !== old_series[serie]['xdata'][0][1] || chart_x_data[chart_x_data.length-1][0] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][0] && chart_x_data[chart_x_data.length-1][1] !== old_series[serie]['xdata'][old_series[serie]['xdata'].length-1][-1])) {
                                 new_data_bool = true;
                               }
                             };
@@ -1724,9 +1730,11 @@ function Gauge(id, min_value, max_value, threshold_values){
             // add the selected data series to the "series" variable
             series = [];
             for (var key in keys){
-                key = keys[key];
-                data=[[min_value, DATA[key][DATA[key].length - 1][1]]]
-                series.push({"data":data, "label":variables[key].label});
+                if (key in DATA) {
+                    key = keys[key];
+                    data=[[min_value, DATA[key][DATA[key].length - 1][1]]]
+                    series.push({"data":data, "label":variables[key].label});
+                }
             };
             if (series.length > 0) {
                 var plotCanvas = $('<div></div>');
@@ -2448,8 +2456,103 @@ function set_chart_selection_mode(){
     });
 }
 
+// Adapt content padding top on navbar size
+function set_content_padding_top() {
+    navbar_height = $('.navbar-collapse')[0].offsetHeight;
+    if (navbar_height > 50) {
+        if ($('.navbar-toggle').css('display') !== 'none') {
+            navbar_height = navbar_height;
+        }else {
+            navbar_height = navbar_height - 50;
+        }
+    }else {
+        navbar_height = 0
+    }
+    $('#content').css('padding-top', navbar_height + 'px');
+}
+
+// daterange functions
+var daterange_format = "DD/MM/YYYY HH:mm:ss";
+function daterange_cb(start, end) {
+    $('#daterange span').html(start.format(daterange_format) + ' - ' + end.format(daterange_format));
+    set_content_padding_top();
+}
+
+function daterange_set(start, end) {
+    //$('#daterange').data('daterangepicker').setStartDate(start);
+    //$('#daterange').data('daterangepicker').setEndDate(end);
+    daterange_cb(start, end);
+}
+
+function show_page() {
+    // hide all pages
+    $(".sub-page").hide();
+    // show page
+    if (window.location.hash.length > 0) {
+        $(window.location.hash).show();
+    }else{
+        window.location.hash = $('ul.navbar-nav li a').first().attr("href");
+    }
+}
+
 // fix drop down problem
 $( document ).ready(function() {
+    // padding top content
+    set_content_padding_top();
+
+    //show_page()
+
+    // move overlapping side menus
+    var menu_pos = $('footer')[0].clientHeight + 6;
+    $.each($('.side-menu.left'),function(key,val){
+        $(val).attr("style","bottom: " + menu_pos + "px;");
+        menu_pos = menu_pos + val.clientHeight + 10;
+    });
+    var menu_pos = $('footer')[0].clientHeight + 6;
+    $.each($('.side-menu.right'),function(key,val){
+        $(val).attr("style","bottom: " + menu_pos + "px;");
+        menu_pos = menu_pos + val.clientHeight + 10;
+    });
+    // sidemenues
+    $('.side-menu.left').mouseenter(function(){
+        $(this).stop().animate({"left":0},500)
+    }).mouseleave(function(){
+        ow = $(this).outerWidth()
+        $(this).stop().animate({"left":-(ow - 11)},500)
+    });
+
+    $('.side-menu.right').mouseenter(function(){
+        $(this).stop().animate({"right":0},500)
+    }).mouseleave(function(){
+        ow = $(this).outerWidth()
+        $(this).stop().animate({"right":-(ow - 11)},500)
+    });
+
+    $('.side-menu.bottom').css('margin-left',- $('.side-menu.bottom').outerWidth(true)/2)
+
+    $('.side-menu.bottom').stop().animate({"bottom":-($('.side-menu.bottom').outerHeight(true) - 31)},500)
+
+    $('.side-menu.bottom').mouseenter(function(){
+        $(this).stop().animate({"bottom":0},500)
+    }).mouseleave(function(){
+        oh = $(this).outerHeight(true)
+        $(this).stop().animate({"bottom":-(oh - 31)},500)
+    });
+
+
+    // prevent reloading by existent
+    window.onbeforeunload = function() {
+        return "you realy wan't to reload/leave the page?";
+    };
+    // nav menu click event
+    $(window).on('hashchange', function() {
+        if (window.location.hash.length > 0) {
+            $('ul.navbar-nav li.active').removeClass('active');
+            $('a[href$="' + window.location.hash + '"]').parent('li').addClass('active');
+            show_page();
+        };
+    });
+
     // Activate tooltips
     $('[data-toggle*="tooltip"]').tooltip()
 
@@ -2457,6 +2560,7 @@ $( document ).ready(function() {
     $('.dropdown-toggle').dropdown();
 
     // Setup auto-update switch button
+    $('#AutoUpdateButton').removeClass('hidden')
     $('#AutoUpdateButton').bootstrapSwitch({
         onInit: function(event) {
             $('.bootstrap-switch-id-AutoUpdateButton').tooltip({title:"Auto update data", placement:"bottom"});
@@ -2540,9 +2644,9 @@ $( document ).ready(function() {
     $(window).on('hashchange', function() {
         if (window.location.hash.substr(1) !== '') {
             if ($("#" + window.location.hash.substr(1) + " .has_chart").length) {
-                $("#show_timeline").removeClass("hidden");
+                $(".show_timeline").removeClass("hidden");
             }else {
-                $("#show_timeline").addClass("hidden");
+                $(".show_timeline").addClass("hidden");
             }
         }
     })
@@ -2603,78 +2707,11 @@ $( document ).ready(function() {
     // show timeline init
     if (window.location.hash.substr(1) !== '') {
         if ($("#" + window.location.hash.substr(1) + " .has_chart").length) {
-            $("#show_timeline").removeClass("hidden");
+            $(".show_timeline").removeClass("hidden");
         } else {
-            $("#show_timeline").addClass("hidden");
+            $(".show_timeline").addClass("hidden");
         };
     }
-
-
-    // DateTime Picker
-    $('#datetimepicker_from').datetimepicker({
-        sideBySide: true,
-        locale: 'fr',
-        format: 'L LTS',
-        allowInputToggle: true,
-        disable: true,
-    });
-    $('#datetimepicker_to').datetimepicker({
-        sideBySide: true,
-        locale: 'fr',
-        format: 'L LTS',
-        useCurrent: false,
-        allowInputToggle: true,
-        disable: true,
-        widgetPositioning: {horizontal: 'right'},
-        widgetParent: $('#timeline'),
-    });
-    $("#datetimepicker_from").on("change.datetimepicker", function (e) {
-        $('#datetimepicker_to').datetimepicker('minDate', e.date);
-    }).focusout(function (e) {
-        DATA_INIT_STATUS++;
-        DATA_FROM_TIMESTAMP = $('#datetimepicker_from').datetimepicker('viewDate').unix() * 1000;
-        DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
-        INIT_CHART_VARIABLES_DONE = false;
-        SINGLE_UPDATE = true;
-        if(!$('#AutoUpdateButton').bootstrapSwitch('state') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
-            auto_update_click();
-        };
-    }).click(function (e) {
-        if (!$('#datetimepicker_from .bootstrap-datetimepicker-widget').length) {
-            $('#datetimepicker_from').datetimepicker('show');
-        };
-    });
-    $("#datetimepicker_from .datetimepicker-input").focusin(function (e) {
-        PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = AUTO_UPDATE_ACTIVE
-        if($('#AutoUpdateButton').bootstrapSwitch('state') && AUTO_UPDATE_ACTIVE){
-            auto_update_click();
-        };
-    });
-
-    $("#datetimepicker_to").on("change.datetimepicker", function (e) {
-        $('#datetimepicker_from').datetimepicker('maxDate', e.date);
-        PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = false;
-    }).focusout(function (e) {
-        DATA_INIT_STATUS++;
-        DATA_TO_TIMESTAMP = Math.min($('#datetimepicker_to').datetimepicker('viewDate').unix() * 1000, SERVER_TIME);
-        DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
-        INIT_CHART_VARIABLES_DONE = false;
-        SINGLE_UPDATE = true;
-        if(!$('#AutoUpdateButton').bootstrapSwitch('state') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
-            auto_update_click();
-        };
-    }).click(function (e) {
-        //$('#datetimepicker_to').datetimepicker('maxDate', new Date(SERVER_TIME));
-        if (!$('#datetimepicker_to .bootstrap-datetimepicker-widget').length) {
-            $('#datetimepicker_to').datetimepicker('show');
-        };
-    });
-    $("#datetimepicker_to .datetimepicker-input").focusin(function (e) {
-        PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = AUTO_UPDATE_ACTIVE
-        if($('#AutoUpdateButton').bootstrapSwitch('state') && AUTO_UPDATE_ACTIVE){
-            auto_update_click();
-        };
-    });
 
     // Resize charts on windows resize
     $(window).resize(function() {
@@ -2684,10 +2721,103 @@ $( document ).ready(function() {
             };
             $.browserQueue.add(doBind, this);
         });
+      set_content_padding_top();
     });
 
     // Prevent closing dropdown on click
     $('.dropdown-menu').click(function(e) {
         e.stopPropagation();
+    });
+
+    // Date range picker
+    $('#daterange').daterangepicker({
+        "showDropdowns": true,
+        "timePicker": true,
+        "timePicker24Hour": true,
+        "timePickerSeconds": true,
+        ranges: {
+            'Last 10 Minutes': [moment().subtract(10, 'minutes'), moment()],
+            'Last 30 Minutes': [moment().subtract(30, 'minutes'), moment()],
+            'Last Hour': [moment().subtract(1, 'hours'), moment()],
+            'Last 2 Hour': [moment().subtract(2, 'hours'), moment()],
+            'Last 6 Hour': [moment().subtract(6, 'hours'), moment()],
+            'Last 12 Hour': [moment().subtract(12, 'hours'), moment()],
+            'Today': [moment().startOf('day'), moment()],
+            'Yesterday': [moment().subtract(1, 'days').startOf('day'), moment().subtract(1, 'days').endOf('day')],
+            'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+            'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+            'This Month': [moment().startOf('month'), moment()],
+            'Previous Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+            'Last Month': [moment().subtract(1, 'month'), moment()],
+            'Last 2 Month': [moment().subtract(2, 'month'), moment()],
+            'Last 6 Month': [moment().subtract(6, 'month'), moment()],
+            'This Year': [moment().startOf('year'), moment()],
+            'Previous Year': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')],
+            'Last Year': [moment().subtract(1, 'year'), moment()],
+        },
+        "locale": {
+            "format": daterange_format,
+            "separator": " - ",
+            "applyLabel": "Apply",
+            "cancelLabel": "Cancel",
+            "fromLabel": "From",
+            "toLabel": "To",
+            "customRangeLabel": "Custom",
+            "weekLabel": "W",
+            "daysOfWeek": [
+                "Mo",
+                "Tu",
+                "We",
+                "Th",
+                "Fr",
+                "Sa",
+                "Su",
+            ],
+            "monthNames": [
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December"
+            ],
+            "firstDay": 1
+        },
+        "alwaysShowCalendars": true,
+        "linkedCalendars": false,
+        "startDate": moment(),
+        "endDate": moment().subtract(2, 'hours'),
+        "opens": "left"
+    }, function(start, end, label) {
+        daterange_cb(start, end);
+        DATA_INIT_STATUS++;
+        DATA_FROM_TIMESTAMP = start.unix() * 1000;
+        if (label.indexOf('Last') !== -1 || label.indexOf('Today') !== -1 || label.indexOf('This Month') !== -1 || label.indexOf('This Year') !== -1) {
+            PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = true;
+        }else {
+            PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = false;
+        }
+        DATA_TO_TIMESTAMP = Math.min(end.unix() * 1000, SERVER_TIME);
+        DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
+        INIT_CHART_VARIABLES_DONE = false;
+        $('#loadingAnimation').show()
+    });
+    $('#daterange').on('show.daterangepicker', function(ev, picker) {
+        PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = AUTO_UPDATE_ACTIVE
+        PREVIOUS_END_DATE = moment.min(picker.endDate, moment()).unix();
+        if($('#AutoUpdateButton').bootstrapSwitch('state') && AUTO_UPDATE_ACTIVE){
+            auto_update_click();
+        };
+    });
+    $('#daterange').on('hide.daterangepicker', function(ev, picker) {
+        if(!$('#AutoUpdateButton').bootstrapSwitch('state') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
+            auto_update_click();
+        };
     });
 });

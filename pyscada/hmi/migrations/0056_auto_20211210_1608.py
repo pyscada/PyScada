@@ -17,11 +17,14 @@ def add_height_width(apps, schema_editor):
         if str(item.url_height) == '100' and str(item.url_width) == '100':
             if hasattr(settings, 'MEDIA_ROOT'):
                 file_path = str(settings.MEDIA_ROOT) + str(item.background_image.name)
-                img = Image.open(file_path)
-                item.url_height = int(img.height)
-                item.url_width = int(img.width)
-                item.save()
-                count += 1
+                try:
+                    img = Image.open(file_path)
+                    item.url_height = int(img.height)
+                    item.url_width = int(img.width)
+                    item.save()
+                    count += 1
+                except:
+                    pass
 
     logger.info('changed %d ProcessFlowDiagram\n' % count)
 

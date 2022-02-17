@@ -1374,7 +1374,7 @@ class CalculatedVariable(models.Model):
             self.check_period(self.period.start_from, now())
 
     def check_period(self, d1, d2):
-        logger.debug("Check period of %s [%s - %s]" % (self.store_variable, d1, d2))
+        #logger.debug("Check period of %s [%s - %s]" % (self.store_variable, d1, d2))
         self.state = "Checking [%s to %s]" % (d1, d2)
         self.state = self.state[0:100]
         self.save(update_fields=['state'])
@@ -1386,7 +1386,7 @@ class CalculatedVariable(models.Model):
         output = []
 
         if self.period_diff_quantity(d1, d2) is None:
-            logger.debug("No period in date interval : %s (%s %s)" % (self.period, d1, d2))
+            #logger.debug("No period in date interval : %s (%s %s)" % (self.period, d1, d2))
             self.state = "[%s to %s] < %s" % (d1, d2, str(self.period.period_factor) +
                                               self.period.period_choices[self.period.period][1])
             self.state = self.state[0:100]

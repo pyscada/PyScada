@@ -36,36 +36,23 @@
             </li>
         {% endif %}
     {% endfor %}
+        <li class="dropdown">
+            <a class="show_timeline hidden" id="daterange" style="padding-top: 15px; cursor: pointer; width: 100%">
+                <i class="glyphicon glyphicon-calendar"></i>&nbsp;
+                <span>Date range picker is loading. Please wait...</span> <strong class="caret"></strong>
+            </a>
+        </li>
+
         <li class="dropdown"><!-- Charts timeline -->
-            <a class="dropdown-toggle" id="show_timeline" href="#" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><span class="glyphicon glyphicon-cog"></span> Charts timeline <strong class="caret"></strong></a>
-            <div class="dropdown-menu" style="padding: 15px; width: 80vw;">
-                <div class='col-md-3 col-sm-12' data-toggle="tooltip" data-placement="top" title="" data-original-title="Load data from :">
-                    <div class="form-group">
-                        <div class="input-group date" id="datetimepicker_from" data-target-input="nearest">
-                            <input type="text" class="form-control datetimepicker-input" data-target="#datetimepicker_from"/>
-                            <span class="input-group-addon" data-target="#datetimepicker_from" data-toggle="datetimepicker" id="datetimepicker_from_button">
-                                <span class="glyphicon glyphicon-calendar"></span>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                <div class='col-md-6 col-sm-12' data-toggle="tooltip" data-placement="top" title="" data-original-title="Display data filter">
+            <a class="dropdown-toggle show_timeline hidden" id="timeline_slider" href="#" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><span class="glyphicon glyphicon-resize-horizontal"></span> Timeline slider <strong class="caret"></strong></a>
+            <div class="dropdown-menu" style="padding: 15px; width: 50vw;">
+                <div class='col-md-12 col-sm-12' data-toggle="tooltip" data-placement="top" title="" data-original-title="Display data filter">
                     <div id="timeline-border" class="form-group" style="height:34px; background-color: #9d9d9d;">
                         <div id="timeline" class="ui-widget-content ui-resizable ui-draggable ui-draggable-handle" style="background-color: #333; width: 100%; height: 34px; left: 0px; top: 0px;">
                             <span class="pull-left glyphicon glyphicon-triangle-left" style="line-height:30px;color:#9d9d9d;" aria-hidden="true"></span>
                             <span class="pull-right glyphicon glyphicon-triangle-right" style="line-height:30px;color:#9d9d9d;" aria-hidden="true"></span>
                             <span id="timeline-time-from-label" class="pull-left" style="padding-left:3px; line-height:34px; color:#9d9d9d"> </span>
                             <span id="timeline-time-to-label" class="pull-right" style="padding-right:3px; line-height:34px; color:#9d9d9d"> </span>
-                        </div>
-                    </div>
-                </div>
-                <div class='col-md-3 col-sm-12' data-toggle="tooltip" data-placement="top" title="" data-original-title="Load data to :">
-                    <div class="form-group">
-                        <div class="input-group date" id="datetimepicker_to" data-target-input="nearest">
-                            <input type="text" class="form-control datetimepicker-input" data-target="#datetimepicker_to"/>
-                            <span class="input-group-addon" data-target="#datetimepicker_to" data-toggle="datetimepicker" id="datetimepicker_to_button">
-                                <span class="glyphicon glyphicon-calendar"></span>
-                            </span>
                         </div>
                     </div>
                 </div>
@@ -93,6 +80,9 @@
             <tbody></tbody>
         </table>
     </div> <!-- end page-log -->
+    <div id="page-load" class="sub-page" style="">
+        <center><h1>Loading data... <span id="page-load-percent">0</span> %</h1></center>
+    </div> <!-- end page-load -->
     {% for panel in panel_list %}
         <div class="side-menu  {% if panel.position == 1 %}left{% elif panel.position == 2 %}right{% endif %}">
             <ul class="status-panel">
@@ -136,73 +126,11 @@
 <script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.crosshair.js" %}"></script>
 <script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.gauge.js" %}"></script>
 <script language="javascript" type="text/javascript" src="{% static "pyscada/js/jquery.flot.axisvalues.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/daterangepicker/moment.min.js" %}"></script>
+<script language="javascript" type="text/javascript" src="{% static "pyscada/js/daterangepicker/daterangepicker.min.js" %}"></script>
 
 <script type="text/javascript" src="{% static "pyscada/js/pyscada/pyscada_v0-7-0rc14.js" %}"></script>
 {% endblock %}
 {% block script_bottom %}
-        $( document ).ready(function() {
-            // Handler for .ready() called.
 
-            // hide all pages
-            $(".sub-page").hide();
-            // show page
-            if (window.location.hash.length > 0) {
-                $(window.location.hash).show();
-            }else{
-                window.location.hash = $('ul.navbar-nav li a').first().attr("href");
-            }
-            // move overlapping side menus
-            var menu_pos = $('footer')[0].clientHeight + 6;
-            $.each($('.side-menu.left'),function(key,val){
-                $(val).attr("style","bottom: " + menu_pos + "px;");
-                menu_pos = menu_pos + val.clientHeight + 10;
-            });
-            var menu_pos = $('footer')[0].clientHeight + 6;
-            $.each($('.side-menu.right'),function(key,val){
-                $(val).attr("style","bottom: " + menu_pos + "px;");
-                menu_pos = menu_pos + val.clientHeight + 10;
-            });
-            // sidemenues
-            $('.side-menu.left').mouseenter(function(){
-                $(this).stop().animate({"left":0},500)
-            }).mouseleave(function(){
-                ow = $(this).outerWidth()
-                $(this).stop().animate({"left":-(ow - 11)},500)
-            });
-
-            $('.side-menu.right').mouseenter(function(){
-                $(this).stop().animate({"right":0},500)
-            }).mouseleave(function(){
-                ow = $(this).outerWidth()
-                $(this).stop().animate({"right":-(ow - 11)},500)
-            });
-
-            $('.side-menu.bottom').css('margin-left',- $('.side-menu.bottom').outerWidth(true)/2)
-
-            $('.side-menu.bottom').stop().animate({"bottom":-($('.side-menu.bottom').outerHeight(true) - 31)},500)
-
-            $('.side-menu.bottom').mouseenter(function(){
-                $(this).stop().animate({"bottom":0},500)
-            }).mouseleave(function(){
-                oh = $(this).outerHeight(true)
-                $(this).stop().animate({"bottom":-(oh - 31)},500)
-            });
-
-
-            // prevent reloading by existent
-            window.onbeforeunload = function() {
-                return "you realy wan't to reload/leave the page?";
-            };
-            // nav menu click event
-            $(window).on('hashchange', function() {
-                if (window.location.hash.length > 0) {
-                    $('ul.navbar-nav li.active').removeClass('active');
-                    $('a[href$="' + window.location.hash + '"]').parent('li').addClass('active');
-                    // hide all pages
-                    $(".sub-page").hide();
-                    // show only new content
-                    $(window.location.hash).show();
-                };
-            });
-        });
 {% endblock %}
