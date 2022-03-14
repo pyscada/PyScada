@@ -686,7 +686,7 @@ class Dictionary(models.Model):
                 else:
                     logger.info('Dictionary %s has various items with value = %s' % (str(self), value))
                     return None
-        return label_found
+        return label_found or value
 
 
 @python_2_unicode_compatible
@@ -1189,26 +1189,29 @@ class Variable(models.Model):
                 '%s, unhandled exception in COV Receiver application\n%s' % (self.name, traceback.format_exc()))
 
     def convert_string_value(self, value):
-        if self.dictionary is None:
-            d = Dictionary(name=str(self.name) + '_auto_created')
-            d.save()
-            self.dictionary = d
-            Variable.objects.bulk_update([self], ['dictionary'])
-            self.refresh_from_db()
-        if not len(self.dictionary.dictionaryitem_set.filter(label=str(value))):
-            max_value = 0
-            for di in self.dictionary.dictionaryitem_set.all():
-                max_value = max(float(max_value), float(di.value))
-            DictionaryItem(label=str(value), value=int(max_value) + 1, dictionary=self.dictionary).save()
-            #logger.debug('new value : %s' % (int(max_value) + 1))
-            return int(max_value) + 1
-        elif len(self.dictionary.dictionaryitem_set.filter(label=str(value))) == 1:
-            #logger.debug('value found : %s' % self.dictionary.dictionaryitem_set.get(label=str(value)).value)
-            return float(self.dictionary.dictionaryitem_set.get(label=str(value)).value)
-        else:
-            logger.warning('%s duplicate values found of %s in dictionary %s' %
-                           (len(self.dictionary.dictionaryitem_set.filter(label=str(value))), value, self.dictionary))
-            return float(self.dictionary.dictionaryitem_set.filter(label=str(value)).first().value)
+        try:
+            return float(value)
+        except ValueError:
+            if self.dictionary is None:
+                d = Dictionary(name=str(self.name) + '_auto_created')
+                d.save()
+                self.dictionary = d
+                Variable.objects.bulk_update([self], ['dictionary'])
+                self.refresh_from_db()
+            if not len(self.dictionary.dictionaryitem_set.filter(label=str(value))):
+                max_value = 0
+                for di in self.dictionary.dictionaryitem_set.all():
+                    max_value = max(float(max_value), float(di.value))
+                DictionaryItem(label=str(value), value=int(max_value) + 1, dictionary=self.dictionary).save()
+                #logger.debug('new value : %s' % (int(max_value) + 1))
+                return int(max_value) + 1
+            elif len(self.dictionary.dictionaryitem_set.filter(label=str(value))) == 1:
+                #logger.debug('value found : %s' % self.dictionary.dictionaryitem_set.get(label=str(value)).value)
+                return float(self.dictionary.dictionaryitem_set.get(label=str(value)).value)
+            else:
+                logger.warning('%s duplicate values found of %s in dictionary %s' %
+                               (len(self.dictionary.dictionaryitem_set.filter(label=str(value))), value, self.dictionary))
+                return float(self.dictionary.dictionaryitem_set.filter(label=str(value)).first().value)
 
 
 def validate_nonzero(value):

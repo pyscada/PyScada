@@ -12,46 +12,23 @@ class Handler(GenericDevice):
     HP 33120A and other Devices with the same command set
     """
 
-    def read_data(self, device_property):
+    def read_data(self, variable_instance):
         """
         read values from the device
         """
-        if self.inst is None:
-            logger.error("Visa-AFG1022-read data-Self.inst : None")
-            return None
-        if device_property == 'present_value':
-            return self.parse_value(self.inst.query(':READ?'))
-        else:
-            value = self.inst.query(device_property)
-            logger.info("Visa-read data-property : %s - value : %s" % (device_property, value))
-#            return value.split(',')[0]
-            return self.parse_value(value)
-        return None
+        return super().read_data(variable_instance)
 
     def write_data(self, variable_id, value, task):
         """
         write values to the device
         """
-        variable = self._variables[variable_id]
-        if task.property_name != '':
-            # write the freq property to VariableProperty use that for later read
-            vp = VariableProperty.objects.update_or_create_property(variable=variable, name=task.property_name.upper(),
-                                                                    value=value, value_class='FLOAT64')
-            return True
-        if variable.visavariable.variable_type == 0:  # configuration
-            # only write to configuration variables
-            pass
-        else:
-            return False
+        return super().write_data(variable_id, value, task)
 
-    def parse_value(self, value):
+    def parse_value(self, value, **kwargs):
         """
         takes a string in the HP 33120A format and returns a float value or None if not parseable
         """
-        try:
-            return float(value)
-        except:
-            return None
+        return super().parse_value(value, **kwargs)
 
     # AFG functions
     def afg_prepare_for_bode(self, ch=1):

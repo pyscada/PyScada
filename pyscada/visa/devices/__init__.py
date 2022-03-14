@@ -56,7 +56,8 @@ class GenericDevice:
                 if resource_prefix in settings.VISA_DEVICE_SETTINGS:
                     extras = settings.VISA_DEVICE_SETTINGS[resource_prefix]
             self.inst = self.rm.open_resource(self._device.visadevice.resource_name, **extras)
-        except:
+        except Exception as e:
+            logger.info(e)
             # logger.error("Visa ResourceManager cannot open resource : %s" % self._device.visadevice.resource_name)
             return False
         logger.debug('Connected visa device : %s with VISA_DEVICE_SETTINGS for %s: %r' %
@@ -86,8 +87,22 @@ class GenericDevice:
         """
         read values from the device
         """
-
-        return None
+        if self.inst is None:
+            logger.error("%s has no visa instrument defined" % self)
+            self.connect()
+            return None
+        device_property = variable_instance.visavariable.device_property.upper()
+        if device_property == 'present_value'.upper():
+            return self.parse_value(self.inst.query(':READ?'))
+        else:
+            try:
+                value = self.inst.query(device_property)
+            except pyvisa.errors.VisaIOError as e:
+                logger.info('VisaIOError while querying value for variable %s' %variable_instance)
+                value = None
+            #logger.info("%s data-property : %s - value : %s" % (self, device_property, value))
+            #            return value.split(',')[0]
+            return self.parse_value(value, variable_instance=variable_instance)
 
     def read_data_and_time(self, variable_instance):
         """
@@ -100,7 +115,37 @@ class GenericDevice:
         """
         write values to the device
         """
+        variable = self._variables[variable_id]
+        if variable.visavariable.device_property != '':
+            # write the freq property to VariableProperty use that for later read
+            # vp = VariableProperty.objects.update_or_create_property(variable=variable, name=task.property_name.upper(),
+            #                                                        value=value, value_class='FLOAT64')
+            # return True
+            pass
+        if variable.visavariable.variable_type == 0:  # configuration
+            # only write to configuration variables
+            if variable.dictionary is not None:
+                value = variable.dictionary.get_label(value)
+            try:
+                read_value = self.inst.query(str(variable.visavariable.device_property) + ' ' + str(value))
+            except pyvisa.errors.VisaIOError as e:
+                read_value = None
+            return self.parse_value(read_value)
+
         return False
+
+    def parse_value(self, value, **kwargs):
+        """
+        takes a string in the Tektronix AFG1022 format and returns a float value or None if not parseable
+        """
+        try:
+            if 'variable_instance' in kwargs:
+                logger.debug(kwargs['variable_instance'])
+                return float(kwargs['variable_instance'].convert_string_value(value))
+            return float(value)
+        except Exception as e:
+            logger.debug(e)
+            return None
 
     def time(self):
         return time()

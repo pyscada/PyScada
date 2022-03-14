@@ -28,29 +28,17 @@ class Handler(GenericDevice):
             return self.parse_value(self.inst.query('?U6P0F4T3'))
         elif variable_instance.visavariable.device_property.upper() == 'PRESENT_VALUE_4W_OHM':
             return self.parse_value(self.inst.query('?U6P0F5T3'))
-        return None
+        else:
+            return super().read_data(variable_instance)
 
     def write_data(self,variable_id, value, task):
         """
         write values to the device
         """
-        variable = self._variables[variable_id]
-        if task.variable.visavariable.device_property != '':
-            # write the freq property to VariableProperty use that for later read
-            vp = VariableProperty.objects.update_or_create_property(variable=variable, name=task.variable.visavariable.device_property.upper(),
-                                                        value=value, value_class='FLOAT64')
-            return True
-        if variable.visavariable.variable_type == 0:  # configuration
-            # only write to configuration variables
-            pass
-        else:
-            return False
+        return super().write_data(variable_id, value, task)
 
-    def parse_value(self,value):
+    def parse_value(self,value, **kwargs):
         """
         takes a string in the HP3456A format and returns a float value or None if not parseable
         """
-        try:
-            return float(value)
-        except:
-            return None
+        return super().parse_value(value, **kwargs)

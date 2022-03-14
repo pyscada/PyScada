@@ -78,7 +78,7 @@ class C633(object):
             return False
         self.instr.write('MOV %d %1.8f'%(stage,pos))
     
-    def parse_value(self,str_data,stage=1):
+    def parse_value(self,str_data,stage=1, **kwargs):
         data = str_data.split('=')
         return float(data[-1])
     
@@ -149,7 +149,7 @@ class Handler(GenericDevice):
         else:
             return False
 
-    def parse_value(self,result):
+    def parse_value(self,result, **kwargs):
         """
         takes a string in the HP3456A format and returns a float value or None if not parseable
         """

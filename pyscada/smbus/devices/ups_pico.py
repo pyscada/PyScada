@@ -49,7 +49,7 @@ class Handler(GenericDevice):
 
         return None
 
-    def parse_value(self, value):
+    def parse_value(self, value, **kwargs):
         """
         takes a string in the HP3456A format and returns a float value or None if not parseable
         """
