@@ -326,6 +326,8 @@ def get_cache_data(request):
     timestamp_from = time.time()
     if 'timestamp_from' in request.POST:
         timestamp_from = float(request.POST['timestamp_from']) / 1000.0
+    if timestamp_from == 0:
+        timestamp_from = time.time() - 60
 
     timestamp_to = time.time()
 

@@ -15,6 +15,8 @@
 {% endblock %}
 
 {% block top_menu_right %}
+    <li><a id='page-load-label'>Loading... </a></li>
+    <li><meter id='page-load-state' value="0" min="0" max="100" style="padding-top: 35px;">0</meter></li>
     {% for panel in control_list %}
         {% if panel.visible %}
             <li class="dropdown"><!-- {{ panel.title|upper }} -->
@@ -80,9 +82,6 @@
             <tbody></tbody>
         </table>
     </div> <!-- end page-log -->
-    <div id="page-load" class="sub-page" style="">
-        <center><h1>Loading data... <span id="page-load-percent">0</span> %</h1></center>
-    </div> <!-- end page-load -->
     {% for panel in panel_list %}
         <div class="side-menu  {% if panel.position == 1 %}left{% elif panel.position == 2 %}right{% endif %}">
             <ul class="status-panel">

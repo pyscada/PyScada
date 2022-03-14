@@ -52,6 +52,8 @@ var LOADING_PAGE_DONE = 0
 var debug = 0;
 var DataFetchingProcessCount = 0;
 var loading_percent = 0;
+var loading_states = {}
+var loading_labels = {0:'CSS: ', 1:'Loading javascript: ', 4:'Loading static variables: ', 5:'Loading chart variables: ',}
 
 function show_update_status(){
     $("#AutoUpdateStatus").css("color", "")
@@ -190,9 +192,19 @@ function add_fetched_data(key,value){
     }
 }
 
-function set_loading_percent(value) {
-    loading_percent = Math.min(value, 100);
-    $('#page-load-percent').text(loading_percent);
+function set_loading_state(key, value) {
+    loading_states[key] = value;
+    $('#page-load-label').show();
+    $('#page-load-state').show();
+    $('#page-load-label').text(loading_labels[key]);
+    if ($('#page-load-state').length > 0) {
+        $('#page-load-state')[0].setAttribute('value', (Number.parseFloat(loading_states[key]).toFixed(2)));
+    }
+}
+
+function hide_loading_state() {
+    $('#page-load-label').hide();
+    $('#page-load-state').hide();
 }
 
 function data_handler(){
@@ -224,10 +236,11 @@ function data_handler(){
                         if(var_count >= 5){break;}
                     }
                     if(var_count>0){
-                        set_loading_percent(loading_percent + 100*var_count/STATUS_VARIABLE_KEYS.count()/2);
+                        set_loading_state(4, (loading_states[4] || 0) + 100*var_count/STATUS_VARIABLE_KEYS.count());
                         data_handler_ajax(1,vars,props,timestamp);
                     }else{
                         INIT_STATUS_VARIABLES_DONE = true;
+                        set_loading_state(4, 100);
                     }
                 }else if (!INIT_CHART_VARIABLES_DONE){
                     var var_count = 0;
@@ -253,7 +266,7 @@ function data_handler(){
                        }
                     }
                     if(var_count>0){
-                        set_loading_percent(loading_percent + 100*var_count/CHART_VARIABLE_KEYS.count()/2);
+                        set_loading_state(5, (loading_states[5] || 0) + 100*var_count/CHART_VARIABLE_KEYS.count());
                         if (timestamp === DATA_FROM_TIMESTAMP){
                             timestamp = DATA_DISPLAY_TO_TIMESTAMP;
                         }
@@ -265,6 +278,7 @@ function data_handler(){
                         data_handler_ajax(1,vars,props,DATA_FROM_TIMESTAMP,timestamp);
                     }else{
                         INIT_CHART_VARIABLES_DONE = true;
+                        set_loading_state(5, 100);
                         $('#loadingAnimation').hide();
                     }
                 }
@@ -276,10 +290,10 @@ function data_handler(){
     if(!INIT_STATUS_VARIABLES_DONE || !INIT_CHART_VARIABLES_DONE){
         // initialisation is active
         //setTimeout(function() {data_handler();}, REFRESH_RATE/2.0);
-        if (STATUS_VARIABLE_KEYS.count() + CHART_VARIABLE_KEYS.count() == 0 && LOADING_PAGE_DONE == 0) {LOADING_PAGE_DONE = 1;show_page();};
+        if (STATUS_VARIABLE_KEYS.count() + CHART_VARIABLE_KEYS.count() == 0 && LOADING_PAGE_DONE == 0) {LOADING_PAGE_DONE = 1;show_page();hide_loading_state();};
         setTimeout(function() {data_handler();}, 100);
     }else{
-        if (LOADING_PAGE_DONE == 0) {LOADING_PAGE_DONE = 1;show_page();};
+        if (LOADING_PAGE_DONE == 0) {LOADING_PAGE_DONE = 1;show_page();hide_loading_state();};
         setTimeout(function() {data_handler();}, REFRESH_RATE);
     }
 }
@@ -321,7 +335,7 @@ function data_handler_done(fetched_data){
         LAST_QUERY_TIME = fetched_data['date_saved_max'];
         delete fetched_data['date_saved_max'];
     }else{
-        LAST_QUERY_TIME = 0;
+        //LAST_QUERY_TIME = 0;
     }
     if (typeof(fetched_data['variable_properties'])==="object"){
         VARIABLE_PROPERTIES_DATA = fetched_data['variable_properties'];
@@ -2497,10 +2511,14 @@ function show_page() {
 
 // fix drop down problem
 $( document ).ready(function() {
+    // init loading states
+    set_loading_state(1, 40);
+
     // padding top content
     set_content_padding_top();
 
-    //show_page()
+    // Show current page or first
+    show_page();
 
     // move overlapping side menus
     var menu_pos = $('footer')[0].clientHeight + 6;
@@ -2527,31 +2545,38 @@ $( document ).ready(function() {
         ow = $(this).outerWidth()
         $(this).stop().animate({"right":-(ow - 11)},500)
     });
-
     $('.side-menu.bottom').css('margin-left',- $('.side-menu.bottom').outerWidth(true)/2)
-
     $('.side-menu.bottom').stop().animate({"bottom":-($('.side-menu.bottom').outerHeight(true) - 31)},500)
-
     $('.side-menu.bottom').mouseenter(function(){
         $(this).stop().animate({"bottom":0},500)
     }).mouseleave(function(){
         oh = $(this).outerHeight(true)
         $(this).stop().animate({"bottom":-(oh - 31)},500)
     });
+    set_loading_state(1, loading_states[1] + 10);
 
 
     // prevent reloading by existent
     window.onbeforeunload = function() {
         return "you realy wan't to reload/leave the page?";
     };
-    // nav menu click event
     $(window).on('hashchange', function() {
+        // nav menu click event
         if (window.location.hash.length > 0) {
             $('ul.navbar-nav li.active').removeClass('active');
             $('a[href$="' + window.location.hash + '"]').parent('li').addClass('active');
             show_page();
         };
+        // Show/hide timeline
+        if (window.location.hash.substr(1) !== '') {
+            if ($("#" + window.location.hash.substr(1) + " .has_chart").length) {
+                $(".show_timeline").removeClass("hidden");
+            }else {
+                $(".show_timeline").addClass("hidden");
+            }
+        }
     });
+    set_loading_state(1, loading_states[1] + 10);
 
     // Activate tooltips
     $('[data-toggle*="tooltip"]').tooltip()
@@ -2571,6 +2596,8 @@ $( document ).ready(function() {
     $('.dropdown input, .dropdown label, .dropdown button').click(function(e) {
         e.stopPropagation();
     });
+    set_loading_state(1, loading_states[1] + 10);
+
     // init
     $.each($('.chart-container'),function(key,val){
         // get identifier of the chart
@@ -2630,7 +2657,7 @@ $( document ).ready(function() {
             VARIABLE_PROPERTIES[key] = 0;
         }
     });
-
+    set_loading_state(1, loading_states[1] + 10);
 
     $('.activate_zoom_x').change(function() {
         set_chart_selection_mode();
@@ -2641,15 +2668,7 @@ $( document ).ready(function() {
 
     setTimeout(function() {data_handler()}, 5000);
     set_chart_selection_mode();
-    $(window).on('hashchange', function() {
-        if (window.location.hash.substr(1) !== '') {
-            if ($("#" + window.location.hash.substr(1) + " .has_chart").length) {
-                $(".show_timeline").removeClass("hidden");
-            }else {
-                $(".show_timeline").addClass("hidden");
-            }
-        }
-    })
+    // timeline setup
     $( "#timeline" ).resizable({
         handles: "e, w",
         containment: "#timeline-border",
@@ -2712,6 +2731,7 @@ $( document ).ready(function() {
             $(".show_timeline").addClass("hidden");
         };
     }
+    set_loading_state(1, loading_states[1] + 10);
 
     // Resize charts on windows resize
     $(window).resize(function() {
@@ -2723,6 +2743,7 @@ $( document ).ready(function() {
         });
       set_content_padding_top();
     });
+    set_loading_state(1, loading_states[1] + 10);
 
     // Prevent closing dropdown on click
     $('.dropdown-menu').click(function(e) {
@@ -2795,6 +2816,8 @@ $( document ).ready(function() {
         "endDate": moment().subtract(2, 'hours'),
         "opens": "left"
     }, function(start, end, label) {
+        LOADING_PAGE_DONE = 0;
+        set_loading_state(5, 0);
         daterange_cb(start, end);
         DATA_INIT_STATUS++;
         DATA_FROM_TIMESTAMP = start.unix() * 1000;
@@ -2819,5 +2842,28 @@ $( document ).ready(function() {
         if(!$('#AutoUpdateButton').bootstrapSwitch('state') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
             auto_update_click();
         };
+        DATA_DISPLAY_FROM_TIMESTAMP = -1;
+        DATA_DISPLAY_TO_TIMESTAMP = -1;
+        DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
+        set_x_axes();
     });
+    set_loading_state(1, 100);
+    hide_loading_state();
+
+    // move content on navbar show/hide events
+    $('.navbar-collapse').on('shown.bs.collapse', function() {
+        set_content_padding_top();
+    });
+    $('.navbar-collapse').on('hidden.bs.collapse', function() {
+        set_content_padding_top();
+    });
+
+    // Set and show refresh rate input
+    document.getElementById('refresh-rate-input').oninput = function () {
+        document.getElementById('refresh-rate-output').innerHTML = this.value;
+        REFRESH_RATE = this.value;
+    }
+    document.getElementById('refresh-rate-output').innerHTML= document.getElementById('refresh-rate-input').value;
+    document.getElementById('refresh-rate-li').classList.remove('hidden');
+    document.getElementById('refresh-rate-divider').classList.remove('hidden')
 });

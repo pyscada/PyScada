@@ -58,6 +58,15 @@
                                     <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
                                     <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">change user info</a></li>
                                     <li class="divider"></li>
+                                    <li role="presentation" class="hidden" id="refresh-rate-li">
+                                        <div style="padding: 3px 20px;">
+                                            <span>Data refresh rate: </span>
+                                            <span id="refresh-rate-output"></span>
+                                            <span> ms</span>
+                                            <input id="refresh-rate-input" type="range" min="100" max="5000" step="100" value="2500">
+                                        </div>
+                                    </li>
+                                    <li id="refresh-rate-divider" class="divider hidden"></li>
                                     <li><a href="/accounts/password_change" target="{{ link_target }}"> change password</a></li>
                                     <li class="divider"></li>
                                     <li><a href="/accounts/logout"> logout</a></li>
