@@ -754,6 +754,9 @@ function dictionary(id,val){
         t = JSON.parse($(".variable-config[data-dictionary][data-id=" + id + "]").attr('data-dictionary'))
         if (val in t) {
             val = t[val]
+        }else if (val + ".0" in t) {
+            //int stored as a float
+            val = t[val + ".0"]
         }
     }
     return val;
