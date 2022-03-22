@@ -754,9 +754,9 @@ function dictionary(id,val){
         t = JSON.parse($(".variable-config[data-dictionary][data-id=" + id + "]").attr('data-dictionary'))
         if (val in t) {
             val = t[val]
-        }else if (val + ".0" in t) {
+        }else if (parseFloat(val).toFixed(1) in t) {
             //int stored as a float
-            val = t[val + ".0"]
+            val = t[parseFloat(val).toFixed(1)]
         }
     }
     return val;
