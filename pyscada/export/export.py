@@ -68,7 +68,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
             tp.save()
         return
 
-    # 
+    #
     if filename is None:
         if hasattr(settings, 'PYSCADA_EXPORT'):
             if 'output_folder' in settings.PYSCADA_EXPORT:
@@ -88,7 +88,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
             os.mkdir(backup_file_path)
 
         # validate time values
-        db_time_min = RecordedData.objects.first()  # todo add RecordedDataOld
+        db_time_min = RecordedData.objects.filter(variable__isnull=False).first()  # todo add RecordedDataOld
         if not db_time_min:
             if tp is not None:
                 tp.last_update = now()
@@ -127,7 +127,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
             filename = filename_old + '_%03.0f' % count
             count += 1
 
-    # append the extension 
+    # append the extension
     filename = filename + file_extension
 
     # add Filename to ExportTask
@@ -137,7 +137,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
             job.filename = filename
             job.save()
 
-    # 
+    #
     if active_vars is None:
         active_vars = Variable.objects.filter(active=1, device__active=1)
     else:
@@ -214,12 +214,12 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
                 tp.last_update = now()
                 tp.message = 'writing values for %s (%d) to file' % (var.name, var.pk)
                 tp.save()
-            # check if variable is scalled 
+            # check if variable is scalled
             if var.scaling is None or var.value_class.upper() in ['BOOL', 'BOOLEAN']:
                 value_class = var.value_class
             else:
                 value_class = 'FLOAT64'
-            # read unit 
+            # read unit
             if hasattr(var.unit, 'udunit'):
                 udunit = var.unit.udunit
             else:
