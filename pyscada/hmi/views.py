@@ -57,6 +57,7 @@ def index(request):
 @unauthenticated_redirect
 @requires_csrf_token
 def view(request, link_title):
+    view_template = 'view.html'
     page_template = get_template('content_page.html')
     widget_row_template = get_template('widget_row.html')
 
@@ -100,13 +101,22 @@ def view(request, link_title):
     control_list = sliding_panel_list.filter(position=0)
 
     pages_html = ""
+    javascript_files_list = list()
+    css_files_list = list()
+    show_daterangepicker = False
+    has_flot_chart = False
+    add_context = {}
+
     for page in page_list:
         # process content row by row
         current_row = 0
         widget_rows_html = ""
         main_content = list()
         sidebar_content = list()
-        has_chart = False
+
+        show_daterangepicker_temp = False
+        show_timeline_temp = False
+
         for widget in page.widget_set.all():
             # check if row has changed
             if current_row != widget.row:
@@ -123,24 +133,83 @@ def view(request, link_title):
                 continue
             if widget.content is None:
                 continue
-            mc, sbc = widget.content.create_panel_html(widget_pk=widget.pk, user=request.user)
+            mc, sbc, opts = widget.content.create_panel_html(widget_pk=widget.pk, user=request.user)
             if mc is not None and mc != "":
                 main_content.append(dict(html=mc, widget=widget))
             else:
                 logger.info("main_content of widget : %s is %s !" % (widget, mc))
             if sbc is not None:
                 sidebar_content.append(dict(html=sbc, widget=widget))
+            if type(opts) == dict and 'show_daterangepicker' in opts and opts['show_daterangepicker'] == True:
+                show_daterangepicker = True
+                show_daterangepicker_temp = True
+            if type(opts) == dict and 'show_timeline' in opts and opts['show_timeline'] == True:
+                show_timeline_temp = True
             if widget.content.content_model == "pyscada.hmi.models.Chart":
-                has_chart = True
+                has_flot_chart = True
+            if type(opts) == dict and 'view_template' in opts:
+                view_template = opts['view_template']
+            if type(opts) == dict and 'add_context' in opts:
+                add_context.update(opts['add_context'])
+
+            logger.debug(opts)
+            logger.debug(view_template)
 
         widget_rows_html += widget_row_template.render(
             {'row': current_row, 'main_content': main_content, 'sidebar_content': sidebar_content,
              'sidebar_visible': len(sidebar_content) > 0}, request)
 
-        pages_html += page_template.render({'page': page, 'widget_rows_html': widget_rows_html, 'has_chart': has_chart},
-                                           request)
+        pages_html += page_template.render({'page': page,
+                                            'widget_rows_html': widget_rows_html,
+                                            'show_daterangepicker': show_daterangepicker_temp,
+                                            'show_timeline': show_timeline_temp,
+                                            }, request)
 
-    c = {
+    # Generate javascript files list
+    STATIC_URL = str(settings.STATIC_URL) if hasattr(settings, 'STATIC_URL') else 'static'
+
+
+    if has_flot_chart:
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/jquery/jquery.tablesorter.min.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/lib/jquery.mousewheel.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.canvaswrapper.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.colorhelpers.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.saturated.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.browser.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.drawSeries.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.errorbars.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.uiConstants.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.logaxis.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.symbol.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.flatdata.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.navigate.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.fillbetween.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.stack.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.touchNavigate.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.hover.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.touch.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.time.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.axislabels.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.selection.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.composeImages.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.legend.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.pie.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.crosshair.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.gauge.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/jquery.flot.axisvalues.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/daterangepicker/moment.min.js'})
+
+    if show_daterangepicker:
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/daterangepicker/daterangepicker.min.js'})
+
+    javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/pyscada/pyscada_v0-7-0rc14.js'})
+
+
+    # Generate css files list
+    css_files_list.append({'src': STATIC_URL + 'pyscada/css/daterangepicker/daterangepicker.css'})
+
+    context = {
         'page_list': page_list,
         'pages_html': pages_html,
         'panel_list': panel_list,
@@ -151,10 +220,13 @@ def view(request, link_title):
         'view_title': v.title,
         'view_show_timeline': v.show_timeline,
         'version_string': core_version,
-        'link_target': settings.LINK_TARGET if hasattr(settings, 'LINK_TARGET') else '_blank'
+        'link_target': settings.LINK_TARGET if hasattr(settings, 'LINK_TARGET') else '_blank',
+        'javascript_files_list': javascript_files_list,
+        'css_files_list': css_files_list,
     }
+    context.update(add_context)
 
-    return TemplateResponse(request, 'view.html', c)
+    return TemplateResponse(request, view_template, context)
 
 
 @unauthenticated_redirect
@@ -330,15 +402,10 @@ def get_cache_data(request):
         timestamp_from = time.time() - 60
 
     timestamp_to = time.time()
-
     if 'timestamp_to' in request.POST:
         timestamp_to = min(timestamp_to, float(request.POST['timestamp_to']) / 1000.0)
-
     if timestamp_to == 0:
         timestamp_to = time.time()
-
-    if timestamp_from == 0:
-        timestamp_from == time.time() - 60
 
     if timestamp_to - timestamp_from > 120 * 60 and not init:
         timestamp_from = timestamp_to - 120 * 60

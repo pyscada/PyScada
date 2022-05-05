@@ -5,7 +5,6 @@ from pyscada.models import Variable, VariableProperty, Color
 
 from django.db import models
 from django.contrib.auth.models import Group
-from django.utils.encoding import python_2_unicode_compatible
 from django.template.loader import get_template
 from django.core.validators import MinValueValidator, MaxValueValidator
 
@@ -61,7 +60,7 @@ class WidgetContentModel(models.Model):
 
         :return: main panel html and sidebar html as
         """
-        return '', ''
+        return '', '', ''
 
     def create_widget_content_entry(self):
         def fullname(o):
@@ -91,7 +90,6 @@ class WidgetContentModel(models.Model):
         abstract = True
 
 
-@python_2_unicode_compatible
 class ControlElementOption(models.Model):
     name = models.CharField(max_length=400)
     placeholder = models.CharField(max_length=30, default='Enter a value')
@@ -104,7 +102,6 @@ class ControlElementOption(models.Model):
         return self.name
 
 
-@python_2_unicode_compatible
 class DisplayValueOption(models.Model):
     name = models.CharField(max_length=400)
     type_choices = (
@@ -159,7 +156,6 @@ class DisplayValueOption(models.Model):
         return self.name
 
 
-@python_2_unicode_compatible
 class ControlItem(models.Model):
     id = models.AutoField(primary_key=True)
     label = models.CharField(max_length=400, default='')
@@ -284,11 +280,13 @@ class ControlItem(models.Model):
     def threshold_values(self):
         tv = dict()
         if self.display_value_options is not None and self.display_value_options.mode > 0:
-            if self.display_value_options.color_type == 1 or self.display_value_options.color_type == 2:
+            if self.display_value_options.color_type == 1:
+                tv[self.display_value_options.color_level_1] = self.display_value_options.color_1.color_code()
+                tv["max"] = self.display_value_options.color_2.color_code()
+            if self.display_value_options.color_type == 2:
                 tv[self.display_value_options.color_level_1] = self.display_value_options.color_1.color_code()
                 tv[self.display_value_options.color_level_2] = self.display_value_options.color_2.color_code()
-            if self.display_value_options.color_type == 2:
-                tv[self.display_value_options.color_level_3] = self.display_value_options.color_3.color_code()
+                tv["max"] = self.display_value_options.color_3.color_code()
         return json.dumps(tv)
 
     def gauge_params(self):
@@ -305,7 +303,6 @@ class ControlItem(models.Model):
             return self.variable.dictionary
 
 
-@python_2_unicode_compatible
 class Chart(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
@@ -338,10 +335,10 @@ class Chart(WidgetContentModel):
         sidebar_template = get_template('chart_legend.html')
         main_content = main_template.render(dict(chart=self, widget_pk=widget_pk))
         sidebar_content = sidebar_template.render(dict(chart=self, widget_pk=widget_pk))
-        return main_content, sidebar_content
+        opts = {'show_daterangepicker': True, 'show_timeline': True,}
+        return main_content, sidebar_content, opts
 
 
-@python_2_unicode_compatible
 class ChartAxis(models.Model):
     label = models.CharField(max_length=400, default='', blank=True)
     position_choices = (
@@ -368,7 +365,6 @@ class ChartAxis(models.Model):
         verbose_name_plural = 'Y Axis'
 
 
-@python_2_unicode_compatible
 class Pie(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
@@ -395,10 +391,9 @@ class Pie(WidgetContentModel):
         sidebar_template = get_template('chart_legend.html')
         main_content = main_template.render(dict(pie=self, widget_pk=widget_pk))
         sidebar_content = sidebar_template.render(dict(chart=self, pie=1, widget_pk=widget_pk))
-        return main_content, sidebar_content
+        return main_content, sidebar_content, ''
 
 
-@python_2_unicode_compatible
 class Form(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
@@ -424,7 +419,6 @@ class Form(models.Model):
         return [item.pk for item in self.hidden_control_items_to_true]
 
 
-@python_2_unicode_compatible
 class Page(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
@@ -438,7 +432,6 @@ class Page(models.Model):
         return self.link_title.replace(' ', '_')
 
 
-@python_2_unicode_compatible
 class ControlPanel(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
@@ -460,10 +453,9 @@ class ControlPanel(WidgetContentModel):
                                                  visible_control_element_list=visible_element_list,
                                                  uuid=uuid4().hex, widget_pk=widget_pk))
         sidebar_content = None
-        return main_content, sidebar_content
+        return main_content, sidebar_content, ''
 
 
-@python_2_unicode_compatible
 class CustomHTMLPanel(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='', blank=True)
@@ -482,10 +474,9 @@ class CustomHTMLPanel(WidgetContentModel):
         main_template = get_template('custom_html_panel.html')
         main_content = main_template.render(dict(custom_html_panel=self))
         sidebar_content = None
-        return main_content, sidebar_content
+        return main_content, sidebar_content, ''
 
 
-@python_2_unicode_compatible
 class ProcessFlowDiagramItem(models.Model):
     id = models.AutoField(primary_key=True)
     control_item = models.ForeignKey(ControlItem, default=None, blank=True, null=True, on_delete=models.SET_NULL)
@@ -503,7 +494,6 @@ class ProcessFlowDiagramItem(models.Model):
             return str(self.id) + ": " + self.control_item.name
 
 
-@python_2_unicode_compatible
 class ProcessFlowDiagram(WidgetContentModel):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='', blank=True)
@@ -539,10 +529,9 @@ class ProcessFlowDiagram(WidgetContentModel):
             logger.info("ProcessFlowDiagram (%s) has no background image defined" % self)
             main_content = None
         sidebar_content = None
-        return main_content, sidebar_content
+        return main_content, sidebar_content, ''
 
 
-@python_2_unicode_compatible
 class SlidingPanelMenu(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
@@ -555,23 +544,25 @@ class SlidingPanelMenu(models.Model):
         return self.title
 
 
-@python_2_unicode_compatible
 class WidgetContent(models.Model):
     content_model = models.CharField(max_length=400)
     content_pk = models.PositiveIntegerField()
     content_str = models.CharField(default="", max_length=400)
 
     def create_panel_html(self, **kwargs):
+        """
+        return main_content, sidebar_content, optional list
+        """
         content_model = self._import_content_model()
         try:
             if content_model is not None:
                 return content_model.gen_html(**kwargs)
             else:
-                return '', ''
+                return '', '', ''
         except:
             logger.error('%s unhandled exception\n%s' % (content_model, traceback.format_exc()))
             # todo del self
-            return '', ''
+            return '', '', ''
 
     def _import_content_model(self):
         content_class_str = self.content_model
@@ -591,7 +582,6 @@ class WidgetContent(models.Model):
         return '%s [%d] %s' % (self.content_model.split('.')[-1], self.content_pk, self.content_str)  # todo add more infos
 
 
-@python_2_unicode_compatible
 class Widget(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='', blank=True)
@@ -627,7 +617,6 @@ class Widget(models.Model):
         return 'widget_row_' + str(self.row) + ' widget_col_' + str(self.col) + ' ' + widget_size
 
 
-@python_2_unicode_compatible
 class View(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
@@ -647,7 +636,6 @@ class View(models.Model):
         ordering = ['position']
 
 
-@python_2_unicode_compatible
 class GroupDisplayPermission(models.Model):
     hmi_group = models.OneToOneField(Group, null=True, on_delete=models.SET_NULL)
     pages = models.ManyToManyField(Page, blank=True)

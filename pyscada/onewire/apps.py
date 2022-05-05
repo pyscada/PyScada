@@ -8,6 +8,7 @@ from django.utils.translation import ugettext_lazy as _
 class PyScadaOneWireConfig(AppConfig):
     name = 'pyscada.onewire'
     verbose_name = _("PyScada OneWire")
+    default_auto_field = 'django.db.models.AutoField'
 
     def ready(self):
         import pyscada.onewire.signals

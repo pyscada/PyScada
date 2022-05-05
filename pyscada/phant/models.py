@@ -5,7 +5,6 @@ from pyscada.models import Device, Variable
 from . import PROTOCOL_ID
 
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 
 import string
 import random
@@ -19,7 +18,6 @@ def gen_random_key(n=20):
     return ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase) for _ in range(n))
 
 
-@python_2_unicode_compatible
 class PhantDevice(models.Model):
     phant_device = models.OneToOneField(Device, on_delete=models.CASCADE)
     public_key = models.SlugField(max_length=20, default=gen_random_key, unique=True)

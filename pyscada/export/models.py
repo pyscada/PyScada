@@ -6,7 +6,6 @@ from pyscada.models import Variable, BackgroundProcess
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.safestring import mark_safe
 
 import os
@@ -23,7 +22,6 @@ logger = logging.getLogger(__name__)
 from django.utils.timezone import now
 
 
-@python_2_unicode_compatible
 class ScheduledExportTask(models.Model):
     id = models.AutoField(primary_key=True)
     label = models.CharField(max_length=400, default='')
@@ -48,7 +46,6 @@ class ScheduledExportTask(models.Model):
         return self.label
 
 
-@python_2_unicode_compatible
 class ExportTask(models.Model):
     id = models.AutoField(primary_key=True)
     label = models.CharField(max_length=400, default='None', blank=True)

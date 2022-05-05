@@ -8,7 +8,6 @@ from django.conf import settings
 
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
-from django.utils.encoding import python_2_unicode_compatible
 from django.utils.timezone import now, make_aware, is_naive
 from django.db.models.signals import post_save
 
@@ -516,7 +515,6 @@ class VariablePropertyManager(models.Manager):
 #
 # Models
 #
-@python_2_unicode_compatible
 class Color(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.SlugField(max_length=80, verbose_name="variable name")
@@ -535,7 +533,6 @@ class Color(models.Model):
             self.R, self.G, self.B)
 
 
-@python_2_unicode_compatible
 class DeviceProtocol(models.Model):
     id = models.AutoField(primary_key=True)
     protocol = models.CharField(max_length=400, default='generic')
@@ -549,7 +546,6 @@ class DeviceProtocol(models.Model):
         return self.protocol
 
 
-@python_2_unicode_compatible
 class Device(models.Model):
     id = models.AutoField(primary_key=True)
     short_name = models.CharField(max_length=400, default='')
@@ -596,7 +592,6 @@ class Device(models.Model):
             return None
 
 
-@python_2_unicode_compatible
 class DeviceHandler(models.Model):
     name = models.CharField(default='', max_length=255)
     handler_class = models.CharField(default='pyscada.visa.devices.HP3456A', max_length=255,
@@ -618,7 +613,6 @@ class DeviceHandler(models.Model):
         super(DeviceHandler, self).save(*args, **kwargs)
 
 
-@python_2_unicode_compatible
 class Unit(models.Model):
     id = models.AutoField(primary_key=True)
     unit = models.CharField(max_length=80, verbose_name="Unit")
@@ -632,7 +626,6 @@ class Unit(models.Model):
         managed = True
 
 
-@python_2_unicode_compatible
 class Scaling(models.Model):
     id = models.AutoField(primary_key=True)
     description = models.TextField(default='', verbose_name="Description", null=True, blank=True)
@@ -663,7 +656,6 @@ class Scaling(models.Model):
         return norm_value * (self.input_high - self.input_low) + self.input_low
 
 
-@python_2_unicode_compatible
 class Dictionary(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=400, default='')
@@ -689,7 +681,6 @@ class Dictionary(models.Model):
         return label_found or value
 
 
-@python_2_unicode_compatible
 class DictionaryItem(models.Model):
     id = models.AutoField(primary_key=True)
     label = models.CharField(max_length=400, default='')
@@ -700,7 +691,6 @@ class DictionaryItem(models.Model):
         return text_type(str(self.id) + ': ' + self.label)
 
 
-@python_2_unicode_compatible
 class VariableProperty(models.Model):
     id = models.AutoField(primary_key=True)
     variable = models.ForeignKey('Variable', null=True, on_delete=models.CASCADE)
@@ -815,7 +805,6 @@ class VariableProperty(models.Model):
             return float(self.dictionary.dictionaryitem_set.filter(label=str(value)).first().value)
 
 
-@python_2_unicode_compatible
 class Variable(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.SlugField(max_length=200, verbose_name="variable name", unique=True)
@@ -1226,7 +1215,6 @@ def start_from_default():
     return make_aware(datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time()))
 
 
-@python_2_unicode_compatible
 class PeriodicField(models.Model):
     """
     Auto calculate and store value related to a Variable for a time range.
@@ -1308,7 +1296,6 @@ class PeriodicField(models.Model):
             raise ValidationError('This periodic field already exist.')
 
 
-@python_2_unicode_compatible
 class CalculatedVariableSelector(models.Model):
     main_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
     period_fields = models.ManyToManyField(PeriodicField)
@@ -1359,7 +1346,6 @@ class CalculatedVariableSelector(models.Model):
         return self.main_variable.name
 
 
-@python_2_unicode_compatible
 class CalculatedVariable(models.Model):
     store_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
     variable_calculated_fields = models.ForeignKey(CalculatedVariableSelector, on_delete=models.CASCADE)
@@ -1700,7 +1686,6 @@ class CalculatedVariable(models.Model):
         return diff
 
 
-@python_2_unicode_compatible
 class DeviceWriteTask(models.Model):
     id = models.AutoField(primary_key=True)
     variable = models.ForeignKey('Variable', blank=True, null=True, on_delete=models.SET_NULL)
@@ -1759,7 +1744,6 @@ class DeviceWriteTask(models.Model):
                     pass
 
 
-@python_2_unicode_compatible
 class DeviceReadTask(models.Model):
     id = models.AutoField(primary_key=True)
     device = models.ForeignKey('Device', blank=True, null=True, on_delete=models.SET_NULL)
@@ -1821,7 +1805,6 @@ class DeviceReadTask(models.Model):
                     pass
 
 
-@python_2_unicode_compatible
 class RecordedDataOld(models.Model):
     """
     Big Int first 42 bits are used for the unixtime in ms, unsigned because we only
@@ -1923,7 +1906,6 @@ class RecordedDataOld(models.Model):
             return None
 
 
-@python_2_unicode_compatible
 class RecordedData(models.Model):
     """
     id: Big Int first 42 bits are used for the unix time in ms, unsigned because we only
@@ -2044,7 +2026,6 @@ class RecordedData(models.Model):
         super(RecordedData, self).save(*args, **kwargs)
 
 
-@python_2_unicode_compatible
 class Log(models.Model):
     # id 				= models.AutoField(primary_key=True)
     id = models.BigIntegerField(primary_key=True)
@@ -2071,7 +2052,6 @@ class Log(models.Model):
         return self.message
 
 
-@python_2_unicode_compatible
 class BackgroundProcess(models.Model):
     id = models.AutoField(primary_key=True)
     pid = models.IntegerField(default=0)
@@ -2185,7 +2165,6 @@ class BackgroundProcess(models.Model):
             return self._stop(signum=signum)
 
 
-@python_2_unicode_compatible
 class ComplexEventGroup(models.Model):
     id = models.AutoField(primary_key=True)
     label = models.CharField(max_length=400, default='')
@@ -2394,7 +2373,6 @@ class ComplexEventGroup(models.Model):
         return subject_str, "", message_str
 
 
-@python_2_unicode_compatible
 class ComplexEvent(models.Model):
     id = models.AutoField(primary_key=True)
     level_choices = (
@@ -2451,7 +2429,6 @@ class ComplexEvent(models.Model):
         return self.complex_event_group.label + "-" + self.level_choices[self.level][1]
 
 
-@python_2_unicode_compatible
 class ComplexEventItem(models.Model):
     id = models.AutoField(primary_key=True)
     fixed_limit_low = models.FloatField(default=0, blank=True, null=True)
@@ -2583,7 +2560,6 @@ class ComplexEventItem(models.Model):
             return 'variable_property'
 
 
-@python_2_unicode_compatible
 class Event(models.Model):
     id = models.AutoField(primary_key=True)
     label = models.CharField(max_length=400, default='')
@@ -2746,7 +2722,6 @@ class Event(models.Model):
                         Mail(None, subject, message, None, recipient.email, time.time()).save()
 
 
-@python_2_unicode_compatible
 class RecordedEvent(models.Model):
     id = models.AutoField(primary_key=True)
     event = models.ForeignKey(Event, null=True, on_delete=models.CASCADE)
@@ -2762,7 +2737,6 @@ class RecordedEvent(models.Model):
             return self.complex_event_group.label
 
 
-@python_2_unicode_compatible
 class Mail(models.Model):
     id = models.AutoField(primary_key=True)
     subject = models.TextField(default='', blank=True)

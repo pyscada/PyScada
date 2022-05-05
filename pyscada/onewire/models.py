@@ -5,13 +5,11 @@ from pyscada.models import Variable, Device
 from . import PROTOCOL_ID
 
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-@python_2_unicode_compatible
 class OneWireVariable(models.Model):
     onewire_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
     address = models.CharField(default='', max_length=400, help_text='64bit Sensor Address')
@@ -24,7 +22,6 @@ class OneWireVariable(models.Model):
         return self.onewire_variable.name
 
 
-@python_2_unicode_compatible
 class OneWireDevice(models.Model):
     onewire_device = models.OneToOneField(Device, on_delete=models.CASCADE)
     adapter_type_choices = (('owserver', 'OWFS owserver'), ('rpi_gpio4', 'RPi GPIO 4'),)

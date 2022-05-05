@@ -10,7 +10,6 @@ import io
 import h5py
 import time
 
-from django.utils.six import text_type
 import logging
 
 logger = logging.getLogger(__name__)
@@ -67,7 +66,7 @@ class MatCompatibleH5:
         for key, value in kwargs.items():
             if isinstance(value, bytes):
                 self._f.attrs[key] = value
-            elif isinstance(value, text_type):
+            elif isinstance(value, str):
                 self._f.attrs[key] = value.encode('utf-8').__str__()
             else:
                 self._f.attrs[key] = value.__str__()
@@ -142,7 +141,7 @@ class MatCompatibleH5:
             for key, value in kwargs.items():
                 if isinstance(value, bytes):
                     self._d[name].attrs[key] = value
-                elif isinstance(value, text_type):
+                elif isinstance(value, str):
                     self._f.attrs[key] = value.encode('utf-8').__str__()
                 else:
                     self._d[name].attrs[key] = value.__str__()

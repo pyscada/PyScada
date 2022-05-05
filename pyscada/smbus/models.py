@@ -5,14 +5,12 @@ from pyscada.models import Variable
 from . import PROTOCOL_ID
 
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.db.models.signals import post_save
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-@python_2_unicode_compatible
 class SMBusDevice(models.Model):
     smbus_device = models.OneToOneField(Device, on_delete=models.CASCADE)
     port = models.CharField(default='1', max_length=400, )
@@ -32,7 +30,6 @@ class SMBusDevice(models.Model):
         return self.smbus_device.short_name
 
 
-@python_2_unicode_compatible
 class SMBusVariable(models.Model):
     smbus_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
     information = models.CharField(default='None', max_length=400, )

@@ -2,12 +2,21 @@
 {% load i18n staticfiles %}
 
 {% block title %}{{ view_title }} - PyScada Control Center{% endblock %}
+
+{% block head_css %}
+{% for css_file in css_files_list %}
+    <link href={{ css_file.src }} rel="stylesheet"/>
+{% endfor %}
+{% endblock %}
+
 {% block body_confic_data %} data-data-file="json/cache_data/" {% endblock %}
+
 {% block top_menu_left %}
     {% for page in page_list %}
         <li><a href="#{{page.link_title}}" class="hidden-xs">{{page.title}}</a></li>
     {% endfor %}
 {% endblock %}
+
 {% block top_menu_left_collapsed %}
     {% for page in page_list %}
         <li><a href="#{{page.link_title}}" class="navbar-toggle visible-xs" data-toggle="collapse" data-target=".navbar-collapse" style="float:left;">{{page.title}}</a></li>
@@ -38,15 +47,15 @@
             </li>
         {% endif %}
     {% endfor %}
-        <li class="dropdown">
-            <a class="show_timeline hidden" id="daterange" style="padding-top: 15px; cursor: pointer; width: 100%">
+        <li class="dropdown"><!-- Date range picker -->
+            <a class="daterangepicker_parent hidden" id="daterange" style="padding-top: 15px; cursor: pointer; width: 100%">
                 <i class="glyphicon glyphicon-calendar"></i>&nbsp;
                 <span>Date range picker is loading. Please wait...</span> <strong class="caret"></strong>
             </a>
         </li>
 
         <li class="dropdown"><!-- Charts timeline -->
-            <a class="dropdown-toggle show_timeline hidden" id="timeline_slider" href="#" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><span class="glyphicon glyphicon-resize-horizontal"></span> Timeline slider <strong class="caret"></strong></a>
+            <a class="dropdown-toggle timeline hidden" id="timeline_slider" href="#" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><span class="glyphicon glyphicon-resize-horizontal"></span> Timeline slider <strong class="caret"></strong></a>
             <div class="dropdown-menu" style="padding: 15px; width: 50vw;">
                 <div class='col-md-12 col-sm-12' data-toggle="tooltip" data-placement="top" title="" data-original-title="Display data filter">
                     <div id="timeline-border" class="form-group" style="height:34px; background-color: #9d9d9d;">
@@ -61,8 +70,9 @@
             </div>
         </li>
 {% endblock %}
-{% block top_area %}
-{% endblock %}
+
+{% block top_area %}{% endblock %}
+
 {% block content %}
     {{pages_html|safe}}
     <div id="page-log" class="sub-page" style="display: none;">
@@ -95,41 +105,11 @@
         </div>
     {% endfor %}
 {% endblock %}
+
 {% block include_bottom %}
-<script type="text/javascript" src="{% static "pyscada/js/jquery/jquery.tablesorter.min.js" %}"></script>
-
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/lib/jquery.mousewheel.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.canvaswrapper.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.colorhelpers.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.saturated.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.browser.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.drawSeries.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.errorbars.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.uiConstants.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.logaxis.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.symbol.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.flatdata.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.navigate.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.fillbetween.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.stack.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.touchNavigate.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.hover.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.touch.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.time.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.axislabels.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.selection.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.composeImages.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.legend.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.pie.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.crosshair.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/flot/source/jquery.flot.gauge.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/jquery.flot.axisvalues.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/daterangepicker/moment.min.js" %}"></script>
-<script language="javascript" type="text/javascript" src="{% static "pyscada/js/daterangepicker/daterangepicker.min.js" %}"></script>
-
-<script type="text/javascript" src="{% static "pyscada/js/pyscada/pyscada_v0-7-0rc14.js" %}"></script>
+    {% for js_file in javascript_files_list %}
+        <script language="javascript" type="text/javascript" src={{ js_file.src }}></script>
+    {% endfor %}
 {% endblock %}
-{% block script_bottom %}
 
-{% endblock %}
+{% block script_bottom %}{% endblock %}

@@ -6,13 +6,11 @@ from pyscada.models import Variable
 from . import PROTOCOL_ID
 
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-@python_2_unicode_compatible
 class ModbusDevice(models.Model):
     modbus_device = models.OneToOneField(Device, on_delete=models.CASCADE)
     protocol_choices = ((0, 'TCP'), (1, 'UDP'), (2, 'serial ASCII'), (3, 'serial RTU'), (4, 'serial Binary'),)
@@ -46,7 +44,6 @@ class ModbusDevice(models.Model):
         return self.modbus_device.short_name
 
 
-@python_2_unicode_compatible
 class ModbusVariable(models.Model):
     modbus_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
     address = models.PositiveIntegerField()

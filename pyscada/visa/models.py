@@ -5,7 +5,6 @@ from pyscada.models import Variable, Device, DeviceHandler
 from . import PROTOCOL_ID
 
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 from django.db.models.signals import post_save
 
 import logging
@@ -13,7 +12,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@python_2_unicode_compatible
 class VISAVariable(models.Model):
     visa_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
     variable_type_choices = ((0, 'configuration'), (1, 'acquisition'), (2, 'status'))
@@ -27,7 +25,6 @@ class VISAVariable(models.Model):
         return self.visa_variable.name
 
 
-@python_2_unicode_compatible
 class VISADevice(models.Model):
     visa_device = models.OneToOneField(Device, on_delete=models.CASCADE)
     resource_name = models.CharField(max_length=255,

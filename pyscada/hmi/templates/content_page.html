@@ -1,6 +1,3 @@
-<div id="{{page.link_title}}" class="sub-page" style="display: none;">
-    {% if has_chart %}
-        <div class="has_chart"></div>
-    {% endif %}
+<div id="{{page.link_title}}" class="sub-page {% if show_daterangepicker %}show_daterangepicker{% endif %} {% if show_timeline %}show_timeline{% endif %}" style="display: none;">
     {{ widget_rows_html|safe}}
 </div>

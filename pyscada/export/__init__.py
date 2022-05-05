@@ -6,8 +6,6 @@ from pyscada import core
 __version__ = core.__version__
 __author__ = core.__author__
 
-default_app_config = 'pyscada.export.apps.PyScadaExportConfig'
-
 parent_process_list = [{'pk': 99,
                         'label': 'pyscada.export',
                         'process_class': 'pyscada.export.worker.MasterProcess',

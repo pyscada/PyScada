@@ -5,13 +5,11 @@ from pyscada.models import Variable, Device
 from . import PROTOCOL_ID
 
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-@python_2_unicode_compatible
 class SystemStatVariable(models.Model):
     system_stat_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
     information_choices = (

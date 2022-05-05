@@ -1,12 +1,12 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.0rc23
+version 0.7.1rc1
 
 Copyright (c) 2013-2019 Martin Schröder, Camille Lavayssière
 Licensed under the GPL.
 
 */
-var version = "0.7.0rc23"
+var version = "0.7.1rc1"
 var NOTIFICATION_COUNT = 0
 var UPDATE_STATUS_COUNT = 0;
 var INIT_STATUS_COUNT = 0;
@@ -280,6 +280,7 @@ function data_handler(){
                         INIT_CHART_VARIABLES_DONE = true;
                         set_loading_state(5, 100);
                         $('#loadingAnimation').hide();
+                        hide_loading_state();
                     }
                 }
             }
@@ -950,7 +951,9 @@ function update_timeline(){
     //$("#timeline-time-left-label").html(date.toLocaleString());
 
     // Update DateTime pickers
-    daterange_set(moment(DATA_FROM_TIMESTAMP), moment(DATA_TO_TIMESTAMP))
+    if ($("#" + window.location.hash.substr(1) + ".show_daterangepicker").length || $("#" + window.location.hash.substr(1) + ".show_timeline").length) {
+        daterange_set(moment(DATA_FROM_TIMESTAMP), moment(DATA_TO_TIMESTAMP));
+    };
 }
 
 function progressbarSetWindow( event, ui ) {
@@ -1691,7 +1694,7 @@ function Gauge(id, min_value, max_value, threshold_values){
                 },
                 threshold: {
                     values: threshold_values,
-                }
+                },
             },
         },
     },
@@ -1747,8 +1750,8 @@ function Gauge(id, min_value, max_value, threshold_values){
             // add the selected data series to the "series" variable
             series = [];
             for (var key in keys){
+                key = keys[key];
                 if (key in DATA) {
-                    key = keys[key];
                     data=[[min_value, DATA[key][DATA[key].length - 1][1]]]
                     series.push({"data":data, "label":variables[key].label});
                 }
@@ -2512,8 +2515,36 @@ function show_page() {
     }
 }
 
+function toggle_daterangepicker(){
+    // Show/hide daterangepicker
+    if (window.location.hash.substr(1) !== '') {
+        if ($("#" + window.location.hash.substr(1) + ".show_daterangepicker").length) {
+            $(".daterangepicker_parent").removeClass("hidden");
+        }else {
+            $(".daterangepicker_parent").addClass("hidden");
+        }
+    }
+}
+
+function toggle_timeline(){
+    // Show/hide timeline
+    if (window.location.hash.substr(1) !== '') {
+        if ($("#" + window.location.hash.substr(1) + ".show_timeline").length) {
+            $(".timeline").removeClass("hidden");
+        }else {
+            $(".timeline").addClass("hidden");
+        }
+    }
+}
+
 // fix drop down problem
 $( document ).ready(function() {
+    // show buttons
+    $("#loadingAnimation").parent().show();
+    $("#AutoUpdateStatus").parent().parent().show();
+    $("#ReadAllTask").parent().parent().show();
+    $("#AutoUpdateButtonParent").show();
+
     // init loading states
     set_loading_state(1, 40);
 
@@ -2570,14 +2601,8 @@ $( document ).ready(function() {
             $('a[href$="' + window.location.hash + '"]').parent('li').addClass('active');
             show_page();
         };
-        // Show/hide timeline
-        if (window.location.hash.substr(1) !== '') {
-            if ($("#" + window.location.hash.substr(1) + " .has_chart").length) {
-                $(".show_timeline").removeClass("hidden");
-            }else {
-                $(".show_timeline").addClass("hidden");
-            }
-        }
+        toggle_daterangepicker();
+        toggle_timeline();
     });
     set_loading_state(1, loading_states[1] + 10);
 
@@ -2627,10 +2652,12 @@ $( document ).ready(function() {
         if ( max === null ) {max = 100}
 
         tv = JSON.parse($(val).data('params').threshold_values)
-
+        max2 = max;
+        for (v in tv) {if (v != "max") {max2 = Math.max(max2, v);};};
         threshold_values = []
         for (v in tv) {
-                threshold_values.push({value:v, color:tv[v]})
+            if (v == "max") {v = max2;tv[v]=tv['max'];}
+            threshold_values.push({value:v, color:tv[v]})
         }
         if ( threshold_values === "" ) {threshold_values = []}
         // add a new Plot
@@ -2726,14 +2753,9 @@ $( document ).ready(function() {
 		INIT_CHART_VARIABLES_DONE = false;
 	}
     });
-    // show timeline init
-    if (window.location.hash.substr(1) !== '') {
-        if ($("#" + window.location.hash.substr(1) + " .has_chart").length) {
-            $(".show_timeline").removeClass("hidden");
-        } else {
-            $(".show_timeline").addClass("hidden");
-        };
-    }
+    // show timeline and daterangepicker
+    toggle_daterangepicker();
+    toggle_timeline();
     set_loading_state(1, loading_states[1] + 10);
 
     // Resize charts on windows resize
@@ -2754,102 +2776,104 @@ $( document ).ready(function() {
     });
 
     // Date range picker
-    $('#daterange').daterangepicker({
-        "showDropdowns": true,
-        "timePicker": true,
-        "timePicker24Hour": true,
-        "timePickerSeconds": true,
-        ranges: {
-            'Last 10 Minutes': [moment().subtract(10, 'minutes'), moment()],
-            'Last 30 Minutes': [moment().subtract(30, 'minutes'), moment()],
-            'Last Hour': [moment().subtract(1, 'hours'), moment()],
-            'Last 2 Hour': [moment().subtract(2, 'hours'), moment()],
-            'Last 6 Hour': [moment().subtract(6, 'hours'), moment()],
-            'Last 12 Hour': [moment().subtract(12, 'hours'), moment()],
-            'Today': [moment().startOf('day'), moment()],
-            'Yesterday': [moment().subtract(1, 'days').startOf('day'), moment().subtract(1, 'days').endOf('day')],
-            'Last 7 Days': [moment().subtract(6, 'days'), moment()],
-            'Last 30 Days': [moment().subtract(29, 'days'), moment()],
-            'This Month': [moment().startOf('month'), moment()],
-            'Previous Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
-            'Last Month': [moment().subtract(1, 'month'), moment()],
-            'Last 2 Month': [moment().subtract(2, 'month'), moment()],
-            'Last 6 Month': [moment().subtract(6, 'month'), moment()],
-            'This Year': [moment().startOf('year'), moment()],
-            'Previous Year': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')],
-            'Last Year': [moment().subtract(1, 'year'), moment()],
-        },
-        "locale": {
-            "format": daterange_format,
-            "separator": " - ",
-            "applyLabel": "Apply",
-            "cancelLabel": "Cancel",
-            "fromLabel": "From",
-            "toLabel": "To",
-            "customRangeLabel": "Custom",
-            "weekLabel": "W",
-            "daysOfWeek": [
-                "Mo",
-                "Tu",
-                "We",
-                "Th",
-                "Fr",
-                "Sa",
-                "Su",
-            ],
-            "monthNames": [
-                "January",
-                "February",
-                "March",
-                "April",
-                "May",
-                "June",
-                "July",
-                "August",
-                "September",
-                "October",
-                "November",
-                "December"
-            ],
-            "firstDay": 1
-        },
-        "alwaysShowCalendars": true,
-        "linkedCalendars": false,
-        "startDate": moment(),
-        "endDate": moment().subtract(2, 'hours'),
-        "opens": "left"
-    }, function(start, end, label) {
-        LOADING_PAGE_DONE = 0;
-        set_loading_state(5, 0);
-        daterange_cb(start, end);
-        DATA_INIT_STATUS++;
-        DATA_FROM_TIMESTAMP = start.unix() * 1000;
-        if (label.indexOf('Last') !== -1 || label.indexOf('Today') !== -1 || label.indexOf('This Month') !== -1 || label.indexOf('This Year') !== -1) {
-            PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = true;
-        }else {
-            PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = false;
-        }
-        DATA_TO_TIMESTAMP = Math.min(end.unix() * 1000, SERVER_TIME);
-        DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
-        INIT_CHART_VARIABLES_DONE = false;
-        $('#loadingAnimation').show()
-    });
-    $('#daterange').on('show.daterangepicker', function(ev, picker) {
-        PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = AUTO_UPDATE_ACTIVE
-        PREVIOUS_END_DATE = moment.min(picker.endDate, moment()).unix();
-        if($('#AutoUpdateButton').bootstrapSwitch('state') && AUTO_UPDATE_ACTIVE){
-            auto_update_click();
-        };
-    });
-    $('#daterange').on('hide.daterangepicker', function(ev, picker) {
-        if(!$('#AutoUpdateButton').bootstrapSwitch('state') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
-            auto_update_click();
-        };
-        DATA_DISPLAY_FROM_TIMESTAMP = -1;
-        DATA_DISPLAY_TO_TIMESTAMP = -1;
-        DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
-        set_x_axes();
-    });
+    if ($("#" + window.location.hash.substr(1) + ".show_daterangepicker").length) {
+        $('#daterange').daterangepicker({
+            "showDropdowns": true,
+            "timePicker": true,
+            "timePicker24Hour": true,
+            "timePickerSeconds": true,
+            ranges: {
+                'Last 10 Minutes': [moment().subtract(10, 'minutes'), moment()],
+                'Last 30 Minutes': [moment().subtract(30, 'minutes'), moment()],
+                'Last Hour': [moment().subtract(1, 'hours'), moment()],
+                'Last 2 Hour': [moment().subtract(2, 'hours'), moment()],
+                'Last 6 Hour': [moment().subtract(6, 'hours'), moment()],
+                'Last 12 Hour': [moment().subtract(12, 'hours'), moment()],
+                'Today': [moment().startOf('day'), moment()],
+                'Yesterday': [moment().subtract(1, 'days').startOf('day'), moment().subtract(1, 'days').endOf('day')],
+                'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                'This Month': [moment().startOf('month'), moment()],
+                'Previous Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+                'Last Month': [moment().subtract(1, 'month'), moment()],
+                'Last 2 Month': [moment().subtract(2, 'month'), moment()],
+                'Last 6 Month': [moment().subtract(6, 'month'), moment()],
+                'This Year': [moment().startOf('year'), moment()],
+                'Previous Year': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')],
+                'Last Year': [moment().subtract(1, 'year'), moment()],
+            },
+            "locale": {
+                "format": daterange_format,
+                "separator": " - ",
+                "applyLabel": "Apply",
+                "cancelLabel": "Cancel",
+                "fromLabel": "From",
+                "toLabel": "To",
+                "customRangeLabel": "Custom",
+                "weekLabel": "W",
+                "daysOfWeek": [
+                    "Mo",
+                    "Tu",
+                    "We",
+                    "Th",
+                    "Fr",
+                    "Sa",
+                    "Su",
+                ],
+                "monthNames": [
+                    "January",
+                    "February",
+                    "March",
+                    "April",
+                    "May",
+                    "June",
+                    "July",
+                    "August",
+                    "September",
+                    "October",
+                    "November",
+                    "December"
+                ],
+                "firstDay": 1
+            },
+            "alwaysShowCalendars": true,
+            "linkedCalendars": false,
+            "startDate": moment(),
+            "endDate": moment().subtract(2, 'hours'),
+            "opens": "left"
+        }, function(start, end, label) {
+            LOADING_PAGE_DONE = 0;
+            set_loading_state(5, 0);
+            daterange_cb(start, end);
+            DATA_INIT_STATUS++;
+            DATA_FROM_TIMESTAMP = start.unix() * 1000;
+            if (label.indexOf('Last') !== -1 || label.indexOf('Today') !== -1 || label.indexOf('This Month') !== -1 || label.indexOf('This Year') !== -1) {
+                PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = true;
+            }else {
+                PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = false;
+            }
+            DATA_TO_TIMESTAMP = Math.min(end.unix() * 1000, SERVER_TIME);
+            DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
+            INIT_CHART_VARIABLES_DONE = false;
+            $('#loadingAnimation').show()
+        });
+        $('#daterange').on('show.daterangepicker', function(ev, picker) {
+            PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = AUTO_UPDATE_ACTIVE
+            PREVIOUS_END_DATE = moment.min(picker.endDate, moment()).unix();
+            if($('#AutoUpdateButton').bootstrapSwitch('state') && AUTO_UPDATE_ACTIVE){
+                auto_update_click();
+            };
+        });
+        $('#daterange').on('hide.daterangepicker', function(ev, picker) {
+            if(!$('#AutoUpdateButton').bootstrapSwitch('state') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
+                auto_update_click();
+            };
+            DATA_DISPLAY_FROM_TIMESTAMP = -1;
+            DATA_DISPLAY_TO_TIMESTAMP = -1;
+            DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP
+            set_x_axes();
+        });
+    };
     set_loading_state(1, 100);
     hide_loading_state();
 

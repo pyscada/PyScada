@@ -6,8 +6,6 @@ from pyscada import core
 __version__ = core.__version__
 __author__ = core.__author__
 
-default_app_config = 'pyscada.modbus.apps.PyScadaModbusConfig'
-
 PROTOCOL_ID = 3
 
 parent_process_list = [{'pk': PROTOCOL_ID,

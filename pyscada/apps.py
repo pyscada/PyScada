@@ -13,6 +13,7 @@ class PyScadaConfig(AppConfig):
     name = 'pyscada'
     verbose_name = _("PyScada Core")
     path = os.path.dirname(os.path.realpath(__file__))
+    default_auto_field = 'django.db.models.AutoField'
 
     def ready(self):
         import pyscada.signals

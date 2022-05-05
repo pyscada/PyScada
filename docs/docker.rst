@@ -62,3 +62,10 @@ The last step is to start the Container.
 ::
 
     sudo docker-compose up -d
+
+If you have an error or a command is stuck, run :
+
+::
+
+    sudo docker-compose down
+    sudo docker system prune --force --volumes

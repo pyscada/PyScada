@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.utils.six import integer_types
-
 import re
 from datetime import datetime
 from pytz import UTC
@@ -28,7 +26,7 @@ def decode_bcd(values):
     """
 
     bin_str_out = ''
-    if isinstance(values, integer_types):
+    if isinstance(values, int):
         bin_str_out = bin(values)[2:].zfill(16)
         bin_str_out = bin_str_out[::-1]
     else:
