@@ -16,14 +16,14 @@ Using Git.
 
 ::
 
-    git clone https://github.com/clavay/PyScada.git
+    git clone https://github.com/pyscada/PyScada.git
     cd PyScada/docker
 
 Using wget.
 
 ::
 
-    wget -qO- -O tmp.zip https://github.com/clavay/PyScada/archive/refs/heads/master.zip && unzip tmp.zip && rm tmp.zip
+    wget -qO- -O tmp.zip https://github.com/pyscada/PyScada/archive/refs/heads/master.zip && unzip tmp.zip && rm tmp.zip
     cd PyScada-master/docker
 
 
