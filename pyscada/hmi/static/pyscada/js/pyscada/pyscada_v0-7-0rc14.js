@@ -567,11 +567,13 @@ function add_notification(message, level,timeout,clearable) {
 function update_data_values(key,val,time){
         if (key.split("-")[0] == "var") {type="variable"} else {type="variable_property"}
 
+        var unit = $(".variable-config[data-unit][data-key=" + key.split("-")[1] + "]").attr('data-unit')
+
         if (time != null) {
             t_last_update = SERVER_TIME - time
             t_next_update = 1000 * $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-device-polling_interval') - t_last_update;
             t_next_update_string = ((t_next_update < 1000) ? '< 1 sec' : msToTime(t_next_update));
-            $(".type-numeric." + key).attr('data-original-title','last update ' + msToTime(t_last_update) + ' ago<br>next update in ' + t_next_update_string)
+            $(".type-numeric." + key).attr('data-original-title','Current value: ' + val + ' ' + unit + '<br>Last update: ' + msToTime(t_last_update) + ' ago<br>Next update: ' + t_next_update_string)
             $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-value-timestamp',time)
             polling_interval = $(".variable-config[data-device-polling_interval][data-key=" + key.split("-")[1] + "]").attr('data-device-polling_interval')
             if (time < SERVER_TIME - 10 * Math.max(1000 * polling_interval, REFRESH_RATE)) {
@@ -616,7 +618,7 @@ function update_data_values(key,val,time){
                     }else if (typeof $(".variable-config[data-dictionary][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-dictionary') != 'undefined' && $(".variable-config[data-dictionary][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-dictionary') != 0){
                         r_val_temp=dictionary($(".control-item.type-numeric." + key)[i].id,val);
                     }
-                    $("#" + $(".control-item.type-numeric." + key)[i].id).html(r_val_temp + " " + $(".variable-config[data-unit][data-key=" + key.split("-")[1] + "]").attr('data-unit'));
+                    $("#" + $(".control-item.type-numeric." + key)[i].id).html(r_val_temp + " " + unit);
                 }
                 if ($(".variable-config[data-color-type][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-type') != 0 && $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode') != 0){
                     $($(".control-item.type-numeric." + key)[i]).css("background-color", update_data_colors($(".control-item.type-numeric." + key)[i].id,val))
