@@ -60,6 +60,7 @@ def view(request, link_title):
     view_template = 'view.html'
     page_template = get_template('content_page.html')
     widget_row_template = get_template('widget_row.html')
+    STATIC_URL = str(settings.STATIC_URL) if hasattr(settings, 'STATIC_URL') else 'static'
 
     try:
         v = View.objects.get(link_title=link_title)
@@ -151,6 +152,10 @@ def view(request, link_title):
                 view_template = opts['view_template']
             if type(opts) == dict and 'add_context' in opts:
                 add_context.update(opts['add_context'])
+            if type(opts) == dict and 'javascript_files_list' in opts:
+                for file_src in opts['javascript_files_list']:
+                    if {'src': file_src} not in javascript_files_list:
+                        javascript_files_list.append({'src': file_src})
 
             logger.debug(opts)
             logger.debug(view_template)
@@ -166,9 +171,6 @@ def view(request, link_title):
                                             }, request)
 
     # Generate javascript files list
-    STATIC_URL = str(settings.STATIC_URL) if hasattr(settings, 'STATIC_URL') else 'static'
-
-
     if has_flot_chart:
         javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/jquery/jquery.tablesorter.min.js'})
         javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/lib/jquery.mousewheel.js'})
@@ -204,7 +206,6 @@ def view(request, link_title):
         javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/daterangepicker/daterangepicker.min.js'})
 
     javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/pyscada/pyscada_v0-7-0rc14.js'})
-
 
     # Generate css files list
     css_files_list.append({'src': STATIC_URL + 'pyscada/css/daterangepicker/daterangepicker.css'})

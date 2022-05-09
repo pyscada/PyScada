@@ -906,14 +906,18 @@ function msToTime(duration) {
 
 }
 
+function updatePyScadaPlots(force=false) {
+    $.each(PyScadaPlots,function(plot_id){
+        var self = this, doBind = function() {
+            PyScadaPlots[plot_id].update(force);
+        };
+        $.browserQueue.add(doBind, this);
+    });
+}
+
 function set_x_axes(){
     if(!progressbar_resize_active){
-        $.each(PyScadaPlots,function(plot_id){
-            var self = this, doBind = function() {
-                PyScadaPlots[plot_id].update(true);
-            };
-            $.browserQueue.add(doBind, this);
-        });
+        updatePyScadaPlots(true);
         // update the progressbar
         update_timeline();
     }
@@ -957,13 +961,7 @@ function update_timeline(){
 }
 
 function progressbarSetWindow( event, ui ) {
-    $.each(PyScadaPlots,function(plot_id){
-        var self = this, doBind = function() {
-            PyScadaPlots[plot_id].update(false);
-        };
-        $.browserQueue.add(doBind, this);
-    });
-
+    updatePyScadaPlots(false);
     progressbar_resize_active = false;
 }
 
@@ -2603,6 +2601,7 @@ $( document ).ready(function() {
         };
         toggle_daterangepicker();
         toggle_timeline();
+        updatePyScadaPlots(false);
     });
     set_loading_state(1, loading_states[1] + 10);
 
