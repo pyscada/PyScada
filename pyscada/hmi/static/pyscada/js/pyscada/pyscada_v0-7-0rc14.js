@@ -2526,6 +2526,11 @@ function toggle_daterangepicker(){
     }
 }
 
+/**
+ * Toggle timeline
+ *
+ * @returns void
+ */
 function toggle_timeline(){
     // Show/hide timeline
     if (window.location.hash.substr(1) !== '') {

@@ -16,6 +16,15 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+# Django setup
+import os
+import sys
+import django
+sys.path.insert(0, os.path.abspath('..'))
+sys.path.append("/var/www/pyscada/PyScadaServer/PyScadaServer/")
+os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
+django.setup()
+
 
 # -- Project information -----------------------------------------------------
 
@@ -26,7 +35,7 @@ author = 'Martin Schröder'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.7.0rc16'
+release = '0.7.1rc1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -39,7 +48,12 @@ release = '0.7.0rc16'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx_js',
 ]
+
+# Set JavaScript source paths
+js_source_path = '../pyscada/hmi/static/pyscada/js/pyscada'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -85,7 +99,7 @@ html_theme = 'default'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+#html_static_path = ['_static']
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.

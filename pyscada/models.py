@@ -806,6 +806,11 @@ class VariableProperty(models.Model):
 
 
 class Variable(models.Model):
+    """
+        Stores a variable entry, related to :mod:`pyscada.Device`,
+        :mod:`pyscada.Unit`, (optional) :mod:`pyscada.Scaling`,
+        (optional) :mod:`pyscada.Color` and (optional) :mod:`pyscada.Dictionary`.
+    """
     id = models.AutoField(primary_key=True)
     name = models.SlugField(max_length=200, verbose_name="variable name", unique=True)
     description = models.TextField(default='', verbose_name="Description")
@@ -1219,7 +1224,7 @@ class PeriodicField(models.Model):
     """
     Auto calculate and store value related to a Variable for a time range.
     Example: - store the min of each month.
-             - store difference of each day between 9am an 8:59am
+    - store difference of each day between 9am an 8:59am
     """
     type_choices = ((0, 'min'),
                     (1, 'max'),
@@ -1909,11 +1914,11 @@ class RecordedDataOld(models.Model):
 class RecordedData(models.Model):
     """
     id: Big Int first 42 bits are used for the unix time in ms, unsigned because we only
-        store values that are past 1970, the last 21 bits are used for the
-        variable id to have a unique primary key
-        63 bit 111111111111111111111111111111111111111111111111111111111111111
-        42 bit 111111111111111111111111111111111111111111000000000000000000000
-        21 bit 										    1000000000000000000000
+    store values that are past 1970, the last 21 bits are used for the
+    variable id to have a unique primary key
+    63 bit 111111111111111111111111111111111111111111111111111111111111111
+    42 bit 111111111111111111111111111111111111111111000000000000000000000
+    21 bit 										    1000000000000000000000
     date_saved: datetime when the model instance is saved in the database (will be set in the save method)
 
 

@@ -2,25 +2,34 @@
 # -*- coding: utf-8 -*-
 """
  - > master_process
+
     - > mail master
+
     - > export master
+
      - > export task A
      - > export task B
+
     - > event master
 
     - > modbus master(registers a process for every device/port)
+
      - > modbus device A (IP 1)
      - > modbus device B (IP 2)
      - > modbus device C, D (RTU, TTY1)
      - > modbus device E, F (RTU, TTY2)
+
     - > onewire (registers a process for every device/port)
+
      - > onewire device G, H (server a)
+
     - > visa (registers a process for every device/port)
+
      - > visa device A
+
     - > systemstat master
     - > smbus (registers a process for every device/port)
     - > jofra350 (registers a process for every device/port)
-
 
 """
 from __future__ import unicode_literals
@@ -81,9 +90,9 @@ except (TimeoutError, asyncioTimeoutError):
 
 
 def check_db_connection():
-    '''
+    """
     from: https://stackoverflow.com/questions/7835272/django-operationalerror-2006-mysql-server-has-gone-away
-    '''
+    """
     # mysql is lazily connected to in django.
     # connection.connection is None means
     # you have not connected to mysql before

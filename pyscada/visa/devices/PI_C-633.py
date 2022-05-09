@@ -3,8 +3,8 @@ from __future__ import unicode_literals
 
 from pyscada.visa.devices import GenericDevice
 from pyscada.models import VariableProperty
-from datetime import datetime
-from math import floor
+
+from time import sleep, time
 
 import logging
 
@@ -28,11 +28,6 @@ __maintainer__ = "Martin Schröder"
 __email__ = "m.schroeder@tu-berlin.de"
 __status__ = "Beta"
 __docformat__ = 'reStructuredText'
-
-import pyvisa
-from datetime import datetime
-from math import floor
-from time import sleep, time
 
 
 class C633(object):
@@ -93,7 +88,7 @@ class C633(object):
             data.append(d)
         return data
 
-from time import sleep
+
 class Handler(GenericDevice):
     """
     C-633 and other Devices with the same command set
@@ -129,7 +124,6 @@ class Handler(GenericDevice):
             return None
         stage = int(variable_instance.visavariable.device_property.upper())
         return self.smc.get_value(stage)
-
 
     def write_data(self,variable_id, value, task):
         """
@@ -168,4 +162,3 @@ class Handler(GenericDevice):
             return value
         except:
             return None
-
