@@ -8,8 +8,6 @@ __author__ = core.__author__
 
 PROTOCOL_ID = 5
 
-default_app_config = 'pyscada.visa.apps.PyScadaVISAConfig'
-
 parent_process_list = [{'pk':PROTOCOL_ID,
                         'label': 'pyscada.visa',
                         'process_class': 'pyscada.visa.worker.Process',

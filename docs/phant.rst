@@ -1,5 +1,5 @@
-Installation
-============
+Phant Installation
+==================
 
 add the following line to the urls.py:
 

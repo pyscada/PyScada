@@ -214,3 +214,43 @@
   - fixed re-login after logout (#22)
   - added LINK_TARGET option to change the default behaviour of links in view overview (#23)
   - Catching exceptions if DB close while pyscada is running
+
+0.7.0rc17, 0.7.0rc18
+  - add pre_delete signals to stop the background process before deleting a device
+  - move widget post_save signal to the model to remove the global receiver (not filtering by sender)
+  - move device handlers to core
+  - add stop in DAQ Process restart
+  - move the device and variable protocol specific configuration to core
+  - add protocol name in device __str__ for the variable js admin file
+  - add complex events
+
+0.7.0rc19
+  - add fk_name in admin for bacnet device with 2 ForeignKey to Device model
+
+0.7.0rc20
+  - add django channels to send informations between processes
+
+0.7.0rc21
+  - Update docker config file
+  - Add optional PID_FILE_NAME to settings to allow multiple instances
+  - Add custom periodic auto caltulated variable
+
+0.7.0rc22
+  - Add choose_login.html to have multiple login ways
+  - Add circular gauge to display control items
+  - Add silent delete option in admin for VariableState and Device to delete a lot of data
+  - Add grafana doc and config file to use Grafana to display data from a PyScada instance
+  - Add dictionaries to store string with a key. Allows to store strings for Variables
+
+0.7.0rc23
+  - Add svg to render ProcessFlowDiagram. Allows to resize to fit the window size
+  - Add OPC-UA protocol
+  - close DB connection in scheduler to allow multiple instance on the same DB to run
+  - Add INT8 and UINT8 variable value class
+  - change the date range picker JS library
+  - Add logrotate config file
+  - Add a slider to change the refresh rate value of data handling
+
+0.7.1rc1
+  - Update to Django 3
+  - Update docker config and doc to use pyscada repository

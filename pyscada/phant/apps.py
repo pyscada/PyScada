@@ -8,3 +8,4 @@ from django.utils.translation import ugettext_lazy as _
 class PyScadaPhantConfig(AppConfig):
     name = 'pyscada.phant'
     verbose_name = _("PyScada Phant Server")
+    default_auto_field = 'django.db.models.AutoField'

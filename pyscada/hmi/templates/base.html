@@ -6,19 +6,23 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <meta name="description" content="PyScada html5 client application"/>
         <meta name="author" content="Martin Schroeder"/>
-        
+
         <title>{% block title %}{% endblock %}</title>
         <!-- Bootstrap core CSS -->
-        <link href="{% static "pyscada/css/bootstrap.css" %}" rel="stylesheet"/>
+        <link href='{% static "pyscada/css/bootstrap/bootstrap.min.css" %}' rel="stylesheet"/>
         <!-- Bootstrap theme -->
-        <link href="{% static "pyscada/css/bootstrap-theme.min.css" %}" rel="stylesheet"/>
+        <link href='{% static "pyscada/css/bootstrap/bootstrap-theme.min.css" %}' rel="stylesheet"/>
+        <!-- Bootstrap switch -->
+        <link href='{% static "pyscada/css/bootstrap/bootstrap-switch.min.css" %}' rel="stylesheet">
         <!-- Bootstrap theme -->
-        <link href="{% static "pyscada/css/jquery-ui/jquery-ui.min.css" %}" rel="stylesheet"/>
+        <link href='{% static "pyscada/css/jquery-ui/jquery-ui.min.css" %}' rel="stylesheet"/>
         <!-- Bootstrap theme -->
-        <link href="{% static "pyscada/css/jquery-ui/jquery-ui.theme.min.css" %}" rel="stylesheet"/>
-        <!-- Custom styles for this template -->    
-        <link href="{% static "pyscada/css/pyscada-theme.css" %}" rel="stylesheet"/>
-        <link rel="icon" href="{% static "pyscada/img/favicon.ico" %}" type="image/x-icon">
+        <link href='{% static "pyscada/css/jquery-ui/jquery-ui.theme.min.css" %}' rel="stylesheet"/>
+        <!-- Custom styles for this template -->
+        <link href='{% static "pyscada/css/pyscada/pyscada-theme.css" %}' rel="stylesheet"/>
+        {% block head_css %}{% endblock %}
+
+        <link rel="icon" href='{% static "pyscada/img/favicon.ico" %}' type="image/x-icon">
     </head>
     <body {% block body_confic_data %} {% endblock %}>
         <div id="wrap">
@@ -26,6 +30,7 @@
             <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
                 <div class="container">
                     <div class="navbar-header">
+                        {% block navbar_logo %}{% endblock %}
                         <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
                             <span class="icon-bar"></span>
                             <span class="icon-bar"></span>
@@ -34,23 +39,33 @@
                         <a  class="navbar-brand" target="{{ link_target }}" href="{% url 'view-overview'%}">PyScada</a>
                     </div>
                     <div class="navbar-collapse collapse">
-                        <ul class="nav navbar-nav">
+                        <ul class="nav navbar-left navbar-nav">
                             {% block top_menu_left %}{% endblock %}
+                            {% block top_menu_left_collapsed %}{% endblock %}
                         </ul>
                         <ul class="nav navbar-right navbar-nav">
                             {% block top_menu_right %}{% endblock %}
                             {% if user.pk %}
                             <li class="dropdown"><!-- User -->
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon  glyphicon-user"></span> {% if user.first_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username }}{% endif %}<b class="caret"></b></a>
-                                <ul class="dropdown-menu">
+                                <ul class="dropdown-menu" style="min-width: 0px;">
                                     {% if user.is_staff %}
                                     <li><a href="{% url 'pyscada_admin:index' %}" target="{{ link_target }}">Admin</a></li>
                                     <li class="divider"></li>
                                     {% endif %}
-                                    <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.first_name }} {{ user.last_name }}</a></li>	
+                                    <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.first_name }} {{ user.last_name }}</a></li>
                                     <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
                                     <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">change user info</a></li>
                                     <li class="divider"></li>
+                                    <li role="presentation" class="hidden" id="refresh-rate-li">
+                                        <div style="padding: 3px 20px;">
+                                            <span>Data refresh rate: </span>
+                                            <span id="refresh-rate-output"></span>
+                                            <span> ms</span>
+                                            <input id="refresh-rate-input" type="range" min="100" max="5000" step="100" value="2500">
+                                        </div>
+                                    </li>
+                                    <li id="refresh-rate-divider" class="divider hidden"></li>
                                     <li><a href="/accounts/password_change" target="{{ link_target }}"> change password</a></li>
                                     <li class="divider"></li>
                                     <li><a href="/accounts/logout"> logout</a></li>
@@ -58,7 +73,18 @@
                             </li>
                             {% endif %}
                             <!--<li><a href="#page-help">Help</a></li>-->
-                            <li style="width:40px;"><a href="#" ><span id="AutoUpdateStatus" class="glyphicon glyphicon-transfer"></span></a></li>
+                            <li>
+                                <a href="javascript:;" style="padding-left:0px; padding-right:0px;width:40px;height:30px;display: none;"><img id="loadingAnimation" style="display: inline-block; height: 14px;" src="/static/pyscada/img/load.gif" alt="loading" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Initialisation"></a>
+                            </li>
+                            <li id="AutoUpdateButtonParent" style="width:100px;height:30px;padding-top: 15px;margin-right:-25px;display: none;">
+                                <input class="hidden" type="checkbox" id="AutoUpdateButton" data-inverse="true" data-size="mini" data-on-color="success" data-off-color="default" checked>
+                            </li>
+                            <li style="width:40px;height:30px;display: none;">
+                                <a href="javascript:;" ><span id="ReadAllTask" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Send request data to all devices" class="glyphicon glyphicon-refresh" ></span></a>
+                            </li>
+                            <li style="width:40px;height:40px;display: none;">
+                                <a href="javascript:;" ><span id="AutoUpdateStatus" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Data transfer" class="glyphicon glyphicon-transfer"></span></a>
+                            </li>
                         </ul>
                     </div><!--/.nav-collapse -->
                 </div>
@@ -66,24 +92,27 @@
             <div class="container" id="content">
                 {% block top_area %}{% endblock %}
                 <!-- loading animation -->
+                <div id="notification_area"></div>
                 <div id="notification_area_2"></div>
                 {% block content %}{% endblock %}
             </div> <!-- /container -->
         </div>
         <footer class="footer">
         <span class="pull-left">{% if version_string %}PyScada Version: {{version_string}}{% endif %}</span>
+        {% block footer_left %}{% endblock %}
         <span class="pull-right server_time"></span>
         </footer>
         <canvas id="myCanvas" width="30" height="15" style="display:none"></canvas>
         <!-- Bootstrap core JavaScript
         ================================================== -->
         <!-- Placed at the end of the document so the pages load faster -->
-        <script type="text/javascript" src="{% static "pyscada/js/jquery.min.js" %}"></script>
-        <script type="text/javascript" src="{% static "pyscada/js/jquery-ui/jquery-ui.js" %}"></script>
-        <script type="text/javascript" src="{% static "pyscada/js/jquery.cookie.js" %}"></script>
-        <script type="text/javascript" src="{% static "pyscada/js/bootstrap.min.js" %}"></script>
-        {% block include_bootom %}{% endblock %}
-        
+        <script type="text/javascript" src='{% static "pyscada/js/jquery/jquery.min.js" %}'></script>
+        <script type="text/javascript" src='{% static "pyscada/js/jquery-ui/jquery-ui.js" %}'></script>
+        <script type="text/javascript" src='{% static "pyscada/js/jquery/jquery.cookie.js" %}'></script>
+        <script type="text/javascript" src='{% static "pyscada/js/bootstrap/bootstrap.min.js" %}'></script>
+        <script type="text/javascript" src='{% static "pyscada/js/bootstrap/bootstrap-switch.min.js" %}'></script>
+        {% block include_bottom %}{% endblock %}
+
         <script>
         {% block script_bottom %}{% endblock %}
         </script>

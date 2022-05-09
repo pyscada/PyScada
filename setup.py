@@ -31,7 +31,7 @@ setup(
     platforms=['OS Independent'],
     classifiers=CLASSIFIERS,
     install_requires=[
-        'django<2.3',
+        'django<4',
         'pymodbus>=1.2',
         'numpy>=1.6.0',
         'h5py>=2.2.1',
@@ -39,7 +39,13 @@ setup(
         'pillow',
         'python-daemon>=2.0.0',
         'pytz',
-        'pyserial'
+        'pyserial',
+        'pyvisa-py>=0.5.2',
+        'pyvisa',
+        # 'channels',
+        # 'channels-redis',
+        'asgiref',
+        'monthdelta',
     ],
     packages=find_packages(exclude=["project", "project.*"]),
     include_package_data=True,

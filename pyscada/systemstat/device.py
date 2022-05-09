@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
+from pyscada.models import VariableProperty
 
 try:
     import psutil
@@ -7,16 +8,39 @@ try:
 except ImportError:
     driver_ok = False
 
+import os
+from ftplib import FTP, error_perm, error_temp, error_reply, error_proto
+from ipaddress import ip_address
+from socket import gethostbyaddr, gaierror, herror
+
+from django.conf import settings
+
+from asgiref.sync import async_to_sync, sync_to_async
+from asyncio import wait_for
+try:
+    from asyncio.exceptions import TimeoutError as asyncioTimeoutError
+    from asyncio.exceptions import CancelledError as asyncioCancelledError
+except ModuleNotFoundError:
+    # for python version < 3.8
+    from asyncio import TimeoutError as asyncioTimeoutError
+    from asyncio import CancelledError as asyncioCancelledError
+
 from time import time
 import logging
 
 logger = logging.getLogger(__name__)
+
+MEDIA_ROOT = settings.MEDIA_ROOT \
+    if hasattr(settings, 'MEDIA_ROOT') else '/var/www/pyscada/http/media/'
+MEDIA_URL = settings.MEDIA_URL \
+    if hasattr(settings, 'MEDIA_URL') else '/media/'
 
 
 class Device:
     def __init__(self, device):
         self.variables = []
         self.device = device
+        self.async_result = None
         for var in device.variable_set.filter(active=1):
             if not hasattr(var, 'systemstatvariable'):
                 continue
@@ -42,6 +66,7 @@ class Device:
         (15,'swap_memory_sout'),
         (17,'disk_usage_systemdisk_percent'),
         (18,'disk_usage_disk_percent'),
+        (19,'network_ip_address'),
         ### APCUPSD Status
         (100, 'STATUS'), # True/False
         (101, 'LINEV'), # Volts
@@ -49,6 +74,8 @@ class Device:
         (103, 'BCHARGE'), # %
         (104, 'TIMELEFT'), # Minutes
         (105, 'LOADPCT'), #
+        ### Other
+        (200, 'list_files'), #
 
 
 
@@ -149,7 +176,25 @@ class Device:
             elif item.systemstatvariable.information == 18:
                 # disk_usage_disk_percent
                 if hasattr(psutil, 'disk_usage'):
-                    value = psutil.disk_usage(item.systemstatvariable.parameter).percent
+                    try:
+                        async_to_sync(self._wait_for)(psutil.disk_usage, 10, item.systemstatvariable.parameter)
+                        value = self.async_result.percent
+                    except OSError:
+                        value = None
+                    except asyncioTimeoutError:
+                        value = None
+                    timestamp = time()
+            elif item.systemstatvariable.information == 19:
+                # ip_addresses
+                if hasattr(psutil, 'net_if_addrs'):
+                    for vp in VariableProperty.objects.filter(variable=item):
+                        try:
+                            VariableProperty.objects.update_property(variable_property=vp,
+                                                                     value=psutil.net_if_addrs()[vp.name][0][1])
+                        except KeyError:
+                            VariableProperty.objects.update_property(variable_property=vp,
+                                                                     value="None")
+                    value = None
                     timestamp = time()
             elif 100 <= item.systemstatvariable.information <= 105:
                 # APCUPSD Status
@@ -182,6 +227,174 @@ class Device:
                         if 'LOADPCT' in apcupsd_status:
                             value = apcupsd_status['LOADPCT']
                             timestamp = apcupsd_status['timestamp']
+            elif item.systemstatvariable.information == 200:
+                # list first X/last X/all items of a directory
+                param = item.systemstatvariable.parameter
+                if param is None:
+                    param = ""
+                if param != "":
+                    param = param.split()
+                for vp in VariableProperty.objects.filter(variable=item):
+                    result = ""
+                    try:
+                        os.chdir(vp.name)
+                        async_to_sync(self._wait_for)(os.listdir, 10, vp.name)
+                        list_dir = self.async_result
+                        list_dir = list(filter(os.path.isfile, list_dir))
+                        list_dir.sort(key=os.path.getmtime)
+                    except asyncioTimeoutError:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str("Timeout : " + vp.name))
+                        continue
+                    except FileNotFoundError:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str(vp.name + " not found"))
+                        continue
+                    except OSError as e:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str(vp.name + " - OSError"))
+                        continue
+                    if list_dir is None or len(list_dir) == 0:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str("No files in " + vp.name))
+                        continue
+                    if len(param) == 2:
+                        try:
+                            val = int(param[1])
+                            if val <= 1:
+                                VariableProperty.objects.update_property(variable_property=vp,
+                                                                         value="Systemstat listing directory filter "
+                                                                               "value must be > 0")
+                                continue
+                            else:
+                                if param[0] == "first":
+                                    for i in list_dir[:val]:
+                                        if MEDIA_ROOT in vp.name:
+                                            result += '<a href="' + MEDIA_URL + vp.name.replace(MEDIA_ROOT, "") +\
+                                                      str(i) + '" target="_blank">' + str(i) + "</a><br>"
+                                        else:
+                                            result += str(i) + "<br>"
+                                elif param[0] == "last":
+                                    for i in list_dir[-val:]:
+                                        if MEDIA_ROOT in vp.name:
+                                            result += '<a href="' + MEDIA_URL + vp.name.replace(MEDIA_ROOT, "") +\
+                                                      str(i) + '" target="_blank">' + str(i) + "</a><br>"
+                                        else:
+                                            result += str(i) + "<br>"
+                                else:
+                                    VariableProperty.objects.update_property(variable_property=vp,
+                                                                             value="Systemstat listing directory "
+                                                                                   "syntax error")
+                                    continue
+                        except ValueError:
+                            VariableProperty.objects.update_property(variable_property=vp,
+                                                                     value="Systemstat listing directory filter value "
+                                                                           "must be an integer")
+                            continue
+                    elif (len(param) == 1 and param[0] == "all") or len(param) == 0:
+                        for i in list_dir:
+                            result += str(i) + "\r\n"
+                    else:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value="Systemstat listing directory parameter error")
+                        continue
+                    VariableProperty.objects.update_property(variable_property=vp, value=result)
+                value = None
+                timestamp = time()
+            elif item.systemstatvariable.information == 201:
+                # list first X/last X/all items of a ftp directory
+                param = item.systemstatvariable.parameter
+                if param is None:
+                    param = ""
+                if param != "":
+                    param = param.split()
+                for vp in VariableProperty.objects.filter(variable=item):
+                    result = ""
+                    if len(param) == 0:
+                        logger.debug("FTP IP missing for listing directory")
+                        continue
+                    try:
+                        ip_address(param[0])
+                    except ValueError:
+                        try:
+                            param[0] = gethostbyaddr(param[0])[2][0]
+                            ip_address(param[0])
+                        except (herror, gaierror, ValueError):
+                            err = "FTP listing directory : first argument must be IP or known FQDN (/etc/hosts), " \
+                                  "it's : " + param[0]
+                            logger.debug(err)
+                            VariableProperty.objects.update_property(variable_property=vp, value=err)
+                            continue
+                    try:
+                        ftp = FTP(param[0])
+                        ftp.login()
+                        async_to_sync(self._wait_for)(ftp.nlst, 10, vp.name)
+                        list_dir = self.async_result
+                        ftp.close()
+                    except asyncioTimeoutError:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str("Timeout : " + vp.name))
+                        continue
+                    except error_perm:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str(vp.name + " not found"))
+                        continue
+                    except error_temp:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str("Connection error"))
+                        continue
+                    except error_reply:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str("Reply error"))
+                        continue
+                    except error_proto:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str("Protocol error"))
+                        continue
+                    except OSError:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str("Device offline ?"))
+                        continue
+                    if list_dir is None or len(list_dir) == 0:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value=str("No files in ftp://" + param[0] +
+                                                                           vp.name))
+                        continue
+                    if len(param) == 3:
+                        try:
+                            val = int(param[2])
+                            if val <= 1:
+                                VariableProperty.objects.update_property(variable_property=vp,
+                                                                         value="Systemstat listing directory filter "
+                                                                               "value must be > 0")
+                                continue
+                            else:
+                                if param[1] == "first":
+                                    for i in list_dir[:val]:
+                                        result += str(i) + "<br>"
+                                elif param[1] == "last":
+                                    for i in list_dir[-val:]:
+                                        result += str(i) + "<br>"
+                                else:
+                                    VariableProperty.objects.update_property(variable_property=vp,
+                                                                             value="Systemstat listing directory "
+                                                                                   "syntax error")
+                                    continue
+                        except ValueError:
+                            VariableProperty.objects.update_property(variable_property=vp,
+                                                                     value="Systemstat listing directory filter value "
+                                                                           "must be an integer")
+                            continue
+                    elif (len(param) == 2 and param[1] == "all") or len(param) == 1:
+                        for i in list_dir:
+                            result += str(i) + "\r\n"
+                    else:
+                        VariableProperty.objects.update_property(variable_property=vp,
+                                                                 value="Systemstat listing directory parameter error")
+                        continue
+                    VariableProperty.objects.update_property(variable_property=vp, value=result)
+                value = None
+                timestamp = time()
             else:
                 value = None
             # update variable
@@ -189,6 +402,9 @@ class Device:
                 output.append(item.create_recorded_data_element())
 
         return output
+
+    async def _wait_for(self, cmd, timeout=1, *args):
+        self.async_result = await wait_for(sync_to_async(cmd)(*args), timeout=timeout)
 
 
 def query_apsupsd_status():

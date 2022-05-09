@@ -5,7 +5,7 @@ from pyscada.modbus import PROTOCOL_ID
 from pyscada.modbus.models import ModbusDevice, ExtendedModbusDevice
 from pyscada.modbus.models import ModbusVariable, ExtendedModbusVariable
 from pyscada.admin import DeviceAdmin
-from pyscada.admin import VariableAdmin
+from pyscada.admin import CoreVariableAdmin
 from pyscada.admin import admin_site
 from pyscada.models import Device, DeviceProtocol
 from django.contrib import admin
@@ -19,6 +19,35 @@ class ModbusDeviceAdminInline(admin.StackedInline):
 
 
 class ModbusDeviceAdmin(DeviceAdmin):
+    list_display = DeviceAdmin.list_display + ('protocol_modbus', 'framer', 'ip_address', 'port', 'unit_id')
+
+    def protocol_modbus(self, instance):
+        try:
+            for choice in instance.modbusdevice.protocol_choices:
+                if choice[0] == instance.modbusdevice.protocol:
+                    return choice[1]
+            return ""
+        except TypeError:
+            return ""
+
+    def framer(self, instance):
+        try:
+            for choice in instance.modbusdevice.framer_choices:
+                if choice[0] == instance.modbusdevice.framer:
+                    return choice[1]
+            return ""
+        except TypeError:
+            return ""
+
+    def ip_address(self, instance):
+        return instance.modbusdevice.ip_address
+
+    def port(self, instance):
+        return instance.modbusdevice.port
+
+    def unit_id(self, instance):
+        return instance.modbusdevice.unit_id
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'protocol':
             kwargs['queryset'] = DeviceProtocol.objects.filter(pk=PROTOCOL_ID)
@@ -39,11 +68,8 @@ class ModbusVariableAdminInline(admin.StackedInline):
     model = ModbusVariable
 
 
-class ModbusVariableAdmin(VariableAdmin):
-    list_display = ('id', 'name', 'description', 'unit', 'device_name', 'value_class', 'active', 'writeable', 'address',
-                    'function_code_read',)
-    list_editable = ('active', 'writeable',)
-    list_display_links = ('name',)
+class ModbusVariableAdmin(CoreVariableAdmin):
+    list_display = CoreVariableAdmin.list_display + ('address', 'function_code_read',)
 
     def address(self, instance):
         return instance.modbusvariable.address
@@ -66,5 +92,5 @@ class ModbusVariableAdmin(VariableAdmin):
     ]
 
 
-admin_site.register(ExtendedModbusDevice, ModbusDeviceAdmin)
-admin_site.register(ExtendedModbusVariable, ModbusVariableAdmin)
+# admin_site.register(ExtendedModbusDevice, ModbusDeviceAdmin)
+# admin_site.register(ExtendedModbusVariable, ModbusVariableAdmin)

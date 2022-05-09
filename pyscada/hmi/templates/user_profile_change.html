@@ -35,7 +35,9 @@
 {% block script_bottom %}
         $( document ).ready(function() {
             // Handler for .ready() called.
-            $("#loadingAnimation").hide();
-            $("#AutoUpdateStatus").hide();
+            $("#loadingAnimation").parent().hide();
+            $("#AutoUpdateStatus").parent().parent().hide();
+            $("#ReadAllTask").parent().parent().hide();
+            $("#AutoUpdateButtonParent").hide();
         });
 {% endblock %}

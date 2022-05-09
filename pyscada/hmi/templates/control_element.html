@@ -1,35 +1,96 @@
 {% if item.active == 1 %}
-        <div class="hidden variable-config" data-name="{{ item.name }}" data-key="{{ item.key }}" data-color="{{ var.chart_line_color_code }}" data-init-type="0" data-type="{{ item.item_type}}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-value-class="{{ item.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}"></div>
-    {% if item.type == 0 %}<!-- label blue -->
-        <div class="input-group control_label"><span class="label label-default type-bool status-green {{ item.web_class_str }}">{{ item.label }}</span></div>
-    {% elif item.type == 1 %}<!-- label light blue -->
-        <div class="input-group control_label"><span class="label label-default type-bool status-green {{ item.web_class_str }}">{{ item.label }}</span></div>
-    {% elif item.type == 2 %}<!-- label ok -->
-        <div class="input-group control_label"><span class="label label-default type-bool status-green {{ item.web_class_str }}">{{ item.label }}</span></div>
-    {% elif item.type == 3 %}<!-- label warning -->
-        <div class="input-group control_label"><span class="label label-default type-bool status-yello {{ item.web_class_str }}">{{ item.label }}</span></div>
-    {% elif item.type == 4 %}<!-- label alarm -->
-        <div class="input-group control_label"><span class="label label-default type-bool status-red {{ item.web_class_str }}">{{ item.label }}</span></div>
-    {% elif item.type == 7 %}<!-- label alarm inverted -->
-                <div class="input-group control_label"><span class="label label-default type-bool status-red-inv {{ item.web_class_str }}">{{ item.label }}</span></div>
-    {% elif item.type == 5 %}<!-- input -->
+        <div class="hidden variable-config"
+             data-id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}"
+             data-name="{{ item.name }}"
+             data-key="{{ item.key }}"
+             data-color="{{ item.variable.chart_line_color.color_code }}"
+             data-init-type="0"
+             data-type="{{ item.item_type}}"
+             data-min="{{ item.min }}"
+             data-max="{{ item.max }}"
+             data-value-class="{{ item.value_class }}"
+             data-min-type="{{ item.min_type }}"
+             data-max-type="{{ item.max_type }}"
+             data-unit="{% if item.unit %}{{ item.unit }}{% endif %}"
+             data-device-polling_interval="{{ item.device.polling_interval }}"
+             data-value-timestamp=""
+             data-refresh-requested-timestamp=""
+             data-dictionary="{{ item.dictionary.dict_as_json }}"
+        {% if item.display_value_options %}
+             data-color-type="{{ item.display_value_options.color_type }}"
+             data-color-mode="{{ item.display_value_options.mode }}"
+             data-level-1-type="{{ item.display_value_options.color_level_1_type }}"
+             data-level-2-type="{{ item.display_value_options.color_level_2_type }}"
+             data-level-1="{{ item.display_value_options.color_level_1 }}"
+             data-level-2="{{ item.display_value_options.color_level_2 }}"
+             data-color-1="{{ item.display_value_options.color_1 }}"
+             data-color-2="{{ item.display_value_options.color_2 }}"
+             data-color-3="{{ item.display_value_options.color_3 }}"
+             data-timestamp-conversion="{{ item.display_value_options.timestamp_conversion }}"
+         {% endif %}
+        ></div>
+    {% if item.type == 0 %}<!-- control element -->
         {% if item.value_class == 'BOOL' or item.value_class == 'BOOLEAN' %}
-            <div class="input-group control_button"><button type="button" data-key="{{ item.key }}" data-type="{{ item.item_type}}"  class="btn btn-default update-able write-task-btn type-bool {{ item.web_class_str }}" id="{{ item.web_id }}-{{ uuid }}">{{ item.label }}</button></div>
+            <!-- input button -->
+            {% include "button.html" %}
+        {% elif item.control_element_options.dropdown and item.dictionary %}<!-- dropdown -->
+            {% include "dropdown.html" with last_value=item.value %}
         {% else %}
-            <div class="input-group set_value">
-                <span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
-                <input type="text" class="form-control {{ item.web_class_str }}" id="{{ item.web_id }}-{{ uuid }}-value" placeholder="">
-                {% if item.unit %}<span class="input-group-addon">{{ item.unit }}</span>{% endif %}
-                <span class="input-group-btn">
-                    <button class="btn btn-default write-task-set set-{{ item.key }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}" id="{{ item.web_id }}-{{ uuid }}" data-min="{{ item.min }}" data-max="{{ item.max }}" data-value-class="{{ item.value_class }}"  data-min-type="{{ item.min_type }}" data-max-type="{{ item.max_type }}" type="button">set</button>
-                </span>
-            </div>
+            <!-- input field -->
+            {% include "value_field.html" %}
         {% endif %}
-    {% elif item.type == 6 %}<!-- display value -->
-        <div class="input-group set_value">
-            <span class="input-group-addon input-group-addon-label">{{ item.label }}</span>
-            <span class="input-group-addon input-group-addon-label type-numeric {{ item.web_class_str }}"></span>
-            {% if item.unit %}<span class="input-group-addon">{{ item.unit }}</span>{% endif %}
-        </div>
+    {% elif item.type == 1 %}<!-- display value -->
+        {% if not item.display_value_options %}
+            <!-- No display options -->
+            <!-- Value only -->
+            {% if item.value_class == 'BOOL' or item.value_class == 'BOOLEAN' %}
+                <!-- boolean display -->
+                {% include "button.html" %}
+            {% else %}
+                {% include "value_field.html" %}
+            {% endif %}
+        {% else %}
+            <!-- Display options -->
+            {% if item.display_value_options.type == 0 %}
+                <!-- Classic Div -->
+                {% if item.display_value_options.color_type == 0 %}
+                    <!-- No color -->
+                    {% if item.display_value_options.mode == 0 %}
+                        <!-- Value only -->
+                        {% include "value_field.html" %}
+                    {% elif item.display_value_options.mode == 1 %}
+                        <!-- Color only -->
+                        Display option "{{ item.display_value_options.name }}" config error : type="no color" and mode="color only"
+                    {% elif item.display_value_options.mode == 2 %}
+                        <!-- Value and color -->
+                        Display option "{{ item.display_value_options.name }}" config error : type="no color" and mode="value and color"
+                    {% else %}
+                        <!-- else 1 -->
+                        Display option "{{ item.display_value_options.name }}" error 1
+                    {% endif %}
+                {% else %}
+                    <!-- 2, 3 colors or gradient -->
+                    {% if item.display_value_options.mode == 0 %}
+                        <!-- Value only -->
+                        Display option "{{ item.display_value_options.name }}" config error : type="2, 3 colors or gradient" and mode="value only"
+                    {% elif item.display_value_options.mode == 1 %}
+                        <!-- Color only -->
+                        {% include "button.html" %}
+                    {% elif item.display_value_options.mode == 2 %}
+                        <!-- Value and color only -->
+                        {% include "value_field.html" %}
+                    {% else %}
+                        <!-- else 2 -->
+                        Display option "{{ item.display_value_options.name }}" error 2
+                    {% endif %}
+                {% endif %}
+            {% elif item.display_value_options.type == 3 %}
+                <!-- Gauge -->
+                {% include "gauge.html" with gauge=item %}
+            {% endif %}
+        {% endif %}
+    {% else %}
+        <!-- else 3 -->
+        Display option "{{ item.display_value_options.name }}" error 3
     {% endif %}
 {% endif %}

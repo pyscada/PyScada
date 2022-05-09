@@ -5,7 +5,7 @@ from pyscada.systemstat.models import SystemStatVariable, ExtendedSystemStatDevi
 from pyscada.systemstat import PROTOCOL_ID
 from pyscada.admin import admin_site
 from pyscada.admin import DeviceAdmin
-from pyscada.admin import VariableAdmin
+from pyscada.admin import CoreVariableAdmin
 from pyscada.models import Device, DeviceProtocol
 
 from django.contrib import admin
@@ -31,7 +31,21 @@ class SystemStatVariableAdminInline(admin.StackedInline):
     model = SystemStatVariable
 
 
-class SystemStatVariableAdmin(VariableAdmin):
+class SystemStatVariableAdmin(CoreVariableAdmin):
+    list_display = CoreVariableAdmin.list_display + ('information', 'parameter',)
+
+    def information(self, instance):
+        try:
+            for choice in instance.systemstatvariable.information_choices:
+                if choice[0] == instance.systemstatvariable.information:
+                    return choice[1]
+            return ""
+        except TypeError:
+            return ""
+
+    def parameter(self, instance):
+        return instance.systemstatvariable.parameter
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'device':
             kwargs['queryset'] = Device.objects.filter(protocol=PROTOCOL_ID)
@@ -46,5 +60,5 @@ class SystemStatVariableAdmin(VariableAdmin):
         SystemStatVariableAdminInline
     ]
 
-admin_site.register(ExtendedSystemStatDevice, SystemStatDeviceAdmin)
-admin_site.register(ExtendedSystemStatVariable, SystemStatVariableAdmin)
+# admin_site.register(ExtendedSystemStatDevice, SystemStatDeviceAdmin)
+# admin_site.register(ExtendedSystemStatVariable, SystemStatVariableAdmin)

@@ -2,16 +2,15 @@
 from __future__ import unicode_literals
 
 from pyscada.core import version as core_version
-from pyscada.models import RecordedData, VariableProperty
+from pyscada.models import RecordedData, VariableProperty, Variable, Device
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Form
-from pyscada.hmi.models import DropDown
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
 
 from pyscada.models import Log
-from pyscada.models import DeviceWriteTask
+from pyscada.models import DeviceWriteTask, DeviceReadTask
 
 from django.http import HttpResponse
 from django.template.loader import get_template
@@ -58,12 +57,14 @@ def index(request):
 @unauthenticated_redirect
 @requires_csrf_token
 def view(request, link_title):
+    view_template = 'view.html'
     page_template = get_template('content_page.html')
     widget_row_template = get_template('widget_row.html')
+    STATIC_URL = str(settings.STATIC_URL) if hasattr(settings, 'STATIC_URL') else 'static'
 
     try:
         v = View.objects.get(link_title=link_title)
-    except View.DoesNotExist or View.MultipleObjectsReturned:
+    except (View.DoesNotExist, View.MultipleObjectsReturned):
         return HttpResponse(status=404)
 
     if GroupDisplayPermission.objects.count() == 0:
@@ -74,10 +75,8 @@ def view(request, link_title):
         visible_widget_list = Widget.objects.filter(page__in=page_list.iterator()).values_list('pk', flat=True)
         # visible_custom_html_panel_list = CustomHTMLPanel.objects.all().values_list('pk', flat=True)
         # visible_chart_list = Chart.objects.all().values_list('pk', flat=True)
-        # visible_xy_chart_list = XYChart.objects.all().values_list('pk', flat=True)
         visible_control_element_list = ControlItem.objects.all().values_list('pk', flat=True)
         visible_form_list = Form.objects.all().values_list('pk', flat=True)
-        visible_dropdown_list = DropDown.objects.all().values_list('pk', flat=True)
     else:
         page_list = v.pages.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).distinct()
 
@@ -93,27 +92,32 @@ def view(request, link_title):
             groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
         visible_chart_list = Chart.objects.filter(
             groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
-        visible_xy_chart_list = XYChart.objects.filter(
-            groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
         """
         visible_control_element_list = GroupDisplayPermission.objects.filter(
             hmi_group__in=request.user.groups.iterator()).values_list('control_items', flat=True)
         visible_form_list = GroupDisplayPermission.objects.filter(
             hmi_group__in=request.user.groups.iterator()).values_list('forms', flat=True)
-        visible_dropdown_list = GroupDisplayPermission.objects.filter(
-            hmi_group__in=request.user.groups.iterator()).values_list('dropdowns', flat=True)
 
     panel_list = sliding_panel_list.filter(position__in=(1, 2,))
     control_list = sliding_panel_list.filter(position=0)
 
     pages_html = ""
+    javascript_files_list = list()
+    css_files_list = list()
+    show_daterangepicker = False
+    has_flot_chart = False
+    add_context = {}
+
     for page in page_list:
         # process content row by row
         current_row = 0
         widget_rows_html = ""
         main_content = list()
         sidebar_content = list()
-        has_chart = False
+
+        show_daterangepicker_temp = False
+        show_timeline_temp = False
+
         for widget in page.widget_set.all():
             # check if row has changed
             if current_row != widget.row:
@@ -128,24 +132,85 @@ def view(request, link_title):
                 continue
             if not widget.visible:
                 continue
-            mc, sbc = widget.content.create_panel_html(widget_pk=widget.pk, user=request.user)
-            if mc is not None and mc is not "":
+            if widget.content is None:
+                continue
+            mc, sbc, opts = widget.content.create_panel_html(widget_pk=widget.pk, user=request.user)
+            if mc is not None and mc != "":
                 main_content.append(dict(html=mc, widget=widget))
             else:
                 logger.info("main_content of widget : %s is %s !" % (widget, mc))
             if sbc is not None:
                 sidebar_content.append(dict(html=sbc, widget=widget))
+            if type(opts) == dict and 'show_daterangepicker' in opts and opts['show_daterangepicker'] == True:
+                show_daterangepicker = True
+                show_daterangepicker_temp = True
+            if type(opts) == dict and 'show_timeline' in opts and opts['show_timeline'] == True:
+                show_timeline_temp = True
             if widget.content.content_model == "pyscada.hmi.models.Chart":
-                has_chart = True
+                has_flot_chart = True
+            if type(opts) == dict and 'view_template' in opts:
+                view_template = opts['view_template']
+            if type(opts) == dict and 'add_context' in opts:
+                add_context.update(opts['add_context'])
+            if type(opts) == dict and 'javascript_files_list' in opts:
+                for file_src in opts['javascript_files_list']:
+                    if {'src': file_src} not in javascript_files_list:
+                        javascript_files_list.append({'src': file_src})
+
+            logger.debug(opts)
+            logger.debug(view_template)
 
         widget_rows_html += widget_row_template.render(
             {'row': current_row, 'main_content': main_content, 'sidebar_content': sidebar_content,
              'sidebar_visible': len(sidebar_content) > 0}, request)
 
-        pages_html += page_template.render({'page': page, 'widget_rows_html': widget_rows_html, 'has_chart': has_chart},
-                                           request)
+        pages_html += page_template.render({'page': page,
+                                            'widget_rows_html': widget_rows_html,
+                                            'show_daterangepicker': show_daterangepicker_temp,
+                                            'show_timeline': show_timeline_temp,
+                                            }, request)
 
-    c = {
+    # Generate javascript files list
+    if has_flot_chart:
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/jquery/jquery.tablesorter.min.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/lib/jquery.mousewheel.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.canvaswrapper.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.colorhelpers.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.saturated.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.browser.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.drawSeries.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.errorbars.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.uiConstants.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.logaxis.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.symbol.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.flatdata.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.navigate.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.fillbetween.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.stack.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.touchNavigate.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.hover.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.touch.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.time.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.axislabels.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.selection.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.composeImages.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.legend.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.pie.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.crosshair.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.gauge.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/jquery.flot.axisvalues.js'})
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/daterangepicker/moment.min.js'})
+
+    if show_daterangepicker:
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/daterangepicker/daterangepicker.min.js'})
+
+    javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/pyscada/pyscada_v0-7-0rc14.js'})
+
+    # Generate css files list
+    css_files_list.append({'src': STATIC_URL + 'pyscada/css/daterangepicker/daterangepicker.css'})
+
+    context = {
         'page_list': page_list,
         'pages_html': pages_html,
         'panel_list': panel_list,
@@ -153,14 +218,16 @@ def view(request, link_title):
         'user': request.user,
         'visible_control_element_list': visible_control_element_list,
         'visible_form_list': visible_form_list,
-        'visible_dropdown_list': visible_dropdown_list,
         'view_title': v.title,
         'view_show_timeline': v.show_timeline,
         'version_string': core_version,
-        'link_target': settings.LINK_TARGET if hasattr(settings, 'LINK_TARGET') else '_blank'
+        'link_target': settings.LINK_TARGET if hasattr(settings, 'LINK_TARGET') else '_blank',
+        'javascript_files_list': javascript_files_list,
+        'css_files_list': css_files_list,
     }
+    context.update(add_context)
 
-    return TemplateResponse(request, 'view.html', c)
+    return TemplateResponse(request, view_template, context)
 
 
 @unauthenticated_redirect
@@ -181,6 +248,51 @@ def log_data(request):
 
 
 @unauthenticated_redirect
+def form_read_all_task(request):
+    crts = []
+    for device in Device.objects.all():
+        crts.append(DeviceReadTask(device=device, start=time.time(), user=request.user))
+    if len(crts) > 0:
+        crts[0].create_and_notificate(crts)
+    return HttpResponse(status=200)
+
+
+@unauthenticated_redirect
+def form_read_task(request):
+    if 'key' in request.POST and 'type' in request.POST:
+        key = int(request.POST['key'])
+        item_type = request.POST['type']
+        # check if float as DeviceWriteTask doesn't support string values
+        if GroupDisplayPermission.objects.count() == 0:
+            if item_type == 'variable':
+                crt = DeviceReadTask(device=Variable.objects.get(pk=key).device, start=time.time(), user=request.user)
+                crt.create_and_notificate(crt)
+                return HttpResponse(status=200)
+            elif item_type == 'variable_property':
+                crt = DeviceReadTask(device=VariableProperty.objects.get(pk=key).variable.device, start=time.time(),
+                                     user=request.user)
+                crt.create_and_notificate(crt)
+                return HttpResponse(status=200)
+        else:
+            if item_type == 'variable':
+                if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
+                                                         control_items__type=0, control_items__variable__pk=key):
+                    crt = DeviceReadTask(device=Variable.objects.get(pk=key).device, start=time.time(),
+                                         user=request.user)
+                    crt.create_and_notificate(crt)
+                    return HttpResponse(status=200)
+            elif item_type == 'variable_property':
+                if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
+                                                         control_items__type=0,
+                                                         control_items__variable_property__pk=key):
+                    crt = DeviceReadTask(device=VariableProperty.objects.get(pk=key).variable.device, start=time.time(),
+                                         user=request.user)
+                    crt.create_and_notificate(crt)
+                    return HttpResponse(status=200)
+    return HttpResponse(status=404)
+
+
+@unauthenticated_redirect
 def form_write_task(request):
     if 'key' in request.POST and 'value' in request.POST:
         key = int(request.POST['key'])
@@ -197,41 +309,35 @@ def form_write_task(request):
             if item_type == 'variable':
                 cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
                                       user=request.user)
-                cwt.save()
+                cwt.create_and_notificate(cwt)
                 return HttpResponse(status=200)
             elif item_type == 'variable_property':
                 cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
                                       user=request.user)
-                cwt.save()
+                cwt.create_and_notificate(cwt)
                 return HttpResponse(status=200)
         else:
             if item_type == 'variable':
                 if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
-                                                         control_items__type=5, control_items__variable__pk=key):
+                                                         control_items__type=0, control_items__variable__pk=key):
                     cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
                                           user=request.user)
-                    cwt.save()
+                    cwt.create_and_notificate(cwt)
                     return HttpResponse(status=200)
-                elif GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
-                                                           dropdowns__variable__pk=key):
-                    cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
-                                          user=request.user)
-                    cwt.save()
-                    return HttpResponse(status=200)
+                else:
+                    logger.debug("Missing group display permission for write task variable")
             elif item_type == 'variable_property':
                 if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
-                                                         control_items__type=5,
+                                                         control_items__type=0,
                                                          control_items__variable_property__pk=key):
                     cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
                                           user=request.user)
-                    cwt.save()
+                    cwt.create_and_notificate(cwt)
                     return HttpResponse(status=200)
-                elif GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
-                                                           dropdowns__variable_property__pk=key):
-                    cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
-                                          user=request.user)
-                    cwt.save()
-                return HttpResponse(status=200)
+                else:
+                    logger.debug("Missing group display permission for write task VP")
+    else:
+        logger.debug("key or value missing in request : %s" % request.POST)
     return HttpResponse(status=404)
 
 
@@ -279,9 +385,6 @@ def get_cache_data(request):
                 'charts__variables', flat=True))
         active_variables += list(
             GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator()).values_list(
-                'xy_charts__variables', flat=True))
-        active_variables += list(
-            GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator()).values_list(
                 'control_items__variable', flat=True))
         active_variables += list(
             GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator()).values_list(
@@ -296,17 +399,14 @@ def get_cache_data(request):
     timestamp_from = time.time()
     if 'timestamp_from' in request.POST:
         timestamp_from = float(request.POST['timestamp_from']) / 1000.0
+    if timestamp_from == 0:
+        timestamp_from = time.time() - 60
 
     timestamp_to = time.time()
-
     if 'timestamp_to' in request.POST:
         timestamp_to = min(timestamp_to, float(request.POST['timestamp_to']) / 1000.0)
-
     if timestamp_to == 0:
         timestamp_to = time.time()
-
-    if timestamp_from == 0:
-        timestamp_from == time.time() - 60
 
     if timestamp_to - timestamp_from > 120 * 60 and not init:
         timestamp_from = timestamp_to - 120 * 60
@@ -328,9 +428,11 @@ def get_cache_data(request):
         data = {}
 
     data['variable_properties'] = {}
+    data['variable_properties_last_modified'] = {}
 
     for item in VariableProperty.objects.filter(pk__in=active_variable_properties):
         data['variable_properties'][item.pk] = item.value()
+        data['variable_properties_last_modified'][item.pk] = item.last_modified.timestamp() * 1000
 
     data["server_time"] = time.time() * 1000
     return HttpResponse(json.dumps(data), content_type='application/json')

@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from pyscada.admin import admin_site
 from pyscada.admin import DeviceAdmin
-from pyscada.admin import VariableAdmin
+from pyscada.admin import CoreVariableAdmin
 from pyscada.models import Device, DeviceProtocol
 
 from pyscada.phant import PROTOCOL_ID
@@ -20,6 +20,13 @@ class PhantDeviceAdminInline(admin.StackedInline):
 
 
 class PhantDeviceAdmin(DeviceAdmin):
+    list_display = DeviceAdmin.list_display + ('public_key', 'private_key',)
+
+    def public_key(self, instance):
+        return instance.phantdevice.public_key
+
+    def private_key(self, instance):
+        return instance.phantdevice.private_key
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'protocol':
@@ -36,7 +43,7 @@ class PhantDeviceAdmin(DeviceAdmin):
         PhantDeviceAdminInline
     ]
 
-class PhantVariableAdmin(VariableAdmin):
+class PhantVariableAdmin(CoreVariableAdmin):
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'device':
             kwargs['queryset'] = Device.objects.filter(protocol=PROTOCOL_ID)
@@ -48,5 +55,5 @@ class PhantVariableAdmin(VariableAdmin):
         return qs.filter(device__protocol_id=PROTOCOL_ID)
 
 
-admin_site.register(ExtendedPhantDevice, PhantDeviceAdmin)
-admin_site.register(ExtendedPhantVariable, PhantVariableAdmin)
+# admin_site.register(ExtendedPhantDevice, PhantDeviceAdmin)
+# admin_site.register(ExtendedPhantVariable, PhantVariableAdmin)

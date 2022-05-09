@@ -23,7 +23,8 @@ class Handler(GenericDevice):
             if freq is None:
                 freq = 500
             return self.parse_value(self.inst.query('?MAM1SR9HT3ST2SM%dE'%freq))
-        return None
+        else:
+            return super().read_data(variable_instance)
 
     def write_data(self, variable_id, value, task):
         """
@@ -43,11 +44,8 @@ class Handler(GenericDevice):
             return False
 
 
-    def parse_value(self, value):
+    def parse_value(self, value, **kwargs):
         """
         takes a string in the HP3456A format and returns a float value or None if not parseable
         """
-        try:
-            return float(value)
-        except:
-            return None
+        return super().parse_value(value, **kwargs)

@@ -4,6 +4,11 @@
     {% if var.active and var.device.active %}
         <div class="hidden variable-config" data-name="{{ var.name }}" data-key="{{ var.id }}" data-color="{{ var.chart_line_color_code }}" data-init-type="0" data-type="{{ var.item_type }}" data-min="{{ var.value_min }}" data-max="{{ var.value_max }}" data-value-class="{{ var.value_class }}"  data-min-type="{{ var.min_type }}" data-max-type="{{ var.max_type }}"></div>
     {% endif %}
-{% endfor %}     
+{% endfor %}
+{% for var in custom_html_panel.variable_properties.all %}
+    {% if var.variable.active and var.variable.device.active %}
+        <div class="hidden variable-config" data-name="{{ var.name }}" data-key="{{ var.id }}" data-unit="{% if var.unit %}{{ var.unit }}{% endif %}" data-color="{{ var.variable.chart_line_color_code }}" data-init-type="0" data-type="{{ var.item_type }}" data-min="{{ var.value_min }}" data-max="{{ var.value_max }}" data-value-class="{{ var.value_class }}"  data-min-type="{{ var.min_type }}" data-max-type="{{ var.max_type }}"></div>
+    {% endif %}
+{% endfor %}
 {{ custom_html_panel.html|safe }}
 </div>

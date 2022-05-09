@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import sys
 
 try:
-    import visa
+    import pyvisa
     driver_visa_ok = True
 except ImportError:
     driver_visa_ok = False
@@ -19,10 +19,11 @@ class Device:
     def __init__(self, device):
         self.variables = {}
         self.device = device
-        if self.device.visadevice.instrument.handler_path is not None:
-            sys.path.append(self.device.visadevice.instrument.handler_path)
+        if self.device.visadevice.instrument_handler is not None \
+                and self.device.visadevice.instrument_handler.handler_path is not None:
+            sys.path.append(self.device.visadevice.instrument_handler.handler_path)
         try:
-            mod = __import__(self.device.visadevice.instrument.handler_class, fromlist=['Handler'])
+            mod = __import__(self.device.visadevice.instrument_handler.handler_class, fromlist=['Handler'])
             device_handler = getattr(mod, 'Handler')
             self._h = device_handler(self.device, self.variables)
             driver_handler_ok = True
@@ -44,7 +45,7 @@ class Device:
         """
         output = []
         if not driver_visa_ok:
-            logger.info("Visa-device-write data-visa NOT ok")
+            logger.info("Cannot import visa")
             return output
         for item in self.variables.values():
             if not (item.visavariable.variable_type == 0 and item.id == variable_id):
@@ -64,7 +65,7 @@ class Device:
         """
         output = []
         if not driver_visa_ok:
-            logger.info('Request Data Visa Driver Not Ok')
+            logger.info('Cannot import visa')
             return output
 
         self._h.before_read()

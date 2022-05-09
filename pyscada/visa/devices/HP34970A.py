@@ -263,19 +263,9 @@ class Handler(GenericDevice):
         """
         write values to the device
         """
-        variable = self._variables[variable_id]
-        if task.property_name != '':
-            # write the freq property to VariableProperty use that for later read
-            vp = VariableProperty.objects.update_or_create_property(variable=variable, name=task.property_name.upper(),
-                                                        value=value, value_class='FLOAT64')
-            return True
-        if variable.visavariable.variable_type == 0:  # configuration
-            # only write to configuration variables
-            pass
-        else:
-            return False
+        return super().write_data(variable_id, value, task)
 
-    def parse_value(self,result):
+    def parse_value(self,result, **kwargs):
         """
         takes a string in the HP3456A format and returns a float value or None if not parseable
         """

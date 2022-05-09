@@ -8,8 +8,6 @@ __author__ = core.__author__
 
 PROTOCOL_ID = 8
 
-default_app_config = 'pyscada.smbus.apps.PyScadaSMBusConfig'
-
 parent_process_list = [{'pk': PROTOCOL_ID,
                         'label': 'pyscada.smbus',
                         'process_class': 'pyscada.smbus.worker.Process',

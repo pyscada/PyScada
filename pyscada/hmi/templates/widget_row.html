@@ -1,12 +1,13 @@
 <div class="row"> <!-- Widget Row {{ row }}-->
 {%if sidebar_visible %}
-    <div class="legend-sidebar">
+    <div class="legend-sidebar col-xs-12 col-sm-12 col-md-3 col-lg-2">
     {% for content in sidebar_content %}
             {{ content.html|safe }}
             <div class="clear-sep"></div>
     {% endfor %}
     </div>
-    <div style="margin-left:240px;">
+    <div class="col-xs-12 col-sm-12 col-md-9 col-lg-10">
+        <div class="row">
 {% endif %}
 {% for content in main_content %}
     <div id="widget_{{content.widget.pk}}" class="widget {{ content.widget.css_class}}"> <!-- {{ content.widget.title }} -->
@@ -14,6 +15,7 @@
     </div>
 {% endfor %}
 {%if sidebar_visible %}
+        </div>
     </div>
 {% endif %}
 </div>

@@ -1,20 +1,35 @@
-{% if item.variable.active == 1 and item.variable.device.active == 1 %}
-	<li>	
-		<div class="hidden variable-config init-group" data-name="{{ item.variable.pk }}" data-key="{{ item.variable.pk }}" data-init-type="0"></div>
-    {% if item.type == 0 %}<!-- label blue -->
-		<span class="label label-default type-bool status-blue var-{{ item.variable.pk }}">{{ item.label }}</span>
-    {% elif item.type == 1 %}<!-- label light blue -->
-		<span class="label label-default type-bool status-info var-{{ item.variable.pk }}">{{ item.label }}</span>
-    {% elif item.type == 2 or item.type == 5 %}<!-- label ok -->
-		<span class="label label-default type-bool status-green var-{{ item.variable.pk }}">{{ item.label }}</span>
-    {% elif item.type == 3 %}<!-- label warning -->
-		<span class="label label-default type-bool status-yello var-{{ item.variable.pk }}">{{ item.label }}</span>
-    {% elif item.type == 4 %}<!-- label alarm -->
-		<span class="label label-default type-bool status-red var-{{ item.variable.pk }}">{{ item.label }}</span>
-    {% elif item.type == 7 %}<!-- label alarm inverted -->
-		<span class="label label-default type-bool status-red-inv var-{{ item.variable.pk }}">{{ item.label }}</span>
-    {% elif item.type == 6 %}<!-- display value -->
-		<span class="label label-default type-label">{{ item.label }}: <span class="type-unit"><span class="type-numeric var-{{ item.variable.pk }}">0.0</span> {{ item.variable.unit.unit }}</span></span>
+{% if item.active == 1 %}
+	<li>
+		<div class="hidden variable-config"
+		data-id="{{ item.web_id }}-{{ uuid }}"
+		data-name="{{ item.name }}"
+		data-key="{{ item.key }}" 
+		data-color="{{ var.chart_line_color_code }}"
+		data-init-type="0"
+		data-type="{{ item.item_type}}"
+		data-min="{{ item.min }}"
+		data-max="{{ item.max }}"
+		data-value-class="{{ item.value_class }}"
+		data-min-type="{{ item.min_type }}"
+		data-max-type="{{ item.max_type }}"
+		data-unit="{% if item.unit %}{{ item.unit }}{% endif %}"
+		data-device-polling_interval="{{ item.variable.device.polling_interval }}"
+		data-dictionary="{{ item.dictionary.dict_as_json }}"
+        {% if item.display_value_options %}
+			 data-color-type="{{ item.display_value_options.color_type }}"
+			 data-color-mode="{{ item.display_value_options.mode }}"
+			 data-level-1-type="{{ item.display_value_options.color_level_1_type }}"
+			 data-level-2-type="{{ item.display_value_options.color_level_2_type }}"
+			 data-level-1="{{ item.display_value_options.color_level_1 }}"
+			 data-level-2="{{ item.display_value_options.color_level_2 }}"
+			 data-color-1="{{ item.display_value_options.color_1 }}"
+			 data-color-2="{{ item.display_value_options.color_2 }}"
+			 data-color-3="{{ item.display_value_options.color_3 }}"
+			 data-timestamp-conversion="{{ item.display_value_options.timestamp_conversion }}"
+         {% endif %}
+        ></div>
+		{% if item.type == 1 %}<!-- display value -->
+		<span class="label label-default type-label">{{ item.label }}: <span class="type-unit"><span class="type-numeric var-{{ item.variable.pk }}">0.0</span> {{ item.unit }}</span></span>
     {% endif %}
 	</li>
 {% endif %}

@@ -10,6 +10,7 @@ try:
     from pymodbus.transaction import ModbusAsciiFramer
     from pymodbus.transaction import ModbusRtuFramer
     from pymodbus.transaction import ModbusSocketFramer
+    from pymodbus.exceptions import ConnectionException
 
     driver_ok = True
 except ImportError:
@@ -17,6 +18,7 @@ except ImportError:
 
 from math import isnan, isinf
 from time import time
+import traceback
 import logging
 
 logger = logging.getLogger(__name__)
@@ -52,7 +54,7 @@ class RegisterBlock:
         }
         for idx in range(int(variable_length / self.register_size)):
             if not (variable_address + idx) in self.registers_data:
-                # register will not be queried add register 
+                # register will not be queried add register
                 self.registers_data[variable_address + idx] = None
 
             self.variables[variable_id]['registers'].append(variable_address + idx)
@@ -70,22 +72,31 @@ class RegisterBlock:
         return slave.read_input_registers(first_address, quantity, unit=unit)
 
     def request_data(self, slave, unit=0x00):
-        quantity = max(self.registers) - min(self.registers) + 1
-        first_address = min(self.registers)
+        try:
+            quantity = max(self.registers) - min(self.registers) + 1
+            first_address = min(self.registers)
+        except ValueError:
+            return None
 
         try:
             result = self._request_data(slave, unit, first_address, quantity)
+        except ConnectionException as e:
+            #logger.debug(str(self) + " - " + str(slave) + " - " + str(unit) + " - " + str(first_address) + " - " +
+            #             str(quantity))
+            #logger.info(e)
+            return None
         except:
             # something went wrong (ie. Server/Slave is not accessible)
             # todo add log for some specific errors
-            # var = traceback.format_exc()
-            # log.error("exeption while request_data of %s" % (var))
+            var = traceback.format_exc()
+            logger.error("exeption while request_data of %s" % var)
             return None
         if hasattr(result, 'registers'):
             return self.decode_data(result.registers)
         elif hasattr(result, 'bits'):
             return self.decode_data(result.bits)
         else:
+            slave.modbus_result = result
             return None
 
     def decode_data(self, result):
@@ -94,11 +105,15 @@ class RegisterBlock:
         for idx in self.registers:
             self.registers_data[idx] = result.pop(0)
         for v_id in self.variables:
-            out[v_id] = self.variables[v_id]['decode_function'](
-                [self.registers_data[k] for k in self.variables[v_id]['registers']])
-            if type(out[v_id]) is float:
-                if isnan(out[v_id]) or isinf(out[v_id]):
-                    out[v_id] = None
+            try:
+                out[v_id] = self.variables[v_id]['decode_function'](
+                    [self.registers_data[k] for k in self.variables[v_id]['registers']])
+                if type(out[v_id]) is float:
+                    if isnan(out[v_id]) or isinf(out[v_id]):
+                        out[v_id] = None
+            except IndexError as e:
+                logger.error("IndexError while unpacking : %s - registers_data : %s" % (e, str(self.registers_data)))
+                out[v_id] = None
         return out
 
 
@@ -181,9 +196,9 @@ class Device:
             if f_c == 0:
                 continue
 
-            # add some attr to the var model 
+            # add some attr to the var model
             var.add_attr(accessible=1)
-            # add the var to the list of 
+            # add the var to the list of
             self.variables[var.pk] = var
 
             if f_c == 1:  # coils
@@ -259,14 +274,14 @@ class Device:
 
         if self._protocol == 0:  # TCP
             if self._framer is None:  # No Framer
-                self.slave = ModbusTcpClient(self._address, int(self._port))
+                self.slave = ModbusTcpClient(self._address, int(self._port), timeout=self._timeout)
             else:
-                self.slave = ModbusTcpClient(self._address, int(self._port), framer=framer)
+                self.slave = ModbusTcpClient(self._address, int(self._port), timeout=self._timeout, framer=framer)
         elif self._protocol == 1:  # UDP
             if self._framer is None:  # No Framer
-                self.slave = ModbusUdpClient(self._address, int(self._port))
+                self.slave = ModbusUdpClient(self._address, int(self._port), timeout=self._timeout)
             else:
-                self.slave = ModbusUdpClient(self._address, int(self._port), framer=framer)
+                self.slave = ModbusUdpClient(self._address, int(self._port), timeout=self._timeout, framer=framer)
         elif self._protocol in (2, 3, 4):  # serial
             method_list = {2: 'ascii', 3: 'rtu', 4: 'binary'}
             self.slave = ModbusSerialClient(
@@ -290,14 +305,14 @@ class Device:
 
     def request_data(self):
         """
-    
+
         """
         if not driver_ok:
             return None
         if not self._connect():
+            self._device_not_accessible -= 1
             if self._device_not_accessible == -1:  #
                 logger.error("device with id: %d is not accessible" % self.device.pk)
-            self._device_not_accessible -= 1
             return []
         output = []
         for register_block in self._variable_config:
@@ -306,6 +321,8 @@ class Device:
                 self._disconnect()
                 self._connect()
                 result = register_block.request_data(self.slave, self._unit_id)
+                if result is None and hasattr(self.slave, 'modbus_result'):
+                    logger.warning("Modbus requested data for %s(%s) has no bits nor registers, it's : %s" % (self.device, register_block, self.slave.modbus_result))
 
             if result is not None:
                 for variable_id in register_block.variables:
@@ -323,7 +340,7 @@ class Device:
                         self.variables[variable_id].update_value(None, time())
                     self.variables[variable_id].accessible -= 1
 
-        # reset device not accessible status 
+        # reset device not accessible status
         if self._device_not_accessible <= -1:
             logger.info("device with id: %d is now accessible" % self.device.pk)
         if self._device_not_accessible < 1:
@@ -359,7 +376,7 @@ class Device:
                     self._disconnect()
                     return True
                 else:
-                    logger.info("device with id: %d is now accessible" % self.device.pk)
+                    logger.info("device with id: %d is not accessible" % self.device.pk)
                     return False
             else:
                 logger.error('Modbus Address %d out of range' % self.variables[variable_id].modbusvariable.address)
@@ -373,7 +390,7 @@ class Device:
                     self._disconnect()
                     return True
                 else:
-                    logger.info("device with id: %d is now accessible" % self.device.pk)
+                    logger.info("device with id: %d is not accessible" % self.device.pk)
                     return False
             else:
                 logger.error('Modbus Address %d out of range' % self.variables[variable_id].modbusvariable.address)

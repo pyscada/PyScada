@@ -19,45 +19,23 @@ class Handler(GenericDevice):
     Tektronix MDO3014 and other Devices with the same command set
     """
 
-    def read_data(self, device_property):
+    def read_data(self, variable_instance):
         """
         read values from the device
         """
-        if self.inst is None:
-            logger.error("Visa-MDO3014-read data-Self.inst : None")
-            return None
-        if device_property == 'present_value':
-            return self.parse_value(self.inst.query(':READ?'))
-        else:
-            value = self.inst.query(device_property)
-            logger.info("Visa-MDO3014-read data-property : %s - value : %s" % (device_property, value))
-            return self.parse_value(value)
-        return None
+        return super().read_data(variable_instance)
 
     def write_data(self, variable_id, value, task):
         """
         write values to the device
         """
-        variable = self._variables[variable_id]
-        if task.property_name != '':
-            # write the freq property to VariableProperty use that for later read
-            VariableProperty.objects.update_or_create_property(variable=variable, name=task.property_name.upper(),
-                                                               value=value, value_class='FLOAT64')
-            return True
-        if variable.visavariable.variable_type == 0:  # configuration
-            # only write to configuration variables
-            pass
-        else:
-            return False
+        return super().write_data(variable_id, value, task)
 
-    def parse_value(self, value):
+    def parse_value(self, value, **kwargs):
         """
         takes a string in the Tektronix MDO3014 format and returns a float value or None if not parseable
         """
-        try:
-            return float(value)
-        except:
-            return None
+        return super().parse_value(value, **kwargs)
 
     # MDO functions
     def reset_instrument(self):
@@ -65,7 +43,7 @@ class Handler(GenericDevice):
         return self.inst.query('*RST;*OPC?')
 
     def mdo_set_horizontal_scale(self, time_per_div, **kwargs):
-        self.inst.query(':TIMEBASE:MODE NORM;:TIMebase:RANGe %s;*OPC?' % str(time_per_div * 10))
+        self.inst.query(':TIMEBASE:MODE NORM;:TIMebase:RANGe %s;*OPC?' % str(float(time_per_div) * 10.0))
         self.inst.query(':RUN;*OPC?')
         time.sleep(2*kwargs.get("period", 1)/kwargs.get("frequency", 1000))
         self.inst.query(':STOP;*OPC?')
@@ -156,14 +134,17 @@ class Handler(GenericDevice):
         self.inst.query(':TRIGger:LEVel %s;*OPC?;' % str(level))
 
     def mdo_set_trigger_source(self, ch=1, **kwargs):
-        self.inst.query(':TRIGger:SOURce CHAN%d;*OPC?;' % ch)
+        if ch == 0:
+            self.inst.query(':TRIGger:SOURce EXT;*OPC?;')
+        else:
+            self.inst.query(':TRIGger:SOURce CHAN%d;*OPC?;' % ch)
 
     def mdo_prepare(self, **kwargs):
         logger.debug("IDN : %s" % self.inst.query('*IDN?'))
         self.inst.query(':RUN;*OPC?')  # run
         self.inst.query(':ACQuire:TYPE NORM;:TRIGger:COUPling DC;:TRIGger:MODE NORM;'
                         ':CHAN1:OFFSet 0;:CHAN2:OFFSet 0;*OPC?')
-        self.inst.query(':CHANnel1:COUPling AC;:CHANnel2:COUPling AC;:VIEW CHAN1;:VIEW CHAN2;*OPC?')
+        self.inst.query(':CHANnel1:COUPling DC;:CHANnel2:COUPling DC;:VIEW CHAN1;:VIEW CHAN2;*OPC?')
 
     def mdo_query_waveform(self, ch=1, points_resolution=100, frequency=1000, period=4.0, **kwargs):
 

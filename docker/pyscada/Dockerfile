@@ -18,7 +18,7 @@ WORKDIR /src/pyscada
 
 RUN pip3 install gunicorn
 RUN pip3 install mysqlclient
-RUN pip3 install https://github.com/trombastic/PyScada/archive/dev/0.7.x.zip
+RUN pip3 install https://github.com/pyscada/PyScada/tarball/master
 RUN django-admin startproject PyScadaServer /src/pyscada/ --template /src/pyscada/project_template.zip
 RUN chmod +x /src/pyscada/pyscada
 RUN chmod +x /src/pyscada/pyscada_init

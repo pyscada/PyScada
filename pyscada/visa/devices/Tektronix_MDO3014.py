@@ -18,45 +18,23 @@ class Handler(GenericDevice):
     Tektronix MDO3014 and other Devices with the same command set
     """
 
-    def read_data(self, device_property):
+    def read_data(self, variable_instance):
         """
         read values from the device
         """
-        if self.inst is None:
-            logger.error("Visa-MDO3014-read data-Self.inst : None")
-            return None
-        if device_property == 'present_value':
-            return self.parse_value(self.inst.query(':READ?'))
-        else:
-            value = self.inst.query(device_property)
-            logger.info("Visa-MDO3014-read data-property : %s - value : %s" % (device_property, value))
-            return self.parse_value(value)
-        return None
+        return super().read_data(variable_instance)
 
     def write_data(self, variable_id, value, task):
         """
         write values to the device
         """
-        variable = self._variables[variable_id]
-        if task.property_name != '':
-            # write the freq property to VariableProperty use that for later read
-            VariableProperty.objects.update_or_create_property(variable=variable, name=task.property_name.upper(),
-                                                               value=value, value_class='FLOAT64')
-            return True
-        if variable.visavariable.variable_type == 0:  # configuration
-            # only write to configuration variables
-            pass
-        else:
-            return False
+        return super().write_data(variable_id, value, task)
 
-    def parse_value(self, value):
+    def parse_value(self, value, **kwargs):
         """
         takes a string in the Tektronix MDO3014 format and returns a float value or None if not parseable
         """
-        try:
-            return float(value)
-        except:
-            return None
+        return super().parse_value(value, **kwargs)
 
     # MDO functions
     def reset_instrument(self):
@@ -81,7 +59,9 @@ class Handler(GenericDevice):
         failed = 0
         mdo_div_quantity = 8.0
         range_i_min = 0
-        while range_i < len(vranges):
+        stop_iter = 15
+        while range_i < len(vranges) and stop_iter > 0:
+            stop_iter -= 1
             # logger.debug(range_i)
             self.mdo_set_vertical_scale(ch, vranges[range_i])
             data = self.mdo_query_waveform(ch=ch, frequency=frequency, refresh=True)
@@ -127,8 +107,8 @@ class Handler(GenericDevice):
 
     def mdo_prepare(self, **kwargs):
         self.inst.query(':SEL:CH1 1;:SEL:CH2 1;:HORIZONTAL:POSITION 0;:CH1:YUN "V";:CH2:YUN "V";'
-                        ':CH2:BANdwidth 10000000;:CH1:BANdwidth 10000000;:TRIG:A:TYP EDGE;:TRIG:A:EDGE:COUPLING AC;'
-                        ':TRIG:A:EDGE:SOU CH1;:TRIG:A:EDGE:SLO RIS;:TRIG:A:MODE NORM;:CH1:COUP AC;:CH2:COUP AC;*OPC?')
+                        ':CH2:BANdwidth 10000000;:CH1:BANdwidth 10000000;:TRIG:A:TYP EDGE;:TRIG:A:EDGE:COUPLING DC;'
+                        ':TRIG:A:EDGE:SOU CH1;:TRIG:A:EDGE:SLO RIS;:TRIG:A:MODE NORM;:CH1:COUP DC;:CH2:COUP DC;*OPC?')
 
     def mdo_query_waveform(self, ch=1, points_resolution=100, frequency=1000, refresh=False, **kwargs):
         self.inst.query(':SEL:CH%d 1;:HORIZONTAL:POSITION 0;:CH%d:YUN "V";'
@@ -238,9 +218,9 @@ class Handler(GenericDevice):
         recovered_time_shift = dt[np.argmax(xcorr)]
 
         # force the phase shift to be in [-pi:pi]
-        recovered_phase_shift = -1 * 2 * np.pi * (((0.5 + recovered_time_shift / period) % 1.0) - 0.5)
-        recovered_phase_shift_before = -1 * 2 * np.pi * (((0.5 + dt[np.argmax(xcorr) - 1] / period) % 1.0) - 0.5)
-        recovered_phase_shift_after = -1 * 2 * np.pi * (((0.5 + dt[np.argmax(xcorr) + 1] / period) % 1.0) - 0.5)
+        recovered_phase_shift = 2 * np.pi * (((0.5 + recovered_time_shift / period) % 1.0) - 0.5)
+        recovered_phase_shift_before = 2 * np.pi * (((0.5 + dt[np.argmax(xcorr) - 1] / period) % 1.0) - 0.5)
+        recovered_phase_shift_after = 2 * np.pi * (((0.5 + dt[np.argmax(xcorr) + 1] / period) % 1.0) - 0.5)
         #logger.debug('phase - 1 = %s - phase = %s - phase + 1 = %s' %
         #             (recovered_phase_shift_before * 180 / np.pi, recovered_phase_shift * 180 / np.pi,
         #              recovered_phase_shift_after * 180 / np.pi))

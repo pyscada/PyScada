@@ -3,15 +3,14 @@ from __future__ import unicode_literals
 
 from pyscada.models import Device
 from pyscada.models import Variable
+from . import PROTOCOL_ID
 
 from django.db import models
-from django.utils.encoding import python_2_unicode_compatible
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-@python_2_unicode_compatible
 class ModbusDevice(models.Model):
     modbus_device = models.OneToOneField(Device, on_delete=models.CASCADE)
     protocol_choices = ((0, 'TCP'), (1, 'UDP'), (2, 'serial ASCII'), (3, 'serial RTU'), (4, 'serial Binary'),)
@@ -33,11 +32,18 @@ class ModbusDevice(models.Model):
     parity = models.PositiveSmallIntegerField(default=0, choices=parity_choices)
     baudrate = models.PositiveSmallIntegerField(default=0, help_text="0 use default")
 
+    protocol_id = PROTOCOL_ID
+
+    def parent_device(self):
+        try:
+            return self.modbus_device
+        except:
+            return None
+
     def __str__(self):
         return self.modbus_device.short_name
 
 
-@python_2_unicode_compatible
 class ModbusVariable(models.Model):
     modbus_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
     address = models.PositiveIntegerField()
@@ -45,6 +51,8 @@ class ModbusVariable(models.Model):
         (0, 'not selected'), (1, 'coils (FC1)'), (2, 'discrete inputs (FC2)'), (3, 'holding registers (FC3)'),
         (4, 'input registers (FC4)'))
     function_code_read = models.PositiveSmallIntegerField(default=0, choices=function_code_read_choices, help_text="")
+
+    protocol_id = PROTOCOL_ID
 
     def __str__(self):
         return self.modbus_variable.short_name

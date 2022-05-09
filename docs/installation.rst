@@ -8,10 +8,21 @@
 Installation
 ============
 
-This installation guide covers the installation of PyScada for `Debian 7/8/9 <https://www.debian.org/>`_ ,
-`Raspbian <https://www.raspbian.org/>`_, `Fedora 22/23 <https://www.fedoraproject.org/>`_ based Linux systems
+This installation guide covers the installation of PyScada for `Debian 10/11 <https://www.debian.org/>`_ ,
+`Raspberry Pi OS <https://www.raspberrypi.com/software/>`_, `Fedora 22/23 <https://www.fedoraproject.org/>`_ based Linux systems
 using `MySQL <https://www.mysql.com/>`_ / `MariaDB <https://mariadb.com/>`_ or `SQLite <https://www.sqlite.org/>`_ as Database,
 `Gunicorn <http://gunicorn.org/>`_ as WSGI HTTP Server and `nginx <http://nginx.org/>`_ as HTTP Server.
+
+Automatic installation using a script
+-------------------------------------
+
+On the Raspberry Pi with internet connection run :
+
+::
+
+    wget https://raw.githubusercontent.com/clavay/PyScada-Laborem/master/extras/install.sh -O install.sh
+    sudo chmod a+x install.sh
+    sudo ./install.sh
 
 
 Dependencies
@@ -19,7 +30,7 @@ Dependencies
 
 
 Debian 9, Raspbian
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^
 
 ::
 

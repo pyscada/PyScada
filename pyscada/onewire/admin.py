@@ -7,7 +7,7 @@ from pyscada.models import Device, DeviceProtocol
 from pyscada.onewire import PROTOCOL_ID
 from pyscada.onewire.models import OneWireVariable, OneWireDevice, ExtendedOneWireDevice, ExtendedOneWireVariable
 from pyscada.admin import DeviceAdmin
-from pyscada.admin import VariableAdmin
+from pyscada.admin import CoreVariableAdmin
 from django.contrib import admin
 import logging
 
@@ -20,6 +20,20 @@ class OneWireDeviceAdminInline(admin.StackedInline):
 
 
 class OneWireDeviceAdmin(DeviceAdmin):
+    list_display = DeviceAdmin.list_display + ('adapter_type', 'config',)
+
+    def adapter_type(self, instance):
+        try:
+            for choice in instance.onewiredevice.adapter_type_choices:
+                if choice[0] == instance.onewiredevice.adapter_type:
+                    return choice[1]
+            return ""
+        except TypeError:
+            return ""
+
+    def config(self, instance):
+        return instance.onewiredevice.config
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'protocol':
             kwargs['queryset'] = DeviceProtocol.objects.filter(pk=PROTOCOL_ID)
@@ -40,7 +54,21 @@ class OneWireVariableAdminInline(admin.StackedInline):
     model = OneWireVariable
 
 
-class OneWireVariableAdmin(VariableAdmin):
+class OneWireVariableAdmin(CoreVariableAdmin):
+    list_display = CoreVariableAdmin.list_display + ('address', 'sensor_type',)
+
+    def address(self, instance):
+        return instance.onewirevariable.address
+
+    def sensor_type(self, instance):
+        try:
+            for choice in instance.onewirevariable.sensor_type_choices:
+                if choice[0] == instance.onewirevariable.sensor_type:
+                    return choice[1]
+            return ""
+        except TypeError:
+            return ""
+
     def name(self, instance):
         return instance.onewire_variable.name
 
@@ -61,5 +89,6 @@ class OneWireVariableAdmin(VariableAdmin):
         OneWireVariableAdminInline
     ]
 
-admin_site.register(ExtendedOneWireVariable, OneWireVariableAdmin)
-admin_site.register(ExtendedOneWireDevice,OneWireDeviceAdmin)
+
+# admin_site.register(ExtendedOneWireVariable, OneWireVariableAdmin)
+# admin_site.register(ExtendedOneWireDevice,OneWireDeviceAdmin)

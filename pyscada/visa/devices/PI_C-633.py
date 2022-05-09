@@ -3,8 +3,8 @@ from __future__ import unicode_literals
 
 from pyscada.visa.devices import GenericDevice
 from pyscada.models import VariableProperty
-from datetime import datetime
-from math import floor
+
+from time import sleep, time
 
 import logging
 
@@ -28,11 +28,6 @@ __maintainer__ = "Martin Schröder"
 __email__ = "m.schroeder@tu-berlin.de"
 __status__ = "Beta"
 __docformat__ = 'reStructuredText'
-
-import pyvisa
-from datetime import datetime
-from math import floor
-from time import sleep, time
 
 
 class C633(object):
@@ -78,7 +73,7 @@ class C633(object):
             return False
         self.instr.write('MOV %d %1.8f'%(stage,pos))
     
-    def parse_value(self,str_data,stage=1):
+    def parse_value(self,str_data,stage=1, **kwargs):
         data = str_data.split('=')
         return float(data[-1])
     
@@ -93,7 +88,7 @@ class C633(object):
             data.append(d)
         return data
 
-from time import sleep
+
 class Handler(GenericDevice):
     """
     C-633 and other Devices with the same command set
@@ -130,7 +125,6 @@ class Handler(GenericDevice):
         stage = int(variable_instance.visavariable.device_property.upper())
         return self.smc.get_value(stage)
 
-
     def write_data(self,variable_id, value, task):
         """
         write values to the device
@@ -149,7 +143,7 @@ class Handler(GenericDevice):
         else:
             return False
 
-    def parse_value(self,result):
+    def parse_value(self,result, **kwargs):
         """
         takes a string in the HP3456A format and returns a float value or None if not parseable
         """
@@ -168,4 +162,3 @@ class Handler(GenericDevice):
             return value
         except:
             return None
-

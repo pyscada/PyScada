@@ -16,19 +16,17 @@ class Handler(GenericDevice):
             return
         if variable_instance.visavariable.device_property.upper() == 'vrms_chan1':
             return self.parse_value(self.inst.query(':MEAS:ITEM? VRMS,CHAN1'))
-        return None
+        else:
+            return super().read_data(variable_instance)
 
     def write_data(self, variable_id, value, task):
         """
         write values to the device
         """
-        return False
+        return super().write_data(variable_id, value, task)
 
-    def parse_value(self, value):
+    def parse_value(self, value, **kwargs):
         """
         takes a string in the Keithley DMM 2000 format and returns a float value or None if not parse able
         """
-        try:
-            return float(value)
-        except:
-            return None
+        return super().parse_value(value, **kwargs)

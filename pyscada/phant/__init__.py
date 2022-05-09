@@ -7,5 +7,3 @@ __version__ = core.__version__
 __author__ = core.__author__
 
 PROTOCOL_ID = 7
-
-default_app_config = 'pyscada.phant.apps.PyScadaPhantConfig'

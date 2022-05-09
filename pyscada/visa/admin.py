@@ -4,9 +4,9 @@ from __future__ import unicode_literals
 from pyscada.visa import PROTOCOL_ID
 from pyscada.visa.models import VISAVariable
 from pyscada.visa.models import VISADevice
-from pyscada.visa.models import VISADeviceHandler, ExtendedVISADevice, ExtendedVISAVariable
+from pyscada.visa.models import ExtendedVISADevice, ExtendedVISAVariable
 from pyscada.admin import DeviceAdmin
-from pyscada.admin import VariableAdmin
+from pyscada.admin import CoreVariableAdmin
 from pyscada.admin import admin_site
 from pyscada.models import Device, DeviceProtocol
 
@@ -21,6 +21,14 @@ class DeviceAdminInline(admin.StackedInline):
 
 
 class VISADeviceAdmin(DeviceAdmin):
+    list_display = DeviceAdmin.list_display + ('resource_name', 'instrument_handler',)
+
+    def resource_name(self, instance):
+        return instance.visadevice.resource_name
+
+    def instrument_handler(self, instance):
+        return instance.visadevice.instrument_handler
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'protocol':
             kwargs['queryset'] = DeviceProtocol.objects.filter(pk=PROTOCOL_ID)
@@ -41,7 +49,21 @@ class VISAVariableAdminInline(admin.StackedInline):
     model = VISAVariable
 
 
-class VISAVariableAdmin(VariableAdmin):
+class VISAVariableAdmin(CoreVariableAdmin):
+    list_display = CoreVariableAdmin.list_display + ('device_property', 'variable_type',)
+
+    def device_property(self, instance):
+        return instance.visavariable.device_property
+
+    def variable_type(self, instance):
+        try:
+            for choice in instance.visavariable.variable_type_choices:
+                if choice[0] == instance.visavariable.variable_type:
+                    return choice[1]
+            return ""
+        except TypeError:
+            return ""
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'device':
             kwargs['queryset'] = Device.objects.filter(protocol=PROTOCOL_ID)
@@ -56,7 +78,6 @@ class VISAVariableAdmin(VariableAdmin):
         VISAVariableAdminInline
     ]
 
-admin_site.register(ExtendedVISADevice, VISADeviceAdmin)
-admin_site.register(ExtendedVISAVariable, VISAVariableAdmin)
 
-admin_site.register(VISADeviceHandler)
+# admin_site.register(ExtendedVISADevice, VISADeviceAdmin)
+# admin_site.register(ExtendedVISAVariable, VISAVariableAdmin)
