@@ -7,8 +7,31 @@ from datetime import datetime
 from pytz import UTC
 import numpy as np
 from django.utils.timezone import now
+from django.template.loader import get_template
 import logging
 logger = logging.getLogger(__name__)
+
+
+def gen_hiddenConfigHtml(obj):
+        """
+        Get an object and return an html with a hidden div containing the object
+        config
+
+        :param obj: an object from a model
+
+        :return: the html of the config of the object
+        """
+        fields = list()
+        for field in obj._meta.fields:
+            fields.append(dict(
+                name=field.name,
+                value=field.value_from_object(obj),
+            ))
+
+        return get_template('modelProperties.html').render(dict(
+            modelName=obj._meta.model_name,
+            fields=fields,
+        ))
 
 
 def extract_numbers_from_str(value_str):

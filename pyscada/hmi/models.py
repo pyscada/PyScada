@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.models import Variable, VariableProperty, Color
+from pyscada.models import Device, Variable, VariableProperty, Color
 
 from django.db import models
 from django.contrib.auth.models import Group
@@ -14,6 +14,32 @@ from uuid import uuid4
 import logging
 import json
 logger = logging.getLogger(__name__)
+
+
+def _get_objects_for_html(obj, list_to_append=set()):
+    if obj is not None:
+        if obj._meta.model == Device:
+            if obj not in list_to_append:
+                list_to_append.update([obj])
+        elif obj._meta.model == Variable:
+            if obj not in list_to_append:
+                list_to_append.update([obj])
+            list_to_append.update(_get_objects_for_html(obj.device, list_to_append))
+        elif obj._meta.model == VariableProperty:
+            if obj not in list_to_append:
+                list_to_append.update([obj])
+            list_to_append.update(_get_objects_for_html(obj.variable, list_to_append))
+        elif obj._meta.model == ControlItem:
+            if obj not in list_to_append:
+                list_to_append.update([obj])
+            list_to_append.update(_get_objects_for_html(obj.variable, list_to_append))
+            list_to_append.update(_get_objects_for_html(obj.variable_property, list_to_append))
+        elif obj._meta.model == ProcessFlowDiagramItem:
+            if obj not in list_to_append:
+                list_to_append.update([obj])
+            list_to_append.update(_get_objects_for_html(obj.control_item, list_to_append))
+
+    return list_to_append
 
 
 def _delete_widget_content(sender, instance, **kwargs):
@@ -453,7 +479,11 @@ class ControlPanel(WidgetContentModel):
                                                  visible_control_element_list=visible_element_list,
                                                  uuid=uuid4().hex, widget_pk=widget_pk))
         sidebar_content = None
-        return main_content, sidebar_content, ''
+        opts = dict()
+        opts["object_config_list"] = set()
+        for item in self.items.all():
+            opts["object_config_list"].update(_get_objects_for_html(item))
+        return main_content, sidebar_content, opts
 
 
 class CustomHTMLPanel(WidgetContentModel):
@@ -474,7 +504,13 @@ class CustomHTMLPanel(WidgetContentModel):
         main_template = get_template('custom_html_panel.html')
         main_content = main_template.render(dict(custom_html_panel=self))
         sidebar_content = None
-        return main_content, sidebar_content, ''
+        opts = dict()
+        opts["object_config_list"] = set()
+        for variable in self.variables.all():
+            opts["object_config_list"].update(_get_objects_for_html(variable))
+        for variable_property in self.variable_properties.all():
+            opts["object_config_list"].update(_get_objects_for_html(variable_property))
+        return main_content, sidebar_content, opts
 
 
 class ProcessFlowDiagramItem(models.Model):
@@ -529,7 +565,12 @@ class ProcessFlowDiagram(WidgetContentModel):
             logger.info("ProcessFlowDiagram (%s) has no background image defined" % self)
             main_content = None
         sidebar_content = None
-        return main_content, sidebar_content, ''
+        opts = dict()
+        opts["object_config_list"] = set()
+        for item in self.process_flow_diagram_items.all():
+            opts["object_config_list"].update(_get_objects_for_html(item))
+
+        return main_content, sidebar_content, opts
 
 
 class SlidingPanelMenu(models.Model):

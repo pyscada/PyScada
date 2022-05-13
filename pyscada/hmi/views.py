@@ -3,14 +3,14 @@ from __future__ import unicode_literals
 
 from pyscada.core import version as core_version
 from pyscada.models import RecordedData, VariableProperty, Variable, Device
+from pyscada.models import Log
+from pyscada.models import DeviceWriteTask, DeviceReadTask
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Form
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
-
-from pyscada.models import Log
-from pyscada.models import DeviceWriteTask, DeviceReadTask
+from pyscada.utils import gen_hiddenConfigHtml
 
 from django.http import HttpResponse
 from django.template.loader import get_template
@@ -102,6 +102,8 @@ def view(request, link_title):
     control_list = sliding_panel_list.filter(position=0)
 
     pages_html = ""
+    object_config_html = ""
+    object_config_list = dict()
     javascript_files_list = list()
     css_files_list = list()
     show_daterangepicker = False
@@ -156,9 +158,12 @@ def view(request, link_title):
                 for file_src in opts['javascript_files_list']:
                     if {'src': file_src} not in javascript_files_list:
                         javascript_files_list.append({'src': file_src})
-
-            logger.debug(opts)
-            logger.debug(view_template)
+            if type(opts) == dict and 'object_config_list' in opts and type(opts['object_config_list'] == list):
+                for obj in opts['object_config_list']:
+                    if obj._meta.model_name not in object_config_list:
+                        object_config_list[obj._meta.model_name] = list()
+                    if obj not in object_config_list[obj._meta.model_name]:
+                        object_config_list[obj._meta.model_name].append(obj)
 
         widget_rows_html += widget_row_template.render(
             {'row': current_row, 'main_content': main_content, 'sidebar_content': sidebar_content,
@@ -209,6 +214,12 @@ def view(request, link_title):
 
     # Generate css files list
     css_files_list.append({'src': STATIC_URL + 'pyscada/css/daterangepicker/daterangepicker.css'})
+
+    # Generate html object hidden config
+    for model in object_config_list:
+        for obj in object_config_list[model]:
+            object_config_html += gen_hiddenConfigHtml(obj)
+    pages_html += object_config_html
 
     context = {
         'page_list': page_list,

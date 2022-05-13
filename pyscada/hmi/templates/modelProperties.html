@@ -1,0 +1,3 @@
+{% load views_extras %}
+<div class="hidden {{ modelName }}-config" {% for field in fields %} data-{{ field.name|replace:'_|-' }}="{{ field.value }}"{% endfor %}>
+</div>
