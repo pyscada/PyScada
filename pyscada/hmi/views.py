@@ -10,6 +10,7 @@ from pyscada.hmi.models import Form
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
+from pyscada.hmi.models import _get_objects_for_html
 from pyscada.utils import gen_hiddenConfigHtml
 
 from django.http import HttpResponse
@@ -215,6 +216,13 @@ def view(request, link_title):
     # Generate css files list
     css_files_list.append({'src': STATIC_URL + 'pyscada/css/daterangepicker/daterangepicker.css'})
 
+    # Adding SlidingPanelMenu to hidden config
+    for s in sliding_panel_list:
+        for obj in _get_objects_for_html(s):
+            if obj._meta.model_name not in object_config_list:
+                object_config_list[obj._meta.model_name] = list()
+            if obj not in object_config_list[obj._meta.model_name]:
+                object_config_list[obj._meta.model_name].append(obj)
     # Generate html object hidden config
     for model in object_config_list:
         for obj in object_config_list[model]:

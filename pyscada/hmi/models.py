@@ -34,10 +34,58 @@ def _get_objects_for_html(obj, list_to_append=set()):
                 list_to_append.update([obj])
             list_to_append.update(_get_objects_for_html(obj.variable, list_to_append))
             list_to_append.update(_get_objects_for_html(obj.variable_property, list_to_append))
+        elif obj._meta.model == ProcessFlowDiagram:
+            if obj not in list_to_append:
+                list_to_append.update([obj])
+            for item in obj.process_flow_diagram_items.all():
+                list_to_append.update(_get_objects_for_html(item, list_to_append))
         elif obj._meta.model == ProcessFlowDiagramItem:
             if obj not in list_to_append:
                 list_to_append.update([obj])
             list_to_append.update(_get_objects_for_html(obj.control_item, list_to_append))
+        elif obj._meta.model == Form:
+            if obj not in list_to_append:
+                list_to_append.update([obj])
+            for item in obj.hidden_control_items_to_true.all():
+                list_to_append.update(_get_objects_for_html(item, list_to_append))
+            for item in obj.control_items.all():
+                list_to_append.update(_get_objects_for_html(item, list_to_append))
+        elif obj._meta.model == ControlPanel:
+            if obj not in list_to_append:
+                list_to_append.update([obj])
+            for item in obj.forms.all():
+                list_to_append.update(_get_objects_for_html(item, list_to_append))
+            for item in obj.items.all():
+                list_to_append.update(_get_objects_for_html(item, list_to_append))
+        elif obj._meta.model == CustomHTMLPanel:
+            if obj not in list_to_append:
+                list_to_append.update([obj])
+            for item in obj.variables.all():
+                list_to_append.update(_get_objects_for_html(item, list_to_append))
+            for item in obj.variable_properties.all():
+                list_to_append.update(_get_objects_for_html(item, list_to_append))
+        elif obj._meta.model == Chart:
+            if obj not in list_to_append:
+                list_to_append.update([obj])
+            list_to_append.update(_get_objects_for_html(obj.x_axis_var, list_to_append))
+            for item in obj.chartaxis_set.all():
+                list_to_append.update(_get_objects_for_html(item, list_to_append))
+        elif obj._meta.model == ChartAxis:
+            if obj not in list_to_append:
+                list_to_append.update([obj])
+            for item in obj.variables.all():
+                list_to_append.update(_get_objects_for_html(item, list_to_append))
+        elif obj._meta.model == Pie:
+            if obj not in list_to_append:
+                list_to_append.update([obj])
+            for item in obj.variables.all():
+                list_to_append.update(_get_objects_for_html(item, list_to_append))
+            for item in obj.variable_properties.all():
+                list_to_append.update(_get_objects_for_html(item, list_to_append))
+        elif obj._meta.model == SlidingPanelMenu:
+            if obj not in list_to_append:
+                list_to_append.update([obj])
+            list_to_append.update(_get_objects_for_html(obj.control_panel, list_to_append))
 
     return list_to_append
 
@@ -362,6 +410,8 @@ class Chart(WidgetContentModel):
         main_content = main_template.render(dict(chart=self, widget_pk=widget_pk))
         sidebar_content = sidebar_template.render(dict(chart=self, widget_pk=widget_pk))
         opts = {'show_daterangepicker': True, 'show_timeline': True,}
+        opts["object_config_list"] = set()
+        opts["object_config_list"].update(_get_objects_for_html(self))
         return main_content, sidebar_content, opts
 
 
@@ -481,8 +531,7 @@ class ControlPanel(WidgetContentModel):
         sidebar_content = None
         opts = dict()
         opts["object_config_list"] = set()
-        for item in self.items.all():
-            opts["object_config_list"].update(_get_objects_for_html(item))
+        opts["object_config_list"].update(_get_objects_for_html(self))
         return main_content, sidebar_content, opts
 
 
@@ -506,10 +555,7 @@ class CustomHTMLPanel(WidgetContentModel):
         sidebar_content = None
         opts = dict()
         opts["object_config_list"] = set()
-        for variable in self.variables.all():
-            opts["object_config_list"].update(_get_objects_for_html(variable))
-        for variable_property in self.variable_properties.all():
-            opts["object_config_list"].update(_get_objects_for_html(variable_property))
+        opts["object_config_list"].update(_get_objects_for_html(self))
         return main_content, sidebar_content, opts
 
 
@@ -567,8 +613,7 @@ class ProcessFlowDiagram(WidgetContentModel):
         sidebar_content = None
         opts = dict()
         opts["object_config_list"] = set()
-        for item in self.process_flow_diagram_items.all():
-            opts["object_config_list"].update(_get_objects_for_html(item))
+        opts["object_config_list"].update(_get_objects_for_html(self))
 
         return main_content, sidebar_content, opts
 

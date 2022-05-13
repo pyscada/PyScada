@@ -22,11 +22,21 @@ def gen_hiddenConfigHtml(obj):
         :return: the html of the config of the object
         """
         fields = list()
-        for field in obj._meta.fields:
-            fields.append(dict(
-                name=field.name,
-                value=field.value_from_object(obj),
-            ))
+        for field in obj._meta._forward_fields_map.values():
+            if type(field.value_from_object(obj)) == list:
+                # For ManyToManyField
+                l = ""
+                for o in field.value_from_object(obj):
+                    l += str(o.pk) + ","
+                fields.append(dict(
+                    name=field.name,
+                    value=l,
+                ))
+            else:
+                fields.append(dict(
+                    name=field.name,
+                    value=field.value_from_object(obj),
+                ))
 
         return get_template('modelProperties.html').render(dict(
             modelName=obj._meta.model_name,
