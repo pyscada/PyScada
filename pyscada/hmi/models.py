@@ -16,80 +16,6 @@ import json
 logger = logging.getLogger(__name__)
 
 
-def _get_objects_for_html(obj, list_to_append=set()):
-    if obj is not None:
-        if obj._meta.model == Device:
-            if obj not in list_to_append:
-                list_to_append.update([obj])
-        elif obj._meta.model == Variable:
-            if obj not in list_to_append:
-                list_to_append.update([obj])
-            list_to_append.update(_get_objects_for_html(obj.device, list_to_append))
-        elif obj._meta.model == VariableProperty:
-            if obj not in list_to_append:
-                list_to_append.update([obj])
-            list_to_append.update(_get_objects_for_html(obj.variable, list_to_append))
-        elif obj._meta.model == ControlItem:
-            if obj not in list_to_append:
-                list_to_append.update([obj])
-            list_to_append.update(_get_objects_for_html(obj.variable, list_to_append))
-            list_to_append.update(_get_objects_for_html(obj.variable_property, list_to_append))
-        elif obj._meta.model == ProcessFlowDiagram:
-            if obj not in list_to_append:
-                list_to_append.update([obj])
-            for item in obj.process_flow_diagram_items.all():
-                list_to_append.update(_get_objects_for_html(item, list_to_append))
-        elif obj._meta.model == ProcessFlowDiagramItem:
-            if obj not in list_to_append:
-                list_to_append.update([obj])
-            list_to_append.update(_get_objects_for_html(obj.control_item, list_to_append))
-        elif obj._meta.model == Form:
-            if obj not in list_to_append:
-                list_to_append.update([obj])
-            for item in obj.hidden_control_items_to_true.all():
-                list_to_append.update(_get_objects_for_html(item, list_to_append))
-            for item in obj.control_items.all():
-                list_to_append.update(_get_objects_for_html(item, list_to_append))
-        elif obj._meta.model == ControlPanel:
-            if obj not in list_to_append:
-                list_to_append.update([obj])
-            for item in obj.forms.all():
-                list_to_append.update(_get_objects_for_html(item, list_to_append))
-            for item in obj.items.all():
-                list_to_append.update(_get_objects_for_html(item, list_to_append))
-        elif obj._meta.model == CustomHTMLPanel:
-            if obj not in list_to_append:
-                list_to_append.update([obj])
-            for item in obj.variables.all():
-                list_to_append.update(_get_objects_for_html(item, list_to_append))
-            for item in obj.variable_properties.all():
-                list_to_append.update(_get_objects_for_html(item, list_to_append))
-        elif obj._meta.model == Chart:
-            if obj not in list_to_append:
-                list_to_append.update([obj])
-            list_to_append.update(_get_objects_for_html(obj.x_axis_var, list_to_append))
-            for item in obj.chartaxis_set.all():
-                list_to_append.update(_get_objects_for_html(item, list_to_append))
-        elif obj._meta.model == ChartAxis:
-            if obj not in list_to_append:
-                list_to_append.update([obj])
-            for item in obj.variables.all():
-                list_to_append.update(_get_objects_for_html(item, list_to_append))
-        elif obj._meta.model == Pie:
-            if obj not in list_to_append:
-                list_to_append.update([obj])
-            for item in obj.variables.all():
-                list_to_append.update(_get_objects_for_html(item, list_to_append))
-            for item in obj.variable_properties.all():
-                list_to_append.update(_get_objects_for_html(item, list_to_append))
-        elif obj._meta.model == SlidingPanelMenu:
-            if obj not in list_to_append:
-                list_to_append.update([obj])
-            list_to_append.update(_get_objects_for_html(obj.control_panel, list_to_append))
-
-    return list_to_append
-
-
 def _delete_widget_content(sender, instance, **kwargs):
     """
     delete the widget content instance when a WidgetContentModel is deleted
@@ -135,6 +61,38 @@ class WidgetContentModel(models.Model):
         :return: main panel html and sidebar html as
         """
         return '', '', ''
+
+    def _get_objects_for_html(self, list_to_append=None, obj=None, exclude_model_names=None):
+        if exclude_model_names is None:
+            exclude_model_names = list()
+        if list_to_append is None:
+            list_to_append = set()
+        if obj is None:
+            obj = self
+
+        if obj not in list_to_append:
+            list_to_append.update([obj])
+
+        # ForeignKey and OneToOne
+        for field in obj._meta.local_fields:
+            if type(field).many_to_one and getattr(obj, field.name) is not None and \
+                    field.name not in exclude_model_names:
+                if hasattr(field, '_get_objects_for_html'):
+                    list_to_append.update(field._get_objects_for_html(list_to_append))
+                else:
+                    list_to_append.update(self._get_objects_for_html(list_to_append, getattr(obj, field.name)))
+        #ManyToMany
+        for fields in obj._meta.local_many_to_many:
+            #logger.debug(fields)
+            for field in getattr(obj, fields.name).all():
+                #logger.debug(field)
+                if field not in exclude_model_names:
+                    if hasattr(field, '_get_objects_for_html'):
+                        list_to_append.update(field._get_objects_for_html(list_to_append))
+                    else:
+                        list_to_append.update(self._get_objects_for_html(list_to_append, field))
+
+        return list_to_append
 
     def create_widget_content_entry(self):
         def fullname(o):
@@ -411,8 +369,16 @@ class Chart(WidgetContentModel):
         sidebar_content = sidebar_template.render(dict(chart=self, widget_pk=widget_pk))
         opts = {'show_daterangepicker': True, 'show_timeline': True,}
         opts["object_config_list"] = set()
-        opts["object_config_list"].update(_get_objects_for_html(self))
+        opts["object_config_list"].update(self._get_objects_for_html())
         return main_content, sidebar_content, opts
+
+    def _get_objects_for_html(self, list_to_append=None, obj=None, exclude_model_names=None):
+        list_to_append = super()._get_objects_for_html(list_to_append, obj, exclude_model_names)
+        if obj is None:
+            for axis in self.chartaxis_set.all():
+                list_to_append = super()._get_objects_for_html(list_to_append, axis, ['chart'])
+
+        return list_to_append
 
 
 class ChartAxis(models.Model):
@@ -531,7 +497,9 @@ class ControlPanel(WidgetContentModel):
         sidebar_content = None
         opts = dict()
         opts["object_config_list"] = set()
-        opts["object_config_list"].update(_get_objects_for_html(self))
+        opts["object_config_list"].update(self._get_objects_for_html())
+        opts["custom_fields_list"] = {'variable': [{'name': 'refresh-requested-timestamp', 'value': ""},
+                                                   {'name': 'value-timestamp', 'value': ''}, ]}
         return main_content, sidebar_content, opts
 
 
@@ -555,7 +523,7 @@ class CustomHTMLPanel(WidgetContentModel):
         sidebar_content = None
         opts = dict()
         opts["object_config_list"] = set()
-        opts["object_config_list"].update(_get_objects_for_html(self))
+        opts["object_config_list"].update(self._get_objects_for_html())
         return main_content, sidebar_content, opts
 
 
@@ -613,7 +581,7 @@ class ProcessFlowDiagram(WidgetContentModel):
         sidebar_content = None
         opts = dict()
         opts["object_config_list"] = set()
-        opts["object_config_list"].update(_get_objects_for_html(self))
+        opts["object_config_list"].update(self._get_objects_for_html())
 
         return main_content, sidebar_content, opts
 

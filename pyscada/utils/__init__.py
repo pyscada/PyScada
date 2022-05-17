@@ -12,36 +12,42 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def gen_hiddenConfigHtml(obj):
-        """
-        Get an object and return an html with a hidden div containing the object
-        config
+def gen_hiddenConfigHtml(obj, custom_fields=None):
+    """
+    Get an object and return an html with a hidden div containing the object
+    config
 
-        :param obj: an object from a model
+    :param obj: an object from a model
 
-        :return: the html of the config of the object
-        """
-        fields = list()
-        for field in obj._meta._forward_fields_map.values():
-            if type(field.value_from_object(obj)) == list:
-                # For ManyToManyField
-                l = ""
-                for o in field.value_from_object(obj):
-                    l += str(o.pk) + ","
-                fields.append(dict(
-                    name=field.name,
-                    value=l,
-                ))
-            else:
-                fields.append(dict(
-                    name=field.name,
-                    value=field.value_from_object(obj),
-                ))
-
-        return get_template('modelProperties.html').render(dict(
-            modelName=obj._meta.model_name,
-            fields=fields,
+    :return: the html of the config of the object
+    """
+    fields = list()
+    for field in obj._meta.local_many_to_many:
+        # For ManyToManyField
+        l = ""
+        for o in field.value_from_object(obj):
+            l += str(o.pk) + ","
+        fields.append(dict(
+            name=field.name,
+            value=l,
         ))
+    for field in obj._meta.local_fields:
+        fields.append(dict(
+            name=field.name,
+            value=field.value_from_object(obj),
+        ))
+    if type(custom_fields) == list:
+        for field in custom_fields:
+            if type(field) == dict and 'name' in field and 'value' in field:
+                fields.append(dict(
+                    name=field['name'],
+                    value=field['value'],
+                ))
+
+    return get_template('modelProperties.html').render(dict(
+        modelName=obj._meta.model_name,
+        fields=fields,
+    ))
 
 
 def extract_numbers_from_str(value_str):

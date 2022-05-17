@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import pyscada.hmi.models
 from pyscada.core import version as core_version
 from pyscada.models import RecordedData, VariableProperty, Variable, Device
 from pyscada.models import Log
@@ -10,7 +11,7 @@ from pyscada.hmi.models import Form
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
-from pyscada.hmi.models import _get_objects_for_html
+from pyscada.hmi.models import WidgetContentModel
 from pyscada.utils import gen_hiddenConfigHtml
 
 from django.http import HttpResponse
@@ -105,6 +106,7 @@ def view(request, link_title):
     pages_html = ""
     object_config_html = ""
     object_config_list = dict()
+    custom_fields_list = dict()
     javascript_files_list = list()
     css_files_list = list()
     show_daterangepicker = False
@@ -161,10 +163,14 @@ def view(request, link_title):
                         javascript_files_list.append({'src': file_src})
             if type(opts) == dict and 'object_config_list' in opts and type(opts['object_config_list'] == list):
                 for obj in opts['object_config_list']:
-                    if obj._meta.model_name not in object_config_list:
-                        object_config_list[obj._meta.model_name] = list()
-                    if obj not in object_config_list[obj._meta.model_name]:
-                        object_config_list[obj._meta.model_name].append(obj)
+                    model_name = str(obj._meta.model_name).lower()
+                    if model_name not in object_config_list:
+                        object_config_list[model_name] = list()
+                    if obj not in object_config_list[model_name]:
+                        object_config_list[model_name].append(obj)
+            if type(opts) == dict and 'custom_fields_list' in opts and type(opts['custom_fields_list'] == list):
+                for model in opts['custom_fields_list']:
+                    custom_fields_list[str(model).lower()] = opts['custom_fields_list'][model]
 
         widget_rows_html += widget_row_template.render(
             {'row': current_row, 'main_content': main_content, 'sidebar_content': sidebar_content,
@@ -206,9 +212,9 @@ def view(request, link_title):
         javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.crosshair.js'})
         javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.gauge.js'})
         javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/jquery.flot.axisvalues.js'})
-        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/daterangepicker/moment.min.js'})
 
     if show_daterangepicker:
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/daterangepicker/moment.min.js'})
         javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/daterangepicker/daterangepicker.min.js'})
 
     javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/pyscada/pyscada_v0-7-0rc14.js'})
@@ -218,15 +224,16 @@ def view(request, link_title):
 
     # Adding SlidingPanelMenu to hidden config
     for s in sliding_panel_list:
-        for obj in _get_objects_for_html(s):
-            if obj._meta.model_name not in object_config_list:
-                object_config_list[obj._meta.model_name] = list()
-            if obj not in object_config_list[obj._meta.model_name]:
-                object_config_list[obj._meta.model_name].append(obj)
+        if s.control_panel is not None:
+            for obj in s.control_panel._get_objects_for_html(obj=s):
+                if obj._meta.model_name not in object_config_list:
+                    object_config_list[obj._meta.model_name] = list()
+                if obj not in object_config_list[obj._meta.model_name]:
+                    object_config_list[obj._meta.model_name].append(obj)
     # Generate html object hidden config
     for model in object_config_list:
         for obj in object_config_list[model]:
-            object_config_html += gen_hiddenConfigHtml(obj)
+            object_config_html += gen_hiddenConfigHtml(obj, custom_fields_list.get(model, None))
     pages_html += object_config_html
 
     context = {

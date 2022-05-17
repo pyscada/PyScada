@@ -636,6 +636,7 @@ Licensed under the GPL.
 
          $(".type-numeric." + key).attr('data-original-title','Current value: ' + val + ' ' + unit + '<br>Last update: ' + msToTime(t_last_update) + ' ago<br>Next update: ' + t_next_update_string);
          $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-value-timestamp',time);
+         $(".variable-config2[data-value-timestamp][data-id=" + key.split("-")[1] + "]").attr('data-value-timestamp',time);
 
          polling_interval = $(".variable-config[data-device-polling_interval][data-key=" + key.split("-")[1] + "]").attr('data-device-polling_interval');
 
@@ -822,6 +823,41 @@ Licensed under the GPL.
 
      refresh_logo(key.split("-")[1], type);
  }
+
+
+/**
+- Get a config from ALL hidden config div
+- @param {string} type Name of the model
+- @param {string} filter_data name of the data config to filter by
+- @param {string} get_data name of the data config wanted
+- @returns {Array<object>} dict of (id: value) of found values
+*/
+function get_config_from_hidden_configs(type,filter_data,get_data){
+    var result = {}
+    var query = document.querySelectorAll("." + type + "-config2")
+    query.forEach(item => {
+        var id = item.dataset.id;
+        var r = item.getAttribute("data-" + get_data);
+        if (id in result === false && typeof(r) !== "undefined") {
+            result[id] = r;
+        };
+    });
+    return result
+}
+
+
+/**
+- Get a config from ONE hidden config div
+- @param {string} type Name of the model
+- @param {string} filter_data name of the data config to filter by
+- @param {string} val value of the data config to filter by
+- @param {string} get_data name of the data config wanted
+- @returns {Array<object>} value found
+*/
+function get_config_from_hidden_config(type,filter_data,val,get_data){
+    var r = get_config_from_hidden_configs(type,filter_data,get_data)
+    if (val in r) {return r[val];}
+}
 
 
  /**
@@ -3221,7 +3257,8 @@ Licensed under the GPL.
      $.each($(".control-item.type-numeric." + type_short + "-" + key + " img"), function(k,v){
          $(v).remove();
      });
-     if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp')>$(".variable-config[data-value-timestamp][data-key=" + key + "][data-type=" + type + "]").attr('data-value-timestamp')) {
+     //if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp')>$(".variable-config[data-value-timestamp][data-key=" + key + "][data-type=" + type + "]").attr('data-value-timestamp')) {
+     if (get_config_from_hidden_config(type, 'id', key, 'refresh-requested-timestamp')>get_config_from_hidden_config(type, 'id', key, 'value-timestamp')) {
          $.each($(".control-item.type-numeric." + type_short + "-" + key), function(k,v){
              val_temp=$(v).html();
              $(v).prepend('<img style="height:14px;" src="/static/pyscada/img/load.gif" alt="refreshing">');
@@ -3374,6 +3411,7 @@ Licensed under the GPL.
      key = $(this).data('key');
      type = $(this).data('type');
      $(".variable-config[data-key=" + key + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp',t)
+     $(".variable-config2[data-id=" + key + "]").attr('data-refresh-requested-timestamp',t)
      refresh_logo(key, type);
      data_type = $(this).data('type');
      $(this)[0].disabled = true;
@@ -3551,6 +3589,7 @@ Licensed under the GPL.
      item_type = $(this).data('type');
      $('#'+id).removeClass('update-able');
      $(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "][data-type=" + item_type + "]").attr('data-refresh-requested-timestamp', SERVER_TIME)
+     $(".variable-config2[data-refresh-requested-timestamp][data-id=" + key + "]").attr('data-refresh-requested-timestamp', SERVER_TIME)
      if($(this).hasClass('btn-default')){
          $('#'+id).removeClass('btn-default')
          $('#'+id).addClass('btn-success');
@@ -3566,6 +3605,7 @@ Licensed under the GPL.
      item_type = $(this).data('type');
      $('#'+id).removeClass('update-able');
      $(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "][data-type=" + item_type + "]").attr('data-refresh-requested-timestamp', SERVER_TIME)
+     $(".variable-config2[data-refresh-requested-timestamp][data-id=" + key + "]").attr('data-refresh-requested-timestamp', SERVER_TIME)
      if($(this).hasClass('btn-default')){
          $.ajax({
              type: 'post',
@@ -3817,6 +3857,9 @@ Licensed under the GPL.
                if (typeof($(v).attr('data-refresh-requested-timestamp')) !== 'undefined') {
                  $(v).attr('data-refresh-requested-timestamp',SERVER_TIME);
                }
+             });
+             document.querySelectorAll('.hidden.variable-config2').forEach(function(e) {
+                e.setAttribute('data-refresh-requested-timestamp',SERVER_TIME);
              });
              $.each(items, function(k,v) {
                refresh_logo(v.key, v.type);
