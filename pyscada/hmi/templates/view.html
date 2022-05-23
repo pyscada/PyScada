@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends base_html %}
 {% load i18n staticfiles %}
 
 {% block title %}{{ view_title }} - PyScada Control Center{% endblock %}
@@ -112,4 +112,6 @@
     {% endfor %}
 {% endblock %}
 
-{% block script_bottom %}{% endblock %}
+{% for file in include %}
+    {% include file %}
+{% endfor %}

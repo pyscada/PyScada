@@ -28,6 +28,11 @@ On the Raspberry Pi with internet connection run :
 Dependencies
 ------------
 
+.. js:autofunction:: toggle_timeline
+   :short-name:
+
+.. autofunction:: pyscada.models.Device.__str__
+
 
 Debian 9, Raspbian
 ^^^^^^^^^^^^^^^^^^

@@ -59,6 +59,7 @@ def index(request):
 @unauthenticated_redirect
 @requires_csrf_token
 def view(request, link_title):
+    base_template = 'base.html'
     view_template = 'view.html'
     page_template = get_template('content_page.html')
     widget_row_template = get_template('widget_row.html')
@@ -68,6 +69,10 @@ def view(request, link_title):
         v = View.objects.get(link_title=link_title)
     except (View.DoesNotExist, View.MultipleObjectsReturned):
         return HttpResponse(status=404)
+
+    if v.theme is not None:
+        base_template = str(v.theme.base) + ".html"
+        view_template = str(v.theme.view) + ".html"
 
     if GroupDisplayPermission.objects.count() == 0:
         # no groups
@@ -119,6 +124,7 @@ def view(request, link_title):
         widget_rows_html = ""
         main_content = list()
         sidebar_content = list()
+        topbar = False
 
         show_daterangepicker_temp = False
         show_timeline_temp = False
@@ -129,10 +135,11 @@ def view(request, link_title):
                 # render new widget row and reset all loop variables
                 widget_rows_html += widget_row_template.render(
                     {'row': current_row, 'main_content': main_content, 'sidebar_content': sidebar_content,
-                     'sidebar_visible': len(sidebar_content) > 0}, request)
+                     'sidebar_visible': len(sidebar_content) > 0, 'topbar': topbar}, request)
                 current_row = widget.row
                 main_content = list()
                 sidebar_content = list()
+                topbar = False
             if widget.pk not in visible_widget_list:
                 continue
             if not widget.visible:
@@ -141,18 +148,22 @@ def view(request, link_title):
                 continue
             mc, sbc, opts = widget.content.create_panel_html(widget_pk=widget.pk, user=request.user)
             if mc is not None and mc != "":
-                main_content.append(dict(html=mc, widget=widget))
+                main_content.append(dict(html=mc, widget=widget, topbar=sbc))
             else:
                 logger.info("main_content of widget : %s is %s !" % (widget, mc))
             if sbc is not None:
                 sidebar_content.append(dict(html=sbc, widget=widget))
+            if type(opts) == dict and 'topbar' in opts and opts['topbar'] == True:
+                topbar = True
             if type(opts) == dict and 'show_daterangepicker' in opts and opts['show_daterangepicker'] == True:
                 show_daterangepicker = True
                 show_daterangepicker_temp = True
             if type(opts) == dict and 'show_timeline' in opts and opts['show_timeline'] == True:
                 show_timeline_temp = True
-            if widget.content.content_model == "pyscada.hmi.models.Chart":
+            if type(opts) == dict and 'flot' in opts and opts['flot']:
                 has_flot_chart = True
+            if type(opts) == dict and 'base_template' in opts:
+                base_template = opts['base_template']
             if type(opts) == dict and 'view_template' in opts:
                 view_template = opts['view_template']
             if type(opts) == dict and 'add_context' in opts:
@@ -174,7 +185,7 @@ def view(request, link_title):
 
         widget_rows_html += widget_row_template.render(
             {'row': current_row, 'main_content': main_content, 'sidebar_content': sidebar_content,
-             'sidebar_visible': len(sidebar_content) > 0}, request)
+             'sidebar_visible': len(sidebar_content) > 0, 'topbar': topbar}, request)
 
         pages_html += page_template.render({'page': page,
                                             'widget_rows_html': widget_rows_html,
@@ -237,6 +248,8 @@ def view(request, link_title):
     pages_html += object_config_html
 
     context = {
+        'base_html': base_template,
+        'include': [],
         'page_list': page_list,
         'pages_html': pages_html,
         'panel_list': panel_list,

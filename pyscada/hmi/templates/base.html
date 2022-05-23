@@ -25,7 +25,8 @@
         <link rel="icon" href='{% static "pyscada/img/favicon.ico" %}' type="image/x-icon">
     </head>
     <body {% block body_confic_data %} {% endblock %}>
-        <div id="wrap">
+        <div id="wrap" {% block wrap_config %} {% endblock %}>
+            {% block navbar %}
             <!-- Fixed navbar -->
             <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
                 <div class="container">
@@ -89,6 +90,7 @@
                     </div><!--/.nav-collapse -->
                 </div>
             </div>
+            {% endblock %}
             <div class="container" id="content">
                 {% block top_area %}{% endblock %}
                 <!-- loading animation -->

@@ -19,6 +19,7 @@ from pyscada.hmi.models import View
 from pyscada.hmi.models import ProcessFlowDiagram
 from pyscada.hmi.models import ProcessFlowDiagramItem
 from pyscada.hmi.models import Pie
+from pyscada.hmi.models import Theme
 
 from django.utils.translation import ugettext_lazy as _
 from django.contrib import admin
@@ -309,3 +310,4 @@ admin_site.register(Widget, WidgetAdmin)
 admin_site.register(View, ViewAdmin)
 admin_site.register(ProcessFlowDiagram, ProcessFlowDiagramAdmin)
 admin_site.register(ProcessFlowDiagramItem, ProcessFlowDiagramItemAdmin)
+admin_site.register(Theme)

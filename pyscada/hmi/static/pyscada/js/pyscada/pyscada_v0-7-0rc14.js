@@ -626,7 +626,9 @@ Licensed under the GPL.
      // CHECKING 'key' TYPE :
      if (key.split("-")[0] == "var") {type="variable";} else {type="variable_property";}
 
-     var unit = $(".variable-config[data-unit][data-key=" + key.split("-")[1] + "]").attr('data-unit')
+     //var unit = $(".variable-config[data-unit][data-key=" + key.split("-")[1] + "]").attr('data-unit')
+     var unit_id = get_config_from_hidden_config('variable','id',key.split("-")[1],'unit')
+     var unit = get_config_from_hidden_config('unit','id',unit_id,'unit')
 
      // TIME UPDATE :
      if (time != null) {
@@ -2289,7 +2291,8 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
  }
  // Pie
  function labelFormatter(label, series) {
-     return "<div style='font-size:8pt; text-align:center; padding:2px; color:" + series.color + ";'>" + label + "<br/>" + Math.round(series.percent) + "%<br/>" + series.data[0][1] + " " + series.unit + "</div>";
+     return "<div style='font-size:8pt; text-align:center; padding:2px; color:" + series.color + ";'>" + label + "<br/>" + Math.round(series.percent) + "%</div>";
+     //return "<div style='font-size:8pt; text-align:center; padding:2px; color:" + series.color + ";'>" + label + "<br/>" + Math.round(series.percent) + "%<br/>" + series.data[0][1] + " " + series.unit + "</div>";
  }
  /**
   * A chart with radius and innierRadius options
@@ -2339,6 +2342,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
      plot.update 			= update;
      plot.prepare 			= prepare;
      plot.resize 			= resize;
+     plot.updateLegend 		= updateLegend;
 
      // getter
      plot.getSeries 			= function () { return series ;};
@@ -2368,6 +2372,44 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
              }
          });
      });
+
+     //Show interpolated value in legend
+     function updateLegend() {
+         var pos = flotPlot.c2p({left:flotPlot.getOptions().crosshair.lastPosition.x, top:flotPlot.getOptions().crosshair.lastPosition.y});
+         var axes = flotPlot.getAxes();
+
+         if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max ||
+             pos.y < axes.yaxis.min || pos.y > axes.yaxis.max) {
+             return;
+         }
+
+         var i, j, dataset = flotPlot.getData();
+
+         for (i = 0; i < dataset.length; ++i) {
+             var series = dataset[i];
+             var key = series.key
+             // Find the nearest points, x-wise
+             for (j = 0; j < series.data.length; ++j) {
+                 if (series.data[j][0] > pos.x) {
+                     break;
+                 }
+             }
+             // Now Interpolate
+             var y,
+                 p1 = series.data[j - 1],
+                 p2 = series.data[j];
+             if (p1 == null && typeof(p2) != "undefined") {
+                 y = p2[1];
+             } else if (p2 == null && typeof(p1) != "undefined") {
+                 y = p1[1];
+             } else if (typeof(12) != "undefined" && typeof(p2) != "undefined") {
+                 y = p1[1] + (p2[1] - p1[1]) * (pos.x - p1[0]) / (p2[0] - p1[0]);
+             }
+             if (typeof(y) === "number") {
+                 $(legend_value_id+key).text(y.toFixed(2));
+             }
+         }
+     }
 
      // prepare the chart and display it even without data
      function prepare(){
@@ -2413,6 +2455,42 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
          if (contentAreaHeight>mainChartAreaHeight){
              main_chart_area.height(contentAreaHeight);
          }
+
+         //add info on mouse over a slice
+         $(chart_container_id + ' .chart-placeholder').bind("plothover", function (event, pos, item) {
+             var eventDoc, doc, body;
+
+            event = window.event; // IE-ism
+
+            // If pageX/Y aren't available and clientX/Y are,
+            // calculate pageX/Y - logic taken from jQuery.
+            // (This is to support old IE)
+            if (event.pageX == null && event.clientX != null) {
+                eventDoc = (event.target && event.target.ownerDocument) || document;
+                doc = eventDoc.documentElement;
+                body = eventDoc.body;
+
+                event.pageX = event.clientX +
+                    (doc && doc.scrollLeft || body && body.scrollLeft || 0) -
+                    (doc && doc.clientLeft || body && body.clientLeft || 0);
+                event.pageY = event.clientY +
+                    (doc && doc.scrollTop  || body && body.scrollTop  || 0) -
+                    (doc && doc.clientTop  || body && body.clientTop  || 0 );
+            }
+
+             if (item && typeof item.datapoint != 'undefined' && item.datapoint.length > 1) {
+                 var x = item.datapoint[0].toFixed(2),
+                     y = item.datapoint[1][0][1].toFixed(2);
+                 y_label = (typeof item.series.label !== 'undefined') ? item.series.label : "T";
+                 y_unit = (typeof item.series.unit !== 'undefined') ? item.series.unit : "";
+                 $("#tooltip").html(y_label + " (" + x + " %) = " + y + " " + y_unit)
+                     .css({top: event.pageY+5, left: event.pageX+5, "z-index": 91})
+                     .show();
+                     //.fadeIn(200);
+             } else {
+                 $("#tooltip").hide();
+             }
+         })
 
          // Since CSS transforms use the top-left corner of the label as the transform origin,
          // we need to center the y-axis label by shifting it down by half its width.

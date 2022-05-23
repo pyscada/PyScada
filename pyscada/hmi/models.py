@@ -122,6 +122,15 @@ class WidgetContentModel(models.Model):
         abstract = True
 
 
+class Theme(models.Model):
+    name = models.CharField(max_length=400)
+    base_filename = models.CharField(max_length=400, default='base', help_text="Enter the filename without '.html'")
+    view_filename = models.CharField(max_length=400, default='view', help_text="Enter the filename without '.html'")
+
+    def __str__(self):
+        return self.name
+
+
 class ControlElementOption(models.Model):
     name = models.CharField(max_length=400)
     placeholder = models.CharField(max_length=30, default='Enter a value')
@@ -367,7 +376,10 @@ class Chart(WidgetContentModel):
         sidebar_template = get_template('chart_legend.html')
         main_content = main_template.render(dict(chart=self, widget_pk=widget_pk))
         sidebar_content = sidebar_template.render(dict(chart=self, widget_pk=widget_pk))
-        opts = {'show_daterangepicker': True, 'show_timeline': True,}
+        opts = dict()
+        opts['show_daterangepicker'] = True
+        opts['show_timeline'] = True
+        opts['flot'] = True
         opts["object_config_list"] = set()
         opts["object_config_list"].update(self._get_objects_for_html())
         return main_content, sidebar_content, opts
@@ -433,7 +445,10 @@ class Pie(WidgetContentModel):
         sidebar_template = get_template('chart_legend.html')
         main_content = main_template.render(dict(pie=self, widget_pk=widget_pk))
         sidebar_content = sidebar_template.render(dict(chart=self, pie=1, widget_pk=widget_pk))
-        return main_content, sidebar_content, ''
+        opts = dict()
+        opts['flot'] = True
+        opts['topbar'] = True
+        return main_content, sidebar_content, opts
 
 
 class Form(models.Model):
@@ -496,6 +511,14 @@ class ControlPanel(WidgetContentModel):
                                                  uuid=uuid4().hex, widget_pk=widget_pk))
         sidebar_content = None
         opts = dict()
+        opts['flot'] = False
+        for item in self.items.all():
+            if item.display_value_options is not None and item.display_value_options.type == 3:
+                opts['flot'] = True
+        for form in self.forms.all():
+            for item in form.control_items.all():
+                if item.display_value_options is not None and item.display_value_options.type == 3:
+                    opts['flot'] = True
         opts["object_config_list"] = set()
         opts["object_config_list"].update(self._get_objects_for_html())
         opts["custom_fields_list"] = {'variable': [{'name': 'refresh-requested-timestamp', 'value': ""},
@@ -682,6 +705,7 @@ class View(models.Model):
     visible = models.BooleanField(default=True)
     position = models.PositiveSmallIntegerField(default=0)
     show_timeline = models.BooleanField(default=True)
+    theme = models.ForeignKey(Theme, null=True, default=None, on_delete=models.SET_NULL)
 
     def __str__(self):
         return self.title

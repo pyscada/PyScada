@@ -34,3 +34,19 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+
+
+
+Autodoc
+=======
+
+.. automodule:: pyscada.admin
+
+.. automodule:: pyscada.models
+
+.. js:autofunction:: data_handler_ajax
+
+.. js:autoclass:: Bar
+   :members:
+   :private-members:
