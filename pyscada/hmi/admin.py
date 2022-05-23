@@ -20,11 +20,45 @@ from pyscada.hmi.models import ProcessFlowDiagram
 from pyscada.hmi.models import ProcessFlowDiagramItem
 from pyscada.hmi.models import Pie
 
+from django.utils.translation import ugettext_lazy as _
 from django.contrib import admin
 from django import forms
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class FormListFilter(admin.SimpleListFilter):
+    # Human-readable title which will be displayed in the
+    # right admin sidebar just above the filter options.
+    title = _('form filter')
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'form'
+
+    def lookups(self, request, model_admin):
+        """
+        Returns a list of tuples. The first element in each
+        tuple is the coded value for the option that will
+        appear in the URL query. The second element is the
+        human-readable name for the option that will appear
+        in the right sidebar.
+        """
+        result = list()
+        for form in Form.objects.all():
+            result.append((form.pk, form.title),)
+        return result
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value
+        provided in the query string and retrievable via
+        `self.value()`.
+        """
+        # Compare the requested value (either '80s' or '90s')
+        # to decide how to filter the queryset.
+        if self.value() is not None:
+            return queryset.filter(control_items_form__in=self.value())
 
 
 class ChartForm(forms.ModelForm):
@@ -171,7 +205,7 @@ class ControlElementOptionAdmin(admin.ModelAdmin):
 class ControlItemAdmin(admin.ModelAdmin):
     list_display = ('id', 'position', 'label', 'type', 'variable', 'variable_property', 'display_value_options',
                     'control_element_options')
-    list_filter = ('controlpanel', 'control_items_form', 'type',)
+    list_filter = ('controlpanel', FormListFilter, 'type',)
     list_editable = ('position', 'label', 'type', 'variable', 'variable_property', 'display_value_options',
                      'control_element_options')
     raw_id_fields = ('variable',)

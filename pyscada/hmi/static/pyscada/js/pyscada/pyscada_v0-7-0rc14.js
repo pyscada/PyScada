@@ -2001,10 +2001,6 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
 
      //options["series"]["gauges"]["gauge"] = {"background": {"color": $(val_inst).data('color')}}
 
-     function labelFormatter(label, series) {
-         return "<div style='font-size:8pt; text-align:center; padding:2px; color:white;'>" + label + "<br/>" + Math.round(series.percent) + "%</div>";
-     }
-
      // prepare the chart and display it even without data
      function prepare(){
      }
@@ -2292,6 +2288,9 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
      }
  }
  // Pie
+ function labelFormatter(label, series) {
+     return "<div style='font-size:8pt; text-align:center; padding:2px; color:" + series.color + ";'>" + label + "<br/>" + Math.round(series.percent) + "%<br/>" + series.data[0][1] + " " + series.unit + "</div>";
+ }
  /**
   * A chart with radius and innierRadius options
   * @param {number} id The container id where to display the chart
@@ -2307,7 +2306,11 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
                  label: {
                      show: true,
                      radius: radius,
-                     //formatter: labelFormatter,
+                     formatter: labelFormatter,
+                     background:{
+                       opacity: 0.5,
+       								 color: "#FFF"
+                     }
                      //threshold: 0.05
                  }
              }
@@ -2365,10 +2368,6 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
              }
          });
      });
-
-     function labelFormatter(label, series) {
-         return "<div style='font-size:8pt; text-align:center; padding:2px; color:white;'>" + label + "<br/>" + Math.round(series.percent) + "%</div>";
-     }
 
      // prepare the chart and display it even without data
      function prepare(){
