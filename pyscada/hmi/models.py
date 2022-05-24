@@ -705,7 +705,7 @@ class View(models.Model):
     visible = models.BooleanField(default=True)
     position = models.PositiveSmallIntegerField(default=0)
     show_timeline = models.BooleanField(default=True)
-    theme = models.ForeignKey(Theme, null=True, default=None, on_delete=models.SET_NULL)
+    theme = models.ForeignKey(Theme, blank=True, null=True, default=None, on_delete=models.SET_NULL)
 
     def __str__(self):
         return self.title
