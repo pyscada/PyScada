@@ -949,7 +949,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
                      }else{
                          INIT_CHART_VARIABLES_DONE = true;
                          set_loading_state(5, 100);
-                         $('#loadingAnimation').hide();
+                         $('.loadingAnimation').hide();
                      }
                  }
              }
@@ -1131,11 +1131,11 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
 
      JSON_ERROR_COUNT = JSON_ERROR_COUNT + 1;
      if (JSON_ERROR_COUNT > 15) {
-         $("#AutoUpdateStatus").css("color", "red");
+         $(".AutoUpdateStatus").css("color", "red");
          auto_update_click();
          add_notification("Fetching data failed limit reached, auto update deactivated.<br>Check your connectivity and active auto update in the top right corner.", 2, 0);
      } else if(JSON_ERROR_COUNT > 3){
-         $("#AutoUpdateStatus").css("color", "orange");
+         $(".AutoUpdateStatus").css("color", "orange");
          for (var key in VARIABLE_KEYS) {
              key = VARIABLE_KEYS[key];
              //add_fetched_data(key, [[DATA_TO_TIMESTAMP,Number.NaN]]);
@@ -2061,234 +2061,6 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
          }
      }
  }
- // Bar
- /**
-  * A Distributed Columns chart which display datas from one to multiple variables.
-  * @param {number} id The container id where to display the chart
-  * @param {number} min The y axe minimum value
-  * @param {numer} max The y axe maximum value
-  */
- function Bar(id, min, max){
-     var options = {
-         series: [{
-         data: []
-       }],
-         chart: {
-         height: 350,
-         type: 'bar',
-         events: {
-           click: function(chart, w, e) {
-             // console.log(chart, w, e)
-           }
-         }
-       },
-       //colors: colors,
-       plotOptions: {
-         bar: {
-           columnWidth: '45%',
-           distributed: true,
-         }
-       },
-       dataLabels: {
-         enabled: false
-       },
-       legend: {
-         show: false
-       },
-       xaxis: {
-         categories: [],
-         labels: {
-           style: {
-             //colors: colors,
-             fontSize: '12px'
-           }
-         }
-       }
-     };
-
-     series = [{'x':'sd','y':45}, {'x':'dfg', 'y':56}],		// just the active data series
-     keys   = [],		// list of variable keys (ids)
-     variable_names = [], // list of all variable names
-     variables = {}, // list of all variables
-     prepared = false,	// state used to know if the chart is prepared or not
-     bar_container_id = '#chart-container-'+id, // the HTML element where the chart is displayed
-     legend_table_id = '#chart-legend-table-' + id, // table of legend
-     legend_checkbox_id = '#chart-legend-checkbox-' + id + '-', // legend of checkbox, when checked will display the linked variable in the chart
-     legend_checkbox_status_id = '#chart-legend-checkbox-status-' + id + '-', // legend of checkbox status
-     plot = this; // represent the object
-     apexPlot = null; // the chart
-
-     // public functions
-     plot.update 			= update;
-     plot.prepare 			= prepare;
-     plot.resize 			= resize;
-
-     // getter
-     plot.getId				= function () {return id;};
-     plot.getPrepared		= function () {return prepared;};
-     plot.getFlotObject		= function () {return apexPlot;};
-
-     plot.getSeries 			= function () { return series ;};
-     plot.getKeys			= function (){ return keys;};
-     plot.getVariableNames	= function (){ return variable_names;};
-
-     plot.getInitStatus		= function () { if(InitDone){return InitRetry;}else{return false;}};
-     plot.getId				= function () {return id;};
-     plot.getBarContainerId= function () {return bar_container_id;};
-
-
-     // init data
-     $.each($(legend_table_id + ' .variable-config'),function(key,val){
-         val_inst = $(val);
-         variable_name = val_inst.data('name');
-         variable_key = val_inst.data('key');
-         variables[variable_key] = {'color':val_inst.data('color'),'yaxis':1};
-         keys.push(variable_key);
-         variable_names.push(variable_name);
-         unit = "";
-         label = "";
-         // set label and unit text of each variable of the chart
-         $.each($(legend_table_id + ' .legendSeries'),function(kkey,val){
-             val_inst = $(val);
-             if (variable_key == val_inst.find(".variable-config").data('key')){
-                 variables[variable_key].label = val_inst.find(".legendLabel").text().replace(/\s/g, '');
-                 variables[variable_key].unit = val_inst.find(".legendUnit").text().replace(/\s/g, '');
-             }
-         });
-     });
-
-     // prepare the chart and display it even without data
-     function prepare(){
-         // prepare legend table sorter
-         if (keys.length > 0) {
-             $(legend_table_id).tablesorter({sortList: [[2,0]]});
-         }
-
-         // add onchange function to every checkbox in legend / shows or hides the variable linked to the checked/unchecked checkbox
-         $.each(variables,function(key,val){
-             $(legend_checkbox_id+key).change(function() {
-                 plot.update(true);
-                 if ($(legend_checkbox_id+key).is(':checked')){
-                     $(legend_checkbox_status_id+key).html(1);
-                 }else{
-                     $(legend_checkbox_status_id+key).html(0);
-                 }
-             });
-         });
-         // add onchange function to make_all_none checkbox in legend / shows or hides the chart's variables
-         $(legend_checkbox_id+'make_all_none').change(function() {
-             if ($(legend_checkbox_id+'make_all_none').is(':checked')){
-                 $.each(variables,function(key,val){
-                     $(legend_checkbox_status_id+key).html(1);
-                     $(legend_checkbox_id+key)[0].checked = true;
-                 });
-             }else{
-                 $.each(variables,function(key,val){
-                     $(legend_checkbox_status_id+key).html(0);
-                     $(legend_checkbox_id+key)[0].checked = false;
-                  });
-             }
-             plot.update(true);
-         });
-
-
-         // expand the pie to the maximum width
-         main_chart_area = $(bar_container_id).closest('.main-chart-area');
-
-
-         contentAreaHeight = main_chart_area.parent().height();
-         mainChartAreaHeight = main_chart_area.height();
-
-         // resize the main chart area if the content height exceed the main chart's
-         if (contentAreaHeight>mainChartAreaHeight){
-             main_chart_area.height(contentAreaHeight);
-         }
-
-
-         // Since CSS transforms use the top-left corner of the label as the transform origin,
-         // we need to center the y-axis label by shifting it down by half its width.
-         // Subtract 20 to factor the chart's bottom margin into the centering.
-         var chartTitle = $(bar_container_id + ' .chartTitle');
-         chartTitle.css("margin-left", -chartTitle.width() / 2);
-         var xaxisLabel = $(bar_container_id + ' .axisLabel.xaxisLabel');
-         xaxisLabel.css("margin-left", -xaxisLabel.width() / 2);
-         var yaxisLabel = $(bar_container_id + ' .axisLabel.yaxisLabel');
-         yaxisLabel.css("margin-top", yaxisLabel.width() / 2 - 20);
-
-         // if we have data, then we display the bar chart
-         if (series.length > 0) {
-             apexPlot = new ApexCharts(document.querySelector(bar_container_id+' .chart-placeholder'),options);
-             apexPlot.render();
-
-             prepared = true;
-             // update the plot
-             update(false);
-         }else {
-             prepared = false;
-         }
-     }
-
-     // update the chart
-     function update(force){
-         if(!prepared ){
-             if($(bar_container_id).is(":visible")){
-                 prepared = true;
-                 prepare();
-             }else{
-                 return;
-             }
-         }
-         if(prepared && ($(bar_container_id).is(":visible") || force)){
-             // only update if plot is visible
-             // add the selected data series to the "series" variable
-             series = [];
-
-             for (var key in keys){
-                 key = keys[key];
-                 if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object'){
-                     series.push({"data":DATA[key][DATA[key].length - 1], "label":variables[key].label,"unit":variables[key].unit, "color":variables[key].color});
-                 }
-             }
-             if (series.length > 0) {
-                 if (typeof apexPlot !== 'undefined') {
-                     // update flot plot
-                     var dataBar = [];
-                     var categorieNames = [];
-                     for (var i = 0; i<series.length; i++){
-                         console.log(i);
-                         console.log(series);
-                         const obj = {};
-                         obj.x = series[i].label;
-                         obj.y = series[i].data;
-                         categorieNames.push(obj.x);
-                         dataBar.push(obj);
-                     }
-                     apexPlot.updateOptions({
-                         series: [{
-                           data: dataBar
-                         }],
-                         xaxis: {
-                           categories: categorieNames
-                         }
-                       });
-                 }
-             }
-             else {
-                 apexPlot.updateOptions({
-                     series: [{
-                       data: []
-                     }],
-                     xaxis: {
-                       categories: []
-                     }
-                   });
-             }
-         }
-     }
-
-     function resize() {
-     }
- }
  // Pie
  function labelFormatter(label, series) {
      return "<div style='font-size:8pt; text-align:center; padding:2px; color:" + series.color + ";'>" + label + "<br/>" + Math.round(series.percent) + "%</div>";
@@ -2534,7 +2306,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
                      series.push({"data":DATA[key][DATA[key].length - 1], "label":variables[key].label,"unit":variables[key].unit, "color":variables[key].color});
                  }
              }
-             if (series.length > 0) {
+             if (series.length > 0 || force) {
                  if (typeof flotPlot !== 'undefined') {
                      // update flot plot
                      flotPlot.setData(series);
@@ -2682,6 +2454,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
      $.each(PyScadaPlots,function(plot_id){
          var self = this, doBind = function() {
              PyScadaPlots[plot_id].update(force);
+             PyScadaPlots[plot_id].resize();
          };
          $.browserQueue.add(doBind, this);
      });
@@ -2823,11 +2596,11 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
   */
  function set_content_padding_top() {
      navbar_height = $('.navbar-collapse')[0].offsetHeight;
-     if (navbar_height > 50) {
+     if (navbar_height > 52) {
          if ($('.navbar-toggle').css('display') !== 'none') {
              navbar_height = navbar_height;
          }else {
-             navbar_height = navbar_height - 50;
+             navbar_height = navbar_height - 52;
          }
      }else {
          navbar_height = 0;
@@ -3078,7 +2851,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
   * @returns void
   */
  function show_init_status(){
-     //$("#loadingAnimation").show();
+     //$(".loadingAnimation").show();
      INIT_STATUS_COUNT = INIT_STATUS_COUNT + 1;
  }
 
@@ -3090,7 +2863,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
  function hide_init_status(){
      INIT_STATUS_COUNT = INIT_STATUS_COUNT -1;
      if (INIT_STATUS_COUNT <= 0){
-         //$("#loadingAnimation").hide();
+         //$(".loadingAnimation").hide();
      }
  }
 
@@ -3112,6 +2885,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
      if ($('#page-load-state').length > 0) {
          $('#page-load-state')[0].setAttribute('value', (Number.parseFloat(loading_states[key]).toFixed(2)));
      }
+     set_content_padding_top();
  }
 
  // Hide Loading
@@ -3122,6 +2896,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
  function hide_loading_state() {
      $('#page-load-label').hide();
      $('#page-load-state').hide();
+     set_content_padding_top();
  }
 
  // UPDATES :
@@ -3132,8 +2907,8 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
   * @returns void
   */
  function show_update_status(){
-     $("#AutoUpdateStatus").css("color", "");
-     $("#AutoUpdateStatus").show();
+     $(".AutoUpdateStatus").css("color", "");
+     $(".AutoUpdateStatus").show();
      UPDATE_STATUS_COUNT++;
  }
 
@@ -3145,7 +2920,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
  function hide_update_status(){
      UPDATE_STATUS_COUNT--;
      if (UPDATE_STATUS_COUNT <= 0){
-         $("#AutoUpdateStatus").hide();
+         $(".AutoUpdateStatus").hide();
          UPDATE_STATUS_COUNT = 0;
      }
  }
@@ -3157,9 +2932,9 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
   */
  function auto_update_click(toggleState=true){
      if( toggleState) {
-         $('#AutoUpdateButton').bootstrapSwitch('toggleState');
+         $('.AutoUpdateButton').bootstrapSwitch('toggleState');
      }
-     AUTO_UPDATE_ACTIVE = $('#AutoUpdateButton').bootstrapSwitch('state');
+     AUTO_UPDATE_ACTIVE = $('.AutoUpdateButton').bootstrapSwitch('state');
      if (AUTO_UPDATE_ACTIVE) {
          // deactivate auto update
      } else {
@@ -3716,10 +3491,10 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
  // fix drop down problem
  $( document ).ready(function() {
      // show buttons
-     $("#loadingAnimation").parent().show();
-     $("#AutoUpdateStatus").parent().parent().show();
-     $("#ReadAllTask").parent().parent().show();
-     $("#AutoUpdateButtonParent").show();
+     $(".loadingAnimation").parent().show();
+     $(".AutoUpdateStatus").parent().parent().show();
+     $(".ReadAllTask").parent().parent().show();
+     $(".AutoUpdateButtonParent").show();
 
      // init loading states
      set_loading_state(1, 40);
@@ -3786,6 +3561,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
          toggle_daterangepicker();
          toggle_timeline();
          updatePyScadaPlots(false);
+         set_content_padding_top();
      });
 
      set_loading_state(1, loading_states[1] + 10);
@@ -3798,8 +3574,8 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
      $('.dropdown-toggle').dropdown();
 
      // Setup auto-update switch button
-     $('#AutoUpdateButton').removeClass('hidden');
-     $('#AutoUpdateButton').bootstrapSwitch({
+     $('.AutoUpdateButton').removeClass('hidden');
+     $('.AutoUpdateButton').bootstrapSwitch({
          onInit: function(event) {
              $('.bootstrap-switch-id-AutoUpdateButton').tooltip({title:"Auto update data", placement:"bottom"});
          }
@@ -3922,7 +3698,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
      });
 
      // Send request data to all devices
-     $('#ReadAllTask').click(function(e) {
+     $('.ReadAllTask').click(function(e) {
        $.ajax({
            url: ROOT_URL+'form/read_all_task/',
            type: "POST",
@@ -3949,7 +3725,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
      });
 
      // auto update function
-     $("#AutoUpdateButton").on('switchChange.bootstrapSwitch', function(e, d) {
+     $(".AutoUpdateButton").on('switchChange.bootstrapSwitch', function(e, d) {
          auto_update_click(false);
      });
      $('#PlusTwoHoursButton').click(function(e) {
@@ -3976,7 +3752,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
                  PyScadaPlots[plot_id].resize();
              };
              $.browserQueue.add(doBind, this);
-         });
+       });
        set_content_padding_top();
      });
      set_loading_state(1, loading_states[1] + 10);
@@ -4066,17 +3842,17 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
              DATA_TO_TIMESTAMP = Math.min(end.unix() * 1000, SERVER_TIME);
              DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
              INIT_CHART_VARIABLES_DONE = false;
-             $('#loadingAnimation').show()
+             $('.loadingAnimation').show()
          });
          $('#daterange').on('show.daterangepicker', function(ev, picker) {
              PREVIOUS_AUTO_UPDATE_ACTIVE_STATE = AUTO_UPDATE_ACTIVE
              PREVIOUS_END_DATE = moment.min(picker.endDate, moment()).unix();
-             if($('#AutoUpdateButton').bootstrapSwitch('state') && AUTO_UPDATE_ACTIVE){
+             if($('.AutoUpdateButton').bootstrapSwitch('state') && AUTO_UPDATE_ACTIVE){
                  auto_update_click();
              };
          });
          $('#daterange').on('hide.daterangepicker', function(ev, picker) {
-             if(!$('#AutoUpdateButton').bootstrapSwitch('state') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
+             if(!$('.AutoUpdateButton').bootstrapSwitch('state') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
                  auto_update_click();
              };
              DATA_DISPLAY_FROM_TIMESTAMP = -1;
