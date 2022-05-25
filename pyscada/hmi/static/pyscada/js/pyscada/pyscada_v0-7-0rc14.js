@@ -1539,16 +1539,20 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
              var offset = flotPlot.getPlaceholder().offset();
              var plotOffset = flotPlot.getPlotOffset();
              pos={};
-             pos.x = clamp(0, e.pageX - offset.left - plotOffset.left, flotPlot.width());
-             pos.y = clamp(0, e.pageY - offset.top - plotOffset.top, flotPlot.height());
+             pos.x = Math.max(0, e.pageX - offset.left - plotOffset.left, flotPlot.width());
+             pos.y = Math.max(0, e.pageY - offset.top - plotOffset.top, flotPlot.height());
+             //pos.x = clamp(0, e.pageX - offset.left - plotOffset.left, flotPlot.width());
+             //pos.y = clamp(0, e.pageY - offset.top - plotOffset.top, flotPlot.height());
              flotPlot.getOptions().crosshair.lastPositionMouseDown = pos;
          // mouse up
          }).bind("mouseup", function (e) {
              var offset = flotPlot.getPlaceholder().offset();
              var plotOffset = flotPlot.getPlotOffset();
              pos={};
-             pos.x = clamp(0, e.pageX - offset.left - plotOffset.left, flotPlot.width());
-             pos.y = clamp(0, e.pageY - offset.top - plotOffset.top, flotPlot.height());
+             pos.x = Math.max(0, e.pageX - offset.left - plotOffset.left, flotPlot.width());
+             pos.y = Math.max(0, e.pageY - offset.top - plotOffset.top, flotPlot.height());
+             //pos.x = clamp(0, e.pageX - offset.left - plotOffset.left, flotPlot.width());
+             //pos.y = clamp(0, e.pageY - offset.top - plotOffset.top, flotPlot.height());
              old_pos = flotPlot.getOptions().crosshair.lastPositionMouseDown;
              if (flotPlot.getOptions().crosshair.locked) {
                  flotPlot.getOptions().crosshair.lastPosition.x = pos.x;
@@ -2475,7 +2479,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
      pOpt=flotPlot.getOptions();
      $.each(PyScadaPlots,function(plot_id){
          if(typeof(pOpt.crosshair) !== 'undefined' && pOpt.crosshair.lastPosition.x !== -1  && pOpt.crosshair.lastPosition.x !== 0 && !pOpt.crosshair.locked) {
-             if(typeof(PyScadaPlots[plot_id].getFlotObject()) !== 'undefined' && PyScadaPlots[plot_id].getFlotObject().getOptions().xaxes.length === pOpt.xaxes.length){
+             if(typeof(PyScadaPlots[plot_id].getFlotObject()) !== 'undefined' && typeof(PyScadaPlots[plot_id].getFlotObject().getOptions) !== 'undefined' && PyScadaPlots[plot_id].getFlotObject().getOptions().xaxes.length === pOpt.xaxes.length){
                  if (PyScadaPlots[plot_id].getFlotObject().getOptions().xaxes.length === 1 && pOpt.xaxes.length === 1 && PyScadaPlots[plot_id].getFlotObject().getOptions().xaxes[0].key === pOpt.xaxes[0].key) {
                      PyScadaPlots[plot_id].getFlotObject().setCrosshair(flotPlot.c2p({left:pOpt.crosshair.lastPosition.x, top:pOpt.crosshair.lastPosition.y}))
                      $('.chart-legend-value-' + PyScadaPlots[plot_id].getId()).removeClass('type-numeric');
@@ -2502,7 +2506,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
   */
  function delCrosshairs(flotPlot) {
      $.each(PyScadaPlots,function(plot_id){
-         if (typeof PyScadaPlots[plot_id].getFlotObject() !== 'undefined') {
+         if (typeof PyScadaPlots[plot_id].getFlotObject() !== 'undefined' && typeof(PyScadaPlots[plot_id].getFlotObject().getOptions) !== 'undefined' && typeof(PyScadaPlots[plot_id].getFlotObject().setCrosshair) !== 'undefined') {
              PyScadaPlots[plot_id].getFlotObject().setCrosshair();
              PyScadaPlots[plot_id].getFlotObject().getOptions().crosshair.mode = 'xy';
          }
@@ -2517,7 +2521,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
   */
  function unlockCrosshairs(flotPlot) {
      $.each(PyScadaPlots,function(plot_id){
-         if (typeof PyScadaPlots[plot_id].getFlotObject() !== 'undefined') {
+         if (typeof PyScadaPlots[plot_id].getFlotObject() !== 'undefined' && typeof(PyScadaPlots[plot_id].getFlotObject().getOptions) !== 'undefined' && typeof(PyScadaPlots[plot_id].getFlotObject().unlockCrosshair) !== 'undefined') {
              PyScadaPlots[plot_id].getFlotObject().unlockCrosshair();
          }
      });
@@ -3876,6 +3880,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
      // Set and show refresh rate input
      document.querySelectorAll('.refresh-rate-input').forEach(item => {item.oninput = function () {
          document.querySelectorAll('.refresh-rate-output').forEach(item => {item.innerHTML = this.value});
+         document.querySelectorAll('.refresh-rate-input').forEach(item => {item.value = this.value});
          REFRESH_RATE = this.value;
      }});
      document.querySelectorAll('.refresh-rate-output').forEach(item => {item.innerHTML= document.querySelector('.refresh-rate-input').value});

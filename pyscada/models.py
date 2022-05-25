@@ -971,6 +971,18 @@ class Variable(models.Model):
         update the value in the instance and detect value state change
         """
 
+        try:
+            value = float(value)
+        except ValueError:
+            # Add string value in dictionary and replace the string by the dictionary value
+            if type(value) == str:
+                value = self.convert_string_value(value)
+            else:
+                logger.info("Value read for %s format not supported : %s" % (self, type(value)))
+                value = None
+        except TypeError:
+            pass
+
         if self.scaling is None or value is None or self.value_class.upper() in ['BOOL', 'BOOLEAN']:
             self.value = value
         else:
