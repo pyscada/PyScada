@@ -402,6 +402,7 @@ class ChartAxis(models.Model):
     position = models.PositiveSmallIntegerField(default=0, choices=position_choices)
     min = models.FloatField(blank=True, null=True)
     max = models.FloatField(blank=True, null=True)
+    show_bars = models.BooleanField(default=False, help_text="Show bars")
     show_plot_points = models.BooleanField(default=False, help_text="Show the plots points")
     show_plot_lines_choices = (
         (0, 'No'),

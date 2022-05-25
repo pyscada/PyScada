@@ -1244,11 +1244,18 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
          },
          series: {
              shadowSize: 0,
-             lines: {lineWidth: 3,},
-             points: {radius: 4, symbol: "cross",},
-         bars: {
+             lines: {
+                show: true,
+                lineWidth: 3,
+             },
+             points: {
+                show: true,
+                radius: 4,
+                symbol: "cross",
+             },
+             bars: {
                  show: false,
-                 barWidth: [1, false],
+                 barWidth: [0.5, false],
                  align: "center",
              },
          },
@@ -1350,12 +1357,13 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
          axis_min = axis_inst.data('min') == "None" ? null : axis_inst.data('min');
          axis_max = axis_inst.data('max') == "None" ? null : axis_inst.data('max');
          axis_points = axis_inst.data('show-plot-points') == "True";
+         axis_bars = axis_inst.data('show-plot-bars') == "True";
          axis_lines = axis_inst.data('show-plot-lines') >= 1;
          axis_steps = axis_inst.data('show-plot-lines') >= 2;
          axis_stack = axis_inst.data('stack') == "True";
          axis_fill = axis_inst.data('fill') == "True";
          raxes[axis_id] = {'list_id':k,}
-         axes[k] = {'list_id':axis_id, 'label':axis_label, 'position': axis_position, 'min': axis_min, 'max': axis_max, 'points': axis_points, 'lines': axis_lines, 'steps': axis_steps, 'stack': axis_stack, 'fill': axis_fill, 'unit': null};
+         axes[k] = {'list_id':axis_id, 'label':axis_label, 'position': axis_position, 'min': axis_min, 'max': axis_max, 'points': axis_points, 'lines': axis_lines, 'bars': axis_bars, 'steps': axis_steps, 'stack': axis_stack, 'fill': axis_fill, 'unit': null};
          options.yaxes[k] = {};
          options.yaxes[k].list_id = axis_id;
          options.yaxes[k].label = axis_label;
@@ -1769,7 +1777,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
                              new_data_bool = true;
                            }
                          }
-                         series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis+1,"label":variables[key].label,"unit":variables[key].unit, "key":key, "points": {"show": axes[variables[key].yaxis].points,}, "stack": axes[variables[key].yaxis].stack, "lines": {"show": axes[variables[key].yaxis].lines, "steps": axes[variables[key].yaxis].steps, "fill": axes[variables[key].yaxis].fill,},});
+                         series.push({"data":chart_data,"color":variables[key].color,"yaxis":variables[key].yaxis+1,"label":variables[key].label,"unit":variables[key].unit, "key":key, "points": {"show": axes[variables[key].yaxis].points,}, "stack": axes[variables[key].yaxis].stack, "bars": {"show": axes[variables[key].yaxis].bars}, "lines": {"show": axes[variables[key].yaxis].lines, "steps": axes[variables[key].yaxis].steps, "fill": axes[variables[key].yaxis].fill,},});
                      }else if (xkey !== null && typeof(DATA[xkey]) === 'object'){
                          if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
                              start_xid = find_index_sub_gte(DATA[xkey],DATA_DISPLAY_FROM_TIMESTAMP,0);
@@ -1844,7 +1852,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
                                  new_data_bool = true;
                                }
                              }
-                             series.push({"data":new_data, "xdata":chart_x_data,"color":variables[key].color,"yaxis":variables[key].yaxis+1,"label":variables[key].label,"unit":variables[key].unit,"chart_data_min":chart_data_min,"chart_data_max":chart_data_max,"x_data_min":x_data_min,"x_data_max":x_data_max, "key":key, "points": {"show": axes[variables[key].yaxis].points,}, "stack": axes[variables[key].yaxis].stack, "lines": {"show": axes[variables[key].yaxis].lines, "steps": axes[variables[key].yaxis].steps, "fill": axes[variables[key].yaxis].fill,},});
+                             series.push({"data":new_data, "xdata":chart_x_data,"color":variables[key].color,"yaxis":variables[key].yaxis+1,"label":variables[key].label,"unit":variables[key].unit,"chart_data_min":chart_data_min,"chart_data_max":chart_data_max,"x_data_min":x_data_min,"x_data_max":x_data_max, "key":key, "points": {"show": axes[variables[key].yaxis].points,}, "stack": axes[variables[key].yaxis].stack, "bars": {"show": axes[variables[key].yaxis].bars}, "lines": {"show": axes[variables[key].yaxis].lines, "steps": axes[variables[key].yaxis].steps, "fill": axes[variables[key].yaxis].fill,},});
                          }
                      }
                  }

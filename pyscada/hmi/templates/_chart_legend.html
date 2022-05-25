@@ -1,4 +1,4 @@
- <div class="hidden axis-config" data-label="{{axe.label}}" data-key="{{axe.pk}}" data-position="{{ axe.position }}" data-min="{{ axe.min }}" data-max="{{ axe.max }}" data-show-plot-points="{{ axe.show_plot_points }}" data-show-plot-lines="{{ axe.show_plot_lines }}" data-stack="{{ axe.stack }}" data-fill="{{ axe.fill }}"></div>
+ <div class="hidden axis-config" data-label="{{axe.label}}" data-key="{{axe.pk}}" data-position="{{ axe.position }}" data-min="{{ axe.min }}" data-max="{{ axe.max }}" data-show-plot-points="{{ axe.show_plot_points }}" data-show-plot-bars="{{ axe.show_bars }}" data-show-plot-lines="{{ axe.show_plot_lines }}" data-stack="{{ axe.stack }}" data-fill="{{ axe.fill }}"></div>
   {% for var in axe.variables.all %}
       {% if var.active and var.device.active %}
       <tr class="legendSeries" title="{{var.description}}">
