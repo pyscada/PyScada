@@ -3874,11 +3874,11 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
      });
 
      // Set and show refresh rate input
-     document.getElementById('refresh-rate-input').oninput = function () {
-         document.getElementById('refresh-rate-output').innerHTML = this.value;
+     document.querySelectorAll('.refresh-rate-input').forEach(item => {item.oninput = function () {
+         document.querySelectorAll('.refresh-rate-output').forEach(item => {item.innerHTML = this.value});
          REFRESH_RATE = this.value;
-     };
-     document.getElementById('refresh-rate-output').innerHTML= document.getElementById('refresh-rate-input').value;
-     document.getElementById('refresh-rate-li').classList.remove('hidden');
-     document.getElementById('refresh-rate-divider').classList.remove('hidden');
+     }});
+     document.querySelectorAll('.refresh-rate-output').forEach(item => {item.innerHTML= document.querySelector('.refresh-rate-input').value});
+     document.querySelectorAll('.refresh-rate-li').forEach(item => {item.classList.remove('hidden')});
+     document.querySelectorAll('.refresh-rate-divider').forEach(item => {item.classList.remove('hidden')});
  });
