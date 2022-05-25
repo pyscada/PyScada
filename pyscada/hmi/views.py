@@ -71,8 +71,8 @@ def view(request, link_title):
         return HttpResponse(status=404)
 
     if v.theme is not None:
-        base_template = str(v.theme.base) + ".html"
-        view_template = str(v.theme.view) + ".html"
+        base_template = str(v.theme.base_filename) + ".html"
+        view_template = str(v.theme.view_filename) + ".html"
 
     if GroupDisplayPermission.objects.count() == 0:
         # no groups
