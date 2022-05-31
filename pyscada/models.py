@@ -574,6 +574,10 @@ class Device(models.Model):
         (900.0, '15 Minutes'),
         (1800.0, '30 Minutes'),
         (3600.0, '1 Hour'),
+        (21600.0, '6 Hours'),
+        (43200.0, '12 Hours'),
+        (86400.0, '1 Day'),
+        (604800.0, '1 Week'),
     )
     polling_interval = models.FloatField(default=polling_interval_choices[3][0], choices=polling_interval_choices)
     protocol = models.ForeignKey(DeviceProtocol, null=True, on_delete=models.CASCADE)

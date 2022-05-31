@@ -1804,8 +1804,8 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
                              chart_data_max = chart_data[0][1]
                              x_data_min = chart_x_data[0][1]
                              x_data_max = chart_x_data[0][1]
+                             ix=0;
                              for (iy=0; iy < chart_data.length; iy++) {
-                                 ix=0;
                                  xf=0;
                                  if (chart_x_data.length > 1){
                                      while (ix < chart_x_data.length && xf == 0) {
@@ -1821,6 +1821,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
                                              x_data_min = Math.min(x_data_min, fx)
                                              x_data_max = Math.max(x_data_max, fx)
                                              xf=1;
+                                             ix-=1;
                                          }
                                          ix+=1;
                                      }

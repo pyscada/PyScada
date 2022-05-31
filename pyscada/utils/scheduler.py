@@ -868,6 +868,8 @@ class Process(object):
                 except (ChannelFull, ConnectionRefusedError):
                     logger.info("Channel full : " + str(self.scheduler_pid) + '_ProcessAction_for_' + str(self.process_id))
                     pass
+                except RuntimeWarning:
+                    pass
 
     def stop(self, signum=None, frame=None):
         """
