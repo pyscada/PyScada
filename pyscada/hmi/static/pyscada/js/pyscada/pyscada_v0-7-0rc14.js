@@ -21,7 +21,7 @@ Licensed under the GPL.
  * Script's version
  * @type {string}
  */
- var version = "0.7.1rc1";
+ var version = "0.7.1rc2";
 
  /**
   * Date format : day/month/year hours:minutes:seconds

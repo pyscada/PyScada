@@ -217,23 +217,24 @@ class VariableAdminFrom(forms.ModelForm):
         super(VariableAdminFrom, self).__init__(*args, **kwargs)
         if isinstance(self.instance, Variable):
             wtf = Color.objects.all()
-            w = self.fields['chart_line_color'].widget
-            color_choices = []
-            for choice in wtf:
-                color_choices.append((choice.id, choice.color_code()))
-            w.choices = color_choices
+            if 'chart_line_color' in self.fields:
+                w = self.fields['chart_line_color'].widget
+                color_choices = []
+                for choice in wtf:
+                    color_choices.append((choice.id, choice.color_code()))
+                w.choices = color_choices
 
-            def create_option_color(self, name, value, label, selected, index, subindex=None, attrs=None):
-                font_color = hex(int('ffffff', 16) - int(label[1::], 16))[2::]
-                # attrs = self.build_attrs(attrs,{'style':'background: %s; color: #%s'%(label,font_color)})
-                self.option_inherits_attrs = True
-                return self._create_option(name, value, label, selected, index, subindex,
-                                           attrs={'style': 'background: %s; color: #%s' % (label, font_color)})
+                def create_option_color(self, name, value, label, selected, index, subindex=None, attrs=None):
+                    font_color = hex(int('ffffff', 16) - int(label[1::], 16))[2::]
+                    # attrs = self.build_attrs(attrs,{'style':'background: %s; color: #%s'%(label,font_color)})
+                    self.option_inherits_attrs = True
+                    return self._create_option(name, value, label, selected, index, subindex,
+                                               attrs={'style': 'background: %s; color: #%s' % (label, font_color)})
 
-            import types
-            # from django.forms.widgets import Select
-            w.widget._create_option = w.widget.create_option  # copy old method
-            w.widget.create_option = types.MethodType(create_option_color, w.widget)  # replace old with new
+                import types
+                # from django.forms.widgets import Select
+                w.widget._create_option = w.widget.create_option  # copy old method
+                w.widget.create_option = types.MethodType(create_option_color, w.widget)  # replace old with new
 
     def has_changed(self):
         # Force save inline for the good protocol if selected device and protocol_id exists

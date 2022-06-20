@@ -17,3 +17,7 @@ class PyScadaConfig(AppConfig):
 
     def ready(self):
         import pyscada.signals
+
+        from .hmi.models import Theme
+        if Theme.objects.filter().count():
+            Theme.objects.first().check_all_themes()

@@ -46,6 +46,9 @@ class Device:
 
         self._h.connect()
 
+        if self.inst is None:
+            return output
+
         for item in self.variables.values():
             if item.id != variable_id:
                 continue
@@ -71,6 +74,9 @@ class Device:
             return output
 
         self._h.connect()
+
+        if self.inst is None:
+            return output
 
         self._h.before_read()
         for item in self.variables.values():

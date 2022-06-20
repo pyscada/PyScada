@@ -369,7 +369,7 @@ class Scheduler(object):
                 # check the DB connection
                 check_db_connection()
 
-                # update the P
+                # update the Process
                 BackgroundProcess.objects.filter(pk=self.process_id).update(
                     last_update=now(),
                     message='running..')
@@ -386,7 +386,7 @@ class Scheduler(object):
                     pass
                 elif sig == signal.SIGUSR1:
                     # restart all child processes
-                    logger.debug('PID %d, processed SIGUSR1 (%d) signal' % (self.pid, sig))
+                    logger.debug('PID %d, LABEL %s, processed SIGUSR1 (%d) signal' % (self.pid, self.label, sig))
                     self.restart()
                 elif sig == signal.SIGUSR2:
                     # write the process status to stdout
@@ -504,7 +504,7 @@ class Scheduler(object):
             sleep(0.1)
         self.kill_processes(signal.SIGKILL)
         self.manage_processes()
-        logger.debug('BD %d: restarted'%self.process_id)
+        logger.debug('BD %d: restarted' % self.process_id)
 
     def stop(self, sig=signal.SIGTERM):
         """
@@ -648,7 +648,7 @@ class Scheduler(object):
         """
         handle signals
         """
-        logger.debug('PID %d, received signal: %d' % (self.pid, signum))
+        logger.debug('PID %d, LABEL %s, received signal: %d' % (self.pid, self.label, signum))
         if signum not in self.SIG_QUEUE:
             self.SIG_QUEUE.append(signum)
 
@@ -665,6 +665,7 @@ class Process(object):
         # register signals
         self.SIG_QUEUE = []
         self.SIGNALS = [signal.SIGTERM, signal.SIGUSR1, signal.SIGHUP, signal.SIGUSR2]
+        self.grouped_ids = {}
         scheduler = BackgroundProcess.objects.filter(id=1)
         if len(scheduler):
             self.scheduler_pid = scheduler.first().pid
@@ -755,7 +756,7 @@ class Process(object):
                 elif sig == signal.SIGHUP:
                     raise StopIteration
                 elif sig == signal.SIGUSR1:
-                    logger.debug('PID %d, process SIGUSR1 (%d) signal' % (self.pid, sig))
+                    logger.debug('PID %d, LABEL %s, process SIGUSR1 (%d) signal' % (self.pid, self.label, sig))
                     if not self.restart():
                         logger.debug("restart failed")
                         #raise StopIteration
@@ -842,7 +843,7 @@ class Process(object):
         """
         receive signals
         """
-        logger.debug('PID %d, received signal: %d' % (self.pid, signum))
+        logger.debug('PID %d, LABEL %s, received signal: %d' % (self.pid, self.label, signum))
         if signum not in self.SIG_QUEUE:
             self.SIG_QUEUE.append(signum)
         if channels_driver:
@@ -883,6 +884,7 @@ class Process(object):
             BackgroundProcess.objects.filter(pk=self.process_id).update(pid=0,
                                                                         last_update=now(),
                                                                         message='stopped')
+            logger.debug('Process %s(%s) is stopped' % (self.label, self.pid))
         except OperationalError:
             logger.debug('%s, DB connection lost in stop function' % self.label)
             try:
@@ -935,7 +937,7 @@ class SingleDeviceDAQProcessWorker(Process):
         # clean up
         BackgroundProcess.objects.filter(parent_process__pk=self.process_id).delete()
 
-        grouped_ids = {}
+        self.grouped_ids = {}
         for item in Device.objects.filter(active=True, **self.device_filter):
             self.create_bp(item)
 
@@ -943,9 +945,22 @@ class SingleDeviceDAQProcessWorker(Process):
         """
 
         """
+        # Add missing devices
+        for item in Device.objects.filter(active=True, **self.device_filter):
+            item_found = False
+            for process in self.processes:
+                if process['device_id'] == item.id:
+                    item_found = True
+            if not item_found:
+                self.create_bp(item)
+
         # check if all processes are running
         for process in self.processes:
             try:
+                if Device.objects.filter(pk=process['device_id']).count() < 1:
+                    self.processes.remove(process)
+                    logger.debug("Device %s not found for process %s. Process removed." % (process['device_id'], process['id']))
+                    continue
                 if BackgroundProcess.objects.filter(pk=process['id']).count() != 1:
                     # Process is dead, spawn new instance
                     if process['failed'] < 3:
@@ -994,6 +1009,20 @@ class MultiDeviceDAQProcessWorker(Process):
     def __init__(self, dt=5, **kwargs):
         super(Process, self).__init__(dt=dt, **kwargs)
 
+    def create_bp(self, key, values):
+        bp = BackgroundProcess(label=self.bp_label % key,
+                               message='waiting..',
+                               enabled=True,
+                               parent_process_id=self.process_id,
+                               process_class=self.process_class,
+                               process_class_kwargs=json.dumps(
+                                   {'device_ids': [i.pk for i in values]}))
+        bp.save()
+        self.processes.append({'id': bp.id,
+                               'key': key,
+                               'device_ids': [i.pk for i in values],
+                               'failed': 0})
+
     def init_process(self):
         self.processes = []
         for process in BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False):
@@ -1009,28 +1038,46 @@ class MultiDeviceDAQProcessWorker(Process):
         # clean up
         BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False).delete()
 
-        grouped_ids = {}
+        self.grouped_ids = {}
         for item in Device.objects.filter(active=True, **self.device_filter):
-            grouped_ids[self.gen_group_id(item)] = [item]
+            self.grouped_ids[self.gen_group_id(item)] = [item]
 
-        for key, values in grouped_ids.items():
-            bp = BackgroundProcess(label=self.bp_label % key,
-                                   message='waiting..',
-                                   enabled=True,
-                                   parent_process_id=self.process_id,
-                                   process_class=self.process_class,
-                                   process_class_kwargs=json.dumps(
-                                       {'device_ids': [i.pk for i in values]}))
-            bp.save()
-            self.processes.append({'id': bp.id,
-                                   'key': key,
-                                   'device_ids': [i.pk for i in values],
-                                   'failed': 0})
+        for key, values in self.grouped_ids.items():
+            self.create_bp(key, values)
 
     def loop(self):
         """
 
         """
+
+        # check if a device was deleted, then stop the BackgroundProcess and delete in process list
+        for process in self.processes:
+            process_has_changed = False
+            for device_id in process['device_ids']:
+                if not Device.objects.filter(active=True, pk=device_id).count():
+                    # device removed or not active
+                    process_has_changed = True
+            if process_has_changed:
+                bp = BackgroundProcess.objects.filter(pk=process['id'])
+                if bp.count():
+                    logger.debug('Stop BP %s and remove process %s' % (bp.first(), process))
+                    bp.first().stop(cleanup=True)
+                    self.processes.remove(process)
+
+        # Add missing devices to process list and create BP
+        self.grouped_ids = {}
+        for item in Device.objects.filter(active=True, **self.device_filter):
+            self.grouped_ids[self.gen_group_id(item)] = [item]
+
+        for key, values in self.grouped_ids.items():
+            item_found = False
+            for process in self.processes:
+                for item in values:
+                    if item.id in process['device_ids']:
+                        item_found = True
+            if not item_found:
+                self.create_bp(key, values)
+
         # check if all processes are running
         for process in self.processes:
             try:

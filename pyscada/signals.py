@@ -8,6 +8,7 @@ from pyscada.admin import VariableState
 from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_delete, pre_save, m2m_changed, post_delete
 
+import signal
 import logging
 
 logger = logging.getLogger(__name__)
@@ -58,11 +59,11 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
         try:
             logger.debug("post_save " + str(type(instance).__name__) + "." + str(instance) + "-" + str(instance.id))
             try:
-                bp = BackgroundProcess.objects.get(
+                bp = BackgroundProcess.objects.get(done=False, failed=False,
                     label="pyscada." + str(instance.protocol.protocol) + "-" + str(instance.id))
             except BackgroundProcess.DoesNotExist:
                 # for modbus protocol
-                bp = BackgroundProcess.objects.get(
+                bp = BackgroundProcess.objects.get(done=False, failed=False,
                     label__startswith="pyscada." + str(instance.protocol.protocol) + "-" + str(
                         instance.id) + "-")
         except Exception as e:
@@ -82,11 +83,11 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
             logger.debug("post_save " + str(type(instance).__name__) + "." + str(instance.device) + "-"
                          + str(instance.device_id))
             try:
-                bp = BackgroundProcess.objects.get(
+                bp = BackgroundProcess.objects.get(done=False, failed=False,
                     label="pyscada." + str(instance.device.protocol.protocol) + "-" + str(instance.device_id))
             except BackgroundProcess.DoesNotExist:
                 # for modbus protocol
-                bp = BackgroundProcess.objects.get(
+                bp = BackgroundProcess.objects.get(done=False, failed=False,
                     label__startswith="pyscada." + str(instance.device.protocol.protocol) + "-" + str(
                         instance.device_id) + "-")
         except Exception as e:
@@ -122,12 +123,12 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
                     logger.debug("post_save " + str(type(instance).__name__) + "." + str(instance.variable.device) + "-"
                                  + str(instance.variable.device_id))
                     try:
-                        bp = BackgroundProcess.objects.get(
+                        bp = BackgroundProcess.objects.get(done=False, failed=False,
                             label="pyscada." + str(instance.variable.device.protocol.protocol) + "-"
                                   + str(instance.variable.device_id))
                     except BackgroundProcess.DoesNotExist:
                         # for modbus protocol
-                        bp = BackgroundProcess.objects.get(
+                        bp = BackgroundProcess.objects.get(done=False, failed=False,
                             label__startswith="pyscada." + str(instance.variable.device.protocol.protocol) + "-"
                                               + str(instance.variable.device_id) + "-")
                 except Exception as e:
@@ -157,27 +158,27 @@ def _del_daq_daemons(sender, instance, **kwargs):
         try:
             logger.debug("pre_delete " + str(type(instance).__name__) + "." + str(instance) + "-" + str(instance.id))
             try:
-                bp = BackgroundProcess.objects.get(
+                bp = BackgroundProcess.objects.get(done=False, failed=False,
                     label="pyscada." + str(instance.protocol.protocol) + "-" + str(instance.id))
             except BackgroundProcess.DoesNotExist:
                 # for modbus protocol
-                bp = BackgroundProcess.objects.get(
+                bp = BackgroundProcess.objects.get(done=False, failed=False,
                     label__startswith="pyscada." + str(instance.protocol.protocol) + "-" + str(
                         instance.id) + "-")
         except Exception as e:
             logger.debug(e)
             return False
-        bp.stop()
+        bp.stop(signum=signal.SIGKILL)
     elif type(instance) is Variable or type(instance) is VariableState:
         try:
             logger.debug("pre_delete " + str(type(instance).__name__) + "." + str(instance.device) + "-"
                          + str(instance.device_id))
             try:
-                bp = BackgroundProcess.objects.get(
+                bp = BackgroundProcess.objects.get(done=False, failed=False,
                     label="pyscada." + str(instance.device.protocol.protocol) + "-" + str(instance.device_id))
             except BackgroundProcess.DoesNotExist:
                 # for modbus protocol
-                bp = BackgroundProcess.objects.get(
+                bp = BackgroundProcess.objects.get(done=False, failed=False,
                     label__startswith="pyscada." + str(instance.device.protocol.protocol) + "-" + str(
                         instance.device_id) + "-")
         except Exception as e:
@@ -202,12 +203,12 @@ def _del_daq_daemons(sender, instance, **kwargs):
             logger.debug("pre_delete " + str(type(instance).__name__) + "." + str(instance.variable.device)
                          + "-" + str(instance.variable.device_id))
             try:
-                bp = BackgroundProcess.objects.get(
+                bp = BackgroundProcess.objects.get(done=False, failed=False,
                     label="pyscada." + str(instance.variable.device.protocol.protocol) + "-"
                           + str(instance.variable.device_id))
             except BackgroundProcess.DoesNotExist:
                 # for modbus protocol
-                bp = BackgroundProcess.objects.get(
+                bp = BackgroundProcess.objects.get(done=False, failed=False,
                     label__startswith="pyscada." + str(instance.variable.device.protocol.protocol) + "-" + str(
                         instance.variable.device_id) + "-")
         except Exception as e:

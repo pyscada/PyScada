@@ -254,3 +254,10 @@
 0.7.1rc1
   - Update to Django 3
   - Update docker config and doc to use pyscada repository
+
+0.7.1rc2
+  - Move group display permission items to inline and add exclude type for each item
+  - fix adding a new device and activate device in protocol process list
+  - fix signals for BP not done nor failed
+  - add theme files validator
+  - other fixes

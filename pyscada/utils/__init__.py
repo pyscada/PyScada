@@ -8,8 +8,29 @@ from pytz import UTC
 import numpy as np
 from django.utils.timezone import now
 from django.template.loader import get_template
+from django.contrib.auth.models import Group
 import logging
 logger = logging.getLogger(__name__)
+
+
+def get_group_display_permission_list(items, groups):
+    """
+    @params:
+        items: QuerySet of items to filter
+        groups: QuerySet of groups to filter by
+    @return:
+        QuerySet of items filtered
+    """
+    result = items.filter(
+        groupdisplaypermission__group_display_permission__hmi_group__in=groups,
+        groupdisplaypermission__type=0,
+    ).distinct()
+    if items.first() is not None and items.first().groupdisplaypermission.model.objects.filter(type=1).exists():
+        result = result | items.exclude(
+            groupdisplaypermission__group_display_permission__hmi_group__in=groups,
+            groupdisplaypermission__type=1,
+            groupdisplaypermission__group_display_permission__isnull=False).distinct()
+    return result
 
 
 def gen_hiddenConfigHtml(obj, custom_fields=None):
@@ -18,6 +39,7 @@ def gen_hiddenConfigHtml(obj, custom_fields=None):
     config
 
     :param obj: an object from a model
+    :param custom_fields: list of fields to add to the result
 
     :return: the html of the config of the object
     """

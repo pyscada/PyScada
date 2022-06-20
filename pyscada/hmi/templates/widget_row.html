@@ -11,7 +11,7 @@
 {% endif %}
 {% for content in main_content %}
     <div id="widget_{{content.widget.pk}}" class="widget {{ content.widget.css_class}}"> <!-- {{ content.widget.title }} -->
-        {% if topbar %}{{ content.topbar|safe }}{% endif %}
+        {% if topbar and content.topbar is not None %}{{ content.topbar|safe }}{% endif %}
         {{ content.html|safe }}
     </div>
 {% endfor %}

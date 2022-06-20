@@ -10,9 +10,11 @@ from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Form
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import Widget
+from pyscada.hmi.models import CustomHTMLPanel
+from pyscada.hmi.models import Chart
 from pyscada.hmi.models import View
-from pyscada.hmi.models import WidgetContentModel
-from pyscada.utils import gen_hiddenConfigHtml
+from pyscada.hmi.models import ProcessFlowDiagram
+from pyscada.utils import gen_hiddenConfigHtml, get_group_display_permission_list
 
 from django.http import HttpResponse
 from django.template.loader import get_template
@@ -46,7 +48,8 @@ def index(request):
     if GroupDisplayPermission.objects.count() == 0:
         view_list = View.objects.all()
     else:
-        view_list = View.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).distinct()
+        view_list = get_group_display_permission_list(View.objects, request.user.groups.all())
+
     c = {
         'user': request.user,
         'view_list': view_list,
@@ -78,32 +81,27 @@ def view(request, link_title):
         # no groups
         page_list = v.pages.all()
         sliding_panel_list = v.sliding_panel_menus.all()
-
         visible_widget_list = Widget.objects.filter(page__in=page_list.iterator()).values_list('pk', flat=True)
-        # visible_custom_html_panel_list = CustomHTMLPanel.objects.all().values_list('pk', flat=True)
-        # visible_chart_list = Chart.objects.all().values_list('pk', flat=True)
+        visible_custom_html_panel_list = CustomHTMLPanel.objects.all().values_list('pk', flat=True)
+        visible_chart_list = Chart.objects.all().values_list('pk', flat=True)
         visible_control_element_list = ControlItem.objects.all().values_list('pk', flat=True)
         visible_form_list = Form.objects.all().values_list('pk', flat=True)
+        visible_process_flow_diagram_list = ProcessFlowDiagram.objects.all().values_list('pk', flat=True)
     else:
-        page_list = v.pages.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).distinct()
-
-        sliding_panel_list = v.sliding_panel_menus.filter(
-            groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).distinct()
-
-        visible_widget_list = Widget.objects.filter(
-            groupdisplaypermission__hmi_group__in=request.user.groups.iterator(),
+        page_list = get_group_display_permission_list(v.pages, request.user.groups.all())
+        sliding_panel_list = get_group_display_permission_list(v.sliding_panel_menus, request.user.groups.all())
+        visible_widget_list = get_group_display_permission_list(Widget.objects, request.user.groups.all()).filter(
             page__in=page_list.iterator()).values_list('pk', flat=True)
-        """
-        # todo update permission model to reflect new widget structure
-        visible_custom_html_panel_list = CustomHTMLPanel.objects.filter(
-            groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
-        visible_chart_list = Chart.objects.filter(
-            groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
-        """
-        visible_control_element_list = GroupDisplayPermission.objects.filter(
-            hmi_group__in=request.user.groups.iterator()).values_list('control_items', flat=True)
-        visible_form_list = GroupDisplayPermission.objects.filter(
-            hmi_group__in=request.user.groups.iterator()).values_list('forms', flat=True)
+        visible_custom_html_panel_list = get_group_display_permission_list(
+            CustomHTMLPanel.objects, request.user.groups.all()).values_list('pk', flat=True)
+        visible_chart_list = get_group_display_permission_list(Chart.objects, request.user.groups.all()).\
+            values_list('pk', flat=True)
+        visible_control_element_list = get_group_display_permission_list(
+            ControlItem.objects, request.user.groups.all()).values_list('pk', flat=True)
+        visible_form_list = get_group_display_permission_list(Form.objects, request.user.groups.all()).\
+            values_list('pk', flat=True)
+        visible_process_flow_diagram_list = get_group_display_permission_list(
+            ProcessFlowDiagram.objects, request.user.groups.all()).values_list('pk', flat=True)
 
     panel_list = sliding_panel_list.filter(position__in=(1, 2,))
     control_list = sliding_panel_list.filter(position=0)
@@ -314,16 +312,33 @@ def form_read_task(request):
                 return HttpResponse(status=200)
         else:
             if item_type == 'variable':
-                if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
-                                                         control_items__type=0, control_items__variable__pk=key):
+                exc = pyscada.hmi.models.GroupDisplayPermission.objects.filter(
+                    hmi_group__in=request.user.groups.iterator(),
+                    controlitemgroupdisplaypermission__type=1)
+                if GroupDisplayPermission.objects.filter(
+                        hmi_group__in=request.user.groups.iterator(),
+                        controlitemgroupdisplaypermission__type=0,
+                        controlitemgroupdisplaypermission__control_items__type=1,
+                        controlitemgroupdisplaypermission__control_items__variable__pk=key).exists() or \
+                        (exc.exists() and not exc.filter(
+                            controlitemgroupdisplaypermission__control_items__type=1,
+                            controlitemgroupdisplaypermission__control_items__variable__pk=key).exists()):
                     crt = DeviceReadTask(device=Variable.objects.get(pk=key).device, start=time.time(),
                                          user=request.user)
                     crt.create_and_notificate(crt)
                     return HttpResponse(status=200)
             elif item_type == 'variable_property':
-                if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
-                                                         control_items__type=0,
-                                                         control_items__variable_property__pk=key):
+                exc = pyscada.hmi.models.GroupDisplayPermission.objects.filter(
+                    hmi_group__in=request.user.groups.iterator(),
+                    controlitemgroupdisplaypermission__type=1)
+                if GroupDisplayPermission.objects.filter(
+                        hmi_group__in=request.user.groups.iterator(),
+                        controlitemgroupdisplaypermission__type=0,
+                        controlitemgroupdisplaypermission__control_items__type=0,
+                        controlitemgroupdisplaypermission__control_items__variable_property__pk=key).exists() or \
+                        (exc.exists() and not exc.filter(
+                            controlitemgroupdisplaypermission__control_items__type=0,
+                            controlitemgroupdisplaypermission__control_items__variable_property__pk=key).exists()):
                     crt = DeviceReadTask(device=VariableProperty.objects.get(pk=key).variable.device, start=time.time(),
                                          user=request.user)
                     crt.create_and_notificate(crt)
@@ -357,24 +372,41 @@ def form_write_task(request):
                 return HttpResponse(status=200)
         else:
             if item_type == 'variable':
-                if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
-                                                         control_items__type=0, control_items__variable__pk=key):
+                exc = pyscada.hmi.models.GroupDisplayPermission.objects.filter(
+                    hmi_group__in=request.user.groups.iterator(),
+                    controlitemgroupdisplaypermission__type=1)
+                if GroupDisplayPermission.objects.filter(
+                        hmi_group__in=request.user.groups.iterator(),
+                        controlitemgroupdisplaypermission__type=0,
+                        controlitemgroupdisplaypermission__control_items__type=0,
+                        controlitemgroupdisplaypermission__control_items__variable__pk=key).exists() or \
+                        (exc.exists() and not exc.filter(
+                            controlitemgroupdisplaypermission__control_items__type=0,
+                            controlitemgroupdisplaypermission__control_items__variable__pk=key).exists()):
                     cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
                                           user=request.user)
                     cwt.create_and_notificate(cwt)
                     return HttpResponse(status=200)
                 else:
-                    logger.debug("Missing group display permission for write task variable")
+                    logger.debug("Missing group display permission for write task (variable %s)" % key)
             elif item_type == 'variable_property':
-                if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
-                                                         control_items__type=0,
-                                                         control_items__variable_property__pk=key):
+                exc = pyscada.hmi.models.GroupDisplayPermission.objects.filter(
+                    hmi_group__in=request.user.groups.iterator(),
+                    controlitemgroupdisplaypermission__type=1)
+                if GroupDisplayPermission.objects.filter(
+                        hmi_group__in=request.user.groups.iterator(),
+                        controlitemgroupdisplaypermission__type=0,
+                        controlitemgroupdisplaypermission__control_items__type=0,
+                        controlitemgroupdisplaypermission__control_items__variable_property__pk=key).exists() or \
+                        (exc.exists() and not exc.filter(
+                        controlitemgroupdisplaypermission__control_items__type=0,
+                        controlitemgroupdisplaypermission__control_items__variable_property__pk=key).exists()):
                     cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
                                           user=request.user)
                     cwt.create_and_notificate(cwt)
                     return HttpResponse(status=200)
                 else:
-                    logger.debug("Missing group display permission for write task VP")
+                    logger.debug("Missing group display permission for write task (VP %s)" % key)
     else:
         logger.debug("key or value missing in request : %s" % request.POST)
     return HttpResponse(status=404)

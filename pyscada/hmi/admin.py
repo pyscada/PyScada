@@ -24,6 +24,8 @@ from pyscada.hmi.models import Theme
 from django.utils.translation import ugettext_lazy as _
 from django.contrib import admin
 from django import forms
+from django.db.models.fields.related import OneToOneRel
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -245,11 +247,21 @@ class WidgetAdmin(admin.ModelAdmin):
 
 
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
-    filter_horizontal = (
-        'pages', 'sliding_panel_menus', 'charts', 'control_items', 'widgets', 'views',
-        'custom_html_panels', 'process_flow_diagram', 'forms',)
+    filter_horizontal = ()
     save_as = True
     save_as_continue = True
+
+    # Add inlines for any model with OneToOne relation with Device
+    items = [field for field in GroupDisplayPermission._meta.get_fields() if issubclass(type(field), OneToOneRel)]
+    inlines = []
+    for d in items:
+        filter_horizontal_inline = ()
+        for field in d.related_model._meta.local_many_to_many:
+            filter_horizontal_inline += (field.name,)
+        device_dict = dict(model=d.related_model, filter_horizontal=filter_horizontal_inline)
+        cl = type(d.name, (admin.TabularInline,), device_dict)
+        inlines.append(cl)
+
 
 
 class ControlPanelAdmin(admin.ModelAdmin):
