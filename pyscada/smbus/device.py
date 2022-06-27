@@ -46,7 +46,7 @@ class Device:
 
         self._h.connect()
 
-        if self.inst is None:
+        if self._h.inst is None:
             return output
 
         for item in self.variables.values():
@@ -75,7 +75,7 @@ class Device:
 
         self._h.connect()
 
-        if self.inst is None:
+        if self._h.inst is None:
             return output
 
         self._h.before_read()
