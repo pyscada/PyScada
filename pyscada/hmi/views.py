@@ -69,7 +69,11 @@ def view(request, link_title):
     STATIC_URL = str(settings.STATIC_URL) if hasattr(settings, 'STATIC_URL') else 'static'
 
     try:
-        v = View.objects.get(link_title=link_title)
+        v = get_group_display_permission_list(View.objects, request.user.groups.all()).filter(link_title=link_title).\
+            first()
+        if v is None:
+            raise View.DoesNotExist
+        #v = View.objects.get(link_title=link_title)
     except (View.DoesNotExist, View.MultipleObjectsReturned):
         return HttpResponse(status=404)
 
@@ -144,7 +148,9 @@ def view(request, link_title):
                 continue
             if widget.content is None:
                 continue
-            mc, sbc, opts = widget.content.create_panel_html(widget_pk=widget.pk, user=request.user)
+            kwargs = {'visible_control_element_list': visible_control_element_list,
+                      'visible_form_list': visible_form_list}
+            mc, sbc, opts = widget.content.create_panel_html(widget_pk=widget.pk, user=request.user, **kwargs)
             if mc is not None and mc != "":
                 main_content.append(dict(html=mc, widget=widget, topbar=sbc))
             else:

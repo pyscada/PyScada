@@ -534,9 +534,11 @@ class ControlPanel(WidgetContentModel):
         """
         widget_pk = kwargs['widget_pk'] if 'widget_pk' in kwargs else 0
         visible_element_list = kwargs['visible_control_element_list'] if 'visible_control_element_list' in kwargs else []
+        visible_form_list = kwargs['visible_form_list'] if 'visible_form_list' in kwargs else []
         main_template = get_template('control_panel.html')
         main_content = main_template.render(dict(control_panel=self,
                                                  visible_control_element_list=visible_element_list,
+                                                 visible_form_list=visible_form_list,
                                                  uuid=uuid4().hex, widget_pk=widget_pk))
         sidebar_content = None
         opts = dict()
