@@ -21,6 +21,8 @@ def get_group_display_permission_list(items, groups):
     @return:
         QuerySet of items filtered
     """
+    if len(groups) == 0:
+        return items.all()
     result = items.filter(
         groupdisplaypermission__group_display_permission__hmi_group__in=groups,
         groupdisplaypermission__type=0,
