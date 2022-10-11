@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from pyscada.models import Device, Variable, VariableProperty, Color
+from pyscada.utils import _get_objects_for_html as get_objects_for_html
 
 from django.template.exceptions import TemplateDoesNotExist, TemplateSyntaxError
 from django.db import models
@@ -78,36 +79,9 @@ class WidgetContentModel(models.Model):
         return '', '', ''
 
     def _get_objects_for_html(self, list_to_append=None, obj=None, exclude_model_names=None):
-        if exclude_model_names is None:
-            exclude_model_names = list()
-        if list_to_append is None:
-            list_to_append = set()
         if obj is None:
             obj = self
-
-        if obj not in list_to_append:
-            list_to_append.update([obj])
-
-        # ForeignKey and OneToOne
-        for field in obj._meta.local_fields:
-            if type(field).many_to_one and getattr(obj, field.name) is not None and \
-                    field.name not in exclude_model_names:
-                if hasattr(field, '_get_objects_for_html'):
-                    list_to_append.update(field._get_objects_for_html(list_to_append))
-                else:
-                    list_to_append.update(self._get_objects_for_html(list_to_append, getattr(obj, field.name)))
-        #ManyToMany
-        for fields in obj._meta.local_many_to_many:
-            #logger.debug(fields)
-            for field in getattr(obj, fields.name).all():
-                #logger.debug(field)
-                if field not in exclude_model_names:
-                    if hasattr(field, '_get_objects_for_html'):
-                        list_to_append.update(field._get_objects_for_html(list_to_append))
-                    else:
-                        list_to_append.update(self._get_objects_for_html(list_to_append, field))
-
-        return list_to_append
+        return get_objects_for_html(list_to_append=list_to_append, obj=obj, exclude_model_names=exclude_model_names)
 
     def create_widget_content_entry(self):
         def fullname(o):
@@ -259,9 +233,9 @@ class ControlItem(models.Model):
 
     def web_id(self):
         if self.variable_property:
-            return "controlitem-" + self.id.__str__() + "-" + self.variable_property.name.replace(' ', '_')
+            return "controlitem-" + self.id.__str__() + "-" + self.variable_property.id.__str__()
         elif self.variable:
-            return "controlitem-" + self.id.__str__() + "-" + self.variable.name.replace(' ', '_')
+            return "controlitem-" + self.id.__str__() + "-" + self.variable.id.__str__()
 
     def web_class_str(self):
         if self.variable_property:
@@ -690,6 +664,15 @@ class WidgetContent(models.Model):
         return '%s [%d] %s' % (self.content_model.split('.')[-1], self.content_pk, self.content_str)  # todo add more infos
 
 
+class CssClass(models.Model):
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=400, default='')
+    css_class = models.SlugField(max_length=80, default='')
+
+    def __str__(self):
+        return self.title
+
+
 class Widget(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='', blank=True)
@@ -704,6 +687,7 @@ class Widget(models.Model):
     size = models.PositiveSmallIntegerField(default=4, choices=size_choices)
     visible = models.BooleanField(default=True)
     content = models.ForeignKey(WidgetContent, null=True, default=None, on_delete=models.SET_NULL)
+    extra_css_class = models.ForeignKey(CssClass, null=True, default=None, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
         ordering = ['row', 'col']

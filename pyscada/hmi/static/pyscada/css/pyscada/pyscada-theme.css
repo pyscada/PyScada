@@ -36,7 +36,7 @@ html {
 }
 body {
 	font-family: robotoregular, Arial, sans-serif;
-	padding-top: 70px;
+	/* padding-top: 70px; */
 }
 html,body {
 	height:100%;
@@ -65,6 +65,11 @@ html,body {
 .input-group-addon {
 	border-radius:0px;
 }
+
+.navbar-fixed-top {
+	position: relative;
+}
+
 .navbar-inverse {
 	background-image: none;
 	background-color: #222;
@@ -174,7 +179,7 @@ html,body {
 }
 
 #wrap {
-	min-height: 100%; 
+	min-height: 100%;
 }
 
 #content {
@@ -182,7 +187,7 @@ html,body {
 	padding-bottom:50px;
 }
 
-.footer 
+.footer
 {
 	position: relative;
 	margin-top: -30px;

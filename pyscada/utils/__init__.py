@@ -13,6 +13,34 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _get_objects_for_html(list_to_append=None, obj=None, exclude_model_names=None):
+    if exclude_model_names is None:
+        exclude_model_names = list()
+    if list_to_append is None:
+        list_to_append = set()
+
+    if obj not in list_to_append:
+        list_to_append.update([obj])
+    # ForeignKey and OneToOne
+    for field in obj._meta.local_fields:
+        if (type(field).many_to_one or type(field).one_to_one) and getattr(obj, field.name) is not None and \
+                field.name not in exclude_model_names:
+            if hasattr(field, '_get_objects_for_html'):
+                list_to_append.update(field._get_objects_for_html(list_to_append))
+            else:
+                list_to_append.update(_get_objects_for_html(list_to_append, getattr(obj, field.name)))
+    # ManyToMany
+    for fields in obj._meta.local_many_to_many:
+        for field in getattr(obj, fields.name).all():
+            if field not in exclude_model_names:
+                if hasattr(field, '_get_objects_for_html'):
+                    list_to_append.update(field._get_objects_for_html(list_to_append))
+                else:
+                    list_to_append.update(_get_objects_for_html(list_to_append, field))
+
+    return list_to_append
+
+
 def get_group_display_permission_list(items, groups):
     """
     @params:
@@ -56,9 +84,12 @@ def gen_hiddenConfigHtml(obj, custom_fields=None):
             value=l,
         ))
     for field in obj._meta.local_fields:
+        value = field.value_from_object(obj)
+        if type(value) == datetime:
+            value = value.timestamp()
         fields.append(dict(
             name=field.name,
-            value=field.value_from_object(obj),
+            value=value,
         ))
     if type(custom_fields) == list:
         for field in custom_fields:

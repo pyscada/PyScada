@@ -12,6 +12,7 @@ from django.utils.timezone import now, make_aware, is_naive
 from django.db.models.signals import post_save
 
 from pyscada.utils import blow_up_data, timestamp_to_datetime, min_pass, max_pass
+from pyscada.utils import _get_objects_for_html as get_objects_for_html
 
 from six import text_type
 import traceback
@@ -23,6 +24,7 @@ from monthdelta import monthdelta
 from os import kill, waitpid, WNOHANG
 from struct import *
 from os import getpid
+from dateutil import relativedelta
 import errno
 import numpy as np
 import logging
@@ -34,6 +36,7 @@ try:
     import channels.layers
     from channels.exceptions import InvalidChannelLayerError
     from channels.exceptions import ChannelFull
+    from redis.exceptions import ConnectionError
     from asgiref.sync import async_to_sync
     from asyncio import wait_for
     try:
@@ -47,10 +50,15 @@ try:
         logger.warning("Django Channels is not working. Missing config in settings ?")
         channels_driver = False
     else:
-        async def channels_test():
-            await wait_for(channels.layers.get_channel_layer().receive('test'), timeout=0.1)
-        async_to_sync(channels_test)()
-        channels_driver = True
+        try:
+            async def channels_test():
+                await wait_for(channels.layers.get_channel_layer().receive('test'), timeout=0.1)
+            async_to_sync(channels_test)()
+            channels_driver = True
+        except ConnectionError as e:
+            # Redis service failed to start
+            logger.warning("Redis service failed to start. %s" % e)
+            channels_driver = False
 except (ImportError, ModuleNotFoundError):
     channels_driver = False
 except ConnectionRefusedError:
@@ -346,7 +354,7 @@ class RecordedDataValueManager(models.Manager):
             f_time_scale = 1
 
         values = dict()
-        first_value = dict()
+        times = dict()
         date_saved_max = 0
         tmp_time_max = 0
         tmp_time_min = time_max
@@ -371,30 +379,28 @@ class RecordedDataValueManager(models.Manager):
                 continue
             if not item[0] in values:
                 values[item[0]] = []
+                times[item[0]] = {'time_min': time_max, 'time_max': 0}
             tmp_time = float(item[1] - item[0]) / (2097152.0 * 1000)  # calc the timestamp in seconds
             date_saved_max = max(date_saved_max, time.mktime(item[7].utctimetuple()) + item[7].microsecond / 1e6)
             tmp_time_max = max(tmp_time, tmp_time_max)
-            if tmp_time < time_min:
-                first_value[item[0]] = dict()
-                first_value[item[0]]["value"] = get_rd_value(item)
-                first_value[item[0]]["time"] = tmp_time
-                continue
             tmp_time_min = min(tmp_time, tmp_time_min)
             values[item[0]].append([tmp_time * f_time_scale, get_rd_value(item)])
+            if tmp_time < times[item[0]]['time_min']:
+                times[item[0]]['time_min'] = tmp_time
+            if tmp_time > times[item[0]]['time_max']:
+                times[item[0]]['time_max'] = tmp_time
 
         if query_first_value:
             for pk in variable_ids:
                 if pk not in values:
                     values[pk] = []
-                if pk in first_value:
-                    values[pk].insert(0, [first_value[pk]["time"]*f_time_scale, first_value[pk]["value"]])
-                else:
-                    last_element = self.last_element(use_date_saved=True, time_min=0, variable_id=pk)
+                if pk in times:
+                    last_element = self.last_element(use_date_saved=True, time_min=0,
+                                                     time_max=times[pk]['time_min'], variable_id=pk)
                     if last_element is not None:
-                        values[pk].append([(float(last_element.pk - last_element.variable_id) / (2097152.0 * 1000)) * f_time_scale,
-                                           last_element.value()])
-                if len(values[pk]) > 1:
-                    values[pk].append([values[pk][-1][0], values[pk][-1][1]])
+                        values[pk].insert(0, [(float(last_element.pk - last_element.variable_id) / (2097152.0 * 1000))
+                                              * f_time_scale, last_element.value()])
+
         values['timestamp'] = max(tmp_time_max, time_min) * f_time_scale
         values['date_saved_max'] = date_saved_max * f_time_scale
 
@@ -584,7 +590,10 @@ class Device(models.Model):
 
     def __str__(self):
         # display protocol for the JS filter for inline variables (hmi.static.pyscada.js.admin)
-        return self.protocol.protocol + "-" + self.short_name
+        if self.protocol is not None:
+            return self.protocol.protocol + "-" + self.short_name
+        else:
+            return 'generic-' + self.short_name
 
     def get_device_instance(self):
         try:
@@ -1223,6 +1232,15 @@ class Variable(models.Model):
                                (len(self.dictionary.dictionaryitem_set.filter(label=str(value))), value, self.dictionary))
                 return float(self.dictionary.dictionaryitem_set.filter(label=str(value)).first().value)
 
+    def _get_objects_for_html(self, list_to_append=None, obj=None, exclude_model_names=None):
+        list_to_append = get_objects_for_html(list_to_append, self, exclude_model_names)
+        if hasattr(self, 'calculatedvariableselector'):
+            list_to_append = self.calculatedvariableselector._get_objects_for_html(list_to_append, None, ['main_variable'])
+        if hasattr(self, 'calculatedvariable'):
+            list_to_append = get_objects_for_html(list_to_append, self.calculatedvariable, ['variable_calculated_fields', 'store_variable'])
+
+        return list_to_append
+
 
 def validate_nonzero(value):
     if value == 0:
@@ -1366,6 +1384,13 @@ class CalculatedVariableSelector(models.Model):
     def __str__(self):
         return self.main_variable.name
 
+    def _get_objects_for_html(self, list_to_append=None, obj=None, exclude_model_names=None):
+        list_to_append = get_objects_for_html(list_to_append, self, exclude_model_names)
+        for calculatedvariable in self.calculatedvariable_set.all():
+            list_to_append = get_objects_for_html(list_to_append, calculatedvariable, ['variable_calculated_fields',])
+
+        return list_to_append
+
 
 class CalculatedVariable(models.Model):
     store_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
@@ -1377,14 +1402,14 @@ class CalculatedVariable(models.Model):
     def __str__(self):
         return self.store_variable.name
 
-    def check_to_now(self):
+    def check_to_now(self, force_write=False, add_partial_info=False):
         if self.last_check is not None:
-            self.check_period(self.last_check, now())
+            self.check_period(self.last_check, now(), force_write, add_partial_info)
         else:
-            self.check_period(self.period.start_from, now())
+            self.check_period(self.period.start_from, now(), force_write, add_partial_info)
 
-    def check_period(self, d1, d2):
-        #logger.debug("Check period of %s [%s - %s]" % (self.store_variable, d1, d2))
+    def check_period(self, d1, d2, force_write=False, add_partial_info=False):
+        logger.debug("Check period of %s [%s - %s]" % (self.store_variable, d1, d2))
         self.state = "Checking [%s to %s]" % (d1, d2)
         self.state = self.state[0:100]
         self.save(update_fields=['state'])
@@ -1396,7 +1421,7 @@ class CalculatedVariable(models.Model):
         output = []
 
         if self.period_diff_quantity(d1, d2) is None:
-            #logger.debug("No period in date interval : %s (%s %s)" % (self.period, d1, d2))
+            logger.debug("No period in date interval : %s (%s %s)" % (self.period, d1, d2))
             self.state = "[%s to %s] < %s" % (d1, d2, str(self.period.period_factor) +
                                               self.period.period_choices[self.period.period][1])
             self.state = self.state[0:100]
@@ -1432,7 +1457,7 @@ class CalculatedVariable(models.Model):
                                                                          add_latest_value=False)
             except AttributeError:
                 v_stored = []
-            if len(v_stored) and len(v_stored[self.store_variable.id][0]):
+            if not force_write and len(v_stored) and len(v_stored[self.store_variable.id][0]):
                 logger.debug("Value already exist in RecordedData for %s - %s" %(d1, d1 + td))
                 pass
             else:
@@ -1445,16 +1470,28 @@ class CalculatedVariable(models.Model):
             d1 = d1 + td
 
         if len(output):
-            #logger.debug(output)
+            self.last_check = output[-1].date_saved  # + td
+        else:
+            logger.debug("Nothing to add")
+            self.last_check = min(d1, d2, now())
+
+        # Add partial last value when then is data but the period is not elapsed
+        # do not use this data in last check to recalculate it again till the period is elapsed
+        calc_value = self.get_value(d2 - td, d2)
+        td2 = (d2 - td).timestamp()
+        if add_partial_info and calc_value is not None and self.store_variable.update_value(calc_value, td2):
+            item = self.store_variable.create_recorded_data_element()
+            item.date_saved = d2-td
+            if item is not None:
+                output.append(item)
+
+        # Save recorded data elements to DB
+        if len(output):
             m = "Adding : "
             for c in output:
                 m += str(c) + " " + str(c.date_saved) + " - "
             logger.debug(m)
-            RecordedData.objects.bulk_create(output, batch_size=100)
-            self.last_check = output[-1].date_saved + td
-        else:
-            logger.debug("Nothing to add")
-            self.last_check = min(d1 + td, d2, now())
+            RecordedData.objects.bulk_create(output, batch_size=100, ignore_conflicts=True)
 
         self.state = "Checked [%s to %s]" % (d1, d2)
         self.state = self.state[0:100]
@@ -1600,7 +1637,7 @@ class CalculatedVariable(models.Model):
             logger.debug("d_end - d_start < period_factor*period")
             return None
 
-        td=self.add_timedelta()
+        td = self.add_timedelta()
 
         d_start = d_start / self.period.period_factor
         if d_start != int(d_start):
@@ -1671,20 +1708,13 @@ class CalculatedVariable(models.Model):
             return None
 
     def years_diff_quantity(self, d1, d2):
-        #logger.debug("Years:" + str((d1.year - d2.year)))
-        return d2.year - d1.year
+        return relativedelta.relativedelta(d2, d1).years
 
     def months_diff_quantity(self, d1, d2):
-        #logger.debug("Months:" + str((d2.year - d1.year) * 12 + d2.month - d1.month))
-        return (d2.year - d1.year) * 12 + d2.month - d1.month
+        return relativedelta.relativedelta(d2, d1).months + self.years_diff_quantity(d1, d2) * 12
 
     def weeks_diff_quantity(self, d1, d2):
-        monday1 = (d1 - datetime.timedelta(days=d1.weekday()))
-        monday2 = (d2 - datetime.timedelta(days=d2.weekday()))
-        diff = monday2 - monday1
-        noWeeks = (diff.days / 7.0)  + diff.seconds/86400
-        #logger.debug('Weeks:' + str(noWeeks))
-        return noWeeks
+        return self.days_diff_quantity(d1, d2) / 7
 
     def days_diff_quantity(self, d1, d2):
         diff = (d2 - d1).total_seconds() / 60 / 60 / 24

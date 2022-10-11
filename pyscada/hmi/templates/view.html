@@ -1,5 +1,5 @@
 {% extends base_html %}
-{% load i18n staticfiles %}
+{% load i18n static %}
 
 {% block title %}{{ view_title }} - PyScada Control Center{% endblock %}
 
@@ -25,7 +25,7 @@
 
 {% block top_menu_right %}
     <li><a id='page-load-label'>Loading... </a></li>
-    <li><meter id='page-load-state' value="0" min="0" max="100" style="padding-top: 35px;">0</meter></li>
+    <li><meter id='page-load-state' value="0" min="0" max="100" style="margin-top: 11px;height: 2em;">0</meter></li>
     {% for panel in control_list %}
         {% if panel.visible %}
             <li class="dropdown"><!-- {{ panel.title|upper }} -->

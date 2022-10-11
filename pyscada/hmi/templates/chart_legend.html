@@ -6,7 +6,7 @@
                 <tr>
                     <th style="width:14px;">&nbsp;</th>
                     <th style="width:14px;" class="sorter-false">&nbsp;</th>
-                    <th  class="{sorter: 'text'}">&nbsp;</th>
+                    <th class="{sorter: 'text'}">&nbsp;</th>
                     <th style="width:45px; text-align:right" class="{sorter: 'digit'}">&nbsp;</th>
                     <th style="width:35px;" class="{sorter: 'text'}">&nbsp;</th>
                 </tr>
@@ -15,7 +15,23 @@
                         <input type="checkbox" checked="checked" id="chart-legend-checkbox-{{widget_pk}}-{{ chart.pk }}-make_all_none">
                     </td>
                     <td></td>
-                    <td>Mark All/None</td>
+                    <td class="dropdown">
+                        Mark All/None
+                        <span id="chart-legend-options-span-{{widget_pk}}-{{chart.pk}}"></span>
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="chart-legend-options-{{widget_pk}}-{{chart.pk}}">
+                            <span class="glyphicon glyphicon-cog" data-toggle="tooltip" data-placement="top" title="" data-original-title="Chart options" style="font-size:8px;vertical-align:text-top;"></span>
+                        </a>
+                        <ul class="dropdown-menu" style="min-width: 0px;font-size:11px;">
+                            <li>Aggregation</li>
+                            <li class="divider"></li>
+                            <li>Type <select class="aggregation-all-option" id="aggregation-type-all-select-{{widget_pk}}-{{chart.pk}}" data-id="{{ var.id }}" data-widget-id="{{widget_pk}}-{{chart.pk}}" style="width:66px;">
+                                <option value=null>None</option>
+                            </select></li>
+                            <li class="hidden" id="li-aggregation-all-period-select-{{widget_pk}}-{{chart.pk}}">Period <select class="aggregation-all-option" id="aggregation-all-period-select-{{widget_pk}}-{{chart.pk}}" data-id="{{ var.id }}" data-widget-id="{{widget_pk}}-{{chart.pk}}" style="width:66px;">
+                                <option value=null>None</option>
+                            </select></li>
+                        </ul>
+                    </td>
                     <td></td>
                     <td></td>
                 </tr>

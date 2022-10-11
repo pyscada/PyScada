@@ -111,7 +111,6 @@ def view(request, link_title):
     control_list = sliding_panel_list.filter(position=0)
 
     pages_html = ""
-    object_config_html = ""
     object_config_list = dict()
     custom_fields_list = dict()
     javascript_files_list = list()
@@ -246,10 +245,13 @@ def view(request, link_title):
                 if obj not in object_config_list[obj._meta.model_name]:
                     object_config_list[obj._meta.model_name].append(obj)
     # Generate html object hidden config
-    for model in object_config_list:
-        for obj in object_config_list[model]:
-            object_config_html += gen_hiddenConfigHtml(obj, custom_fields_list.get(model, None))
-    pages_html += object_config_html
+    pages_html += '<div class="hidden globalConfig2">'
+    for model, val in sorted(object_config_list.items(), key = lambda ele: ele[0]):
+        pages_html += '<div class="hidden ' + str(model) + 'Config2">'
+        for obj in val:
+            pages_html += gen_hiddenConfigHtml(obj, custom_fields_list.get(model, None))
+        pages_html += '</div>'
+    pages_html += '</div>'
 
     context = {
         'base_html': base_template,
@@ -485,8 +487,8 @@ def get_cache_data(request):
     if timestamp_to == 0:
         timestamp_to = time.time()
 
-    if timestamp_to - timestamp_from > 120 * 60 and not init:
-        timestamp_from = timestamp_to - 120 * 60
+    #if timestamp_to - timestamp_from > 120 * 60 and not init:
+    #    timestamp_from = timestamp_to - 120 * 60
 
     #if not init:
         #timestamp_to = min(timestamp_from + 30, timestamp_to)

@@ -20,6 +20,7 @@ from pyscada.hmi.models import ProcessFlowDiagram
 from pyscada.hmi.models import ProcessFlowDiagramItem
 from pyscada.hmi.models import Pie
 from pyscada.hmi.models import Theme
+from pyscada.hmi.models import CssClass
 
 from django.utils.translation import ugettext_lazy as _
 from django.contrib import admin
@@ -239,8 +240,8 @@ class SlidingPanelMenuAdmin(admin.ModelAdmin):
 
 class WidgetAdmin(admin.ModelAdmin):
     list_display_links = ('id',)
-    list_display = ('id', 'title', 'page', 'row', 'col', 'size', 'content', 'visible', )
-    list_editable = ('title', 'page', 'row', 'col', 'size', 'content', 'visible', )
+    list_display = ('id', 'title', 'page', 'row', 'col', 'size', 'content', 'visible', 'extra_css_class', )
+    list_editable = ('title', 'page', 'row', 'col', 'size', 'content', 'visible', 'extra_css_class', )
     list_filter = ('page',)
     save_as = True
     save_as_continue = True
@@ -258,10 +259,9 @@ class GroupDisplayPermissionAdmin(admin.ModelAdmin):
         filter_horizontal_inline = ()
         for field in d.related_model._meta.local_many_to_many:
             filter_horizontal_inline += (field.name,)
-        device_dict = dict(model=d.related_model, filter_horizontal=filter_horizontal_inline)
+        device_dict = dict(model=d.related_model, filter_horizontal=filter_horizontal_inline, classes=['collapse'])
         cl = type(d.name, (admin.TabularInline,), device_dict)
         inlines.append(cl)
-
 
 
 class ControlPanelAdmin(admin.ModelAdmin):
@@ -323,3 +323,4 @@ admin_site.register(View, ViewAdmin)
 admin_site.register(ProcessFlowDiagram, ProcessFlowDiagramAdmin)
 admin_site.register(ProcessFlowDiagramItem, ProcessFlowDiagramItemAdmin)
 admin_site.register(Theme)
+admin_site.register(CssClass)
