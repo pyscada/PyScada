@@ -261,3 +261,13 @@
   - fix signals for BP not done nor failed
   - add theme files validator
   - other fixes
+
+0.7.1rc3
+  - add bar chart
+  - add polling intervals
+  - add view theme
+  - add -config2 div in html to get all infos of items used in the user interface
+  - add calculated variable for aggregation
+  - add install script
+  - add css class arg to customize widget
+  - fixes
