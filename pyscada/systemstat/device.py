@@ -403,6 +403,10 @@ class Device:
 
         return output
 
+    def write_data(self, variable_id, value, task):
+        logger.warning("Systemstat cannot write %s to variable id %s" % (value, variable_id))
+        return None  # return None to set the device write task as failed
+
     async def _wait_for(self, cmd, timeout=1, *args):
         self.async_result = await wait_for(sync_to_async(cmd)(*args), timeout=timeout)
 

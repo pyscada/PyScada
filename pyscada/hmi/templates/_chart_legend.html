@@ -1,11 +1,11 @@
- <div class="hidden axis-config" data-label="{{axe.label}}" data-key="{{axe.pk}}" data-position="{{ axe.position }}" data-min="{{ axe.min }}" data-max="{{ axe.max }}" data-show-plot-points="{{ axe.show_plot_points }}" data-show-plot-lines="{{ axe.show_plot_lines }}" data-stack="{{ axe.stack }}" data-fill="{{ axe.fill }}"></div>
+ <div class="hidden axis-config" data-label="{{axe.label}}" data-key="{{axe.pk}}" data-position="{{ axe.position }}" data-min="{{ axe.min }}" data-max="{{ axe.max }}" data-show-plot-points="{{ axe.show_plot_points }}" data-show-plot-bars="{{ axe.show_bars }}" data-show-plot-lines="{{ axe.show_plot_lines }}" data-stack="{{ axe.stack }}" data-fill="{{ axe.fill }}"></div>
   {% for var in axe.variables.all %}
       {% if var.active and var.device.active %}
       <tr class="legendSeries" title="{{var.description}}">
           <td>
               <span class="hidden" id="chart-legend-checkbox-status-{{widget_pk}}-{{chart.pk}}-{{var.pk}}" >1</span>
               <input type="checkbox" checked="checked" id="chart-legend-checkbox-{{widget_pk}}-{{ chart.pk }}-{{ var.pk }}">
-              <div class="hidden variable-config" data-name="{{var.name}}" data-key="{{var.pk}}" data-color="{{ var.chart_line_color_code }}" data-init-type="1" data-type="variable" data-axis-id="{{ axe.pk }}" data-device-polling_interval="{{ var.device.polling_interval }}"></div>
+              <div class="hidden variable-config" data-name="{{var.name}}" data-device-id={{var.device_id}} data-key="{{var.pk}}" data-color="{{ var.chart_line_color_code }}" data-init-type="1" data-type="variable" data-axis-id="{{ axe.pk }}" data-device-polling_interval="{{ var.device.polling_interval }}"></div>
           </td>
           <td class="legendColorBox">
               <div style="border:1px solid #ccc;padding:1px">
@@ -13,8 +13,29 @@
                   </div>
               </div>
           </td>
-          <td class="legendLabel" data-key="{{var.pk}}" style="word-wrap: break-word">
+          <td class="legendLabel dropdown" data-key="{{var.pk}}" style="word-wrap: break-word">
               {{ var.hmi_name }}
+                  <span id="chart-legend-options-span-{{widget_pk}}-{{chart.pk}}-{{ var.pk }}"></span>
+                  <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="chart-legend-options-{{widget_pk}}-{{chart.pk}}-{{ var.pk }}">
+                      <span class="chart-legend-options-text"></span>
+                      <span class="glyphicon glyphicon-cog" data-toggle="tooltip" data-placement="top" title="" data-original-title="Chart options" style="font-size:8px;vertical-align:text-top;"></span>
+                  </a>
+                  <ul class="dropdown-menu" style="min-width: 0px;font-size:11px;">
+                      <li>Aggregation</li>
+                      <li class="divider"></li>
+                      <li>
+                          Type
+                          <select class="aggregation-type-option" id="aggregation-type-select-{{widget_pk}}-{{chart.pk}}-{{ var.pk }}" data-id="{{ var.id }}" data-widget-id="{{widget_pk}}-{{chart.pk}}" style="width:66px;">
+                              <option value=null>None</option>
+                          </select>
+                      </li>
+                      <li class="hidden" id="li-aggregation-all-period-select-{{widget_pk}}-{{chart.pk}}-{{ var.pk }}">
+                          Period
+                          <select class="aggregation-period-option hidden" id="aggregation-period-select-{{widget_pk}}-{{chart.pk}}-{{ var.pk }}" data-id="{{ var.id }}" data-widget-id="{{widget_pk}}-{{chart.pk}}" style="width:66px;">
+                            <option value=null>None</option>
+                          </select>
+                      </li>
+                </ul>
           </td>
           <td class="legendValue type-numeric chart-legend-value-{{widget_pk}}-{{chart.pk}} var-{{ var.pk }}" id="chart-legend-value-{{widget_pk}}-{{chart.pk}}-{{var.pk}}" style="text-align:right"></td>
           <td class="legendUnit" data-key="{{var.pk}}">{{ var.unit.unit }}</td>

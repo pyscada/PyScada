@@ -353,11 +353,12 @@ class Device:
         """
         write value to single modbus register or coil
         """
+        output = []
         if variable_id not in self.variables:
-            return False
+            return output
 
         if not self.variables[variable_id].writeable:
-            return False
+            return output
 
         if self.variables[variable_id].modbusvariable.function_code_read == 3:
             # write register
@@ -374,13 +375,15 @@ class Device:
                                                    list(self.variables[variable_id].encode_value(value)),
                                                    unit=self._unit_id)
                     self._disconnect()
-                    return True
+                    if value is not None and self.variables[variable_id].update_value(value, time()):
+                        output.append(self.variables[variable_id].create_recorded_data_element())
+                    return output
                 else:
                     logger.info("device with id: %d is not accessible" % self.device.pk)
-                    return False
+                    return output
             else:
                 logger.error('Modbus Address %d out of range' % self.variables[variable_id].modbusvariable.address)
-                return False
+                return output
         elif self.variables[variable_id].modbusvariable.function_code_read == 1:
             # write coil
             if 0 <= self.variables[variable_id].modbusvariable.address <= 65535:
@@ -388,13 +391,15 @@ class Device:
                     self.slave.write_coil(self.variables[variable_id].modbusvariable.address, bool(value),
                                           unit=self._unit_id)
                     self._disconnect()
-                    return True
+                    if value is not None and self.variables[variable_id].update_value(value, time()):
+                        output.append(self.variables[variable_id].create_recorded_data_element())
+                    return output
                 else:
                     logger.info("device with id: %d is not accessible" % self.device.pk)
-                    return False
+                    return output
             else:
                 logger.error('Modbus Address %d out of range' % self.variables[variable_id].modbusvariable.address)
         else:
             logger.error('wrong type of function code %d' %
                          self.variables[variable_id].modbusvariable.function_code_read)
-            return False
+            return output

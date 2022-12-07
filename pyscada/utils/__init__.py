@@ -7,8 +7,102 @@ from datetime import datetime
 from pytz import UTC
 import numpy as np
 from django.utils.timezone import now
+from django.template.loader import get_template
+from django.contrib.auth.models import Group
 import logging
 logger = logging.getLogger(__name__)
+
+
+def _get_objects_for_html(list_to_append=None, obj=None, exclude_model_names=None):
+    if exclude_model_names is None:
+        exclude_model_names = list()
+    if list_to_append is None:
+        list_to_append = set()
+
+    if obj not in list_to_append:
+        list_to_append.update([obj])
+    # ForeignKey and OneToOne
+    for field in obj._meta.local_fields:
+        if (type(field).many_to_one or type(field).one_to_one) and getattr(obj, field.name) is not None and \
+                field.name not in exclude_model_names:
+            if hasattr(field, '_get_objects_for_html'):
+                list_to_append.update(field._get_objects_for_html(list_to_append))
+            else:
+                list_to_append.update(_get_objects_for_html(list_to_append, getattr(obj, field.name)))
+    # ManyToMany
+    for fields in obj._meta.local_many_to_many:
+        for field in getattr(obj, fields.name).all():
+            if field not in exclude_model_names:
+                if hasattr(field, '_get_objects_for_html'):
+                    list_to_append.update(field._get_objects_for_html(list_to_append))
+                else:
+                    list_to_append.update(_get_objects_for_html(list_to_append, field))
+
+    return list_to_append
+
+
+def get_group_display_permission_list(items, groups):
+    """
+    @params:
+        items: QuerySet of items to filter
+        groups: QuerySet of groups to filter by
+    @return:
+        QuerySet of items filtered
+    """
+    if len(groups) == 0:
+        return items.all()
+    result = items.filter(
+        groupdisplaypermission__group_display_permission__hmi_group__in=groups,
+        groupdisplaypermission__type=0,
+    ).distinct()
+    if items.first() is not None and items.first().groupdisplaypermission.model.objects.filter(type=1).exists():
+        result = result | items.exclude(
+            groupdisplaypermission__group_display_permission__hmi_group__in=groups,
+            groupdisplaypermission__type=1,
+            groupdisplaypermission__group_display_permission__isnull=False).distinct()
+    return result
+
+
+def gen_hiddenConfigHtml(obj, custom_fields=None):
+    """
+    Get an object and return an html with a hidden div containing the object
+    config
+
+    :param obj: an object from a model
+    :param custom_fields: list of fields to add to the result
+
+    :return: the html of the config of the object
+    """
+    fields = list()
+    for field in obj._meta.local_many_to_many:
+        # For ManyToManyField
+        l = ""
+        for o in field.value_from_object(obj):
+            l += str(o.pk) + ","
+        fields.append(dict(
+            name=field.name,
+            value=l,
+        ))
+    for field in obj._meta.local_fields:
+        value = field.value_from_object(obj)
+        if type(value) == datetime:
+            value = value.timestamp()
+        fields.append(dict(
+            name=field.name,
+            value=value,
+        ))
+    if type(custom_fields) == list:
+        for field in custom_fields:
+            if type(field) == dict and 'name' in field and 'value' in field:
+                fields.append(dict(
+                    name=field['name'],
+                    value=field['value'],
+                ))
+
+    return get_template('modelProperties.html').render(dict(
+        modelName=obj._meta.model_name,
+        fields=fields,
+    ))
 
 
 def extract_numbers_from_str(value_str):

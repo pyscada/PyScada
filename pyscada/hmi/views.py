@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import pyscada.hmi.models
 from pyscada.core import version as core_version
 from pyscada.models import RecordedData, VariableProperty, Variable, Device
+from pyscada.models import Log
+from pyscada.models import DeviceWriteTask, DeviceReadTask
 from pyscada.hmi.models import ControlItem
 from pyscada.hmi.models import Form
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import Widget
+from pyscada.hmi.models import CustomHTMLPanel
+from pyscada.hmi.models import Chart
 from pyscada.hmi.models import View
-
-from pyscada.models import Log
-from pyscada.models import DeviceWriteTask, DeviceReadTask
+from pyscada.hmi.models import ProcessFlowDiagram
+from pyscada.utils import gen_hiddenConfigHtml, get_group_display_permission_list
 
 from django.http import HttpResponse
 from django.template.loader import get_template
@@ -44,7 +48,8 @@ def index(request):
     if GroupDisplayPermission.objects.count() == 0:
         view_list = View.objects.all()
     else:
-        view_list = View.objects.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).distinct()
+        view_list = get_group_display_permission_list(View.objects, request.user.groups.all())
+
     c = {
         'user': request.user,
         'view_list': view_list,
@@ -57,51 +62,57 @@ def index(request):
 @unauthenticated_redirect
 @requires_csrf_token
 def view(request, link_title):
+    base_template = 'base.html'
     view_template = 'view.html'
     page_template = get_template('content_page.html')
     widget_row_template = get_template('widget_row.html')
     STATIC_URL = str(settings.STATIC_URL) if hasattr(settings, 'STATIC_URL') else 'static'
 
     try:
-        v = View.objects.get(link_title=link_title)
+        v = get_group_display_permission_list(View.objects, request.user.groups.all()).filter(link_title=link_title).\
+            first()
+        if v is None:
+            raise View.DoesNotExist
+        #v = View.objects.get(link_title=link_title)
     except (View.DoesNotExist, View.MultipleObjectsReturned):
         return HttpResponse(status=404)
+
+    if v.theme is not None:
+        base_template = str(v.theme.base_filename) + ".html"
+        view_template = str(v.theme.view_filename) + ".html"
 
     if GroupDisplayPermission.objects.count() == 0:
         # no groups
         page_list = v.pages.all()
         sliding_panel_list = v.sliding_panel_menus.all()
-
         visible_widget_list = Widget.objects.filter(page__in=page_list.iterator()).values_list('pk', flat=True)
-        # visible_custom_html_panel_list = CustomHTMLPanel.objects.all().values_list('pk', flat=True)
-        # visible_chart_list = Chart.objects.all().values_list('pk', flat=True)
+        visible_custom_html_panel_list = CustomHTMLPanel.objects.all().values_list('pk', flat=True)
+        visible_chart_list = Chart.objects.all().values_list('pk', flat=True)
         visible_control_element_list = ControlItem.objects.all().values_list('pk', flat=True)
         visible_form_list = Form.objects.all().values_list('pk', flat=True)
+        visible_process_flow_diagram_list = ProcessFlowDiagram.objects.all().values_list('pk', flat=True)
     else:
-        page_list = v.pages.filter(groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).distinct()
-
-        sliding_panel_list = v.sliding_panel_menus.filter(
-            groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).distinct()
-
-        visible_widget_list = Widget.objects.filter(
-            groupdisplaypermission__hmi_group__in=request.user.groups.iterator(),
+        page_list = get_group_display_permission_list(v.pages, request.user.groups.all())
+        sliding_panel_list = get_group_display_permission_list(v.sliding_panel_menus, request.user.groups.all())
+        visible_widget_list = get_group_display_permission_list(Widget.objects, request.user.groups.all()).filter(
             page__in=page_list.iterator()).values_list('pk', flat=True)
-        """
-        # todo update permission model to reflect new widget structure
-        visible_custom_html_panel_list = CustomHTMLPanel.objects.filter(
-            groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
-        visible_chart_list = Chart.objects.filter(
-            groupdisplaypermission__hmi_group__in=request.user.groups.iterator()).values_list('pk', flat=True)
-        """
-        visible_control_element_list = GroupDisplayPermission.objects.filter(
-            hmi_group__in=request.user.groups.iterator()).values_list('control_items', flat=True)
-        visible_form_list = GroupDisplayPermission.objects.filter(
-            hmi_group__in=request.user.groups.iterator()).values_list('forms', flat=True)
+        visible_custom_html_panel_list = get_group_display_permission_list(
+            CustomHTMLPanel.objects, request.user.groups.all()).values_list('pk', flat=True)
+        visible_chart_list = get_group_display_permission_list(Chart.objects, request.user.groups.all()).\
+            values_list('pk', flat=True)
+        visible_control_element_list = get_group_display_permission_list(
+            ControlItem.objects, request.user.groups.all()).values_list('pk', flat=True)
+        visible_form_list = get_group_display_permission_list(Form.objects, request.user.groups.all()).\
+            values_list('pk', flat=True)
+        visible_process_flow_diagram_list = get_group_display_permission_list(
+            ProcessFlowDiagram.objects, request.user.groups.all()).values_list('pk', flat=True)
 
     panel_list = sliding_panel_list.filter(position__in=(1, 2,))
     control_list = sliding_panel_list.filter(position=0)
 
     pages_html = ""
+    object_config_list = dict()
+    custom_fields_list = dict()
     javascript_files_list = list()
     css_files_list = list()
     show_daterangepicker = False
@@ -114,6 +125,7 @@ def view(request, link_title):
         widget_rows_html = ""
         main_content = list()
         sidebar_content = list()
+        topbar = False
 
         show_daterangepicker_temp = False
         show_timeline_temp = False
@@ -124,30 +136,37 @@ def view(request, link_title):
                 # render new widget row and reset all loop variables
                 widget_rows_html += widget_row_template.render(
                     {'row': current_row, 'main_content': main_content, 'sidebar_content': sidebar_content,
-                     'sidebar_visible': len(sidebar_content) > 0}, request)
+                     'sidebar_visible': len(sidebar_content) > 0, 'topbar': topbar}, request)
                 current_row = widget.row
                 main_content = list()
                 sidebar_content = list()
+                topbar = False
             if widget.pk not in visible_widget_list:
                 continue
             if not widget.visible:
                 continue
             if widget.content is None:
                 continue
-            mc, sbc, opts = widget.content.create_panel_html(widget_pk=widget.pk, user=request.user)
+            kwargs = {'visible_control_element_list': visible_control_element_list,
+                      'visible_form_list': visible_form_list}
+            mc, sbc, opts = widget.content.create_panel_html(widget_pk=widget.pk, user=request.user, **kwargs)
             if mc is not None and mc != "":
-                main_content.append(dict(html=mc, widget=widget))
+                main_content.append(dict(html=mc, widget=widget, topbar=sbc))
             else:
                 logger.info("main_content of widget : %s is %s !" % (widget, mc))
             if sbc is not None:
                 sidebar_content.append(dict(html=sbc, widget=widget))
+            if type(opts) == dict and 'topbar' in opts and opts['topbar'] == True:
+                topbar = True
             if type(opts) == dict and 'show_daterangepicker' in opts and opts['show_daterangepicker'] == True:
                 show_daterangepicker = True
                 show_daterangepicker_temp = True
             if type(opts) == dict and 'show_timeline' in opts and opts['show_timeline'] == True:
                 show_timeline_temp = True
-            if widget.content.content_model == "pyscada.hmi.models.Chart":
+            if type(opts) == dict and 'flot' in opts and opts['flot']:
                 has_flot_chart = True
+            if type(opts) == dict and 'base_template' in opts:
+                base_template = opts['base_template']
             if type(opts) == dict and 'view_template' in opts:
                 view_template = opts['view_template']
             if type(opts) == dict and 'add_context' in opts:
@@ -156,13 +175,20 @@ def view(request, link_title):
                 for file_src in opts['javascript_files_list']:
                     if {'src': file_src} not in javascript_files_list:
                         javascript_files_list.append({'src': file_src})
-
-            logger.debug(opts)
-            logger.debug(view_template)
+            if type(opts) == dict and 'object_config_list' in opts and type(opts['object_config_list'] == list):
+                for obj in opts['object_config_list']:
+                    model_name = str(obj._meta.model_name).lower()
+                    if model_name not in object_config_list:
+                        object_config_list[model_name] = list()
+                    if obj not in object_config_list[model_name]:
+                        object_config_list[model_name].append(obj)
+            if type(opts) == dict and 'custom_fields_list' in opts and type(opts['custom_fields_list'] == list):
+                for model in opts['custom_fields_list']:
+                    custom_fields_list[str(model).lower()] = opts['custom_fields_list'][model]
 
         widget_rows_html += widget_row_template.render(
             {'row': current_row, 'main_content': main_content, 'sidebar_content': sidebar_content,
-             'sidebar_visible': len(sidebar_content) > 0}, request)
+             'sidebar_visible': len(sidebar_content) > 0, 'topbar': topbar}, request)
 
         pages_html += page_template.render({'page': page,
                                             'widget_rows_html': widget_rows_html,
@@ -200,9 +226,9 @@ def view(request, link_title):
         javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.crosshair.js'})
         javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/flot/source/jquery.flot.gauge.js'})
         javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/jquery.flot.axisvalues.js'})
-        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/daterangepicker/moment.min.js'})
 
     if show_daterangepicker:
+        javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/daterangepicker/moment.min.js'})
         javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/daterangepicker/daterangepicker.min.js'})
 
     javascript_files_list.append({'src': STATIC_URL + 'pyscada/js/pyscada/pyscada_v0-7-0rc14.js'})
@@ -210,7 +236,26 @@ def view(request, link_title):
     # Generate css files list
     css_files_list.append({'src': STATIC_URL + 'pyscada/css/daterangepicker/daterangepicker.css'})
 
+    # Adding SlidingPanelMenu to hidden config
+    for s in sliding_panel_list:
+        if s.control_panel is not None:
+            for obj in s.control_panel._get_objects_for_html(obj=s):
+                if obj._meta.model_name not in object_config_list:
+                    object_config_list[obj._meta.model_name] = list()
+                if obj not in object_config_list[obj._meta.model_name]:
+                    object_config_list[obj._meta.model_name].append(obj)
+    # Generate html object hidden config
+    pages_html += '<div class="hidden globalConfig2">'
+    for model, val in sorted(object_config_list.items(), key = lambda ele: ele[0]):
+        pages_html += '<div class="hidden ' + str(model) + 'Config2">'
+        for obj in val:
+            pages_html += gen_hiddenConfigHtml(obj, custom_fields_list.get(model, None))
+        pages_html += '</div>'
+    pages_html += '</div>'
+
     context = {
+        'base_html': base_template,
+        'include': [],
         'page_list': page_list,
         'pages_html': pages_html,
         'panel_list': panel_list,
@@ -275,16 +320,33 @@ def form_read_task(request):
                 return HttpResponse(status=200)
         else:
             if item_type == 'variable':
-                if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
-                                                         control_items__type=0, control_items__variable__pk=key):
+                exc = pyscada.hmi.models.GroupDisplayPermission.objects.filter(
+                    hmi_group__in=request.user.groups.iterator(),
+                    controlitemgroupdisplaypermission__type=1)
+                if GroupDisplayPermission.objects.filter(
+                        hmi_group__in=request.user.groups.iterator(),
+                        controlitemgroupdisplaypermission__type=0,
+                        controlitemgroupdisplaypermission__control_items__type=1,
+                        controlitemgroupdisplaypermission__control_items__variable__pk=key).exists() or \
+                        (exc.exists() and not exc.filter(
+                            controlitemgroupdisplaypermission__control_items__type=1,
+                            controlitemgroupdisplaypermission__control_items__variable__pk=key).exists()):
                     crt = DeviceReadTask(device=Variable.objects.get(pk=key).device, start=time.time(),
                                          user=request.user)
                     crt.create_and_notificate(crt)
                     return HttpResponse(status=200)
             elif item_type == 'variable_property':
-                if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
-                                                         control_items__type=0,
-                                                         control_items__variable_property__pk=key):
+                exc = pyscada.hmi.models.GroupDisplayPermission.objects.filter(
+                    hmi_group__in=request.user.groups.iterator(),
+                    controlitemgroupdisplaypermission__type=1)
+                if GroupDisplayPermission.objects.filter(
+                        hmi_group__in=request.user.groups.iterator(),
+                        controlitemgroupdisplaypermission__type=0,
+                        controlitemgroupdisplaypermission__control_items__type=0,
+                        controlitemgroupdisplaypermission__control_items__variable_property__pk=key).exists() or \
+                        (exc.exists() and not exc.filter(
+                            controlitemgroupdisplaypermission__control_items__type=0,
+                            controlitemgroupdisplaypermission__control_items__variable_property__pk=key).exists()):
                     crt = DeviceReadTask(device=VariableProperty.objects.get(pk=key).variable.device, start=time.time(),
                                          user=request.user)
                     crt.create_and_notificate(crt)
@@ -318,24 +380,41 @@ def form_write_task(request):
                 return HttpResponse(status=200)
         else:
             if item_type == 'variable':
-                if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
-                                                         control_items__type=0, control_items__variable__pk=key):
+                exc = pyscada.hmi.models.GroupDisplayPermission.objects.filter(
+                    hmi_group__in=request.user.groups.iterator(),
+                    controlitemgroupdisplaypermission__type=1)
+                if GroupDisplayPermission.objects.filter(
+                        hmi_group__in=request.user.groups.iterator(),
+                        controlitemgroupdisplaypermission__type=0,
+                        controlitemgroupdisplaypermission__control_items__type=0,
+                        controlitemgroupdisplaypermission__control_items__variable__pk=key).exists() or \
+                        (exc.exists() and not exc.filter(
+                            controlitemgroupdisplaypermission__control_items__type=0,
+                            controlitemgroupdisplaypermission__control_items__variable__pk=key).exists()):
                     cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
                                           user=request.user)
                     cwt.create_and_notificate(cwt)
                     return HttpResponse(status=200)
                 else:
-                    logger.debug("Missing group display permission for write task variable")
+                    logger.debug("Missing group display permission for write task (variable %s)" % key)
             elif item_type == 'variable_property':
-                if GroupDisplayPermission.objects.filter(hmi_group__in=request.user.groups.iterator(),
-                                                         control_items__type=0,
-                                                         control_items__variable_property__pk=key):
+                exc = pyscada.hmi.models.GroupDisplayPermission.objects.filter(
+                    hmi_group__in=request.user.groups.iterator(),
+                    controlitemgroupdisplaypermission__type=1)
+                if GroupDisplayPermission.objects.filter(
+                        hmi_group__in=request.user.groups.iterator(),
+                        controlitemgroupdisplaypermission__type=0,
+                        controlitemgroupdisplaypermission__control_items__type=0,
+                        controlitemgroupdisplaypermission__control_items__variable_property__pk=key).exists() or \
+                        (exc.exists() and not exc.filter(
+                        controlitemgroupdisplaypermission__control_items__type=0,
+                        controlitemgroupdisplaypermission__control_items__variable_property__pk=key).exists()):
                     cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
                                           user=request.user)
                     cwt.create_and_notificate(cwt)
                     return HttpResponse(status=200)
                 else:
-                    logger.debug("Missing group display permission for write task VP")
+                    logger.debug("Missing group display permission for write task (VP %s)" % key)
     else:
         logger.debug("key or value missing in request : %s" % request.POST)
     return HttpResponse(status=404)
@@ -408,8 +487,8 @@ def get_cache_data(request):
     if timestamp_to == 0:
         timestamp_to = time.time()
 
-    if timestamp_to - timestamp_from > 120 * 60 and not init:
-        timestamp_from = timestamp_to - 120 * 60
+    #if timestamp_to - timestamp_from > 120 * 60 and not init:
+    #    timestamp_from = timestamp_to - 120 * 60
 
     #if not init:
         #timestamp_to = min(timestamp_from + 30, timestamp_to)

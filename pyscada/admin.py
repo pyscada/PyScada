@@ -217,27 +217,28 @@ class VariableAdminFrom(forms.ModelForm):
         super(VariableAdminFrom, self).__init__(*args, **kwargs)
         if isinstance(self.instance, Variable):
             wtf = Color.objects.all()
-            w = self.fields['chart_line_color'].widget
-            color_choices = []
-            for choice in wtf:
-                color_choices.append((choice.id, choice.color_code()))
-            w.choices = color_choices
+            if 'chart_line_color' in self.fields:
+                w = self.fields['chart_line_color'].widget
+                color_choices = []
+                for choice in wtf:
+                    color_choices.append((choice.id, choice.color_code()))
+                w.choices = color_choices
 
-            def create_option_color(self, name, value, label, selected, index, subindex=None, attrs=None):
-                font_color = hex(int('ffffff', 16) - int(label[1::], 16))[2::]
-                # attrs = self.build_attrs(attrs,{'style':'background: %s; color: #%s'%(label,font_color)})
-                self.option_inherits_attrs = True
-                return self._create_option(name, value, label, selected, index, subindex,
-                                           attrs={'style': 'background: %s; color: #%s' % (label, font_color)})
+                def create_option_color(self, name, value, label, selected, index, subindex=None, attrs=None):
+                    font_color = hex(int('ffffff', 16) - int(label[1::], 16))[2::]
+                    # attrs = self.build_attrs(attrs,{'style':'background: %s; color: #%s'%(label,font_color)})
+                    self.option_inherits_attrs = True
+                    return self._create_option(name, value, label, selected, index, subindex,
+                                               attrs={'style': 'background: %s; color: #%s' % (label, font_color)})
 
-            import types
-            # from django.forms.widgets import Select
-            w.widget._create_option = w.widget.create_option  # copy old method
-            w.widget.create_option = types.MethodType(create_option_color, w.widget)  # replace old with new
+                import types
+                # from django.forms.widgets import Select
+                w.widget._create_option = w.widget.create_option  # copy old method
+                w.widget.create_option = types.MethodType(create_option_color, w.widget)  # replace old with new
 
     def has_changed(self):
         # Force save inline for the good protocol if selected device and protocol_id exists
-        if self.data.get("device", None) != '':
+        if self.data.get("device", None) != '' and self.data.get("device", None) is not None:
             d = Device.objects.get(id=int(self.data.get("device", None)))
             if hasattr(self.instance, "protocol_id") and d is not None and \
                     d.protocol.id == self.instance.protocol_id:
@@ -336,6 +337,7 @@ class DeviceForm(forms.ModelForm):
         else:
             if hasattr(self.instance, "protocol_id") and \
                     hasattr(self.instance, "parent_device") and self.instance.parent_device() is not None and \
+                    self.instance.parent_device().protocol is not None and \
                     self.instance.parent_device().protocol.id == self.instance.protocol_id:
                 logger.error("Saving existing inline for %s" % self.instance.parent_device())
                 return True
@@ -377,15 +379,14 @@ class DeviceAdmin(admin.ModelAdmin):
                 protocol_list.append(app.split(".")[1])
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        # For new device, show all the protocols from the installed apps in settings.py
+        # For existing device, show only the selected protocol to avoid changing
         if db_field.name == "protocol":
-            kwargs["queryset"] = DeviceProtocol.objects.filter(protocol__in=self.protocol_list)
+            if 'object_id' in request.resolver_match.kwargs and Device.objects.get(id=request.resolver_match.kwargs['object_id']) is not None:
+                kwargs["queryset"] = DeviceProtocol.objects.filter(protocol__in=[Device.objects.get(id=request.resolver_match.kwargs['object_id']).protocol.protocol,])
+            else:
+                kwargs["queryset"] = DeviceProtocol.objects.filter(protocol__in=self.protocol_list)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
-    # Disable changing protocol
-    def get_readonly_fields(self, request, obj=None):
-        if obj is not None and obj.protocol is not None:
-            return ['protocol']
-        return []
 
     # Add JS file to display the right inline
     class Media:
@@ -447,7 +448,15 @@ class VariableAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         """Limit Pages to those that belong to the request's user."""
         qs = super(VariableAdmin, self).get_queryset(request)
+        # check if popup open from control item : include calculated variable
+        if 'environ' in request.__dict__:
+            for i in request.__dict__['environ']:
+                if isinstance(request.__dict__['environ'][i], str) and '&_popup=1' in request.__dict__['environ'][i]:
+                    return qs
         return qs.filter(calculatedvariable__isnull=True)
+
+    def color_code(self, instance):
+        return instance.chart_line_color.color_code()
 
 
 class CoreVariableAdmin(VariableAdmin):
@@ -469,8 +478,8 @@ class CalculatedVariableAdminInline(admin.StackedInline):
 
 
 class CalculatedVariableAdmin(VariableAdmin):
-    list_display = ('name', 'last_check', 'state', 'last_value', 'chart_line_color',)
-    list_editable = ('chart_line_color',)
+    list_display = ('name', 'last_check', 'state', 'last_value', 'chart_line_color', 'short_name',)
+    list_editable = ('chart_line_color', 'short_name',)
     list_filter = (ProtocolListFilter, DeviceListFilter, VariableListFilter, 'active', 'writeable', 'unit__unit',)
     list_display_links = None
 

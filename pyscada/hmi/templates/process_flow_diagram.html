@@ -1,12 +1,12 @@
 <div class="widget-body" >
     <!--<div class="panel panel-primary" style="height: {{ process_flow_diagram.background_image.height|add:"68" }}px; width: {{ process_flow_diagram.background_image.width|add:"30" }}px; margin-left:15px;">-->
-    {% if process_flow_diagram.type == 0 %}
     <div class="panel panel-primary">
-        {% if process_flow_diagram.title %}
+    {% if process_flow_diagram.title %}
         <div class="panel-heading">
             <h3 class="panel-title">{{ process_flow_diagram.title }}</h3>
         </div>
-        {% endif %}
+    {% endif %}
+    {% if process_flow_diagram.type == 0 %}
         <div class="panel-body" style="height:inherit;">
           <img src="{{ process_flow_diagram.background_image.url }}" style="width: 100%;" alt="process flow diagram">
         </div>
@@ -15,38 +15,38 @@
               {% include "control_element.html" with item=item.control_item %}
             </div>
         {% endfor %}
-    </div>
 
     {% elif process_flow_diagram.type == 1 %}
-    <div class="panel-body" style="height:inherit;
-        display: inline-block;
-        position: relative;
-        width: 100%;
-        padding-bottom: {{ height_width_ratio }}%;
-        vertical-align: middle;
-        overflow: hidden;">
-        <!--<img src="{{ process_flow_diagram.background_image.url }}" style="width: 100%;" alt="process flow diagram">-->
-        <svg version="1.1" viewBox="0 0 {{ process_flow_diagram.url_width }} {{ process_flow_diagram.url_height }}"
-        preserveAspectRatio="xMinYMin meet"
-        class="svg-content"
-        style="display: inline-block;
-        position: absolute;
-        top: 0;
-        left: 0;">
-            <image xlink:href="{{ process_flow_diagram.background_image.url }}" width=100% />
-            {% for item in process_flow_diagram.process_flow_diagram_items.all %}
-                <!--
-                <text x="{{ item.left }}" y="{{ item.top }}" fill="red" font-size="{{ item.font_size }}">
-                    {{ item.control_item.label }}
-                </text>
-                -->
-                <text x="{{ item.left }}" y="{{ item.top }}" fill="black" font-size="{{ item.font_size }}"
-                class="control-item type-numeric {{ item.control_item.web_class_str }}"
-                id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.control_item.web_id }}-{{ uuid }}">
-                    Loading...
-                </text>
-            {% endfor %}
-        </svg>
+        <div class="panel-body" style="height:inherit;
+            display: inline-block;
+            position: relative;
+            width: 100%;
+            padding-bottom: {{ height_width_ratio }}%;
+            vertical-align: middle;
+            overflow: hidden;">
+            <!--<img src="{{ process_flow_diagram.background_image.url }}" style="width: 100%;" alt="process flow diagram">-->
+            <svg version="1.1" viewBox="0 0 {{ process_flow_diagram.url_width }} {{ process_flow_diagram.url_height }}"
+            preserveAspectRatio="xMinYMin meet"
+            class="svg-content"
+            style="display: inline-block;
+            position: absolute;
+            top: 0;
+            left: 0;">
+                <image xlink:href="{{ process_flow_diagram.background_image.url }}" width=100% />
+                {% for item in process_flow_diagram.process_flow_diagram_items.all %}
+                    <!--
+                    <text x="{{ item.left }}" y="{{ item.top }}" fill="red" font-size="{{ item.font_size }}">
+                        {{ item.control_item.label }}
+                    </text>
+                    -->
+                    <text x="{{ item.left }}" y="{{ item.top }}" fill="black" font-size="{{ item.font_size }}"
+                    class="control-item type-numeric {{ item.control_item.web_class_str }}"
+                    id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.control_item.web_id }}-{{ uuid }}">
+                        Loading...
+                    </text>
+                {% endfor %}
+            </svg>
         </div>
     {% endif %}
+    </div>
 </div>

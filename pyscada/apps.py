@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 from django.apps import AppConfig
 from django.utils.translation import ugettext_lazy as _
+from django.db.utils import ProgrammingError
 import os
 import logging
 
@@ -17,3 +18,10 @@ class PyScadaConfig(AppConfig):
 
     def ready(self):
         import pyscada.signals
+
+        try:
+            from .hmi.models import Theme
+            if Theme.objects.filter().count():
+                Theme.objects.first().check_all_themes()
+        except ProgrammingError:
+            pass

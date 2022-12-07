@@ -3,6 +3,7 @@
              data-id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}"
              data-name="{{ item.name }}"
              data-key="{{ item.key }}"
+             data-device-id={{var.device_id}}
              data-color="{{ item.variable.chart_line_color.color_code }}"
              data-init-type="0"
              data-type="{{ item.item_type}}"

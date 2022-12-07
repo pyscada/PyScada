@@ -19,12 +19,50 @@ from pyscada.hmi.models import View
 from pyscada.hmi.models import ProcessFlowDiagram
 from pyscada.hmi.models import ProcessFlowDiagramItem
 from pyscada.hmi.models import Pie
+from pyscada.hmi.models import Theme
+from pyscada.hmi.models import CssClass
 
+from django.utils.translation import ugettext_lazy as _
 from django.contrib import admin
 from django import forms
+from django.db.models.fields.related import OneToOneRel
+
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class FormListFilter(admin.SimpleListFilter):
+    # Human-readable title which will be displayed in the
+    # right admin sidebar just above the filter options.
+    title = _('form filter')
+
+    # Parameter for the filter that will be used in the URL query.
+    parameter_name = 'form'
+
+    def lookups(self, request, model_admin):
+        """
+        Returns a list of tuples. The first element in each
+        tuple is the coded value for the option that will
+        appear in the URL query. The second element is the
+        human-readable name for the option that will appear
+        in the right sidebar.
+        """
+        result = list()
+        for form in Form.objects.all():
+            result.append((form.pk, form.title),)
+        return result
+
+    def queryset(self, request, queryset):
+        """
+        Returns the filtered queryset based on the value
+        provided in the query string and retrievable via
+        `self.value()`.
+        """
+        # Compare the requested value (either '80s' or '90s')
+        # to decide how to filter the queryset.
+        if self.value() is not None:
+            return queryset.filter(control_items_form__in=self.value())
 
 
 class ChartForm(forms.ModelForm):
@@ -171,7 +209,7 @@ class ControlElementOptionAdmin(admin.ModelAdmin):
 class ControlItemAdmin(admin.ModelAdmin):
     list_display = ('id', 'position', 'label', 'type', 'variable', 'variable_property', 'display_value_options',
                     'control_element_options')
-    list_filter = ('controlpanel', 'control_items_form', 'type',)
+    list_filter = ('controlpanel', FormListFilter, 'type',)
     list_editable = ('position', 'label', 'type', 'variable', 'variable_property', 'display_value_options',
                      'control_element_options')
     raw_id_fields = ('variable',)
@@ -202,19 +240,28 @@ class SlidingPanelMenuAdmin(admin.ModelAdmin):
 
 class WidgetAdmin(admin.ModelAdmin):
     list_display_links = ('id',)
-    list_display = ('id', 'title', 'page', 'row', 'col', 'size', 'content', 'visible', )
-    list_editable = ('title', 'page', 'row', 'col', 'size', 'content', 'visible', )
+    list_display = ('id', 'title', 'page', 'row', 'col', 'size', 'content', 'visible', 'extra_css_class', )
+    list_editable = ('title', 'page', 'row', 'col', 'size', 'content', 'visible', 'extra_css_class', )
     list_filter = ('page',)
     save_as = True
     save_as_continue = True
 
 
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
-    filter_horizontal = (
-        'pages', 'sliding_panel_menus', 'charts', 'control_items', 'widgets', 'views',
-        'custom_html_panels', 'process_flow_diagram', 'forms',)
+    filter_horizontal = ()
     save_as = True
     save_as_continue = True
+
+    # Add inlines for any model with OneToOne relation with Device
+    items = [field for field in GroupDisplayPermission._meta.get_fields() if issubclass(type(field), OneToOneRel)]
+    inlines = []
+    for d in items:
+        filter_horizontal_inline = ()
+        for field in d.related_model._meta.local_many_to_many:
+            filter_horizontal_inline += (field.name,)
+        device_dict = dict(model=d.related_model, filter_horizontal=filter_horizontal_inline, classes=['collapse'])
+        cl = type(d.name, (admin.TabularInline,), device_dict)
+        inlines.append(cl)
 
 
 class ControlPanelAdmin(admin.ModelAdmin):
@@ -275,3 +322,5 @@ admin_site.register(Widget, WidgetAdmin)
 admin_site.register(View, ViewAdmin)
 admin_site.register(ProcessFlowDiagram, ProcessFlowDiagramAdmin)
 admin_site.register(ProcessFlowDiagramItem, ProcessFlowDiagramItemAdmin)
+admin_site.register(Theme)
+admin_site.register(CssClass)

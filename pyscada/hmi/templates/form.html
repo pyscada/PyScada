@@ -8,7 +8,7 @@
         {% endif %}
     {% endfor %}
     {% for item in form.control_items.all %}
-        {% if item.active == 1 %}
+        {% if item.active == 1 and item.pk in visible_control_element_list %}
             {% if item.type == 0 %}<!-- form input {{ item.key }} -->
                 {% include "control_element.html" with form=form %}
             {% endif %}

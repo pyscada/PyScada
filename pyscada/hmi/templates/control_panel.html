@@ -1,11 +1,15 @@
 <div class="panel-body" >
     <div class="control-panel">
-        <div>{{ control_panel.title }}</div>
+        <div>{{ control_panel.title|safe }}</div>
         {% for item in control_panel.items.all %}
-            {% include "control_element.html" %}
+            {% if item.pk in visible_control_element_list %}
+                {% include "control_element.html" %}
+            {% endif %}
         {% endfor %}
         {% for form in control_panel.forms.all %}
-            {% include "form.html" %}
+            {% if form.pk in visible_form_list %}
+                {% include "form.html" %}
+            {% endif %}
         {% endfor %}
     </div>
 </div>
