@@ -884,6 +884,23 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
      }
  }
 
+ function add_key_to_chart_vars(key, var_count, vars, device_pulling_interval_sum, timestamp, var_count_poll) {
+    if(key in CHART_VARIABLE_KEYS && CHART_VARIABLE_KEYS[key]<=DATA_INIT_STATUS){
+         CHART_VARIABLE_KEYS[key]++;
+         var_count++;
+         INIT_CHART_VARIABLES_COUNT++;
+         vars.push(key);
+         dpi = get_config_from_hidden_config('device','id',get_config_from_hidden_config('variable','id',key,'device') ,'polling-interval');
+         if (! isNaN(dpi)) {device_pulling_interval_sum += parseFloat(dpi);var_count_poll++;}else {console.log("ConfigV2 not found for var " + key);};
+         if (typeof(DATA[key]) == 'object'){
+             timestamp = Math.max(timestamp,DATA[key][0][0]);
+         }else{
+            // if a key doesn't exist in DATA timestamp to is set to now
+            timestamp = SERVER_TIME;
+         }
+    }
+    return [key, var_count, vars, device_pulling_interval_sum, timestamp, var_count_poll];
+ }
 
  /**
   * Update periodically the DATA, by requesting the server
@@ -937,23 +954,24 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
                          var timestamp = DATA_FROM_TIMESTAMP;
                      }
 
+                     var page = document.querySelector('#content .sub-page:not([style*="display:none"]):not([style*="display: none"])');
+                     var visible_hidden_config = page != null ? page.querySelectorAll('.hidden.variable-config') : [];
+                     var visible_vars = [];
+                     for (let vhc of visible_hidden_config.keys()) {
+                         visible_vars.push(visible_hidden_config[vhc].dataset['key']);
+                     }
 
-                     for (var key in CHART_VARIABLE_KEYS){
-                        if(CHART_VARIABLE_KEYS[key]<=DATA_INIT_STATUS){
-                             CHART_VARIABLE_KEYS[key]++;
-                             var_count++;
-                             INIT_CHART_VARIABLES_COUNT++;
-                             vars.push(key);
-                             dpi = get_config_from_hidden_config('device','id',get_config_from_hidden_config('variable','id',key,'device') ,'polling-interval');
-                             if (! isNaN(dpi)) {device_pulling_interval_sum += parseFloat(dpi);var_count_poll++;}else {console.log("ConfigV2 not found for var " + key);};
-                             if (typeof(DATA[key]) == 'object'){
-                                 timestamp = Math.max(timestamp,DATA[key][0][0]);
-                             }else{
-                                // if a key doesn't exist in DATA timestamp to is set to now
-                                timestamp = SERVER_TIME;
-                             }
-                             if(var_count >= 10){break;}
-                        }
+                     // First iterate on visible variables
+                     for (var key in visible_vars){
+                        key = visible_vars[key];
+                        if(var_count >= 10){break;}
+                        [key, var_count, vars, device_pulling_interval_sum, timestamp, var_count_poll] = add_key_to_chart_vars(key, var_count, vars, device_pulling_interval_sum, timestamp, var_count_poll);
+                     }
+                     if (var_count == 0) {
+                         for (var key in CHART_VARIABLE_KEYS){
+                            if(var_count >= 10){break;}
+                            [key, var_count, vars, device_pulling_interval_sum, timestamp, var_count_poll] = add_key_to_chart_vars(key, var_count, vars, device_pulling_interval_sum, timestamp, var_count_poll);
+                         }
                      }
                      if(var_count>0){
                          //set_loading_state(5, (loading_states[5] || 0) + 100*var_count/CHART_VARIABLE_KEYS.count());
@@ -1589,7 +1607,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
          variables[variable_key] = {'color':val_inst.data('color'),'yaxis': raxis_id, 'axis_id': axis_id}
          keys.push(variable_key);
          variable_names.push(variable_name);
-         variables[variable_key].label = $(".legendLabel[data-key=" + variable_key + "]")[0].textContent.replace(/\s/g, '');
+         variables[variable_key].label = $(".legendLabel[data-key=" + variable_key + "] .legendLabel-text")[0].textContent.replace(/\s/g, '');
          variables[variable_key].unit = $(".legendUnit[data-key=" + variable_key + "]")[0].textContent.replace(/\s/g, '');
          if (axes[raxis_id].unit == null) {
              axes[raxis_id].unit = variables[variable_key].unit;
@@ -1670,12 +1688,16 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
              if ($(legend_checkbox_id+'make_all_none').is(':checked')){
                  $.each(variables,function(key,val){
                      $(legend_checkbox_status_id+key).html(1);
-                     $(legend_checkbox_id+key)[0].checked = true;
+                     if ($(legend_checkbox_id+key).length > 0) {
+                         $(legend_checkbox_id+key)[0].checked = true;
+                     }
                  });
              }else{
                  $.each(variables,function(key,val){
                      $(legend_checkbox_status_id+key).html(0);
-                     $(legend_checkbox_id+key)[0].checked = false;
+                     if ($(legend_checkbox_id+key).length > 0) {
+                         $(legend_checkbox_id+key)[0].checked = false;
+                     }
                   });
              }
              plot.update(true);
@@ -1962,6 +1984,11 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
                  }
                  if (!variables.hasOwnProperty(key) && original_key in variables) {
                      variables[key] = variables[original_key]
+                 }
+                 if (key == original_key) {
+                     variables[key].label = $(".legendLabel[data-key=" + original_key + "] .legendLabel-text")[0].textContent.replace(/\s/g, '')
+                 }else {
+                     variables[key].label = $(".legendLabel[data-key=" + original_key + "] .legendLabel-text")[0].textContent.replace(/\s/g, '') + " " + $(".legendLabel[data-key=" + original_key + "] span")[1].textContent.replace(/\s/g, '');
                  }
 
                  //key = keys[key];
