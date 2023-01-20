@@ -37,7 +37,7 @@ class SMBusVariable(models.Model):
     protocol_id = PROTOCOL_ID
 
     def __str__(self):
-        return self.smbus_variable.short_name
+        return self.smbus_variable.name
 
 
 class ExtendedSMBusDevice(Device):

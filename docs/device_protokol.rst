@@ -15,6 +15,7 @@ Device Protocol IDs
 - 11: `Reserved (PT104) <https://github.com/pyscada/PyScada-PT104>`_
 - 12: `OPC-UA <https://github.com/clavay/PyScada-OPCUA>`_
 - 13: `SML (Smart Meter Language) <https://github.com/gkend/PyScada-SML>`_
+- 14: `MeterBus (MBus) <https://github.com/pyscada/PyScada-MeterBus>`_
 - 8X: Custom Worker
 - 93 `Reserved (Serial) <https://github.com/clavay/PyScada-Serial>`_
 - 94 `Reserved (WebService) <https://github.com/clavay/PyScada-WebService>`_

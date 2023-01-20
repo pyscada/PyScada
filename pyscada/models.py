@@ -693,6 +693,22 @@ class Dictionary(models.Model):
                     return None
         return label_found or value
 
+    def append(self, label, value):
+        try:
+            DictionaryItem.objects.get(label=label, value=value, dictionary=self)
+            logger.warning('Item ({}:{}) for dictionary {} already exist'.format(label, value, self))
+        except DictionaryItem.DoesNotExist:
+            di = DictionaryItem(label=label, value=value, dictionary=self)
+            di.save()
+
+    def remove(self, label=None, value=None):
+        if label is not None and value is not None:
+            DictionaryItem.objects.filter(label=label, value=value).delete()
+        elif label is not None:
+            DictionaryItem.objects.filter(label=label).delete()
+        elif value is not None:
+            DictionaryItem.objects.filter(value=value).delete()
+
 
 class DictionaryItem(models.Model):
     id = models.AutoField(primary_key=True)

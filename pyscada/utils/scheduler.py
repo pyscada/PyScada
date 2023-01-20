@@ -1186,10 +1186,14 @@ class SingleDeviceDAQProcess(Process):
                 logger.info("DeviceWriteTask still not found")
         self.dwt_received = False
         for task in dwts:
-            if task.variable.scaling is not None:
+            if task.variable is not None and task.variable.scaling is not None:
                 task.value = task.variable.scaling.scale_output_value(task.value)
             if self.device is not None:
-                tmp_data = self.device.write_data(task.variable.id, task.value, task)
+                if task.variable is not None:
+                    var_id = task.variable.id
+                else:
+                    var_id = None
+                tmp_data = self.device.write_data(var_id, task.value, task)
                 if isinstance(tmp_data, list):
                     if len(tmp_data) > 0:
                         task.done = True
@@ -1309,9 +1313,13 @@ class MultiDeviceDAQProcess(Process):
                 if len(dwts) == 0:
                     logger.info("DeviceWriteTask still not found")
             for task in dwts:
-                if task.variable.scaling is not None:
+                if task.variable is not None and task.variable.scaling is not None:
                     task.value = task.variable.scaling.scale_output_value(task.value)
-                tmp_data = device.write_data(task.variable.id, task.value, task)
+                if task.variable is not None:
+                    var_id = task.variable.id
+                else:
+                    var_id = None
+                tmp_data = device.write_data(var_id, task.value, task)
                 if isinstance(tmp_data, list):
                     if len(tmp_data) > 0:
                         task.done = True

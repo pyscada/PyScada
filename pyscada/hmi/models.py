@@ -672,6 +672,9 @@ class CssClass(models.Model):
     def __str__(self):
         return self.title
 
+    class Meta:
+        verbose_name_plural = 'Css Classes'
+
 
 class Widget(models.Model):
     id = models.AutoField(primary_key=True)
