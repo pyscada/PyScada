@@ -271,3 +271,11 @@
   - add install script
   - add css class arg to customize widget
   - fixes
+
+0.7.1.rc4
+  - Add MBus to protocol list
+  - add append and remove dictionary functions
+  - Fix device write task for VP (no variable defined)
+  - HTML: add span for legendLabel text
+  - JS: load visible chart variable first
+  - fixes
