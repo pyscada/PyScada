@@ -189,9 +189,12 @@ class DisplayValueOption(models.Model):
 
     timestamp_conversion_choices = (
         (0, 'None'),
-        (1, 'Timestamp to local date'),
-        (2, 'Timestamp to local time'),
-        (3, 'Timestamp to local date and time'),)
+        (1, 'Timestamp in milliseconds to local date'),
+        (2, 'Timestamp in milliseconds to local time'),
+        (3, 'Timestamp in milliseconds to local date and time'),
+        (4, 'Timestamp in seconds to local date'),
+        (5, 'Timestamp in seconds to local time'),
+        (6, 'Timestamp in seconds to local date and time'),)
     timestamp_conversion = models.PositiveSmallIntegerField(default=0,
                                                             choices=timestamp_conversion_choices)
 

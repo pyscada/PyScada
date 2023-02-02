@@ -287,6 +287,7 @@ class VariableStateAdmin(admin.ModelAdmin):
         )
 
     def last_value(self, instance):
+        """
         element = RecordedData.objects.last_element(variable_id=instance.pk)
         if element:
             return datetime.datetime.fromtimestamp(
@@ -294,6 +295,16 @@ class VariableStateAdmin(admin.ModelAdmin):
                    + ' : ' + element.value().__str__() + ' ' + instance.unit.unit
         else:
             return ' - : NaN ' + instance.unit.unit
+        """
+
+        try:
+            v = Variable.objects.get(id=instance.pk)
+            if v.query_prev_value(0):
+                return datetime.datetime.fromtimestamp(v.timestamp_old).strftime('%Y-%m-%d %H:%M:%S') \
+                       + ' : ' + v.prev_value.__str__() + ' ' + instance.unit.unit
+        except Variable.DoesNotExist:
+            pass
+        return ' - : NaN ' + instance.unit.unit
 
     def get_queryset(self, request):
         """Limit Pages to those that belong to the request's user."""
@@ -388,13 +399,14 @@ class DeviceAdmin(admin.ModelAdmin):
                 kwargs["queryset"] = DeviceProtocol.objects.filter(protocol__in=self.protocol_list)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
-    # Add JS file to display the right inline
+    # Add JS file to display the right inline and to hide/show fields
     class Media:
         js = (
             # To be sure the jquery files are loaded before our js file
             'admin/js/vendor/jquery/jquery.min.js',
             'admin/js/jquery.init.js',
             'pyscada/js/admin/display_inline_protocols_device.js',
+            'pyscada/js/admin/hideshow.js',
         )
 
 

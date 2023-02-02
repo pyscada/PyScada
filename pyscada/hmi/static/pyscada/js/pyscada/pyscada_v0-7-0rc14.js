@@ -461,14 +461,23 @@ var store_temp_ajax_data = null;
   */
  function timestamp_conversion(id,val){
      if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 1){
-         // convert timestamp to local date
+         // convert millisecond timestamp to local date
          val = new Date(val).toDateString();
      }else if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 2){
-         // convert timestamp to local time
+         // convert millisecond timestamp to local time
          val = new Date(val).toTimeString();
      }else if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 3){
-         // convert timestamp to local date and time
+         // convert millisecond timestamp to local date and time
          val = new Date(val).toUTCString();
+     }else if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 4){
+         // convert second timestamp to local date
+         val = new Date(val * 1000).toDateString();
+     }else if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 5){
+         // convert second timestamp to local time
+         val = new Date(val * 1000).toTimeString();
+     }else if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 6){
+         // convert second timestamp to local date and time
+         val = new Date(val * 1000).toUTCString();
      }
      return val;
  }

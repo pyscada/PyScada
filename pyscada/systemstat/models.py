@@ -5,6 +5,7 @@ from pyscada.models import Variable, Device
 from . import PROTOCOL_ID
 
 from django.db import models
+import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -40,18 +41,42 @@ class SystemStatVariable(models.Model):
         (105, 'APCUPSD Load in %'),  # %
         (200, 'List first X/last X/all items of a directory'),
         (201, 'List first X/last X/all items of a ftp directory'),
+        (300, 'timestamp (UTC). Use parameter to set offset.'),
     )
     information = models.PositiveSmallIntegerField(choices=information_choices,
-                                                   help_text="For 'network_ip_address' create a variable property "
-                                                             "attached to this variable with the interface in the name "
-                                                             "of the VP")
+                                                   help_text="For item list create a VP for each path.")
     parameter = models.CharField(default='', max_length=400, blank=True, null=True,
-                                 help_text="For 'disk_usage' insert the path")
+                                 help_text="For 'disk_usage' insert the path.<br>"
+                                           "For 'timestamp' define an offset in seconds (positive means in the future)"
+                                           "(accept a decimal number up to the millisecond).<br>"
+                                           "For 'network_ip_address' specify the interface name.<br>"
+                                           "Examples for items list (local) : first 10 / last 5 / all.<br>"
+                                           "Examples for items list (ftp) : "
+                                           "127.0.0.1 first 10 / "
+                                           "ftp.test.com last 5 / "
+                                           "192.168.1.5 all.<br>")
 
     protocol_id = PROTOCOL_ID
 
     def __str__(self):
         return self.system_stat_variable.name
+
+    def query_prev_value(self, time_min=None):
+        print('ok')
+        if self.information == 300:
+            print('300')
+            value = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)
+            try:
+                value += datetime.timedelta(seconds=int(self.parameter),
+                                            milliseconds=int((float(self.parameter) - int(self.parameter)) * 1000))
+            except (ValueError, TypeError):
+                pass
+            self.system_stat_variable.prev_value = value.timestamp()
+            self.system_stat_variable.timestamp_old = datetime.datetime.now().timestamp()
+            print(self.system_stat_variable.prev_value)
+            return True
+
+        return self.system_stat_variable.query_prev_value(time_min, False)
 
 
 class ExtendedSystemStatDevice(Device):

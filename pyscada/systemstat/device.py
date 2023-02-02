@@ -12,6 +12,7 @@ import os
 from ftplib import FTP, error_perm, error_temp, error_reply, error_proto
 from ipaddress import ip_address
 from socket import gethostbyaddr, gaierror, herror
+import datetime
 
 from django.conf import settings
 
@@ -76,10 +77,8 @@ class Device:
         (105, 'LOADPCT'), #
         ### Other
         (200, 'list_files'), #
-
-
-
         """
+
         if not driver_ok:
             return None
 
@@ -187,14 +186,13 @@ class Device:
             elif item.systemstatvariable.information == 19:
                 # ip_addresses
                 if hasattr(psutil, 'net_if_addrs'):
-                    for vp in VariableProperty.objects.filter(variable=item):
-                        try:
-                            VariableProperty.objects.update_property(variable_property=vp,
-                                                                     value=psutil.net_if_addrs()[vp.name][0][1])
-                        except KeyError:
-                            VariableProperty.objects.update_property(variable_property=vp,
-                                                                     value="None")
-                    value = None
+                    param = item.systemstatvariable.parameter
+                    try:
+                        value = psutil.net_if_addrs()[param][0][1]
+                    except KeyError as e:
+                        value = f"Interface {param} not found"
+                    except Exception as e:
+                        value = e
                     timestamp = time()
             elif 100 <= item.systemstatvariable.information <= 105:
                 # APCUPSD Status
@@ -395,6 +393,15 @@ class Device:
                     VariableProperty.objects.update_property(variable_property=vp, value=result)
                 value = None
                 timestamp = time()
+            elif item.systemstatvariable.information == 300:
+                value = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)
+                try:
+                    value += datetime.timedelta(seconds=int(item.systemstatvariable.parameter),
+                                                milliseconds=int((float(item.systemstatvariable.parameter) - int(item.systemstatvariable.parameter)) * 1000))
+                except (ValueError, TypeError):
+                    pass
+                value = value.timestamp()
+                value = None
             else:
                 value = None
             # update variable

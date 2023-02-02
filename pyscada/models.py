@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.utils.timezone import now, make_aware, is_naive
 from django.db.models.signals import post_save
+from django.db.models.fields.related import OneToOneRel
 
 from pyscada.utils import blow_up_data, timestamp_to_datetime, min_pass, max_pass
 from pyscada.utils import _get_objects_for_html as get_objects_for_html
@@ -693,10 +694,11 @@ class Dictionary(models.Model):
                     return None
         return label_found or value
 
-    def append(self, label, value):
+    def append(self, label, value, silent=False):
         try:
             DictionaryItem.objects.get(label=label, value=value, dictionary=self)
-            logger.warning('Item ({}:{}) for dictionary {} already exist'.format(label, value, self))
+            if not silent:
+                logger.warning('Item ({}:{}) for dictionary {} already exist'.format(label, value, self))
         except DictionaryItem.DoesNotExist:
             di = DictionaryItem(label=label, value=value, dictionary=self)
             di.save()
@@ -712,7 +714,7 @@ class Dictionary(models.Model):
 
 class DictionaryItem(models.Model):
     id = models.AutoField(primary_key=True)
-    label = models.CharField(max_length=400, default='')
+    label = models.CharField(max_length=400, default='', blank=True)
     value = models.CharField(max_length=400, default='')
     dictionary = models.ForeignKey(Dictionary, blank=True, null=True, on_delete=models.CASCADE)
 
@@ -980,10 +982,14 @@ class Variable(models.Model):
         else:
             return 16
 
-    def query_prev_value(self, time_min=None):
+    def query_prev_value(self, time_min=None, use_protocol_variable=True):
         """
         get the last value and timestamp from the database
         """
+        pv = self.get_protocol_variable()
+        if use_protocol_variable and pv is not None and hasattr(pv, 'query_prev_value'):
+            return pv.query_prev_value(time_min)
+
         time_max = time.time() * 2097152 * 1000 + 2097151
         if time_min is None:
             time_min = time_max - (3 * 3660 * 1000 * 2097152)
@@ -1257,6 +1263,13 @@ class Variable(models.Model):
 
         return list_to_append
 
+    def get_protocol_variable(self):
+        related_variables = [field for field in Variable._meta.get_fields() if issubclass(type(field), OneToOneRel)]
+        for v in related_variables:
+            if hasattr(self, v.name) and hasattr(getattr(self, v.name), 'protocol_id') and hasattr(self, "device") and getattr(self, v.name).protocol_id == self.device.protocol.id:
+                return getattr(self, v.name)
+        return None
+
 
 def validate_nonzero(value):
     if value == 0:
@@ -1425,7 +1438,7 @@ class CalculatedVariable(models.Model):
             self.check_period(self.period.start_from, now(), force_write, add_partial_info)
 
     def check_period(self, d1, d2, force_write=False, add_partial_info=False):
-        logger.debug("Check period of %s [%s - %s]" % (self.store_variable, d1, d2))
+        #logger.debug("Check period of %s [%s - %s]" % (self.store_variable, d1, d2))
         self.state = "Checking [%s to %s]" % (d1, d2)
         self.state = self.state[0:100]
         self.save(update_fields=['state'])
@@ -1437,7 +1450,7 @@ class CalculatedVariable(models.Model):
         output = []
 
         if self.period_diff_quantity(d1, d2) is None:
-            logger.debug("No period in date interval : %s (%s %s)" % (self.period, d1, d2))
+            #logger.debug("No period in date interval : %s (%s %s)" % (self.period, d1, d2))
             self.state = "[%s to %s] < %s" % (d1, d2, str(self.period.period_factor) +
                                               self.period.period_choices[self.period.period][1])
             self.state = self.state[0:100]
@@ -1474,7 +1487,7 @@ class CalculatedVariable(models.Model):
             except AttributeError:
                 v_stored = []
             if not force_write and len(v_stored) and len(v_stored[self.store_variable.id][0]):
-                logger.debug("Value already exist in RecordedData for %s - %s" %(d1, d1 + td))
+                logger.debug("Value already exist in RecordedData for %s - %s" % (d1, d1 + td))
                 pass
             else:
                 calc_value = self.get_value(d1, d1 + td)
@@ -1488,7 +1501,7 @@ class CalculatedVariable(models.Model):
         if len(output):
             self.last_check = output[-1].date_saved  # + td
         else:
-            logger.debug("Nothing to add")
+            #logger.debug("Nothing to add")
             self.last_check = min(d1, d2, now())
 
         # Add partial last value when then is data but the period is not elapsed
@@ -1770,7 +1783,7 @@ class DeviceWriteTask(models.Model):
         elif self.variable_property:
             return self.variable_property.variable.name + ' : ' + self.variable_property.name
         else:
-            return self.id
+            return str(self.id)
 
     @property
     def get_device_id(self):
@@ -2287,19 +2300,28 @@ class ComplexEventGroup(models.Model):
                     Mail(None, subject, message, html_message, recipient.email, time.time()).save()
 
             # Change value
-            if item_found.new_value is not None and self.variable_to_change is not None and \
-                    self.variable_to_change.update_value(item_found.new_value, timestamp):
-                temp_item = self.variable_to_change.create_recorded_data_element()
-                temp_item.date_saved = now()
-                RecordedData.objects.bulk_create([temp_item])
+            if item_found.new_value is not None and self.variable_to_change is not None:
+                # and self.variable_to_change.update_value(item_found.new_value, timestamp):
+                user, _ = User.objects.get_or_create(username='ComplexEvents')
+                dwt = DeviceWriteTask(variable=self.variable_to_change, value=item_found.new_value, user=user,
+                                      start=timestamp)
+                dwt.create_and_notificate(dwt)
+                #temp_item = self.variable_to_change.create_recorded_data_element()
+                #temp_item.date_saved = now()
+                #RecordedData.objects.bulk_create([temp_item])
 
         elif not active and self.last_level != -1:
             self.last_level = -1
             self.save()
-            if self.default_value and self.variable_to_change.update_value(self.default_value, timestamp):
-                temp_item = self.variable_to_change.create_recorded_data_element()
-                temp_item.date_saved = now()
-                RecordedData.objects.bulk_create([temp_item])
+            if self.default_value is not None:
+                #and self.variable_to_change.update_value(self.default_value, timestamp):
+                user, _ = User.objects.get_or_create(username='ComplexEvents')
+                dwt = DeviceWriteTask(variable=self.variable_to_change, value=self.default_value, user=user,
+                                      start=timestamp)
+                dwt.create_and_notificate(dwt)
+                #temp_item = self.variable_to_change.create_recorded_data_element()
+                #temp_item.date_saved = now()
+                #RecordedData.objects.bulk_create([temp_item])
             if self.default_send_mail:
                 (subject, message, html_message,) = self.compose_mail(None, {}, {})
                 for recipient in self.complex_mail_recipients.exclude(email=''):
