@@ -530,7 +530,10 @@ class ControlPanel(WidgetContentModel):
         opts["object_config_list"] = set()
         opts["object_config_list"].update(self._get_objects_for_html())
         opts["custom_fields_list"] = {'variable': [{'name': 'refresh-requested-timestamp', 'value': ""},
-                                                   {'name': 'value-timestamp', 'value': ''}, ]}
+                                                   {'name': 'value-timestamp', 'value': ''}, ],
+                                      'variableproperty': [{'name': 'refresh-requested-timestamp', 'value': ""},
+                                                           {'name': 'value-timestamp', 'value': ''}, ],
+                                      }
         return main_content, sidebar_content, opts
 
 
