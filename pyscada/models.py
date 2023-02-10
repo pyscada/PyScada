@@ -553,6 +553,27 @@ class DeviceProtocol(models.Model):
         return self.protocol
 
 
+class DeviceHandler(models.Model):
+    name = models.CharField(default='', max_length=255)
+    handler_class = models.CharField(default='pyscada.visa.devices.HP3456A', max_length=255,
+                                     help_text='a Base class to extend can be found at '
+                                               'pyscada.PROTOCOL.devices.GenericDevice. '
+                                               'Exemple : pyscada.visa.devices.HP3456A, '
+                                               'pyscada.smbus.devices.ups_pico, '
+                                               'pyscada.serial.devices.AirLinkGX450')
+    handler_path = models.CharField(default=None, max_length=255, null=True, blank=True,
+                                    help_text='If no handler class, pyscada will look at the path. '
+                                              'Exemple : /home/pi/my_handler.py')
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        # TODO : select only devices of selected variables
+        post_save.send_robust(sender=DeviceHandler, instance=Device.objects.first())
+        super(DeviceHandler, self).save(*args, **kwargs)
+
+
 class Device(models.Model):
     id = models.AutoField(primary_key=True)
     short_name = models.CharField(max_length=400, default='')
@@ -588,6 +609,7 @@ class Device(models.Model):
     )
     polling_interval = models.FloatField(default=polling_interval_choices[3][0], choices=polling_interval_choices)
     protocol = models.ForeignKey(DeviceProtocol, null=True, on_delete=models.CASCADE)
+    instrument_handler = models.ForeignKey(DeviceHandler, null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         # display protocol for the JS filter for inline variables (hmi.static.pyscada.js.admin)
@@ -604,27 +626,6 @@ class Device(models.Model):
         except:
             logger.error('%s(%d), unhandled exception\n%s' % (self.short_name, getpid(), traceback.format_exc()))
             return None
-
-
-class DeviceHandler(models.Model):
-    name = models.CharField(default='', max_length=255)
-    handler_class = models.CharField(default='pyscada.visa.devices.HP3456A', max_length=255,
-                                     help_text='a Base class to extend can be found at '
-                                               'pyscada.PROTOCOL.devices.GenericDevice. '
-                                               'Exemple : pyscada.visa.devices.HP3456A, '
-                                               'pyscada.smbus.devices.ups_pico, '
-                                               'pyscada.serial.devices.AirLinkGX450')
-    handler_path = models.CharField(default=None, max_length=255, null=True, blank=True,
-                                    help_text='If no handler class, pyscada will look at the path. '
-                                              'Exemple : /home/pi/my_handler.py')
-
-    def __str__(self):
-        return self.name
-
-    def save(self, *args, **kwargs):
-        # TODO : select only devices of selected variables
-        post_save.send_robust(sender=DeviceHandler, instance=Device.objects.first())
-        super(DeviceHandler, self).save(*args, **kwargs)
 
 
 class Unit(models.Model):

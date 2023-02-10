@@ -29,13 +29,14 @@ class VISADevice(models.Model):
     visa_device = models.OneToOneField(Device, on_delete=models.CASCADE)
     resource_name = models.CharField(max_length=255,
                                      default='GPIB0::22::INSTR',
-                                     help_text=""" 'Examles for:\nGPIB0::22::INSTR' for GPIB Instrument\n
-                                      'TCPIP::192.168.228.104::INSTR' for TCPIP/LXI Intruments\n 
-                                      'USB0::0x1AB1::0x4CE::DS1ZA181806919::INSTR'\n 
-                                      'ASRL/dev/ttyUSB0::INSTR'\n 
-                                      http://pyvisa.readthedocs.io/en/stable/names.html""")
-
-    instrument_handler = models.ForeignKey(DeviceHandler, null=True, blank=True, on_delete=models.SET_NULL)
+                                     help_text="Examples :<br>"
+                                               "for GPIB instruments : GPIB0::22::INSTR<br>"
+                                               "for TCPIP/LXI instruments : TCPIP::192.168.228.104::INSTR<br>"
+                                               "for USB instruments : USB0::0x1AB1::0x4CE::DS1ZA181806919::INSTR<br>"
+                                               "for Serial instruments : ASRL/dev/ttyUSB0::INSTR<br>"
+                                               "more information <a href='"
+                                               "https://pyvisa.readthedocs.io/en/stable/introduction/communication.html"
+                                               "'>here</a>")
 
     protocol_id = PROTOCOL_ID
 

@@ -21,7 +21,7 @@ class SMBusDeviceAdminInline(admin.StackedInline):
 
 
 class SMBusDeviceAdmin(DeviceAdmin):
-    list_display = DeviceAdmin.list_display + ('instrument_handler', 'port', 'address',)
+    list_display = DeviceAdmin.list_display + ('port', 'address',)
 
     def address(self, instance):
         try:
@@ -31,9 +31,6 @@ class SMBusDeviceAdmin(DeviceAdmin):
             return ""
         except TypeError:
             return ""
-
-    def instrument_handler(self, instance):
-        return instance.smbusdevice.instrument_handler
 
     def port(self, instance):
         return instance.smbusdevice.port

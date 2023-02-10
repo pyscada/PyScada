@@ -62,9 +62,7 @@ class SystemStatVariable(models.Model):
         return self.system_stat_variable.name
 
     def query_prev_value(self, time_min=None):
-        print('ok')
         if self.information == 300:
-            print('300')
             value = datetime.datetime.now().replace(tzinfo=datetime.timezone.utc)
             try:
                 value += datetime.timedelta(seconds=int(self.parameter),
@@ -73,7 +71,6 @@ class SystemStatVariable(models.Model):
                 pass
             self.system_stat_variable.prev_value = value.timestamp()
             self.system_stat_variable.timestamp_old = datetime.datetime.now().timestamp()
-            print(self.system_stat_variable.prev_value)
             return True
 
         return self.system_stat_variable.query_prev_value(time_min, False)

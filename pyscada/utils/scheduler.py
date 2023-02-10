@@ -269,9 +269,15 @@ class Scheduler(object):
         if not access(self.pid_file_name, F_OK):
             return None
 
-        with open(self.pid_file_name, 'r') as f:
-            pid = int(f.read().strip())
-        return pid
+        # try reading the pid during 5 seconds
+        for i in range(1, 6):
+            try:
+                with open(self.pid_file_name, 'r') as f:
+                    pid = int(f.read().strip())
+                return pid
+            except ValueError:
+                sleep(1)
+        return None
 
     def delete_pid(self, force_del=False):
         """
@@ -869,7 +875,7 @@ class Process(object):
                 except (ChannelFull, ConnectionRefusedError):
                     logger.info("Channel full : " + str(self.scheduler_pid) + '_ProcessAction_for_' + str(self.process_id))
                     pass
-                except RuntimeWarning:
+                except (RuntimeWarning, RuntimeError):
                     pass
 
     def stop(self, signum=None, frame=None):

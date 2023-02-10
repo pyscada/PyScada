@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 from .. import PROTOCOL_ID
 from pyscada.models import DeviceProtocol
+from pyscada.device import GenericHandlerDevice
 
 from django.conf import settings
 
@@ -19,33 +20,25 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class GenericDevice:
+class GenericDevice(GenericHandlerDevice):
     def __init__(self, pyscada_device, variables):
-        self._device = pyscada_device
-        self._variables = variables
-        self.inst = None
+        super().__init__(pyscada_device, variables)
+        self._protocol = PROTOCOL_ID
+        self.driver_ok = driver_ok
         self.rm = None
 
     def connect(self):
         """
         establish a connection to the Instrument
         """
-        if not driver_ok:
-            logger.error("Visa driver NOT ok")
-            return False
-
-        if self._device.protocol.id != PROTOCOL_ID:
-            logger.error("Wrong handler selected : it's for %s device while device protocol is %s" %
-                         (str(DeviceProtocol.objects.get(id=PROTOCOL_ID)).upper(),
-                          str(self._device.protocol).upper()))
-            return False
-
+        super().connect()
         visa_backend = '@py'  # use PyVISA-py as backend
         if hasattr(settings, 'VISA_BACKEND'):
             visa_backend = settings.VISA_BACKEND
 
         try:
-            self.rm = pyvisa.ResourceManager(visa_backend)
+            if self.rm is None:
+                self.rm = pyvisa.ResourceManager(visa_backend)
         except:
             logger.error("Visa ResourceManager cannot load resources : %s" % self)
             return False
@@ -55,13 +48,15 @@ class GenericDevice:
             if hasattr(settings, 'VISA_DEVICE_SETTINGS'):
                 if resource_prefix in settings.VISA_DEVICE_SETTINGS:
                     extras = settings.VISA_DEVICE_SETTINGS[resource_prefix]
-            self.inst = self.rm.open_resource(self._device.visadevice.resource_name, **extras)
+            if self.inst is None:
+                self.inst = self.rm.open_resource(self._device.visadevice.resource_name, **extras)
         except Exception as e:
             logger.info(e)
             # logger.error("Visa ResourceManager cannot open resource : %s" % self._device.visadevice.resource_name)
             return False
         logger.debug('Connected visa device : %s with VISA_DEVICE_SETTINGS for %s: %r' %
                      (self._device.visadevice.resource_name, resource_prefix, extras))
+        self.accessibility()
         return True
 
     def disconnect(self):
@@ -70,18 +65,6 @@ class GenericDevice:
             self.inst = None
             return True
         return False
-
-    def before_read(self):
-        """
-        will be called before the first read_data
-        """
-        return None
-
-    def after_read(self):
-        """
-        will be called after the last read_data
-        """
-        return None
 
     def read_data(self, variable_instance):
         """
@@ -104,12 +87,21 @@ class GenericDevice:
             #            return value.split(',')[0]
             return self.parse_value(value, variable_instance=variable_instance)
 
-    def read_data_and_time(self, variable_instance):
-        """
-        read values and timestamps from the device
-        """
+    def read_data_all(self, variables_dict):
+        output = []
 
-        return self.read_data(variable_instance), self.time()
+        self.before_read()
+        for item in self._variables.values():
+            if not item.visavariable.variable_type == 1:
+                # skip all config values
+                continue
+
+            value, time = self.read_data_and_time(item)
+
+            if value is not None and item.update_value(value, time):
+                output.append(item.create_recorded_data_element())
+        self.after_read()
+        return output
 
     def write_data(self, variable_id, value, task):
         """
@@ -146,6 +138,3 @@ class GenericDevice:
         except Exception as e:
             logger.debug(e)
             return None
-
-    def time(self):
-        return time()
