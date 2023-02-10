@@ -32,7 +32,7 @@ class Device(GenericDevice):
         write value to the instrument/device
         """
         output = []
-        if not driver_ok:
+        if not self.driver_ok:
             logger.info("Cannot import smbus")
             return output
 

@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from .. import PROTOCOL_ID
-from pyscada.models import DeviceProtocol
 from pyscada.device import GenericHandlerDevice
-from django.conf import settings
-
-from time import time
 
 import logging
 
@@ -30,13 +26,18 @@ class GenericDevice(GenericHandlerDevice):
         """
         establish a connection to the Instrument
         """
+        super().connect()
+        result = True
+
         try:
             self.inst = smbus.SMBus(int(self._device.smbusdevice.port))
         except:
             logger.error(f"SMBus connect failed. Port : {self._device.smbusdevice.port} - id : {self._device.id} - "
                          f"name {self._device.short_name}")
-            return False
-        return True
+            result = False
+
+        self.accessibility()
+        return result
 
     def disconnect(self):
         if self.inst is not None:
@@ -44,8 +45,3 @@ class GenericDevice(GenericHandlerDevice):
             self.inst = None
             return True
         return False
-
-    def read_data_all(self, variables_dict):
-        output = super().read_data_all(variables_dict)
-        self.disconnect()
-        return output

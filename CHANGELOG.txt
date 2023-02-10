@@ -272,10 +272,21 @@
   - add css class arg to customize widget
   - fixes
 
-0.7.1.rc4
+0.7.1rc4
   - Add MBus to protocol list
   - add append and remove dictionary functions
   - Fix device write task for VP (no variable defined)
   - HTML: add span for legendLabel text
   - JS: load visible chart variable first
   - fixes
+
+0.7.1rc5
+  - add hide/show JS for fields in admin
+  - add get_prev_value overwritten by child class for systemstat non logging variable
+  - last_value use get_prev_value
+  - add systemstat timestamps
+  - add file protocol
+  - fix DeviceWriteTask for variable to change in complex events
+  - add value using get_prev_value in views.py for non logging variables
+  - Move handler to Device model.
+  - Wait 5 seconds to read the main pid (scheduler)

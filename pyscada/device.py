@@ -41,7 +41,7 @@ class GenericHandlerDevice:
             logger.error(f"Wrong handler selected : it's for {p} device while device protocol is {self._device.protocol}")
             return False
 
-        self.accessibility()
+        #self.accessibility()
 
     def accessibility(self):
         if self.inst is not None:
@@ -96,6 +96,7 @@ class GenericHandlerDevice:
                 if value is not None and item.update_value(value, read_time):
                     output.append(item.create_recorded_data_element())
             self.after_read()
+        self.disconnect()
         return output
 
     def write_data(self, variable_id, value, task):

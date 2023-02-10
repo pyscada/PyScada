@@ -32,6 +32,8 @@ class GenericDevice(GenericHandlerDevice):
         establish a connection to the Instrument
         """
         super().connect()
+        result = True
+
         visa_backend = '@py'  # use PyVISA-py as backend
         if hasattr(settings, 'VISA_BACKEND'):
             visa_backend = settings.VISA_BACKEND
@@ -41,23 +43,27 @@ class GenericDevice(GenericHandlerDevice):
                 self.rm = pyvisa.ResourceManager(visa_backend)
         except:
             logger.error("Visa ResourceManager cannot load resources : %s" % self)
-            return False
-        try:
-            resource_prefix = self._device.visadevice.resource_name.split('::')[0]
-            extras = {}
-            if hasattr(settings, 'VISA_DEVICE_SETTINGS'):
-                if resource_prefix in settings.VISA_DEVICE_SETTINGS:
-                    extras = settings.VISA_DEVICE_SETTINGS[resource_prefix]
-            if self.inst is None:
-                self.inst = self.rm.open_resource(self._device.visadevice.resource_name, **extras)
-        except Exception as e:
-            logger.info(e)
-            # logger.error("Visa ResourceManager cannot open resource : %s" % self._device.visadevice.resource_name)
-            return False
-        logger.debug('Connected visa device : %s with VISA_DEVICE_SETTINGS for %s: %r' %
-                     (self._device.visadevice.resource_name, resource_prefix, extras))
+            result = False
+
+        if self.rm is not None:
+            try:
+                resource_prefix = self._device.visadevice.resource_name.split('::')[0]
+                extras = {}
+                if hasattr(settings, 'VISA_DEVICE_SETTINGS'):
+                    if resource_prefix in settings.VISA_DEVICE_SETTINGS:
+                        extras = settings.VISA_DEVICE_SETTINGS[resource_prefix]
+                if self.inst is None:
+                    self.inst = self.rm.open_resource(self._device.visadevice.resource_name, **extras)
+
+                logger.debug('Connected visa device : %s with VISA_DEVICE_SETTINGS for %s: %r' %
+                             (self._device.visadevice.resource_name, resource_prefix, extras))
+            except Exception as e:
+                logger.info(e)
+                # logger.error("Visa ResourceManager cannot open resource : %s" % self._device.visadevice.resource_name)
+                result = False
+
         self.accessibility()
-        return True
+        return result
 
     def disconnect(self):
         if self.inst is not None:
