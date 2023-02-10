@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from pyscada.device import GenericDevice
+from .devices import GenericDevice as GenericHandlerDevice
 
 from time import time
 import logging
@@ -20,6 +21,7 @@ except ImportError:
 class Device(GenericDevice):
     def __init__(self, device):
         self.driver_ok = driver_ok
+        self.handler_class = GenericHandlerDevice
         super().__init__(device)
 
         for var in self.device.variable_set.filter(active=1):

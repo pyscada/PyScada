@@ -32,8 +32,8 @@ class GenericDevice(GenericHandlerDevice):
         try:
             self.inst = smbus.SMBus(int(self._device.smbusdevice.port))
         except:
-            logger.error(f"SMBus connect failed. Port : {self._device.smbusdevice.port} - id : {self._device.id} - "
-                         f"name {self._device.short_name}")
+            #logger.error(f"SMBus connect failed. Port : {self._device.smbusdevice.port} - id : {self._device.id} - "
+            #             f"name {self._device.short_name}")
             result = False
 
         self.accessibility()

@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from time import time, sleep
 
 from pyscada.models import DeviceProtocol, VariableProperty
+import pyscada
 
 import sys
 import logging
@@ -139,6 +140,8 @@ class GenericDevice:
                 mod = __import__(self.device.instrument_handler.handler_class, fromlist=['Handler'])
                 device_handler = getattr(mod, 'Handler')
                 self._h = device_handler(self.device, self.variables)
+            elif hasattr(self, "handler_class"):
+                self._h = self.handler_class(self.device, self.variables)
             else:
                 self._h = GenericHandlerDevice(self.device, self.variables)
             self.driver_handler_ok = True
