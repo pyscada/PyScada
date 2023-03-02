@@ -2014,7 +2014,11 @@ class RecordedData(models.Model):
 
     def __init__(self, *args, **kwargs):
         if 'timestamp' in kwargs:
-            timestamp = kwargs.pop('timestamp')
+            try:
+                timestamp = int(kwargs.pop('timestamp'))
+            except ValueError as e:
+                logger.error(f'RecordedData timestamp: {e}')
+                timestamp = time.time()
         else:
             timestamp = time.time()
 

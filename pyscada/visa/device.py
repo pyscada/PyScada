@@ -6,9 +6,9 @@ from .devices import GenericDevice as GenericHandlerDevice
 
 try:
     import pyvisa
-    driver_visa_ok = True
+    driver_ok = True
 except ImportError:
-    driver_visa_ok = False
+    driver_ok = False
 
 from time import time
 import logging
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class Device(GenericDevice):
     def __init__(self, device):
-        self.driver_ok = driver_visa_ok
+        self.driver_ok = driver_ok
         self.handler_class = GenericHandlerDevice
         super().__init__(device)
 

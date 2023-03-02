@@ -356,8 +356,8 @@ class DeviceForm(forms.ModelForm):
 
 
 class DeviceAdmin(admin.ModelAdmin):
-    list_display = ('id', 'short_name', 'description', 'protocol', 'active', 'polling_interval',)
-    list_editable = ('active', 'polling_interval',)
+    list_display = ('id', 'short_name', 'description', 'protocol', 'active', 'polling_interval', 'instrument_handler')
+    list_editable = ('active', 'polling_interval', 'instrument_handler')
     list_display_links = ('short_name', 'description',)
     list_filter = ('protocol', 'active', 'polling_interval',)
     actions = [silent_delete]

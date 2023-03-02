@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from time import time, sleep
 
 from pyscada.models import DeviceProtocol, VariableProperty
 import pyscada
 
 import sys
+from time import time, sleep
 import logging
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,7 @@ class GenericHandlerDevice:
         self._variables = variables
         self.inst = None
         self._device_not_accessible = 0
+        self._not_accessible_reason = None
         if not hasattr(self, '_protocol'):
             self._protocol = PROTOCOL_ID
         if not hasattr(self, 'driver_ok'):
@@ -52,7 +53,11 @@ class GenericHandlerDevice:
         else:
             if self._device_not_accessible > -1:
                 self._device_not_accessible = -1
-                logger.info(f'Device {self._device} is not accessible')
+                msg = f'Device {self._device} is not accessible.'
+                if self._not_accessible_reason is not None:
+                    msg += f" Reason : {self._not_accessible_reason}"
+                    self._not_accessible_reason = None
+                logger.info(msg)
         return True
 
     def disconnect(self):
@@ -65,18 +70,19 @@ class GenericHandlerDevice:
         """
         will be called before the first read_data
         """
-        return None
+        return self.connect()
 
     def after_read(self):
         """
         will be called after the last read_data
         """
-        return None
+        return self.disconnect()
 
     def read_data(self, variable_instance):
         """
         read values from the device
         """
+        logger.warning(f"Handler of {self._device} should overwrite read_data function.")
         return None
 
     def read_data_and_time(self, variable_instance):
@@ -89,15 +95,13 @@ class GenericHandlerDevice:
     def read_data_all(self, variables_dict):
         output = []
 
-        if self.connect():
-            self.before_read()
+        if self.before_read():
             for item in variables_dict.values():
                 value, read_time = self.read_data_and_time(item)
 
                 if value is not None and item.update_value(value, read_time):
                     output.append(item.create_recorded_data_element())
-            self.after_read()
-        self.disconnect()
+        self.after_read()
         return output
 
     def write_data(self, variable_id, value, task):
@@ -108,7 +112,7 @@ class GenericHandlerDevice:
             for var in self._variables:
                 var = self._variables[var]
                 if variable_id == var.id:
-                    logger.info(f"Handler of {self._device} should overwrite write_data function.")
+                    logger.warning(f"Handler of {self._device} should overwrite write_data function.")
                     return None
 
             logger.warning(f'Variable {variable_id} not in variable list {self._variables} of device {self._device}')
@@ -148,6 +152,9 @@ class GenericDevice:
         except ImportError:
             self.driver_handler_ok = False
             logger.error("Handler import error : %s" % self.device.short_name)
+
+        # Wait 5 seconds to let changes appears in DB.
+        sleep(5)
 
         for var in self.device.variable_set.filter(active=1):
             if not hasattr(var, str(self.device.protocol.protocol) + 'variable'):
