@@ -30,7 +30,7 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
         post_save.send_robust(sender=Device, instance=Device.objects.get(pk=instance.pk))
 
 
-@receiver(post_save, sender=SystemStatDevice)
+@receiver(pre_delete, sender=SystemStatDevice)
 @receiver(pre_delete, sender=SystemStatVariable)
 @receiver(pre_delete, sender=ExtendedSystemStatVariable)
 @receiver(pre_delete, sender=ExtendedSystemStatDevice)

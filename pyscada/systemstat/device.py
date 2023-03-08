@@ -253,11 +253,13 @@ class Device(GenericDevice):
                 processName = item.systemstatvariable.parameter
                 # Check if process name contains the given name string.
                 if self.device.systemstatdevice.system_type == 0:
-                    value = None
+                    value = -3
                     for proc in psutil.process_iter():
                         try:
-                            if processName.lower() in proc.name().lower():
-                                value = proc.pid
+                            for cmd in proc.cmdline():
+                                if processName.lower() in cmd.lower():
+                                    value = proc.pid
+                                    break
                         except psutil.ZombieProcess:
                             value = -1
                         except psutil.AccessDenied:
@@ -266,7 +268,7 @@ class Device(GenericDevice):
                             value = -3
                 elif self.device.systemstatdevice.system_type == 1:
                     cmd = "value"
-                    ssh_prefix = f'import psutil\nvalue=None\nfor proc in psutil.process_iter():\n    try:\n        if "{processName}".lower() in proc.name().lower():\n            value = proc.pid\n    except psutil.ZombieProcess:\n        value = -1\n    except psutil.AccessDenied:\n        value = -2\n    except psutil.NoSuchProcess:\n        value = -3\n'
+                    ssh_prefix = f'import psutil\nvalue=-3\nfor proc in psutil.process_iter():\n    try:\n        for cmd in proc.cmdline():\n            if "{processName}".lower() in cmd.lower() and "for proc in psutil.process_iter():" not in cmd.lower():\n                value = proc.pid\n                break\n    except psutil.ZombieProcess:\n        value = -1\n    except psutil.AccessDenied:\n        value = -2\n    except psutil.NoSuchProcess:\n        value = -3\n'
                     value = self.exec_python_cmd(cmd, ssh_prefix=ssh_prefix)
             elif item.systemstatvariable.information == 40:
                 try:

@@ -78,8 +78,8 @@ class SystemStatVariable(models.Model):
         (200, 'List first X/last X/all items of a directory'),
         (201, 'List first X/last X/all items of a ftp directory'),
         # Systemd services
-        (250, 'is enabled'),
-        (251, 'is active'),
+        (250, 'Systemd service is enabled'),
+        (251, 'Systemd service is active'),
         (300, 'timestamp (UTC). Use parameter to set offset.'),
     )
     information = models.PositiveSmallIntegerField(choices=information_choices,
