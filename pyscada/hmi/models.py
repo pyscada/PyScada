@@ -99,6 +99,17 @@ class WidgetContentModel(models.Model):
         wc.content_str = self.__str__()
         wc.save()
 
+    def get_widget_content_entry(self):
+        def fullname(o):
+            return o.__module__ + "." + o.__class__.__name__
+        try:
+            return WidgetContent.objects.get(content_pk=self.pk,
+                          content_model=fullname(self),
+                          content_str=self.__str__())
+        except WidgetContent.DoesNotExist:
+            logger.warning(f'Widget content not found for {self}')
+            return None
+
     def delete_duplicates(self):
         for i in WidgetContent.objects.all():
             c = WidgetContent.objects.filter(content_pk=i.content_pk, content_model=i.content_model).count()
@@ -347,6 +358,10 @@ class ControlItem(models.Model):
             return self.variable_property.dictionary
         elif self.variable:
             return self.variable.dictionary
+
+    def _get_objects_for_html(self, list_to_append=None, obj=None, exclude_model_names=None):
+        list_to_append = get_objects_for_html(list_to_append, self, exclude_model_names)
+        return list_to_append
 
 
 class Chart(WidgetContentModel):

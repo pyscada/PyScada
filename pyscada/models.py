@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.db.utils import IntegrityError
+from django.db.utils import IntegrityError, ProgrammingError
 from django.contrib.auth.models import User
 from django.conf import settings
 
@@ -712,6 +712,14 @@ class Dictionary(models.Model):
         elif value is not None:
             DictionaryItem.objects.filter(value=value).delete()
 
+    def _get_objects_for_html(self, list_to_append=None, obj=None, exclude_model_names=None):
+        list_to_append = get_objects_for_html(list_to_append, self, exclude_model_names)
+        if obj is None:
+            for item in self.dictionaryitem_set.all():
+                list_to_append = get_objects_for_html(list_to_append, item, ['dictionary'])
+
+        return list_to_append
+
 
 class DictionaryItem(models.Model):
     id = models.AutoField(primary_key=True)
@@ -1267,8 +1275,11 @@ class Variable(models.Model):
     def get_protocol_variable(self):
         related_variables = [field for field in Variable._meta.get_fields() if issubclass(type(field), OneToOneRel)]
         for v in related_variables:
-            if hasattr(self, v.name) and hasattr(getattr(self, v.name), 'protocol_id') and hasattr(self, "device") and getattr(self, v.name).protocol_id == self.device.protocol.id:
-                return getattr(self, v.name)
+            try:
+                if hasattr(self, v.name) and hasattr(getattr(self, v.name), 'protocol_id') and hasattr(self, "device") and getattr(self, v.name).protocol_id == self.device.protocol.id:
+                    return getattr(self, v.name)
+            except ProgrammingError:
+                pass
         return None
 
 

@@ -518,7 +518,8 @@ def get_cache_data(request):
                 if v.timestamp_old is not None and v.timestamp_old <= timestamp_to + 5 and v.prev_value is not None:
                     data[int(v_id)] = [[v.timestamp_old * 1000, v.prev_value]]
             except:
-                logger.warning(traceback.format_exc())
+                #logger.warning(traceback.format_exc())
+                pass
 
     data['variable_properties'] = {}
     data['variable_properties_last_modified'] = {}

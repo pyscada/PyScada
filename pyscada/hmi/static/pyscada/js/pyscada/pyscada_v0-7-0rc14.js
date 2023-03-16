@@ -460,22 +460,22 @@ var store_temp_ajax_data = null;
   * @returns {string} Return a date
   */
  function timestamp_conversion(id,val){
-     if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 1){
+     if (id == 1){
          // convert millisecond timestamp to local date
          val = new Date(val).toDateString();
-     }else if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 2){
+     }else if (id == 2){
          // convert millisecond timestamp to local time
          val = new Date(val).toTimeString();
-     }else if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 3){
+     }else if (id == 3){
          // convert millisecond timestamp to local date and time
          val = new Date(val).toUTCString();
-     }else if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 4){
+     }else if (id == 4){
          // convert second timestamp to local date
          val = new Date(val * 1000).toDateString();
-     }else if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 5){
+     }else if (id == 5){
          // convert second timestamp to local time
          val = new Date(val * 1000).toTimeString();
-     }else if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 6){
+     }else if (id == 6){
          // convert second timestamp to local date and time
          val = new Date(val * 1000).toUTCString();
      }
@@ -515,14 +515,13 @@ var store_temp_ajax_data = null;
   * @returns {*} Returns data type of 'val' in the data dictionnary
   */
  function dictionary(id,val){
-     if ($(".variable-config[data-dictionary][data-id=" + id + "]").attr('data-dictionary')){
-         // apply dictionary
-         t = JSON.parse($(".variable-config[data-dictionary][data-id=" + id + "]").attr('data-dictionary'));
-         if (val in t) {
-             val = t[val];
-         }else if (parseFloat(val).toFixed(1) in t) {
-             //int stored as a float
-             val = t[parseFloat(val).toFixed(1)];
+     var dict = get_config_from_hidden_config("variable", 'id', id, 'dictionary');
+     if (typeof dict != 'undefined'){
+         l = get_config_from_hidden_configs("dictionaryitem", 'id', 'dictionary')
+         for (item in l){
+             if (l[item] == dict && (get_config_from_hidden_config("dictionaryitem", 'id', item, 'value') == val || get_config_from_hidden_config("dictionaryitem", 'id', item, 'value') == parseFloat(val).toFixed(1))) { // last check : int stored as a float
+                 val = get_config_from_hidden_config("dictionaryitem", 'id', item, 'label');
+             }
          }
      }
      return val;
@@ -563,7 +562,7 @@ var store_temp_ajax_data = null;
 
      var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', id, 'display-value-options');
      // variable colors
-     var color_type = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color_type');
+     var color_type = Number(get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-type'));
      var color_mode = get_config_from_hidden_config("displayvalueoption", 'id', id, 'mode');
      var color_level_1_type = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-level-1-type');
      var color_level_2_type = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-level-2-type');
@@ -759,20 +758,22 @@ var store_temp_ajax_data = null;
          // colors
          document.querySelectorAll(".control-item.type-numeric." + key).forEach(function(e) {
              var control_item_id = e.id;
-             var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', control_item_id, 'display-value-options');
+             var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'display-value-options');
              //var color_mode = $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode');
              var color_mode = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'mode');
              var color_type = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color_type');
              var timestamp_conversion_value = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'timestamp-conversion');
-             var dictionary_value = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'data-dictionary');
+             var dictionary_value = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'dictionary');
+             var var_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'variable');
+             var dictionary_value = get_config_from_hidden_config("variable", 'id', var_id, 'dictionary');
              if (color_mode != 1 ) {
                  var r_val_temp = r_val;
                  if (timestamp_conversion_value != null && timestamp_conversion_value != 0){
                      // Transform timestamps
-                     r_val_temp=timestamp_conversion(control_item_id,val);
+                     r_val_temp=timestamp_conversion(timestamp_conversion_value,val);
                  }else if (dictionary_value != null && dictionary_value != 0){
                      // Transform value in dictionaries
-                     r_val_temp=dictionary(control_item_id,val);
+                     r_val_temp=dictionary(var_id,val);
                  }
                  // Set the text value
                  document.querySelector("#" + control_item_id).innerHTML = r_val_temp + " " + unit;
@@ -870,8 +871,9 @@ var store_temp_ajax_data = null;
              //var color_mode = $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode');
              var color_mode = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'mode');
              var color_type = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color_type');
-             var dictionary_value = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'data-dictionary');
-
+             var dictionary_value = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'dictionary');
+             var var_id = get_config_from_hidden_config("controlitem", 'id', i, 'variable');
+             var dictionary_value = get_config_from_hidden_config("variable", 'id', var_id, 'dictionary');
              if (color_mode != 1 ) {
                  var r_val_temp = r_val;
                  if (dictionary_value != null && dictionary_value != 0){
@@ -3761,7 +3763,6 @@ function setAggregatedPeriodList(widget_id, var_id) {
      key = $(this).data('key');
      type = $(this).data('type');
      type = type.replace("_", "");
-     console.log(key, type);
      //$(".variable-config[data-key=" + key + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp',t)
      set_config_from_hidden_config("variable","id",key,"refresh-requested-timestamp",t)
      set_config_from_hidden_config("variableproperty","id",key,"refresh-requested-timestamp",t)

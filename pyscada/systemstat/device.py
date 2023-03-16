@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from pyscada.models import VariableProperty
-from pyscada.device import GenericDevice
+from pyscada.models import VariableProperty, Variable
+from pyscada.device import GenericDevice, GenericHandlerDevice
+from . import PROTOCOL_ID
 
 import os
+import socket
 from ftplib import FTP, error_perm, error_temp, error_reply, error_proto
 from ipaddress import ip_address
 from socket import gethostbyaddr, gaierror, herror
@@ -21,7 +23,7 @@ except ModuleNotFoundError:
     from asyncio import TimeoutError as asyncioTimeoutError
     from asyncio import CancelledError as asyncioCancelledError
 
-from time import time
+from time import time, sleep
 import logging
 
 logger = logging.getLogger(__name__)
@@ -47,6 +49,7 @@ MEDIA_URL = settings.MEDIA_URL \
 class Device(GenericDevice):
     def __init__(self, device):
         self.driver_ok = driver_ok
+        self.handler_class = Handler
         super().__init__(device)
 
         for var in self.device.variable_set.filter(active=1):
@@ -92,7 +95,6 @@ class Device(GenericDevice):
         (251, 'is active'), #
         ### Datetime as timestamp
         (300, 'is active'), #
-
         """
 
         if not driver_ok:
@@ -251,7 +253,7 @@ class Device(GenericDevice):
                     timestamp = time()
             elif item.systemstatvariable.information == 20:
                 processName = item.systemstatvariable.parameter
-                # Check if process name contains the given name string.
+                # Check if process name contains the given name string. Return the pid.
                 if self.device.systemstatdevice.system_type == 0:
                     value = -3
                     for proc in psutil.process_iter():
@@ -270,6 +272,7 @@ class Device(GenericDevice):
                     cmd = "value"
                     ssh_prefix = f'import psutil\nvalue=-3\nfor proc in psutil.process_iter():\n    try:\n        for cmd in proc.cmdline():\n            if "{processName}".lower() in cmd.lower() and "for proc in psutil.process_iter():" not in cmd.lower():\n                value = proc.pid\n                break\n    except psutil.ZombieProcess:\n        value = -1\n    except psutil.AccessDenied:\n        value = -2\n    except psutil.NoSuchProcess:\n        value = -3\n'
                     value = self.exec_python_cmd(cmd, ssh_prefix=ssh_prefix)
+                    value = -3 if value == '' else value
             elif item.systemstatvariable.information == 40:
                 try:
                     cmd = 'os.path.getmtime("' + str(item.systemstatvariable.parameter) + '")'
@@ -496,14 +499,11 @@ class Device(GenericDevice):
 
         return output
 
-    def write_data(self, variable_id, value, task):
-        logger.warning("Systemstat cannot write %s to variable id %s" % (value, variable_id))
-        return None  # return None to set the device write task as failed
-
     async def _wait_for(self, cmd, timeout=1, *args):
         return await wait_for(sync_to_async(cmd)(*args), timeout=timeout)
 
     def exec_python_cmd(self, cmd, ssh_cmd=None, ssh_prefix=""):
+
         value = None
         if self.device.systemstatdevice.system_type == 0:
             value = eval(cmd)
@@ -524,9 +524,14 @@ class Device(GenericDevice):
                                             timeout=timeout)
                 err = e.read().decode()
                 err = err[:-1] if err.endswith('\n')else err
+                if err != '':
+                    logger.error(f'Error {err} while running on {self.device} command {cmd}')
                 value = o.read().decode()
                 value = value[:-1] if value.endswith('\n') else value
-            except (paramiko.ssh_exception.SSHException, OSError):
+                value = None if value == '' else value
+                inst.close()
+            except (socket.gaierror, paramiko.ssh_exception.SSHException, OSError,
+                    socket.timeout, paramiko.ssh_exception.AuthenticationException) as e:
                 pass
             if value == '' and err != '':
                 logger.warning(f'Error running remote command {cmd} on {hostname}, returns : {err}')
@@ -552,9 +557,11 @@ class Device(GenericDevice):
             try:
                 inst.connect(hostname, port, username, password, timeout=timeout)
                 i, o, e = inst.exec_command(str(cmd), timeout=timeout)
+                inst.close()
                 err = e.read().decode()
                 value = o.read().decode()
-            except (paramiko.ssh_exception.SSHException, OSError):
+            except (socket.gaierror, paramiko.ssh_exception.SSHException, OSError,
+                    socket.timeout, paramiko.ssh_exception.AuthenticationException) as e:
                 pass
             if value == '' and err != '':
                 logger.warning(f'Error running remote command {cmd} on {hostname}, returns : {err}')
@@ -590,3 +597,82 @@ def query_apsupsd_status():
             output[key] = float(val)
 
     return output
+
+
+class Handler(GenericHandlerDevice):
+
+    def __init__(self, pyscada_device, variables):
+        super().__init__(pyscada_device, variables)
+        self._protocol = PROTOCOL_ID
+        self.driver_ok = driver_ok
+        self.shell = None
+
+    def connect(self):
+        super().connect()
+        try:
+            self.inst = paramiko.SSHClient()
+            self.inst.load_system_host_keys()
+            self.inst.set_missing_host_key_policy(paramiko.WarningPolicy())
+            self.inst.connect(self._device.systemstatdevice.host,
+                              self._device.systemstatdevice.port,
+                              self._device.systemstatdevice.username,
+                              self._device.systemstatdevice.password,
+                              timeout=self._device.systemstatdevice.timeout)
+            channel = self.inst.get_transport().open_session()
+            channel.get_pty()
+            self.shell = self.inst.invoke_shell()
+            sleep(1)
+            while self.shell.recv_ready():
+                self.shell.recv(1)
+            return True
+        except (socket.gaierror, paramiko.ssh_exception.SSHException, OSError,
+                socket.timeout, paramiko.ssh_exception.AuthenticationException) as e:
+            self._not_accessible_reason = e
+            self.inst = None
+            return False
+
+    def disconnect(self):
+        if self.inst is not None:
+            self.inst.close()
+            self.inst = None
+            return True
+        return False
+
+    def write_data(self, variable_id, value, task):
+        var = Variable.objects.get(id=variable_id)
+        cmd = var.systemstatvariable.parameter
+        if var.systemstatvariable.information == 21:
+            if var.device.systemstatdevice.system_type == 0:
+                os.popen('nohup sh ' + str(cmd) + ' &\n')
+            elif var.device.systemstatdevice.system_type == 1:
+                if self.connect():
+                    self.accessibility()
+                    try:
+                        result = ''
+                        self.shell.send('nohup sh ' + str(cmd) + ' &\n')
+                        sleep(self._device.systemstatdevice.timeout)
+                        while self.shell.recv_ready():
+                            try:
+                                result += self.shell.recv(1).decode()
+                            except UnicodeDecodeError:
+                                pass
+                        if result != '':
+                            logger.debug(f'Writing to variable {var} return {result}')
+                        error = ''
+                        while self.shell.recv_stderr_ready():
+                            try:
+                                error += self.shell.recv_stderr(1).decode()
+                            except UnicodeDecodeError:
+                                pass
+                        if error != '':
+                            logger.warning(f'Writing to variable {var} return error {error}')
+                    except (socket.gaierror, paramiko.ssh_exception.SSHException, OSError,
+                            socket.timeout, paramiko.ssh_exception.AuthenticationException) as e:
+                        self._not_accessible_reason = e
+                        self.inst = None
+                        self.accessibility()
+                self.disconnect()
+            return not value  # release the button
+        else:
+            logger.warning("Systemstat cannot write %s to variable id %s" % (value, variable_id))
+            return None  # return None to set the device write task as failed
