@@ -38,6 +38,15 @@ def _get_objects_for_html(list_to_append=None, obj=None, exclude_model_names=Non
                         list_to_append.update(field._get_objects_for_html(list_to_append))
                     else:
                         list_to_append.update(_get_objects_for_html(list_to_append, field))
+        # Related OneToOne
+        for field in obj._meta.related_objects:
+            if field.one_to_one and hasattr(obj, field.name) and field.name not in exclude_model_names and getattr(obj, field.name) not in list_to_append:
+                name = field.field.name
+                field = getattr(obj, field.name)
+                if hasattr(field, '_get_objects_for_html'):
+                    list_to_append.update(field._get_objects_for_html(list_to_append, exclude_model_names=[name]))
+                else:
+                    list_to_append.update(_get_objects_for_html(list_to_append, field, exclude_model_names=[name]))
 
     return list_to_append
 

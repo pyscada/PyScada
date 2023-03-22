@@ -615,18 +615,17 @@ var store_temp_ajax_data = null;
          break;
 
          case 2:
-             if (color_level_1_type == 0) {
-                 if (val <= color_level_1) {
-                     color = color_1;
-                 }else {
-                     color = color_2;
-                 }
-             }else if (color_level_1_type == 1) {
-                 if (val < color_level_1) {
-                     color = color_1;
-                 }else {
-                     color = color_2;
-                 }
+
+             if (color_level_1_type == 0 && val <= color_level_1) {
+                color = color_1;
+             }else if (color_level_1_type == 1 && val < color_level_1) {
+                color = color_1;
+             }else if (color_level_2_type == 0 && val <= color_level_2) {
+                color = color_2;
+             }else if (color_level_2_type == 1 && val < color_level_2) {
+                color = color_2;
+             }else {
+                color = color_3;
              }
              break;
 
@@ -1158,6 +1157,16 @@ function set_config_from_hidden_config(type,filter_data,val,get_data,value){
          }).done(data_handler_done).fail(data_handler_fail);
  }
 
+function pad(value) {
+    return value < 10 ? '0' + value : value;
+}
+function createOffset(date) {
+    var sign = (date.getTimezoneOffset() > 0) ? "-" : "+";
+    var offset = Math.abs(date.getTimezoneOffset());
+    var hours = pad(Math.floor(offset / 60));
+    var minutes = pad(offset % 60);
+    return sign + hours + ":" + minutes;
+}
 
  /**
   * Update DATA and Charts when initialization is done
@@ -1179,7 +1188,7 @@ function set_config_from_hidden_config(type,filter_data,val,get_data,value){
          SERVER_TIME = fetched_data['server_time'];
          delete fetched_data['server_time'];
          var date = new Date(SERVER_TIME);
-         $(".server_time").html(date.toLocaleString());
+         $(".server_time").html(date.toLocaleString() + " (" + createOffset(date) + " GMT)");
      }else{
          SERVER_TIME = 0;
      }

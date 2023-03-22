@@ -382,12 +382,11 @@ class DeviceAdmin(admin.ModelAdmin):
         inlines.append(cl)
 
     # List only activated protocols
-    protocol_list = []
+    protocol_list = list()
     protocol_list.append("generic")
     if hasattr(settings, 'INSTALLED_APPS'):
-        for app in settings.INSTALLED_APPS:
-            if 'pyscada' in app:
-                protocol_list.append(app.split(".")[1])
+        for protocol in DeviceProtocol.objects.filter(app_name__in=settings.INSTALLED_APPS):
+            protocol_list.append(protocol.protocol)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         # For new device, show all the protocols from the installed apps in settings.py

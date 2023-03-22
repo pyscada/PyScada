@@ -307,6 +307,22 @@ class ProcessFlowDiagramAdmin(admin.ModelAdmin):
     save_as_continue = True
 
 
+class ThemeAdmin(admin.ModelAdmin):
+    save_as = True
+    save_as_continue = True
+
+    def has_module_permission(self, request):
+        return False
+
+
+class CssClassAdmin(admin.ModelAdmin):
+    save_as = True
+    save_as_continue = True
+
+    def has_module_permission(self, request):
+        return False
+
+
 admin_site.register(ControlItem, ControlItemAdmin)
 admin_site.register(Chart, ChartAdmin)
 admin_site.register(Pie, PieAdmin)
@@ -322,5 +338,5 @@ admin_site.register(Widget, WidgetAdmin)
 admin_site.register(View, ViewAdmin)
 admin_site.register(ProcessFlowDiagram, ProcessFlowDiagramAdmin)
 admin_site.register(ProcessFlowDiagramItem, ProcessFlowDiagramItemAdmin)
-admin_site.register(Theme)
-#admin_site.register(CssClass)
+admin_site.register(Theme, ThemeAdmin)
+admin_site.register(CssClass, CssClassAdmin)
