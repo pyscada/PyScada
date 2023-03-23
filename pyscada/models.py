@@ -2121,8 +2121,8 @@ class RecordedData(models.Model):
             return None
 
     def save(self, *args, **kwargs):
-        if self.date is None:
-            self.date = now()
+        if self.date_saved is None:
+            self.date_saved = now()
         super(RecordedData, self).save(*args, **kwargs)
 
 
