@@ -22,7 +22,11 @@ import datetime
 import json
 import signal
 from monthdelta import monthdelta
-from os import kill, waitpid, WNOHANG
+from os import kill, waitpid
+import os
+if os.name != 'nt':
+    from os import WNOHANG
+
 from struct import *
 from os import getpid
 from dateutil import relativedelta
