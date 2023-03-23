@@ -1780,8 +1780,8 @@ class CalculatedVariable(models.Model):
 
 class DeviceWriteTask(models.Model):
     id = models.AutoField(primary_key=True)
-    variable = models.ForeignKey('Variable', blank=True, null=True, on_delete=models.SET_NULL)
-    variable_property = models.ForeignKey('VariableProperty', blank=True, null=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey(Variable, blank=True, null=True, on_delete=models.SET_NULL)
+    variable_property = models.ForeignKey(VariableProperty, blank=True, null=True, on_delete=models.SET_NULL)
     value = models.FloatField()
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     start = models.FloatField(default=0)  # TODO DateTimeField
@@ -1838,9 +1838,9 @@ class DeviceWriteTask(models.Model):
 
 class DeviceReadTask(models.Model):
     id = models.AutoField(primary_key=True)
-    device = models.ForeignKey('Device', blank=True, null=True, on_delete=models.SET_NULL)
-    variable = models.ForeignKey('Variable', blank=True, null=True, on_delete=models.SET_NULL)
-    variable_property = models.ForeignKey('VariableProperty', blank=True, null=True, on_delete=models.SET_NULL)
+    device = models.ForeignKey(Device, blank=True, null=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey(Variable, blank=True, null=True, on_delete=models.SET_NULL)
+    variable_property = models.ForeignKey(VariableProperty, blank=True, null=True, on_delete=models.SET_NULL)
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     start = models.FloatField(default=0)  # TODO DateTimeField
     finished = models.FloatField(default=0, blank=True)  # TODO DateTimeField
@@ -1913,7 +1913,7 @@ class RecordedDataOld(models.Model):
     value_int32 = models.IntegerField(null=True, blank=True)  # uint8, int16, uint16, int32
     value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64
     value_float64 = models.FloatField(null=True, blank=True)  # float64
-    variable = models.ForeignKey('Variable', null=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey(Variable, null=True, on_delete=models.SET_NULL)
     objects = RecordedDataValueManager()
 
     def __init__(self, *args, **kwargs):
@@ -2018,7 +2018,7 @@ class RecordedData(models.Model):
     value_int32 = models.IntegerField(null=True, blank=True)  # uint8, int16, uint16, int32
     value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64, int48
     value_float64 = models.FloatField(null=True, blank=True)  # float64, float48
-    variable = models.ForeignKey('Variable', null=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey(Variable, null=True, on_delete=models.SET_NULL)
     objects = RecordedDataValueManager()
 
     #
