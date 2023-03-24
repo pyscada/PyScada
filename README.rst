@@ -3,6 +3,21 @@ PyScada a open source SCADA system
 
 A Open Source SCADA System with HTML5 HMI, build using the Django framework. If you like to setup your own SCADA system head over to http://pyscada.rtfd.io.
 
+Planed Changes and ToDos for Version 0.8.0
+------------------------------------------
+
+This section describes the planed changes for the next major upgrade to PyScada and will be removed after the upgrade.
+
+- upgrade to Django 4.2 LTS
+        * deal with the app_label not defined error for pyscada/models.py
+- moving the plugins in separate repositories
+        * pyscada.modbus
+        * pyscada.visa
+        * pyscada.phant
+        * pyscada.onewire
+        * pyscada.systemstat
+- renaming name of the default branche to "main"
+
 Features
 --------
 
