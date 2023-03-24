@@ -44,25 +44,11 @@ Dependencies
 ------------
 
 - core/HMI
-	* python 2.7
-	* django==1.11
+	* python 3.5
+	* django==4.2
 	* numpy>=1.6.0
 	* pillow
 	* python-daemon
-- ModbusMaster
-	* pymodbus>=1.2
-- HDF5Export
-	* h5py>=2.1.1
-- SystemStatistics
-	* psutil
-- VISA
-	* PyVisa >= 1.8
-- BACNet/IP
-	* bacpypes
-- 1-Wire
-	* OWFS
-	* PyOWNet
-
 
 What is Working
 ---------------
