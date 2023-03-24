@@ -22,7 +22,7 @@ Features
 Structure
 ---------
 
-.. image:: https://github.com/trombastic/PyScada/raw/dev/0.7.x/docs/pic/PyScada_module_overview.png
+.. image:: https://github.com/pyscada/PyScada/raw/master/docs/pic/PyScada_module_overview.png
     :width: 600px
 
 Dependencies
@@ -86,8 +86,8 @@ Detailed installation instruction can be found at: http://pyscada.rtfd.io .
 Contribute
 ----------
 
- - Issue Tracker: https://github.com/trombastic/PyScada/issues
- - Source Code: https://github.com/trombastic/PyScada
+ - Issue Tracker: https://github.com/pyscada/PyScada/issues
+ - Source Code: https://github.com/pyscada/PyScada
 
 
 License
