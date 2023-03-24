@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import traceback
+
 import pyscada.hmi.models
 from pyscada.core import version as core_version
 from pyscada.models import RecordedData, VariableProperty, Variable, Device
@@ -505,6 +507,19 @@ def get_cache_data(request):
 
     if data is None:
         data = {}
+
+    # Add data for variable not logging to RecordedData model (as systemstat timestamps).
+    for v_id in active_variables:
+        if int(v_id) not in data:
+            try:
+                v = Variable.objects.get(id=v_id)
+                v.query_prev_value(timestamp_from/1000)
+                # add 5 seconds to let the request from the server to come
+                if v.timestamp_old is not None and v.timestamp_old <= timestamp_to + 5 and v.prev_value is not None:
+                    data[int(v_id)] = [[v.timestamp_old * 1000, v.prev_value]]
+            except:
+                #logger.warning(traceback.format_exc())
+                pass
 
     data['variable_properties'] = {}
     data['variable_properties_last_modified'] = {}

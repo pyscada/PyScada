@@ -269,9 +269,15 @@ class Scheduler(object):
         if not access(self.pid_file_name, F_OK):
             return None
 
-        with open(self.pid_file_name, 'r') as f:
-            pid = int(f.read().strip())
-        return pid
+        # try reading the pid during 5 seconds
+        for i in range(1, 6):
+            try:
+                with open(self.pid_file_name, 'r') as f:
+                    pid = int(f.read().strip())
+                return pid
+            except ValueError:
+                sleep(1)
+        return None
 
     def delete_pid(self, force_del=False):
         """
@@ -782,6 +788,11 @@ class Process(object):
                             raise ConnectionResetError
                     except ConnectionResetError:
                         sleep(dt)
+                    except OSError as e:
+                        logger.warning(e)
+                        sleep(dt)
+                    except Exception as e:
+                        logger.warning(e)
 
         except StopIteration:
             self.stop()
@@ -869,7 +880,7 @@ class Process(object):
                 except (ChannelFull, ConnectionRefusedError):
                     logger.info("Channel full : " + str(self.scheduler_pid) + '_ProcessAction_for_' + str(self.process_id))
                     pass
-                except RuntimeWarning:
+                except (RuntimeWarning, RuntimeError):
                     pass
 
     def stop(self, signum=None, frame=None):
@@ -1157,6 +1168,7 @@ class SingleDeviceDAQProcess(Process):
         self.dt_query_data = self.device.polling_interval
         try:
             self.device = self.device.get_device_instance()
+            logger.debug(f'Process {self.label} initialized for device {self.device.device} {self.device.variables}')
         except:
             var = traceback.format_exc()
             logger.error("Exception while initialisation of DAQ Process for Device %d %s %s" % (
@@ -1186,10 +1198,14 @@ class SingleDeviceDAQProcess(Process):
                 logger.info("DeviceWriteTask still not found")
         self.dwt_received = False
         for task in dwts:
-            if task.variable.scaling is not None:
+            if task.variable is not None and task.variable.scaling is not None:
                 task.value = task.variable.scaling.scale_output_value(task.value)
             if self.device is not None:
-                tmp_data = self.device.write_data(task.variable.id, task.value, task)
+                if task.variable is not None:
+                    var_id = task.variable.id
+                else:
+                    var_id = None
+                tmp_data = self.device.write_data(var_id, task.value, task)
                 if isinstance(tmp_data, list):
                     if len(tmp_data) > 0:
                         task.done = True
@@ -1309,9 +1325,13 @@ class MultiDeviceDAQProcess(Process):
                 if len(dwts) == 0:
                     logger.info("DeviceWriteTask still not found")
             for task in dwts:
-                if task.variable.scaling is not None:
+                if task.variable is not None and task.variable.scaling is not None:
                     task.value = task.variable.scaling.scale_output_value(task.value)
-                tmp_data = device.write_data(task.variable.id, task.value, task)
+                if task.variable is not None:
+                    var_id = task.variable.id
+                else:
+                    var_id = None
+                tmp_data = device.write_data(var_id, task.value, task)
                 if isinstance(tmp_data, list):
                     if len(tmp_data) > 0:
                         task.done = True

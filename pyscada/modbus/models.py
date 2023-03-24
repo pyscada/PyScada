@@ -55,7 +55,7 @@ class ModbusVariable(models.Model):
     protocol_id = PROTOCOL_ID
 
     def __str__(self):
-        return self.modbus_variable.short_name
+        return self.modbus_variable.name
 
 
 class ExtendedModbusDevice(Device):

@@ -26,9 +26,6 @@ class VISADeviceAdmin(DeviceAdmin):
     def resource_name(self, instance):
         return instance.visadevice.resource_name
 
-    def instrument_handler(self, instance):
-        return instance.visadevice.instrument_handler
-
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'protocol':
             kwargs['queryset'] = DeviceProtocol.objects.filter(pk=PROTOCOL_ID)

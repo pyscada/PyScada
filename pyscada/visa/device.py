@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import sys
+from pyscada.device import GenericDevice
+from .devices import GenericDevice as GenericHandlerDevice
 
 try:
     import pyvisa
-    driver_visa_ok = True
+    driver_ok = True
 except ImportError:
-    driver_visa_ok = False
+    driver_ok = False
 
 from time import time
 import logging
@@ -15,36 +16,28 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class Device:
+class Device(GenericDevice):
     def __init__(self, device):
-        self.variables = {}
-        self.device = device
-        if self.device.visadevice.instrument_handler is not None \
-                and self.device.visadevice.instrument_handler.handler_path is not None:
-            sys.path.append(self.device.visadevice.instrument_handler.handler_path)
-        try:
-            mod = __import__(self.device.visadevice.instrument_handler.handler_class, fromlist=['Handler'])
-            device_handler = getattr(mod, 'Handler')
-            self._h = device_handler(self.device, self.variables)
-            driver_handler_ok = True
-        except ImportError:
-            driver_handler_ok = False
-            logger.error("Handler import error : %s" % self.device.short_name)
+        self.driver_ok = driver_ok
+        self.handler_class = GenericHandlerDevice
+        super().__init__(device)
 
         for var in self.device.variable_set.filter(active=1):
             if not hasattr(var, 'visavariable'):
                 continue
             self.variables[var.pk] = var
 
-        if driver_visa_ok and driver_handler_ok:
+        if self.driver_ok and self.driver_handler_ok:
             self._h.connect()
+        else:
+            logger.warning(f'Cannot import visa or handler for {self.device}')
 
     def write_data(self, variable_id, value, task):
         """
         write value to the instrument/device
         """
         output = []
-        if not driver_visa_ok:
+        if not self.driver_ok:
             logger.info("Cannot import visa")
             return output
         for item in self.variables.values():
@@ -56,7 +49,7 @@ class Device:
             if read_value is not None and item.update_value(read_value, time()):
                 output.append(item.create_recorded_data_element())
             else:
-                logger.info("Visa-Output not ok : %s" % output)
+                logger.info(f"Visa-Output not ok : {output}")
         return output
 
     def request_data(self):
@@ -64,25 +57,9 @@ class Device:
         request data from the instrument/device
         """
         output = []
-        if not driver_visa_ok:
+        if not self.driver_ok:
             logger.info('Cannot import visa')
             return output
 
-        self._h.before_read()
-        for item in self.variables.values():
-            if not item.visavariable.variable_type == 1:
-                # skip all config values
-                continue
-
-            value, time = self._h.read_data_and_time(item)
-
-            if value is not None and item.update_value(value, time):
-                output.append(item.create_recorded_data_element())
-        self._h.after_read()
+        output = super().request_data()
         return output
-
-    def get_handler_instance(self):
-        try:
-            return self._h
-        except AttributeError:
-            return None

@@ -99,6 +99,17 @@ class WidgetContentModel(models.Model):
         wc.content_str = self.__str__()
         wc.save()
 
+    def get_widget_content_entry(self):
+        def fullname(o):
+            return o.__module__ + "." + o.__class__.__name__
+        try:
+            return WidgetContent.objects.get(content_pk=self.pk,
+                          content_model=fullname(self),
+                          content_str=self.__str__())
+        except WidgetContent.DoesNotExist:
+            logger.warning(f'Widget content not found for {self}')
+            return None
+
     def delete_duplicates(self):
         for i in WidgetContent.objects.all():
             c = WidgetContent.objects.filter(content_pk=i.content_pk, content_model=i.content_model).count()
@@ -189,9 +200,12 @@ class DisplayValueOption(models.Model):
 
     timestamp_conversion_choices = (
         (0, 'None'),
-        (1, 'Timestamp to local date'),
-        (2, 'Timestamp to local time'),
-        (3, 'Timestamp to local date and time'),)
+        (1, 'Timestamp in milliseconds to local date'),
+        (2, 'Timestamp in milliseconds to local time'),
+        (3, 'Timestamp in milliseconds to local date and time'),
+        (4, 'Timestamp in seconds to local date'),
+        (5, 'Timestamp in seconds to local time'),
+        (6, 'Timestamp in seconds to local date and time'),)
     timestamp_conversion = models.PositiveSmallIntegerField(default=0,
                                                             choices=timestamp_conversion_choices)
 
@@ -344,6 +358,10 @@ class ControlItem(models.Model):
             return self.variable_property.dictionary
         elif self.variable:
             return self.variable.dictionary
+
+    def _get_objects_for_html(self, list_to_append=None, obj=None, exclude_model_names=None):
+        list_to_append = get_objects_for_html(list_to_append, self, exclude_model_names)
+        return list_to_append
 
 
 class Chart(WidgetContentModel):
@@ -527,7 +545,10 @@ class ControlPanel(WidgetContentModel):
         opts["object_config_list"] = set()
         opts["object_config_list"].update(self._get_objects_for_html())
         opts["custom_fields_list"] = {'variable': [{'name': 'refresh-requested-timestamp', 'value': ""},
-                                                   {'name': 'value-timestamp', 'value': ''}, ]}
+                                                   {'name': 'value-timestamp', 'value': ''}, ],
+                                      'variableproperty': [{'name': 'refresh-requested-timestamp', 'value': ""},
+                                                           {'name': 'value-timestamp', 'value': ''}, ],
+                                      }
         return main_content, sidebar_content, opts
 
 
@@ -671,6 +692,9 @@ class CssClass(models.Model):
 
     def __str__(self):
         return self.title
+
+    class Meta:
+        verbose_name_plural = 'Css Classes'
 
 
 class Widget(models.Model):

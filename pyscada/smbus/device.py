@@ -1,36 +1,30 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-try:
-    import smbus
-    driver_ok = True
-except ImportError:
-    smbus = None
-    driver_ok = False
-import sys
+from pyscada.device import GenericDevice
+from .devices import GenericDevice as GenericHandlerDevice
+
 from time import time
 import logging
 
 logger = logging.getLogger(__name__)
 
+try:
+    import smbus
+    driver_ok = True
+except ImportError:
+    smbus = None
+    logger.info('Cannot import smbus')
+    driver_ok = False
 
-class Device:
+
+class Device(GenericDevice):
     def __init__(self, device):
-        self.variables = {}
-        self.device = device
-        if self.device.smbusdevice.instrument_handler is not None \
-                and self.device.smbusdevice.instrument_handler.handler_path is not None:
-            sys.path.append(self.device.smbusdevice.instrument_handler.handler_path)
-        try:
-            mod = __import__(self.device.smbusdevice.instrument_handler.handler_class, fromlist=['Handler'])
-            device_handler = getattr(mod, 'Handler')
-            self._h = device_handler(self.device, self.variables)
-            self.driver_handler_ok = True
-        except (ImportError, AttributeError):
-            self.driver_handler_ok = False
-            logger.error("Handler import error : %s" % self.device.short_name)
+        self.driver_ok = driver_ok
+        self.handler_class = GenericHandlerDevice
+        super().__init__(device)
 
-        for var in device.variable_set.filter(active=1):
+        for var in self.device.variable_set.filter(active=1):
             if not hasattr(var, 'smbusvariable'):
                 continue
             self.variables[var.pk] = var
@@ -40,7 +34,7 @@ class Device:
         write value to the instrument/device
         """
         output = []
-        if not driver_ok:
+        if not self.driver_ok:
             logger.info("Cannot import smbus")
             return output
 
@@ -49,43 +43,7 @@ class Device:
         if self._h.inst is None:
             return output
 
-        for item in self.variables.values():
-            if item.id != variable_id:
-                continue
-            # read_value = self._h.write_data(item.smbusvariable.device_property, value)
-            read_value = self._h.write_data(variable_id, value, task)
-            if read_value is not None and item.update_value(read_value, time()):
-                output.append(item.create_recorded_data_element())
-            else:
-                logger.info("SMBus write data - Output not ok : %s" % output)
-
-        self._h.disconnect()
-
-        return output
-
-    def request_data(self):
-        """
-
-        """
-        output = []
-
-        if not driver_ok or not self.driver_handler_ok:
-            logger.info("Cannot import smbus or handler")
-            return output
-
-        self._h.connect()
-
-        if self._h.inst is None:
-            return output
-
-        self._h.before_read()
-        for item in self.variables.values():
-
-            value, time = self._h.read_data_and_time(item)
-
-            if value is not None and item.update_value(value, time):
-                output.append(item.create_recorded_data_element())
-        self._h.after_read()
+        output = super().write_data(variable_id, value, task)
 
         self._h.disconnect()
 

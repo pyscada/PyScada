@@ -287,6 +287,7 @@ class VariableStateAdmin(admin.ModelAdmin):
         )
 
     def last_value(self, instance):
+        """
         element = RecordedData.objects.last_element(variable_id=instance.pk)
         if element:
             return datetime.datetime.fromtimestamp(
@@ -294,6 +295,16 @@ class VariableStateAdmin(admin.ModelAdmin):
                    + ' : ' + element.value().__str__() + ' ' + instance.unit.unit
         else:
             return ' - : NaN ' + instance.unit.unit
+        """
+
+        try:
+            v = Variable.objects.get(id=instance.pk)
+            if v.query_prev_value(0):
+                return datetime.datetime.fromtimestamp(v.timestamp_old).strftime('%Y-%m-%d %H:%M:%S') \
+                       + ' : ' + v.prev_value.__str__() + ' ' + instance.unit.unit
+        except Variable.DoesNotExist:
+            pass
+        return ' - : NaN ' + instance.unit.unit
 
     def get_queryset(self, request):
         """Limit Pages to those that belong to the request's user."""
@@ -345,8 +356,8 @@ class DeviceForm(forms.ModelForm):
 
 
 class DeviceAdmin(admin.ModelAdmin):
-    list_display = ('id', 'short_name', 'description', 'protocol', 'active', 'polling_interval',)
-    list_editable = ('active', 'polling_interval',)
+    list_display = ('id', 'short_name', 'description', 'protocol', 'active', 'polling_interval', 'instrument_handler')
+    list_editable = ('active', 'polling_interval', 'instrument_handler')
     list_display_links = ('short_name', 'description',)
     list_filter = ('protocol', 'active', 'polling_interval',)
     actions = [silent_delete]
@@ -371,12 +382,11 @@ class DeviceAdmin(admin.ModelAdmin):
         inlines.append(cl)
 
     # List only activated protocols
-    protocol_list = []
+    protocol_list = list()
     protocol_list.append("generic")
     if hasattr(settings, 'INSTALLED_APPS'):
-        for app in settings.INSTALLED_APPS:
-            if 'pyscada' in app:
-                protocol_list.append(app.split(".")[1])
+        for protocol in DeviceProtocol.objects.filter(app_name__in=settings.INSTALLED_APPS):
+            protocol_list.append(protocol.protocol)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         # For new device, show all the protocols from the installed apps in settings.py
@@ -388,13 +398,14 @@ class DeviceAdmin(admin.ModelAdmin):
                 kwargs["queryset"] = DeviceProtocol.objects.filter(protocol__in=self.protocol_list)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
-    # Add JS file to display the right inline
+    # Add JS file to display the right inline and to hide/show fields
     class Media:
         js = (
             # To be sure the jquery files are loaded before our js file
             'admin/js/vendor/jquery/jquery.min.js',
             'admin/js/jquery.init.js',
             'pyscada/js/admin/display_inline_protocols_device.js',
+            'pyscada/js/admin/hideshow.js',
         )
 
 

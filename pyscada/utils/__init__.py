@@ -14,29 +14,39 @@ logger = logging.getLogger(__name__)
 
 
 def _get_objects_for_html(list_to_append=None, obj=None, exclude_model_names=None):
-    if exclude_model_names is None:
-        exclude_model_names = list()
-    if list_to_append is None:
-        list_to_append = set()
+    if obj is not None:
+        if exclude_model_names is None:
+            exclude_model_names = list()
+        if list_to_append is None:
+            list_to_append = set()
 
-    if obj not in list_to_append:
-        list_to_append.update([obj])
-    # ForeignKey and OneToOne
-    for field in obj._meta.local_fields:
-        if (type(field).many_to_one or type(field).one_to_one) and getattr(obj, field.name) is not None and \
-                field.name not in exclude_model_names:
-            if hasattr(field, '_get_objects_for_html'):
-                list_to_append.update(field._get_objects_for_html(list_to_append))
-            else:
-                list_to_append.update(_get_objects_for_html(list_to_append, getattr(obj, field.name)))
-    # ManyToMany
-    for fields in obj._meta.local_many_to_many:
-        for field in getattr(obj, fields.name).all():
-            if field not in exclude_model_names:
-                if hasattr(field, '_get_objects_for_html'):
-                    list_to_append.update(field._get_objects_for_html(list_to_append))
+        if obj not in list_to_append:
+            list_to_append.update([obj])
+        # ForeignKey and OneToOne
+        for field in obj._meta.local_fields:
+            if (type(field).many_to_one or type(field).one_to_one) and getattr(obj, field.name) is not None and \
+                    field.name not in exclude_model_names:
+                if hasattr(field.related_model, '_get_objects_for_html'):
+                    list_to_append.update(getattr(obj, field.name)._get_objects_for_html(list_to_append))
                 else:
-                    list_to_append.update(_get_objects_for_html(list_to_append, field))
+                    list_to_append.update(_get_objects_for_html(list_to_append, getattr(obj, field.name)))
+        # ManyToMany
+        for fields in obj._meta.local_many_to_many:
+            for field in getattr(obj, fields.name).all():
+                if field not in exclude_model_names:
+                    if hasattr(field, '_get_objects_for_html'):
+                        list_to_append.update(field._get_objects_for_html(list_to_append))
+                    else:
+                        list_to_append.update(_get_objects_for_html(list_to_append, field))
+        # Related OneToOne
+        for field in obj._meta.related_objects:
+            if field.one_to_one and hasattr(obj, field.name) and field.name not in exclude_model_names and getattr(obj, field.name) not in list_to_append:
+                name = field.field.name
+                field = getattr(obj, field.name)
+                if hasattr(field, '_get_objects_for_html'):
+                    list_to_append.update(field._get_objects_for_html(list_to_append, exclude_model_names=[name]))
+                else:
+                    list_to_append.update(_get_objects_for_html(list_to_append, field, exclude_model_names=[name]))
 
     return list_to_append
 

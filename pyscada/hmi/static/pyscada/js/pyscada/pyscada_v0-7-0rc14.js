@@ -1,6 +1,6 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.7.1rc3
+version 0.7.1rc5
 
 Copyright (c) 2013-2019 Martin Schröder, Camille Lavayssière
 Licensed under the GPL.
@@ -21,7 +21,7 @@ Licensed under the GPL.
  * Script's version
  * @type {string}
  */
- var version = "0.7.1rc3";
+ var version = "0.7.1rc5";
 
  /**
   * Date format : day/month/year hours:minutes:seconds
@@ -460,15 +460,24 @@ var store_temp_ajax_data = null;
   * @returns {string} Return a date
   */
  function timestamp_conversion(id,val){
-     if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 1){
-         // convert timestamp to local date
+     if (id == 1){
+         // convert millisecond timestamp to local date
          val = new Date(val).toDateString();
-     }else if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 2){
-         // convert timestamp to local time
+     }else if (id == 2){
+         // convert millisecond timestamp to local time
          val = new Date(val).toTimeString();
-     }else if ($(".variable-config[data-timestamp-conversion][data-id=" + id + "]").attr('data-timestamp-conversion') == 3){
-         // convert timestamp to local date and time
+     }else if (id == 3){
+         // convert millisecond timestamp to local date and time
          val = new Date(val).toUTCString();
+     }else if (id == 4){
+         // convert second timestamp to local date
+         val = new Date(val * 1000).toDateString();
+     }else if (id == 5){
+         // convert second timestamp to local time
+         val = new Date(val * 1000).toTimeString();
+     }else if (id == 6){
+         // convert second timestamp to local date and time
+         val = new Date(val * 1000).toUTCString();
      }
      return val;
  }
@@ -506,14 +515,13 @@ var store_temp_ajax_data = null;
   * @returns {*} Returns data type of 'val' in the data dictionnary
   */
  function dictionary(id,val){
-     if ($(".variable-config[data-dictionary][data-id=" + id + "]").attr('data-dictionary')){
-         // apply dictionary
-         t = JSON.parse($(".variable-config[data-dictionary][data-id=" + id + "]").attr('data-dictionary'));
-         if (val in t) {
-             val = t[val];
-         }else if (parseFloat(val).toFixed(1) in t) {
-             //int stored as a float
-             val = t[parseFloat(val).toFixed(1)];
+     var dict = get_config_from_hidden_config("variable", 'id', id, 'dictionary');
+     if (typeof dict != 'undefined'){
+         l = get_config_from_hidden_configs("dictionaryitem", 'id', 'dictionary')
+         for (item in l){
+             if (l[item] == dict && (get_config_from_hidden_config("dictionaryitem", 'id', item, 'value') == val || get_config_from_hidden_config("dictionaryitem", 'id', item, 'value') == parseFloat(val).toFixed(1))) { // last check : int stored as a float
+                 val = get_config_from_hidden_config("dictionaryitem", 'id', item, 'label');
+             }
          }
      }
      return val;
@@ -522,28 +530,69 @@ var store_temp_ajax_data = null;
 
  /**
   * Return id's variable's color
-  * @param {number} id Variable id
+  * @param {number} id Control item id
   * @param {boolean} val
-  * @returns {jQuery}
+  * @returns {string} Return the hex color
   */
  function update_data_colors(id,val){
-     // variable colors
-     color_type = $(".variable-config[data-color-type][data-id=" + id + "]").attr('data-color-type');
-     color_mode = $(".variable-config[data-color-mode][data-id=" + id + "]").attr('data-color-mode');
-     color_level_1_type = $(".variable-config[data-level-1-type][data-id=" + id + "]").attr('data-level-1-type');
-     color_level_2_type = $(".variable-config[data-level-2-type][data-id=" + id + "]").attr('data-level-2-type');
-     color_level_1 = $(".variable-config[data-level-1][data-id=" + id + "]").attr('data-level-1');
-     color_level_2 = $(".variable-config[data-level-2][data-id=" + id + "]").attr('data-level-2');
-     color_1 = $(".variable-config[data-color-1][data-id=" + id + "]").attr('data-color-1');
-     color_2 = $(".variable-config[data-color-2][data-id=" + id + "]").attr('data-color-2');
-     color_3 = $(".variable-config[data-color-3][data-id=" + id + "]").attr('data-color-3');
+     if (typeof id == 'undefined' || id.split("-").length < 2) {return;}
+     id = id.split("-")[1]
 
-     if ($(".variable-config[data-value-class][data-id=" + id + "]").attr('data-value-class') == 'BOOLEAN') {
+     function componentToHex(c) {
+         var hex = c.toString(16);
+         return hex.length == 1 ? "0" + hex : hex;
+     }
+
+     function rgbToHex(rgb) {
+         if (typeof rgb != "object" || rgb.constructor != Array || rgb.length != 3) {console.log(typeof rgb, rgb.constructor, rgb.length, rgb);return;}
+         r = rgb[0]
+         g = rgb[1]
+         b = rgb[2]
+         return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+     }
+
+     function colorToRgb(color_id) {
+        if (color_id == -1) {return [92, 200, 92];}
+        else if (color_id == 0) {return [250, 250, 250];}
+        var r = get_config_from_hidden_config("color", 'id', color_id, 'r');
+        var g = get_config_from_hidden_config("color", 'id', color_id, 'g');
+        var b = get_config_from_hidden_config("color", 'id', color_id, 'b');
+        return [parseInt(r), parseInt(g), parseInt(b)]
+     }
+
+     var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', id, 'display-value-options');
+     // variable colors
+     var color_type = Number(get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-type'));
+     var color_mode = get_config_from_hidden_config("displayvalueoption", 'id', id, 'mode');
+     var color_level_1_type = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-level-1-type');
+     var color_level_2_type = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-level-2-type');
+     var color_level_1 = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-level-1');
+     var color_level_2 = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-level-2');
+     var color_1 = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-1');
+     var color_2 = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-2');
+     var color_3 = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-3');
+
+     var type = null;
+     var v_id = null;
+     if (get_config_from_hidden_config("controlitem", 'id', id, 'variable') != null) {
+        type = "variable";
+        v_id = get_config_from_hidden_config("controlitem", 'id', id, 'variable');
+     }else if (get_config_from_hidden_config("controlitem", 'id', id, 'variable-property') != null) {
+        type = "variableproperty";
+        v_id = get_config_from_hidden_config("controlitem", 'id', id, 'variable-property');
+     }
+
+     if (get_config_from_hidden_config(type, 'id', v_id, 'value-class') == 'BOOLEAN') {
          color_type = 1;
          color_level_1 = 1;
          color_level_1_type = 1;
          if (val == false) { val = 0 ;} else if ( val == true ) { val = 1 ;}
+         if (color_1 == null) {color_1 = 0};
+         if (color_2 == null) {color_2 = -1};
      }
+
+
+     if (typeof color_1 == 'undefined') {return;}
 
      var color = null;
 
@@ -566,18 +615,17 @@ var store_temp_ajax_data = null;
          break;
 
          case 2:
-             if (color_level_1_type == 0) {
-                 if (val <= color_level_1) {
-                     color = color_1;
-                 }else {
-                     color = color_2;
-                 }
-             }else if (color_level_1_type == 1) {
-                 if (val < color_level_1) {
-                     color = color_1;
-                 }else {
-                     color = color_2;
-                 }
+
+             if (color_level_1_type == 0 && val <= color_level_1) {
+                color = color_1;
+             }else if (color_level_1_type == 1 && val < color_level_1) {
+                color = color_1;
+             }else if (color_level_2_type == 0 && val <= color_level_2) {
+                color = color_2;
+             }else if (color_level_2_type == 1 && val < color_level_2) {
+                color = color_2;
+             }else {
+                color = color_3;
              }
              break;
 
@@ -613,8 +661,7 @@ var store_temp_ajax_data = null;
              break;
      }
 
-     //console.log(id + " " + color_mode + " " + color_type + " " + color);
-     return color;
+     return rgbToHex(colorToRgb(color));
  }
 
 
@@ -631,28 +678,43 @@ var store_temp_ajax_data = null;
  function update_data_values(key,val,time){
 
      // CHECKING 'key' TYPE :
-     if (key.split("-")[0] == "var") {type="variable";} else {type="variable_property";}
+     if (key.split("-")[0] == "var") {var type="variable";} else {var type="variableproperty";}
 
-     //var unit = $(".variable-config[data-unit][data-key=" + key.split("-")[1] + "]").attr('data-unit')
-     var unit_id = get_config_from_hidden_config('variable','id',key.split("-")[1],'unit')
+     // get the unit
+     var unit_id = get_config_from_hidden_config(type,'id',key.split("-")[1],'unit')
      var unit = get_config_from_hidden_config('unit','id',unit_id,'unit')
+     if (typeof unit == 'undefined') { unit = '' };
+
+     // get the device polling interval
+     if (type == "variable") {
+        var var_id = key.split("-")[1];
+     }else {
+        var var_id = get_config_from_hidden_config(type, 'id', key.split("-")[1], 'variable')
+     }
+     var device_id = get_config_from_hidden_config("variable", 'id', var_id, 'device')
+     var device_polling_interval = get_config_from_hidden_config("device", 'id', device_id, 'polling-interval')
 
      // TIME UPDATE :
      if (time != null) {
-         t_last_update = SERVER_TIME - time;
-         t_next_update = 1000 * $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-device-polling_interval') - t_last_update;
-         t_next_update_string = ((t_next_update < 1000) ? '< 1 sec' : msToTime(t_next_update));
+         var t_last_update = SERVER_TIME - time;
+         //t_next_update = 1000 * $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-device-polling_interval') - t_last_update;
+         var t_next_update = 1000 * device_polling_interval - t_last_update;
+         var t_next_update_string = ((t_next_update < 1000) ? '< 1 sec' : msToTime(t_next_update));
 
-         $(".type-numeric." + key).attr('data-original-title','Current value: ' + val + ' ' + unit + '<br>Last update: ' + msToTime(t_last_update) + ' ago<br>Next update: ' + t_next_update_string);
-         $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-value-timestamp',time);
-         $(".variable-config2[data-value-timestamp][data-id=" + key.split("-")[1] + "]").attr('data-value-timestamp',time);
+         //$(".type-numeric." + key).attr('data-original-title','Current value: ' + val + ' ' + unit + '<br>Last update: ' + msToTime(t_last_update) + ' ago<br>Next update: ' + t_next_update_string);
+         document.querySelectorAll(".type-numeric." + key).forEach(function(e) {
+            e.setAttribute('data-original-title','Current value: ' + val + ' ' + unit + '<br>Last update: ' + msToTime(t_last_update) + ' ago<br>Next update: ' + t_next_update_string);
+         });
+         //$(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-value-timestamp',time);
+         set_config_from_hidden_config(type, 'id', key.split("-")[1], 'value-timestamp', time)
+         //$(".variable-config2[data-value-timestamp][data-id=" + key.split("-")[1] + "]").attr('data-value-timestamp',time);
 
-         polling_interval = $(".variable-config[data-device-polling_interval][data-key=" + key.split("-")[1] + "]").attr('data-device-polling_interval');
-
-         if (time < SERVER_TIME - 10 * Math.max(1000 * polling_interval, REFRESH_RATE)) {
+         // Show and hide warning or alert icons left the the variable name when data is old in comparison of the device polling interval
+         //polling_interval = $(".variable-config[data-device-polling_interval][data-key=" + key.split("-")[1] + "]").attr('data-device-polling_interval');
+         if (time < SERVER_TIME - 10 * Math.max(1000 * device_polling_interval, REFRESH_RATE)) {
              $(".type-numeric." + key).parent().find('.glyphicon-alert').removeClass("hidden");
              $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').addClass("hidden");
-         }else if (time < SERVER_TIME - 3 * Math.max(1000 * polling_interval, REFRESH_RATE)) {
+         }else if (time < SERVER_TIME - 3 * Math.max(1000 * device_polling_interval, REFRESH_RATE)) {
              $(".type-numeric." + key).parent().find('.glyphicon-alert').addClass("hidden");
              $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').removeClass("hidden");
          }else {
@@ -661,14 +723,16 @@ var store_temp_ajax_data = null;
          }
      }
 
-     if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp') != "" && time != null && time <= $(".variable-config[data-refresh-requested-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp')) {
+     //if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp') != "" && time != null && time <= $(".variable-config[data-refresh-requested-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp')) {
+     // Quit if the value is not newer than the last read request
+     var refresh_requested_timestamp = get_config_from_hidden_config(type, 'id', key.split("-")[1], 'refresh-requested-timestamp');
+     if (refresh_requested_timestamp != null && time != null && time <= refresh_requested_timestamp) {
          return;
      }
 
 
      // TYPE OF 'val' :
      // NUMBER :
-
      if (typeof(val)==="number"){
 
          var r_val = Number(val);
@@ -691,21 +755,34 @@ var store_temp_ajax_data = null;
          }
 
          // colors
-         for (i = 0; i < $(".control-item.type-numeric." + key).length; ++i) {
-             color_mode = $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode');
+         document.querySelectorAll(".control-item.type-numeric." + key).forEach(function(e) {
+             var control_item_id = e.id;
+             var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'display-value-options');
+             //var color_mode = $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode');
+             var color_mode = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'mode');
+             var color_type = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color_type');
+             var timestamp_conversion_value = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'timestamp-conversion');
+             var dictionary_value = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'dictionary');
+             var var_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'variable');
+             var dictionary_value = get_config_from_hidden_config("variable", 'id', var_id, 'dictionary');
              if (color_mode != 1 ) {
-                 r_val_temp = r_val;
-                 if (typeof $(".variable-config[data-timestamp-conversion][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-timestamp-conversion') != 'undefined' && $(".variable-config[data-timestamp-conversion][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-timestamp-conversion') != 0){
-                     r_val_temp=timestamp_conversion($(".control-item.type-numeric." + key)[i].id,val);
-                 }else if (typeof $(".variable-config[data-dictionary][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-dictionary') != 'undefined' && $(".variable-config[data-dictionary][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-dictionary') != 0){
-                     r_val_temp=dictionary($(".control-item.type-numeric." + key)[i].id,val);
+                 var r_val_temp = r_val;
+                 if (timestamp_conversion_value != null && timestamp_conversion_value != 0){
+                     // Transform timestamps
+                     r_val_temp=timestamp_conversion(timestamp_conversion_value,val);
+                 }else if (dictionary_value != null && dictionary_value != 0){
+                     // Transform value in dictionaries
+                     r_val_temp=dictionary(var_id,val);
                  }
-                 $("#" + $(".control-item.type-numeric." + key)[i].id).html(r_val_temp + " " + $(".variable-config[data-unit][data-key=" + key.split("-")[1] + "]").attr('data-unit'));
+                 // Set the text value
+                 document.querySelector("#" + control_item_id).innerHTML = r_val_temp + " " + unit;
              }
-             if ($(".variable-config[data-color-type][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-type') != 0 && $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode') != 0){
-                 $($(".control-item.type-numeric." + key)[i]).css("background-color", update_data_colors($(".control-item.type-numeric." + key)[i].id,val));
+             if (color_type != 0 && color_mode != 0){
+                 // Change background color
+                 e.style.backgroundColor = update_data_colors(control_item_id,val);
              }
-         }
+         })
+
          // timestamps
          if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && time < DATA_DISPLAY_FROM_TIMESTAMP) {
          }else if (DATA_DISPLAY_TO_TIMESTAMP > 0 && time > DATA_DISPLAY_TO_TIMESTAMP) {
@@ -789,24 +866,25 @@ var store_temp_ajax_data = null;
 
          // colors
          for (i = 0; i < $(".control-item.type-numeric." + key).length; ++i) {
-
-             color_mode = $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode');
-
+             var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', i, 'display-value-options');
+             //var color_mode = $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode');
+             var color_mode = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'mode');
+             var color_type = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color_type');
+             var dictionary_value = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'dictionary');
+             var var_id = get_config_from_hidden_config("controlitem", 'id', i, 'variable');
+             var dictionary_value = get_config_from_hidden_config("variable", 'id', var_id, 'dictionary');
              if (color_mode != 1 ) {
-
-                 r_val_temp = val;
-
-                 if (typeof($(".variable-config[data-timestamp-conversion][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-timestamp-conversion')) != 'undefined' && $(".variable-config[data-timestamp-conversion][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-timestamp-conversion') != 0){
-                     r_val_temp=timestamp_conversion($(".control-item.type-numeric." + key)[i].id,val);
-                 }else if (typeof($(".variable-config[data-dictionary][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-dictionary')) == 'string' && $(".variable-config[data-dictionary][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-dictionary') != ""){
+                 var r_val_temp = r_val;
+                 if (dictionary_value != null && dictionary_value != 0){
+                     // Transform value in dictionaries
                      r_val_temp=dictionary($(".control-item.type-numeric." + key)[i].id,val);
                  }
-
+                 // Set the text value
                  $("#" + $(".control-item.type-numeric." + key)[i].id).html(r_val_temp);
-
              }
-             if ($(".variable-config[data-color-type][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-type') != 0 && $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode') != 0){
-                 $("#" + $(".control-item.type-numeric." + key)[i].id).css("background-color", update_data_colors($(".control-item.type-numeric." + key)[i].id,val));
+             if (color_type != 0 && color_mode != 0){
+                 // Change background color
+                 $($(".control-item.type-numeric." + key)[i]).css("background-color", update_data_colors($(".control-item.type-numeric." + key)[i].id,val));
              }
          }
      }
@@ -821,9 +899,7 @@ var store_temp_ajax_data = null;
 
      // STRING :
      if (typeof(val)==="string"){
-
          $(".type-numeric." + key).html(val);
-
          // indicative text
          if ($('input.'+ key).attr("placeholder") == "") {
              $('input.'+ key).attr("placeholder",val);
@@ -846,7 +922,7 @@ function get_config_from_hidden_configs(type,filter_data='id',get_data='id'){
     if (typeof(type)!== 'string' || typeof(filter_data) !== 'string' || typeof(get_data) !== 'string' || filter_data === '' || get_data === '' || type === '') {
       return result;
     };
-    var query = document.querySelectorAll("." + type + "-config2")
+    var query = document.querySelectorAll("." + type + "-config2");
     query.forEach(item => {
         //var id = item.dataset.id;
         var id = item.getAttribute("data-" + filter_data);
@@ -868,8 +944,22 @@ function get_config_from_hidden_configs(type,filter_data='id',get_data='id'){
 - @returns {Array<object>} value found
 */
 function get_config_from_hidden_config(type,filter_data,val,get_data){
-    var r = get_config_from_hidden_configs(type,filter_data,get_data)
+    var r = get_config_from_hidden_configs(type,filter_data,get_data);
     if (val in r) {return r[val];}
+}
+
+/**
+- Set a config from ONE hidden config div
+- @param {string} type Name of the model
+- @param {string} filter_data name of the data config to filter by
+- @param {string} val value of the data config to filter by
+- @param {string} get_data name of the data config wanted
+- @param {string} value set get_data filed to this
+*/
+function set_config_from_hidden_config(type,filter_data,val,get_data,value){
+    document.querySelectorAll("." + type + "-config2[data-" + filter_data + "='" + val + "']").forEach(function(e) {
+    e.setAttribute("data-" + get_data, value);
+    })
 }
 
 
@@ -884,6 +974,23 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
      }
  }
 
+ function add_key_to_chart_vars(key, var_count, vars, device_pulling_interval_sum, timestamp, var_count_poll) {
+    if(key in CHART_VARIABLE_KEYS && CHART_VARIABLE_KEYS[key]<=DATA_INIT_STATUS){
+         CHART_VARIABLE_KEYS[key]++;
+         var_count++;
+         INIT_CHART_VARIABLES_COUNT++;
+         vars.push(key);
+         dpi = get_config_from_hidden_config('device','id',get_config_from_hidden_config('variable','id',key,'device') ,'polling-interval');
+         if (! isNaN(dpi)) {device_pulling_interval_sum += parseFloat(dpi);var_count_poll++;}else {console.log("ConfigV2 not found for var " + key);};
+         if (typeof(DATA[key]) == 'object'){
+             timestamp = Math.max(timestamp,DATA[key][0][0]);
+         }else{
+            // if a key doesn't exist in DATA timestamp to is set to now
+            timestamp = SERVER_TIME;
+         }
+    }
+    return [key, var_count, vars, device_pulling_interval_sum, timestamp, var_count_poll];
+ }
 
  /**
   * Update periodically the DATA, by requesting the server
@@ -937,23 +1044,24 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
                          var timestamp = DATA_FROM_TIMESTAMP;
                      }
 
+                     var page = document.querySelector('#content .sub-page:not([style*="display:none"]):not([style*="display: none"])');
+                     var visible_hidden_config = page != null ? page.querySelectorAll('.hidden.variable-config') : [];
+                     var visible_vars = [];
+                     for (let vhc of visible_hidden_config.keys()) {
+                         visible_vars.push(visible_hidden_config[vhc].dataset['key']);
+                     }
 
-                     for (var key in CHART_VARIABLE_KEYS){
-                        if(CHART_VARIABLE_KEYS[key]<=DATA_INIT_STATUS){
-                             CHART_VARIABLE_KEYS[key]++;
-                             var_count++;
-                             INIT_CHART_VARIABLES_COUNT++;
-                             vars.push(key);
-                             dpi = get_config_from_hidden_config('device','id',get_config_from_hidden_config('variable','id',key,'device') ,'polling-interval');
-                             if (! isNaN(dpi)) {device_pulling_interval_sum += parseFloat(dpi);var_count_poll++;}else {console.log("ConfigV2 not found for var " + key);};
-                             if (typeof(DATA[key]) == 'object'){
-                                 timestamp = Math.max(timestamp,DATA[key][0][0]);
-                             }else{
-                                // if a key doesn't exist in DATA timestamp to is set to now
-                                timestamp = SERVER_TIME;
-                             }
-                             if(var_count >= 10){break;}
-                        }
+                     // First iterate on visible variables
+                     for (var key in visible_vars){
+                        key = visible_vars[key];
+                        if(var_count >= 10){break;}
+                        [key, var_count, vars, device_pulling_interval_sum, timestamp, var_count_poll] = add_key_to_chart_vars(key, var_count, vars, device_pulling_interval_sum, timestamp, var_count_poll);
+                     }
+                     if (var_count == 0) {
+                         for (var key in CHART_VARIABLE_KEYS){
+                            if(var_count >= 10){break;}
+                            [key, var_count, vars, device_pulling_interval_sum, timestamp, var_count_poll] = add_key_to_chart_vars(key, var_count, vars, device_pulling_interval_sum, timestamp, var_count_poll);
+                         }
                      }
                      if(var_count>0){
                          //set_loading_state(5, (loading_states[5] || 0) + 100*var_count/CHART_VARIABLE_KEYS.count());
@@ -1049,6 +1157,16 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
          }).done(data_handler_done).fail(data_handler_fail);
  }
 
+function pad(value) {
+    return value < 10 ? '0' + value : value;
+}
+function createOffset(date) {
+    var sign = (date.getTimezoneOffset() > 0) ? "-" : "+";
+    var offset = Math.abs(date.getTimezoneOffset());
+    var hours = pad(Math.floor(offset / 60));
+    var minutes = pad(offset % 60);
+    return sign + hours + ":" + minutes;
+}
 
  /**
   * Update DATA and Charts when initialization is done
@@ -1070,7 +1188,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
          SERVER_TIME = fetched_data['server_time'];
          delete fetched_data['server_time'];
          var date = new Date(SERVER_TIME);
-         $(".server_time").html(date.toLocaleString());
+         $(".server_time").html(date.toLocaleString() + " (" + createOffset(date) + " GMT)");
      }else{
          SERVER_TIME = 0;
      }
@@ -1589,7 +1707,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
          variables[variable_key] = {'color':val_inst.data('color'),'yaxis': raxis_id, 'axis_id': axis_id}
          keys.push(variable_key);
          variable_names.push(variable_name);
-         variables[variable_key].label = $(".legendLabel[data-key=" + variable_key + "]")[0].textContent.replace(/\s/g, '');
+         variables[variable_key].label = $(".legendLabel[data-key=" + variable_key + "] .legendLabel-text")[0].textContent.replace(/\s/g, '');
          variables[variable_key].unit = $(".legendUnit[data-key=" + variable_key + "]")[0].textContent.replace(/\s/g, '');
          if (axes[raxis_id].unit == null) {
              axes[raxis_id].unit = variables[variable_key].unit;
@@ -1670,12 +1788,16 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
              if ($(legend_checkbox_id+'make_all_none').is(':checked')){
                  $.each(variables,function(key,val){
                      $(legend_checkbox_status_id+key).html(1);
-                     $(legend_checkbox_id+key)[0].checked = true;
+                     if ($(legend_checkbox_id+key).length > 0) {
+                         $(legend_checkbox_id+key)[0].checked = true;
+                     }
                  });
              }else{
                  $.each(variables,function(key,val){
                      $(legend_checkbox_status_id+key).html(0);
-                     $(legend_checkbox_id+key)[0].checked = false;
+                     if ($(legend_checkbox_id+key).length > 0) {
+                         $(legend_checkbox_id+key)[0].checked = false;
+                     }
                   });
              }
              plot.update(true);
@@ -1963,6 +2085,11 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
                  if (!variables.hasOwnProperty(key) && original_key in variables) {
                      variables[key] = variables[original_key]
                  }
+                 if (key == original_key) {
+                     variables[key].label = $(".legendLabel[data-key=" + original_key + "] .legendLabel-text")[0].textContent.replace(/\s/g, '')
+                 }else {
+                     variables[key].label = $(".legendLabel[data-key=" + original_key + "] .legendLabel-text")[0].textContent.replace(/\s/g, '') + " " + $(".legendLabel[data-key=" + original_key + "] span")[1].textContent.replace(/\s/g, '');
+                 }
 
                  //key = keys[key];
                  xkey = xaxisVarId;
@@ -1983,7 +2110,7 @@ function get_config_from_hidden_config(type,filter_data,val,get_data){
                          stop_id = find_index_sub_lte(DATA[key],DATA_TO_TIMESTAMP,0);
                      }
                      if (typeof(start_id) == "undefined") {
-                        console.log('start_id for var id ', key, 'is undefined');
+                        //console.log('start_id for var id ', key, 'is undefined');
                          continue;
                      }else {
                          chart_data = DATA[key].slice(start_id,stop_id+1);
@@ -3491,6 +3618,7 @@ function setAggregatedPeriodList(widget_id, var_id) {
      $.each($(".control-item.type-numeric." + type_short + "-" + key + " img"), function(k,v){
          $(v).remove();
      });
+     key = key.toString();
      //if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp')>$(".variable-config[data-value-timestamp][data-key=" + key + "][data-type=" + type + "]").attr('data-value-timestamp')) {
      if (get_config_from_hidden_config(type, 'id', key, 'refresh-requested-timestamp')>get_config_from_hidden_config(type, 'id', key, 'value-timestamp')) {
          $.each($(".control-item.type-numeric." + type_short + "-" + key), function(k,v){
@@ -3643,8 +3771,10 @@ function setAggregatedPeriodList(widget_id, var_id) {
      t = SERVER_TIME;
      key = $(this).data('key');
      type = $(this).data('type');
-     $(".variable-config[data-key=" + key + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp',t)
-     $(".variable-config2[data-id=" + key + "]").attr('data-refresh-requested-timestamp',t)
+     type = type.replace("_", "");
+     //$(".variable-config[data-key=" + key + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp',t)
+     set_config_from_hidden_config("variable","id",key,"refresh-requested-timestamp",t)
+     set_config_from_hidden_config("variableproperty","id",key,"refresh-requested-timestamp",t)
      refresh_logo(key, type);
      data_type = $(this).data('type');
      $(this)[0].disabled = true;
@@ -4089,19 +4219,23 @@ function setAggregatedPeriodList(widget_id, var_id) {
            type: "POST",
            data:{},
            success: function (data) {
-             items = {};
-             $.each($('.hidden.variable-config'), function(k,v) {
-               items[v.attributes['data-type'].value + "-" + v.attributes['data-key'].value] = {'type' : v.attributes['data-type'].value, 'key' : v.attributes['data-key'].value};
-               if (typeof($(v).attr('data-refresh-requested-timestamp')) !== 'undefined') {
-                 $(v).attr('data-refresh-requested-timestamp',SERVER_TIME);
-               }
-             });
              document.querySelectorAll('.hidden.variable-config2').forEach(function(e) {
                 e.setAttribute('data-refresh-requested-timestamp',SERVER_TIME);
              });
-             $.each(items, function(k,v) {
-               refresh_logo(v.key, v.type);
+             document.querySelectorAll('.hidden.variable-config2').forEach(function(e) {
+                 var type = "variable";
+                 var key = e.getAttribute('data-id');
+                 refresh_logo(key, type);
+             })
+
+             document.querySelectorAll('.hidden.variableproperty-config2').forEach(function(e) {
+                e.setAttribute('data-refresh-requested-timestamp',SERVER_TIME);
              });
+             document.querySelectorAll('.hidden.variableproperty-config2').forEach(function(e) {
+                 var type = "variableproperty";
+                 var key = e.getAttribute('data-id');
+                 refresh_logo(key, type);
+             })
            },
            error: function(x, t, m) {
                add_notification('Request all data failed', 1);

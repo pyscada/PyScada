@@ -10,13 +10,14 @@
     {% endif %}
 {% elif item.type == 1 %}<!-- display value -->
     <div class="input-group set_value">
-        <span class="input-group-addon input-group-addon-label control-item type-numeric {{ item.web_class_str }}" id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}" style="border:1px solid #ccc;width:100%;text-align:center;">
+        <span class="input-group-addon control-item type-numeric {{ item.web_class_str }}" id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}" data-toggle="tooltip" data-placement="top" title="" data-original-title="" data-html="true">
             <button class="btn btn-default read-task-set set-{{ item.key }}" type="button" data-key="{{ item.key }}" data-type="{{ item.item_type }}" style="width:16px;height:16px;padding:0;margin:0;">
                 <span class="glyphicon glyphicon-refresh" data-toggle="tooltip" data-placement="top" title="" data-original-title="Refresh data" style="font-size:10px;vertical-align:text-top;"></span>
             </button>
             <span style="color:red;height:12px;" data-toggle="tooltip" data-placement="top" title="" data-original-title="Very old value (>10 polling interval)" class="glyphicon glyphicon-alert hidden"></span>
             <span style="color:orange;height:12px;" data-toggle="tooltip" data-placement="top" title="" data-original-title="Old value (between 3 and 10 polling interval)" class="glyphicon glyphicon-exclamation-sign hidden"></span>
-            <span class="type-numeric {{ item.web_class_str }}" data-toggle="tooltip" data-placement="top" title="" data-original-title="" data-html="true">{{ item.label }}</span>
+            {{ item.label }}
         </span>
+        <!--<span class="input-group-addon input-group-addon-label control-item type-numeric {{ item.web_class_str }}" id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}" data-toggle="tooltip" data-placement="top" title="" data-original-title="" data-html="true">Loading...</span>-->
     </div>
 {% endif %}
