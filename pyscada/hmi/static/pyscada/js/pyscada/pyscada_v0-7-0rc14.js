@@ -2903,8 +2903,14 @@ function createOffset(date) {
              DATA_DISPLAY_TO_TIMESTAMP = -1;
              DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
              set_x_axes();
+
+             var event = new CustomEvent("pyscadaDateTimeChange", { detail: {'picker': picker}, bubbles: false, cancelable: true, composed: false});
+             document.querySelectorAll(".pyscadaDateTimeChange").forEach(el=>el.dispatchEvent(event));
          });
      }
+
+     var event = new CustomEvent("pyscadaDateTimeChange", { detail: {'picker': $('#daterange').data('daterangepicker')}, bubbles: false, cancelable: true, composed: false});
+     document.querySelectorAll(".pyscadaDateTimeChange").forEach(el=>el.dispatchEvent(event));
      DATERANGEPICKER_SET = true;
 }
 
