@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'pyscada.core',
+    'pyscada',
     'pyscada.modbus',
     'pyscada.phant',
     'pyscada.visa',

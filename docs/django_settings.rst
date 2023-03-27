@@ -60,7 +60,7 @@ Add PyScada and the PyScada sub-apps to the installed apps list of Django.
 
     INSTALLED_APPS = [
         ...
-        'pyscada.core',
+        'pyscada',
         'pyscada.modbus',
         'pyscada.phant',
         'pyscada.visa',
