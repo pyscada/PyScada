@@ -22,7 +22,7 @@ from pyscada.hmi.models import Pie
 from pyscada.hmi.models import Theme
 from pyscada.hmi.models import CssClass
 
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.contrib import admin
 from django import forms
 from django.db.models.fields.related import OneToOneRel
