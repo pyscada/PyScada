@@ -290,3 +290,24 @@
   - add value using get_prev_value in views.py for non logging variables
   - Move handler to Device model.
   - Wait 5 seconds to read the main pid (scheduler)
+
+0.8.0
+  - core : fix when no handler selected to use the GenericHandlerDevice of the selected protocol
+  - systemstat : Create systemstat device (allow remote over ssh)
+  - core : Fix timestamp not integer in RecordedData init
+  - systemstat : process pid find in cmdline and not only in processus name
+  - systemstat : fix pre_delete signal and information choice name
+  - core : fix config2 and add classes
+  - systemstat : add write_data to execute command
+  - JS : fixes
+  - core : fix protocol list for devices
+  - hmi : fix color for control items
+  - core : add related models to Config2
+  - JS : dateTimePicker Event : send pyscadaDateTimeChange event for all objects with the class pyscadaDateTimeChange when the datetime picker value change.
+  - various : replace ugettext_lazy by gettext_lazy
+  - core : replacing pyscada.core in INSTALLED_APPS by pyscada
+  - hmi : replace django.conf.urls.url by django.urls.path
+  - all : Moving to AGPL3 License
+  - core : Moving to django 4.2
+  - docs : fixed urls in the docs
+  - added a testscript for the instalation routine
