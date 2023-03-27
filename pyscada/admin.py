@@ -19,7 +19,7 @@ from django import forms
 from django.contrib.admin import AdminSite
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.db.models.fields.related import OneToOneRel
 
 from django import forms
