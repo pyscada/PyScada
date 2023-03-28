@@ -71,7 +71,7 @@ all
 ::
 
     sudo -i
-    pip3 install https://github.com/trombastic/PyScada/archive/dev/0.7.x.zip
+    pip3 install https://github.com/pyscada/PyScada/archive/master.zip
 
     # for VISA Protocol
     pip3 install pyvisa pyvisa-py
@@ -182,10 +182,10 @@ Setup the Webserver (nginx, gunicorn)
 
 
     # debian
-    sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/nginx_sample.conf -O /etc/nginx/sites-available/pyscada.conf
+    sudo wget https://raw.githubusercontent.com/pyscada/PyScada/master/extras/nginx_sample.conf -O /etc/nginx/sites-available/pyscada.conf
 
     # Fedora
-    sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/nginx_sample.conf -O /etc/nginx/conf.d/pyscada.conf
+    sudo wget https://raw.githubusercontent.com/pyscada/PyScada/master/extras/nginx_sample.conf -O /etc/nginx/conf.d/pyscada.conf
 
 
 after editing, enable the configuration and restart nginx, optionally remove the default configuration
@@ -234,9 +234,9 @@ add gunicorn and pyscada unit files:
 ::
 
     # systemd
-    sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/systemd/gunicorn.socket -O /etc/systemd/system/gunicorn.socket
-    sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/systemd/gunicorn.service -O /etc/systemd/system/gunicorn.service
-    sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/systemd/pyscada_daemon.service -O /etc/systemd/system/pyscada.service
+    sudo wget https://raw.githubusercontent.com/pyscada/PyScada/master/extras/service/systemd/gunicorn.socket -O /etc/systemd/system/gunicorn.socket
+    sudo wget https://raw.githubusercontent.com/pyscada/PyScada/master/extras/service/systemd/gunicorn.service -O /etc/systemd/system/gunicorn.service
+    sudo wget https://raw.githubusercontent.com/pyscada/PyScada/master/extras/service/systemd/pyscada_daemon.service -O /etc/systemd/system/pyscada.service
 
     # in some installations gunicorn is not at /usr/local/bin/gunicorn but at /usr/bin/gunicorn
     # in this case you have to change the pat in the file /etc/systemd/system/gunicorn.service accordingly
