@@ -395,7 +395,9 @@ class DeviceAdmin(admin.ModelAdmin):
         # For new device, show all the protocols from the installed apps in settings.py
         # For existing device, show only the selected protocol to avoid changing
         if db_field.name == "protocol":
-            if 'object_id' in request.resolver_match.kwargs and Device.objects.get(id=request.resolver_match.kwargs['object_id']) is not None:
+            if 'object_id' in request.resolver_match.kwargs \
+            and Device.objects.get(id=request.resolver_match.kwargs['object_id']) is not None \
+            and Device.objects.get(id=request.resolver_match.kwargs['object_id']).protocol:
                 kwargs["queryset"] = DeviceProtocol.objects.filter(protocol__in=[Device.objects.get(id=request.resolver_match.kwargs['object_id']).protocol.protocol,])
             else:
                 kwargs["queryset"] = DeviceProtocol.objects.filter(protocol__in=self.protocol_list)
