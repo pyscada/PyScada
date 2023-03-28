@@ -26,7 +26,7 @@ setup(
     version=core.__version__,
     description='A Python and Django based Open Source SCADA System',
     long_description=open(os.path.join(os.path.dirname(__file__), 'README.rst')).read(),
-    url='http://www.github.com/trombastic/PyScada',
+    url='http://www.github.com/pyscada/PyScada',
     license='AGPLv3',
     platforms=['OS Independent'],
     classifiers=CLASSIFIERS,
