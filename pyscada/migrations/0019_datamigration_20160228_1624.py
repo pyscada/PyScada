@@ -21,5 +21,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(move_time_values),
+        migrations.RunPython(move_time_values, reverse_code=migrations.RunPython.noop),
     ]
