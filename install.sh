@@ -47,7 +47,9 @@ function apt_proxy(){
     apt-get $*
   else
     echo "apt using" $answer_proxy "for" $* > /dev/tty
-    "http_proxy=$answer_proxy" apt-get $*
+    export http_proxy=$answer_proxy
+    apt-get $*
+    unset http_proxy
   fi
 }
 
