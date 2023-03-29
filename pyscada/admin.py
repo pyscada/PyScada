@@ -23,7 +23,7 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models.fields.related import OneToOneRel
 
 from django import forms
-from django.core.exceptions import ValidationError
+from django.db.utils import ProgrammingError
 from django.conf import settings
 
 import datetime
@@ -385,8 +385,11 @@ class DeviceAdmin(admin.ModelAdmin):
     protocol_list = list()
     protocol_list.append("generic")
     if hasattr(settings, 'INSTALLED_APPS'):
-        for protocol in DeviceProtocol.objects.filter(app_name__in=settings.INSTALLED_APPS):
-            protocol_list.append(protocol.protocol)
+        try:
+            for protocol in DeviceProtocol.objects.filter(app_name__in=settings.INSTALLED_APPS):
+                protocol_list.append(protocol.protocol)
+        except ProgrammingError:
+            pass
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         # For new device, show all the protocols from the installed apps in settings.py
