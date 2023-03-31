@@ -529,7 +529,7 @@ var store_temp_ajax_data = null;
 
 
  /**
-  * Return id's variable's color
+  * Return control item color
   * @param {number} id Control item id
   * @param {boolean} val
   * @returns {string} Return the hex color
@@ -562,15 +562,21 @@ var store_temp_ajax_data = null;
 
      var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', id, 'display-value-options');
      // variable colors
-     var color_type = Number(get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-type'));
-     var color_mode = get_config_from_hidden_config("displayvalueoption", 'id', id, 'mode');
-     var color_level_1_type = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-level-1-type');
-     var color_level_2_type = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-level-2-type');
-     var color_level_1 = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-level-1');
-     var color_level_2 = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-level-2');
-     var color_1 = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-1');
-     var color_2 = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-2');
-     var color_3 = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-3');
+     var color_only = Number(get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-only'));
+     var gradient = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'gradient');
+     if (gradient == "True") {gradient = 1;}else {gradient = 0;};
+     var gradient_higher_level = Number(get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'gradient-higher-level'));
+     var color_init = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color');
+     var colors = []
+     var color_options = get_config_from_hidden_configs("displayvaluecoloroption", 'id', 'display-value-option');
+     for (dvco in color_options) {
+        if (display_value_option_id == color_options[dvco]) {
+            var level = Number(get_config_from_hidden_config("displayvaluecoloroption", 'id', dvco, 'color-level'));
+            var level_type = Number(get_config_from_hidden_config("displayvaluecoloroption", 'id', dvco, 'color-level-type'));
+            var color = get_config_from_hidden_config("displayvaluecoloroption", 'id', dvco, 'color');
+            colors.push({'color': color, 'level': level, 'level_type':level_type})
+        }
+     }
 
      var type = null;
      var v_id = null;
@@ -583,85 +589,59 @@ var store_temp_ajax_data = null;
      }
 
      if (get_config_from_hidden_config(type, 'id', v_id, 'value-class') == 'BOOLEAN') {
-         color_type = 1;
-         color_level_1 = 1;
-         color_level_1_type = 1;
          if (val == false) { val = 0 ;} else if ( val == true ) { val = 1 ;}
-         if (color_1 == null) {color_1 = 0};
-         if (color_2 == null) {color_2 = -1};
+         if (color_init == null) {color_init = 0};
+         if (colors.length == 0) {
+            colors = [{'color': -1}];
+         }
+         colors[0]['level'] = 1;
+         colors[0]['level_type'] = 1;
      }
 
+     if (typeof color_init == 'undefined') {return;}
 
-     if (typeof color_1 == 'undefined') {return;}
-
-     var color = null;
+     var final_color = null;
 
      // COLOR TYPE :
-     switch(color_type){
-         case 1 :
-         if (color_level_1_type == 0) {
-             if (val <= color_level_1) {
-                 color = color_1;
-             }else {
-                 color = color_2;
+     switch(gradient){
+         case 0:
+             var prev_color = color_init;
+             for (c in colors) {
+                if (colors[c]['level_type'] == 0) {
+                    if (val <= colors[c]['level']) {
+                        final_color = prev_color;
+                        break;
+                    }
+                }else {
+                    if (val < colors[c]['level']) {
+                        final_color = prev_color;
+                        break;
+                    }
+                }
+                prev_color = colors[c]['color'];
              }
-         }else if (color_level_1_type == 1) {
-             if (val < color_level_1) {
-                 color = color_1;
-             }else {
-                 color = color_2;
-             }
-         }
+             final_color = prev_color;
          break;
 
-         case 2:
-
-             if (color_level_1_type == 0 && val <= color_level_1) {
-                color = color_1;
-             }else if (color_level_1_type == 1 && val < color_level_1) {
-                color = color_1;
-             }else if (color_level_2_type == 0 && val <= color_level_2) {
-                color = color_2;
-             }else if (color_level_2_type == 1 && val < color_level_2) {
-                color = color_2;
+         case 1:
+             if (colors.length == 0) {return;}  // Need one display value color option
+             if (val <= colors[0]['level']) {
+                 final_color = color_init;
+             }else if (val >= gradient_higher_level) {
+                 final_color = colors[0]['color'];
              }else {
-                color = color_3;
-             }
-             break;
-
-         case 3:
-             if (val <= color_level_1) {
-                 color = color_1;
-             }else if (val >= color_level_2) {
-                 color = color_2;
-             }else {
-                 fade = (val-color_level_1)/(color_level_2-color_level_1);
-                 color_1_new = new Color(color_1.match(/\d+/g)[0],color_1.match(/\d+/g)[1],color_1.match(/\d+/g)[2]);
-                 color_2_new = new Color(color_2.match(/\d+/g)[0],color_2.match(/\d+/g)[1],color_2.match(/\d+/g)[2]);
-                 color = colorGradient(fade, color_1_new, color_2_new);
-             }
-             break;
-
-         default:
-             if (val < color_level_1) {
-                 color = color_1;
-             }else if (color_level_2_type == 0) {
-                 if (val <= color_level_2) {
-                     color = color_2;
-                 }else {
-                     color = color_3;
-                 }
-             }else {
-                 if (val < color_level_2) {
-                     color = color_2;
-                 }else {
-                     color = color_3;
-                 }
+                 var fade = (val-colors[0]['level'])/(gradient_higher_level-colors[0]['level']);
+                 var color_1_new = new Color(Number(get_config_from_hidden_config("color", 'id', color_init, 'r')),Number(get_config_from_hidden_config("color", 'id', color_init, 'g')),Number(get_config_from_hidden_config("color", 'id', color_init, 'b')));
+                 var color_2_new = new Color(Number(get_config_from_hidden_config("color", 'id', colors[0]['color'], 'r')),Number(get_config_from_hidden_config("color", 'id', colors[0]['color'], 'g')),Number(get_config_from_hidden_config("color", 'id', colors[0]['color'], 'b')));
+                 final_color = colorGradient(fade, color_1_new, color_2_new);
+                 return rgbToHex(final_color);
              }
              break;
      }
 
-     return rgbToHex(colorToRgb(color));
+     if (final_color == "None") {return null;}
+
+     return rgbToHex(colorToRgb(final_color));
  }
 
 
@@ -3047,7 +3027,8 @@ function createOffset(date) {
        blue: parseInt(Math.floor(parseInt(color1.blue) + (diffBlue * fade)), 10),
      };
 
-     return 'rgb(' + gradient.red + ',' + gradient.green + ',' + gradient.blue + ')';
+     return [gradient.red, gradient.green, gradient.blue];
+     //return 'rgb(' + gradient.red + ',' + gradient.green + ',' + gradient.blue + ')';
  }
 
  /**
@@ -4145,8 +4126,11 @@ function setAggregatedPeriodList(widget_id, var_id) {
      }
          threshold_values = [];
          for (var v in thresholdValues) {
-             if (v == "max") {v = max2;thresholdValues[v]=thresholdValues['max'];}
-             threshold_values.push({value:v, color:thresholdValues[v]})
+             if (v == "max") {
+                v = max2;
+                thresholdValues[v]=thresholdValues['max'];
+             }
+             threshold_values.push({value:Number(v), color:thresholdValues[v]})
          }
          if ( threshold_values === "" ) {threshold_values = [];}
          // add a new Plot

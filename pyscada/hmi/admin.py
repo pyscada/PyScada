@@ -12,7 +12,7 @@ from pyscada.hmi.models import SlidingPanelMenu
 from pyscada.hmi.models import Page
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import ControlPanel
-from pyscada.hmi.models import DisplayValueOption, ControlElementOption
+from pyscada.hmi.models import DisplayValueOption, ControlElementOption, DisplayValueColorOption
 from pyscada.hmi.models import CustomHTMLPanel
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
@@ -26,6 +26,7 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib import admin
 from django import forms
 from django.db.models.fields.related import OneToOneRel
+from django.core.exceptions import ValidationError
 
 import logging
 
@@ -142,17 +143,15 @@ class DisplayValueOptionAdminFrom(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(DisplayValueOptionAdminFrom, self).__init__(*args, **kwargs)
         wtf = Color.objects.all()
-        w1 = self.fields['color_1'].widget
-        w2 = self.fields['color_2'].widget
-        w3 = self.fields['color_3'].widget
-        color_choices = []
+        w = self.fields['color'].widget
+        color_choices = [(None, None)]
         for choice in wtf:
             color_choices.append((choice.id, choice.color_code()))
-        w1.choices = color_choices
-        w2.choices = color_choices
-        w3.choices = color_choices
+        w.choices = color_choices
 
         def create_option_color(self, name, value, label, selected, index, subindex=None, attrs=None):
+            if label is None:
+                return self._create_option(name, value, label, selected, index, subindex, attrs=None)
             font_color = hex(int('ffffff', 16) - int(label[1::], 16))[2::]
             # attrs = self.build_attrs(attrs,{'style':'background: %s; color: #%s'%(label,font_color)})
             self.option_inherits_attrs = True
@@ -161,38 +160,93 @@ class DisplayValueOptionAdminFrom(forms.ModelForm):
 
         import types
         # from django.forms.widgets import Select
-        w1.widget._create_option = w1.widget.create_option  # copy old method
-        w1.widget.create_option = types.MethodType(create_option_color, w1.widget)  # replace old with new
-        w2.widget._create_option = w2.widget.create_option  # copy old method
-        w2.widget.create_option = types.MethodType(create_option_color, w2.widget)  # replace old with new
-        w3.widget._create_option = w3.widget.create_option  # copy old method
-        w3.widget.create_option = types.MethodType(create_option_color, w3.widget)  # replace old with new
-        w1.widget.attrs = {'onchange': 'this.style.backgroundColor=this.options[this.selectedIndex].style.'
+        w.widget._create_option = w.widget.create_option  # copy old method
+        w.widget.create_option = types.MethodType(create_option_color, w.widget)  # replace old with new
+        w.widget.attrs = {'onchange': 'this.style.backgroundColor=this.options[this.selectedIndex].style.'
                                        'backgroundColor;this.style.color=this.options[this.selectedIndex].style.color'}
-        w2.widget.attrs = {'onchange': 'this.style.backgroundColor=this.options[this.selectedIndex].style.'
+
+    def clean(self):
+        super().clean()
+        color_options = set()
+
+        if self.data.get('gradient', False) == 'on':
+            for d in self.data:
+                if 'displayvaluecoloroption_set-' in d and d[len('displayvaluecoloroption_set-'):len('displayvaluecoloroption_set-') + 1].isdigit() and 'displayvaluecoloroption_set-' + d[len('displayvaluecoloroption_set-'):len('displayvaluecoloroption_set-') + 1] + '-DELETE' not in self.data:
+                    color_options.update(d[len('displayvaluecoloroption_set-'):len('displayvaluecoloroption_set-') + 1])
+                if len(color_options) > 1:
+                    raise ValidationError('1 color option needed for gradient.')
+            if 'displayvaluecoloroption_set-0-color_level' in self.data and float(self.data['gradient_higher_level']) <= float(self.data.get('displayvaluecoloroption_set-0-color_level')):
+                raise ValidationError('gradient higher level must be strictly higher than the color option level.')
+            if not len(color_options) == 1:
+                raise ValidationError('1 color option needed for gradient.')
+            if self.data.get('displayvaluecoloroption_set-0-color') == "":
+                raise ValidationError('Color for Display value color options cannot be null for gradient.')
+            if self.data['color'] == "":
+                raise ValidationError('Color cannot be null for gradient.')
+
+    class Meta:
+        widgets = {
+            "gradient": forms.CheckboxInput(
+                attrs={
+                    "--hideshow-fields": "gradient_higher_level,",
+                    # gradient_higher_level visible if checkbox checked
+                    "--show-on-checked": "gradient_higher_level,",
+                }
+            ),
+        }
+
+    class Media:
+        js = (
+            'pyscada/js/admin/hideshow.js',
+        )
+
+
+class DisplayValueColorOptionAdminFrom(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(DisplayValueColorOptionAdminFrom, self).__init__(*args, **kwargs)
+        wtf = Color.objects.all()
+        w = self.fields['color'].widget
+        color_choices = [(None, None)]
+        for choice in wtf:
+            color_choices.append((choice.id, choice.color_code()))
+        w.choices = color_choices
+
+        def create_option_color(self, name, value, label, selected, index, subindex=None, attrs=None):
+            if label is None:
+                return self._create_option(name, value, label, selected, index, subindex, attrs=None)
+            font_color = hex(int('ffffff', 16) - int(label[1::], 16))[2::]
+            # attrs = self.build_attrs(attrs,{'style':'background: %s; color: #%s'%(label,font_color)})
+            self.option_inherits_attrs = True
+            return self._create_option(name, value, label, selected, index, subindex,
+                                       attrs={'style': 'background: %s; color: #%s' % (label, font_color)})
+
+        import types
+        # from django.forms.widgets import Select
+        w.widget._create_option = w.widget.create_option  # copy old method
+        w.widget.create_option = types.MethodType(create_option_color, w.widget)  # replace old with new
+        w.widget.attrs = {'onchange': 'this.style.backgroundColor=this.options[this.selectedIndex].style.'
                                        'backgroundColor;this.style.color=this.options[this.selectedIndex].style.color'}
-        w3.widget.attrs = {'onchange': 'this.style.backgroundColor=this.options[this.selectedIndex].style.'
-                                       'backgroundColor;this.style.color=this.options[this.selectedIndex].style.color'}
+
+
+class DisplayValueColorOptionInline(admin.TabularInline):
+    model = DisplayValueColorOption
+    form = DisplayValueColorOptionAdminFrom
+    extra = 0
 
 
 class DisplayValueOptionAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {
-            'fields': ('name', 'type', 'color_type', 'mode', 'timestamp_conversion',),
+            'fields': ('name', 'type', 'timestamp_conversion',),
         }),
-        ('Color 1', {
-            'fields': ('color_level_1_type', 'color_level_1', 'color_1',),
-        }),
-        ('Color 2', {
-            'fields': ('color_level_2_type', 'color_level_2', 'color_2',),
-        }),
-        ('Color 3', {
-            'fields': ('color_3',),
+        ('Color', {
+            'fields': ('color', 'color_only', 'gradient', 'gradient_higher_level',),
         }),
     )
     form = DisplayValueOptionAdminFrom
     save_as = True
     save_as_continue = True
+    inlines = [DisplayValueColorOptionInline]
 
     def has_module_permission(self, request):
         return False
