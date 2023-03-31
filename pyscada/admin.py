@@ -23,7 +23,7 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models.fields.related import OneToOneRel
 
 from django import forms
-from django.db.utils import ProgrammingError
+from django.db.utils import ProgrammingError, OperationalError
 from django.conf import settings
 
 import datetime
@@ -389,6 +389,8 @@ class DeviceAdmin(admin.ModelAdmin):
             for protocol in DeviceProtocol.objects.filter(app_name__in=settings.INSTALLED_APPS):
                 protocol_list.append(protocol.protocol)
         except ProgrammingError:
+            pass
+        except OperationalError:
             pass
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
