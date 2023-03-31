@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from django.apps import AppConfig
 from django.utils.translation import gettext_lazy as _
-from django.db.utils import ProgrammingError
+from django.db.utils import ProgrammingError, OperationalError
 import os
 import logging
 
@@ -25,4 +25,6 @@ class PyScadaConfig(AppConfig):
             if Theme.objects.filter().count():
                 Theme.objects.first().check_all_themes()
         except ProgrammingError:
+            pass
+        except OperationalError:
             pass
