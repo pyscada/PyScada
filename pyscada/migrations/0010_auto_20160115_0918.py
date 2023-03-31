@@ -11,7 +11,6 @@ class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('pyscada', '0009_auto_20160111_1802'),
-        ('modbus', '0002_auto_20160111_1802'),
     ]
 
     operations = [
