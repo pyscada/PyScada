@@ -11,6 +11,7 @@ from django.template.loader import get_template
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from django.forms.models import BaseInlineFormSet
 
 from six import text_type
 import traceback
@@ -165,38 +166,14 @@ class DisplayValueOption(models.Model):
         (3, 'Circular gauge'),
     )
     type = models.PositiveSmallIntegerField(default=0, choices=type_choices)
-    color_type_choices = (
-        (0, 'No color'),
-        (1, '2 color'),
-        (2, '3 colors'),
-        (3, 'color gradient'),)
-    color_type = models.PositiveSmallIntegerField(default=0, choices=color_type_choices,
-                                                  help_text="For boolean no level needed and will use color 1 "
-                                                            "and 2")
-    color_level_1 = models.FloatField(default=0)
-    color_level_1_type_choices = (
-        (0, 'color 1 =< level 1'),
-        (1, 'color 1 < level 1'),)
-    color_level_1_type = models.PositiveSmallIntegerField(default=0, choices=color_level_1_type_choices,
-                                                          help_text="Only needed for 2 or 3 colors")
 
-    color_level_2 = models.FloatField(default=50, help_text="Only needed for 3 colors and gradient")
-    color_level_2_type_choices = (
-        (0, 'color 2 =< level 2'),
-        (1, 'color 2 < level 2'),)
-    color_level_2_type = models.PositiveSmallIntegerField(default=0, choices=color_level_2_type_choices,
-                                                          help_text="Only needed for 3 colors")
-
-    color_1 = models.ForeignKey(Color, null=True, blank=True, on_delete=models.SET_NULL, related_name="color_1")
-    color_2 = models.ForeignKey(Color, null=True, blank=True, on_delete=models.SET_NULL, related_name="color_2")
-    color_3 = models.ForeignKey(Color, null=True, blank=True, on_delete=models.SET_NULL, related_name="color_3",
-                                help_text="Only needed for 3 colors")
-
-    mode_choices = (
-        (0, 'Value only'),
-        (1, 'Color only'),
-        (2, 'Value and color'),)
-    mode = models.PositiveSmallIntegerField(default=0, choices=mode_choices)
+    color = models.ForeignKey(Color, null=True, blank=True, on_delete=models.CASCADE,
+                              help_text="Default color if no level defined, can be null.<br>"
+                                        "Color < or =< first level, if a level is defined.")
+    color_only = models.BooleanField(default=False, help_text="If true, will not display the value.")
+    gradient = models.BooleanField(default=False, help_text="Need 1 color option to be defined.")
+    gradient_higher_level = models.FloatField(default=0,
+                                              help_text="Color defined above will be used for this level.")
 
     timestamp_conversion_choices = (
         (0, 'None'),
@@ -211,6 +188,30 @@ class DisplayValueOption(models.Model):
 
     def __str__(self):
         return self.name
+
+    def _get_objects_for_html(self, list_to_append=None, obj=None, exclude_model_names=None):
+        list_to_append = get_objects_for_html(list_to_append, self, exclude_model_names)
+        for item in self.displayvaluecoloroption_set.all():
+            list_to_append = get_objects_for_html(list_to_append, item, ['display_value_option'])
+        return list_to_append
+
+
+class DisplayValueColorOption(models.Model):
+    display_value_option = models.ForeignKey(DisplayValueOption, on_delete=models.CASCADE)
+    color_level = models.FloatField()
+    color_level_type_choices = (
+        (0, 'color =< level'),
+        (1, 'color < level'),)
+    color_level_type = models.PositiveSmallIntegerField(default=0, choices=color_level_type_choices)
+    color = models.ForeignKey(Color, null=True, blank=True, on_delete=models.CASCADE,
+                              help_text="Let blank for no color below the selected level.")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['display_value_option', 'color_level', 'color_level_type'],
+                                    name='unique_display_value_color_option')
+        ]
+        ordering = ['color_level', '-color_level_type']
 
 
 class ControlItem(models.Model):
@@ -336,14 +337,15 @@ class ControlItem(models.Model):
 
     def threshold_values(self):
         tv = dict()
-        if self.display_value_options is not None and self.display_value_options.mode > 0:
-            if self.display_value_options.color_type == 1:
-                tv[self.display_value_options.color_level_1] = self.display_value_options.color_1.color_code()
-                tv["max"] = self.display_value_options.color_2.color_code()
-            if self.display_value_options.color_type == 2:
-                tv[self.display_value_options.color_level_1] = self.display_value_options.color_1.color_code()
-                tv[self.display_value_options.color_level_2] = self.display_value_options.color_2.color_code()
-                tv["max"] = self.display_value_options.color_3.color_code()
+        if self.display_value_options is not None and self.display_value_options.color is not None:
+            if len(self.display_value_options.displayvaluecoloroption_set.all()) == 0:
+                tv["max"] = self.display_value_options.color.color_code()
+            else:
+                prev_color = self.display_value_options.color
+                for dvco in self.display_value_options.displayvaluecoloroption_set.all():
+                    tv[dvco.color_level] = prev_color.color_code()
+                    prev_color = dvco.color
+                tv["max"] = prev_color.color_code()
         return json.dumps(tv)
 
     def gauge_params(self):
