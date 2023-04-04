@@ -7,16 +7,15 @@ source ./.env/bin/activate
 
 pip install ../../
 pip install ../../../PyScada-Modbus/
-pip install ../../../PyScada-Onewire/
-pip install ../../../PyScada-Phant/
-pip install ../../../PyScada-VISA/
-pip install ../../../PyScada-SMBus/
-pip install ../../../PyScada-SystemStat/
 
 django-admin startproject PyScadaServer  --template ./../project_template_with_plugins_modbus.zip
 cd PyScadaServer/
 mkdir log
 python3 manage.py migrate
+# add pyscada.modbus to INSTALLED_APP and apply modbus migrations
+sed -i "/    'pyscada.export',/a     'pyscada.modbus'," PyScadaServer/settings.py
+python3 manage.py migrate
+
 python3 manage.py collectstatic
 python3 manage.py loaddata color
 python3 manage.py loaddata units
