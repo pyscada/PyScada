@@ -678,10 +678,11 @@ class WidgetContent(models.Model):
             content_class = getattr(mod, class_name.__str__())
             if isinstance(content_class, models.base.ModelBase):
                 return content_class.objects.get(pk=self.content_pk)
-            return None
+        except ModuleNotFoundError:
+            logger.info(f"{class_name} of {class_path} not found. A module not installed ?")
         except:
             logger.error('%s unhandled exception\n%s' % (class_path, traceback.format_exc()))
-            return None
+        return None
 
     def __str__(self):
         return '%s [%d] %s' % (self.content_model.split('.')[-1], self.content_pk, self.content_str)  # todo add more infos
