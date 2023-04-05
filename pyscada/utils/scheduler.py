@@ -1165,7 +1165,6 @@ class SingleDeviceDAQProcess(Process):
         self.dt_query_data = self.device.polling_interval
         try:
             self.device = self.device.get_device_instance()
-            logger.debug(f'Process {self.label} initialized for device {self.device.device} {self.device.variables}')
         except:
             var = traceback.format_exc()
             logger.error("Exception while initialisation of DAQ Process for Device %d %s %s" % (
