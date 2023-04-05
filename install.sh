@@ -108,7 +108,6 @@ DEB_TO_INSTALL="
 	libopenjp2-7
 	mariadb-server
 	nginx
-	owfs
 	python3-dev
 	python3-mysqldb
 	python3-pip
@@ -120,18 +119,10 @@ PIP_TO_INSTALL="
 	cffi
 	Cython
 	docutils
-	gpiozero
 	gunicorn
 	lxml
 	mysqlclient
 	numpy
-	psutil
-	pyownet
-	pyserial
-	pyusb
-	pyvisa
-	pyvisa-py
-	smbus-cffi
 "
 pip3_proxy install --upgrade $PIP_TO_INSTALL
 
@@ -214,11 +205,15 @@ if [[ "$answer_update" == "n" ]]; then
     (
 	cd $SERVER_ROOT
 	python3 manage.py shell <<-EOF
-		from django.contrib.auth import get_user_model
-		User = get_user_model()
-		User.objects.create_superuser('pyscada',
-		                              'admin@myproject.com',
-		                              'password')
+try:
+  from django.contrib.auth import get_user_model
+  from django.db.utils import IntegrityError
+  User = get_user_model()
+  User.objects.create_superuser('pyscada',
+                                'team@pyscada.org',
+                                'password')
+except IntegrityError:
+  print('User pyscada already exist')
 EOF
     )
     # Nginx
