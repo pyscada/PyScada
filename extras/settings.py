@@ -43,14 +43,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'pyscada',
-    'pyscada.modbus',
-    'pyscada.phant',
-    'pyscada.visa',
     'pyscada.hmi',
-    'pyscada.systemstat',
     'pyscada.export',
-    'pyscada.onewire',
-    'pyscada.smbus',
 ]
 
 installed_packages = pkg_resources.working_set
