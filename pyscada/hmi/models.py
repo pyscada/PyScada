@@ -757,11 +757,14 @@ class View(models.Model):
 
 
 class GroupDisplayPermission(models.Model):
-    hmi_group = models.OneToOneField(Group, null=True, on_delete=models.CASCADE)
+    hmi_group = models.OneToOneField(Group, blank=True, null=True, on_delete=models.CASCADE)
     type_choices = ((0, 'allow'), (1, 'exclude'),)
 
     def __str__(self):
-        return self.hmi_group.name
+        if self.hmi_group is not None:
+            return self.hmi_group.name
+        else:
+            return "Users without any group"
 
 
 class PieGroupDisplayPermission(models.Model):
@@ -772,7 +775,7 @@ class PieGroupDisplayPermission(models.Model):
     pies = models.ManyToManyField(Pie, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
 
 
 class PageGroupDisplayPermission(models.Model):
@@ -782,8 +785,8 @@ class PageGroupDisplayPermission(models.Model):
                                                       '<br>If exclude: allows all items except the selected ones.')
     pages = models.ManyToManyField(Page, blank=True, related_name='groupdisplaypermission')
 
-    #def __str__(self):
-    #    return self.group_display_permission.hmi_group.name
+    def __str__(self):
+        return str(self.group_display_permission)
 
 
 class SlidingPanelMenuGroupDisplayPermission(models.Model):
@@ -794,7 +797,7 @@ class SlidingPanelMenuGroupDisplayPermission(models.Model):
     sliding_panel_menus = models.ManyToManyField(SlidingPanelMenu, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
 
 
 class ChartGroupDisplayPermission(models.Model):
@@ -805,7 +808,7 @@ class ChartGroupDisplayPermission(models.Model):
     charts = models.ManyToManyField(Chart, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
 
 
 class ControlItemGroupDisplayPermission(models.Model):
@@ -816,7 +819,7 @@ class ControlItemGroupDisplayPermission(models.Model):
     control_items = models.ManyToManyField(ControlItem, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
 
 
 class FormGroupDisplayPermission(models.Model):
@@ -827,7 +830,7 @@ class FormGroupDisplayPermission(models.Model):
     forms = models.ManyToManyField(Form, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
 
 
 class WidgetGroupDisplayPermission(models.Model):
@@ -838,7 +841,7 @@ class WidgetGroupDisplayPermission(models.Model):
     widgets = models.ManyToManyField(Widget, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
 
 
 class CustomHTMLPanelGroupDisplayPermission(models.Model):
@@ -849,7 +852,7 @@ class CustomHTMLPanelGroupDisplayPermission(models.Model):
     custom_html_panels = models.ManyToManyField(CustomHTMLPanel, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
 
 
 class ViewGroupDisplayPermission(models.Model):
@@ -860,7 +863,7 @@ class ViewGroupDisplayPermission(models.Model):
     views = models.ManyToManyField(View, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
 
 
 class ProcessFlowDiagramGroupDisplayPermission(models.Model):
@@ -871,4 +874,4 @@ class ProcessFlowDiagramGroupDisplayPermission(models.Model):
     process_flow_diagram = models.ManyToManyField(ProcessFlowDiagram, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)

@@ -60,16 +60,25 @@ def get_group_display_permission_list(items, groups):
         QuerySet of items filtered
     """
     if len(groups) == 0:
-        return items.all()
-    result = items.filter(
-        groupdisplaypermission__group_display_permission__hmi_group__in=groups,
-        groupdisplaypermission__type=0,
-    ).distinct()
-    if items.first() is not None and items.first().groupdisplaypermission.model.objects.filter(type=1).exists():
-        result = result | items.exclude(
+        result = items.filter(
+            groupdisplaypermission__group_display_permission__hmi_group__isnull=True,
+            groupdisplaypermission__type=0,
+        ).distinct()
+        if items.first() is not None and items.first().groupdisplaypermission.model.objects.filter(type=1, group_display_permission__hmi_group=None).exists():
+            result = result | items.exclude(
+                groupdisplaypermission__group_display_permission__hmi_group__isnull=True,
+                groupdisplaypermission__type=1
+            ).distinct()
+    else:
+        result = items.filter(
             groupdisplaypermission__group_display_permission__hmi_group__in=groups,
-            groupdisplaypermission__type=1,
-            groupdisplaypermission__group_display_permission__isnull=False).distinct()
+            groupdisplaypermission__type=0,
+        ).distinct()
+        if items.first() is not None and items.first().groupdisplaypermission.model.objects.filter(type=1, group_display_permission__hmi_group__in=groups).exists():
+            result = result | items.exclude(
+                groupdisplaypermission__group_display_permission__hmi_group__in=groups,
+                groupdisplaypermission__type=1
+            ).distinct()
     return result
 
 

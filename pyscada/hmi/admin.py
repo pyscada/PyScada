@@ -301,21 +301,43 @@ class WidgetAdmin(admin.ModelAdmin):
     save_as_continue = True
 
 
+class GroupDisplayPermissionForm(forms.ModelForm):
+    def clean(self):
+        super().clean()
+        hmi_group = self.cleaned_data['hmi_group']
+        id = self.instance.pk
+        if len(GroupDisplayPermission.objects.filter(hmi_group=hmi_group).exclude(id=id)):
+            raise ValidationError("This group display permission already exist.")
+
+
 class GroupDisplayPermissionAdmin(admin.ModelAdmin):
     filter_horizontal = ()
     save_as = True
     save_as_continue = True
+    form = GroupDisplayPermissionForm
 
-    # Add inlines for any model with OneToOne relation with Device
-    items = [field for field in GroupDisplayPermission._meta.get_fields() if issubclass(type(field), OneToOneRel)]
-    inlines = []
-    for d in items:
-        filter_horizontal_inline = ()
-        for field in d.related_model._meta.local_many_to_many:
-            filter_horizontal_inline += (field.name,)
-        device_dict = dict(model=d.related_model, filter_horizontal=filter_horizontal_inline, classes=['collapse'])
-        cl = type(d.name, (admin.TabularInline,), device_dict)
-        inlines.append(cl)
+    def get_inlines(self, request, obj=None):
+        # Add inlines for any model with OneToOne relation with Device
+        items = [field for field in GroupDisplayPermission._meta.get_fields() if issubclass(type(field), OneToOneRel)]
+        inlines = []
+        for d in items:
+            filter_horizontal_inline = ()
+            for field in d.related_model._meta.local_many_to_many:
+                filter_horizontal_inline += (field.name,)
+            # Collapse inline only if empty
+            if hasattr(obj, d.name):
+                collapse = None
+            else:
+                collapse = ['collapse']
+            device_dict = dict(model=d.related_model, filter_horizontal=filter_horizontal_inline, classes=collapse)
+            cl = type(d.name, (admin.TabularInline,), device_dict)
+            inlines.append(cl)
+        return inlines
+
+    def has_delete_permission(self, request, obj=None):
+        if obj is not None and obj.hmi_group is None:
+            return False
+        return super().has_delete_permission(request, obj)
 
 
 class ControlPanelAdmin(admin.ModelAdmin):
