@@ -72,6 +72,10 @@ if [[ "$answer_date" == "n" ]]; then
 fi
 
 read -p "Use proxy ? [http://proxy:port or n]: " answer_proxy
+if [[ "answer_proxy" == "" ]]; then
+  echo "please select 'n' or enter a valid proxy"
+  exit 1
+fi
 
 apt_proxy install -y python3-pip
 echo 'Some python3 packages installed:'
