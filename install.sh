@@ -148,7 +148,9 @@ fi
 if [[ "$answer_update" == "n" ]]; then
   # Create pyscada user
   echo "Creating system user pyscada..."
-  adduser pyscada
+  useradd -r pyscada
+  mkdir -p /home/pyscada
+  chown -R pyscada:pyscada /home/pyscada
   mkdir -p $INSTALL_ROOT/http
   chown -R pyscada:pyscada $INSTALL_ROOT
 
