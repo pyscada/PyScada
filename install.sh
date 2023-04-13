@@ -160,11 +160,8 @@ if [[ "$answer_update" == "n" ]]; then
   chown pyscada:pyscada ${log_file_dir}pyscada_{daemon,debug}.log
 
   # Add rights for usb, i2c and serial
-  add_line_if_not_exist 'SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", MODE="0664", GROUP="pyscada"' /etc/udev/rules.d/10-usb.rules
-  add_line_if_not_exist 'KERNEL=="ttyS[0-9]", GROUP="dialout", MODE="0777"' /etc/udev/rules.d/10-usb.rules
   adduser www-data pyscada
   adduser pyscada dialout
-  adduser pyscada i2c
 fi
 
 SERVER_ROOT=$INSTALL_ROOT/PyScadaServer
