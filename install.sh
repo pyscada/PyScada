@@ -145,6 +145,8 @@ if [[ "$answer_channels" == "y" ]]; then
   fi
 fi
 
+log_file_dir="/var/log/pyscada/"
+
 if [[ "$answer_update" == "n" ]]; then
   # Create pyscada user
   echo "Creating system user pyscada..."
@@ -154,8 +156,8 @@ if [[ "$answer_update" == "n" ]]; then
   mkdir -p $INSTALL_ROOT/http
   chown -R pyscada:pyscada $INSTALL_ROOT
 
-  touch /var/log/pyscada_{daemon,debug}.log
-  chown pyscada:pyscada /var/log/pyscada_{daemon,debug}.log
+  touch ${log_file_dir}pyscada_{daemon,debug}.log
+  chown pyscada:pyscada ${log_file_dir}pyscada_{daemon,debug}.log
 
   # Add rights for usb, i2c and serial
   add_line_if_not_exist 'SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", MODE="0664", GROUP="pyscada"' /etc/udev/rules.d/10-usb.rules
@@ -166,32 +168,55 @@ if [[ "$answer_update" == "n" ]]; then
 fi
 
 SERVER_ROOT=$INSTALL_ROOT/PyScadaServer
-
+answer_db_user="PyScada-user"
+answer_db_password="PyScada-user-password"
 if [[ "$answer_update" == "n" ]]; then
     # Create DB
     mysql <<-EOF
 	CREATE DATABASE IF NOT EXISTS ${answer_db_name}
 		CHARACTER SET utf8;
 	GRANT ALL PRIVILEGES ON ${answer_db_name}.*
-		TO 'PyScada-user'@'localhost'
-		IDENTIFIED BY 'PyScada-user-password';
+		TO '${answer_db_user}'@'localhost'
+		IDENTIFIED BY '${answer_db_password}';
+EOF
+
+# add db infor to django template 
+mkdir ./tests/project_template_tmp
+cp -r ./tests/project_template/* ./tests/project_template_tmp/
+python3 <<-EOF
+import django
+from django.conf import settings
+from django.template.loader import render_to_string
+
+settings.configure(
+    TEMPLATES=[{
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': ['./'],  # script dir
+	'OPTIONS': {'string_if_invalid': '{{ %s }}'}, # prevents the other template tags to be replaced by ''
+    }]
+)
+
+django.setup()
+from django.template import Template, Context
+with open("./tests/project_template_tmp/project_name/settings.py-tpl", "r+") as f:
+    template = Template(f.read())
+    context = Context({
+                   "db_name": "${answer_db_name}",
+                   "db_user": "${answer_db_user}",
+                   "db_password": "${answer_db_password}",
+                   "project_root": "${INSTALL_ROOT}",
+                   "log_file_dir": "${log_file_dir}",
+                   "additional_apps": "",
+                   "additional_settings": "",
+	           })
+    f.seek(0)
+    f.write(template.render(context))
+    f.truncate()
 EOF
 
     sudo -u pyscada mkdir -p $SERVER_ROOT
-    sudo -u pyscada django-admin startproject PyScadaServer $SERVER_ROOT
+    sudo -u pyscada django-admin startproject PyScadaServer $SERVER_ROOT --template ./tests/project_template_tmp
 
-    # Copy settings.py and urls.py
-    var1=$(grep SECRET_KEY $SERVER_ROOT/PyScadaServer/settings.py)
-    echo $var1
-    printf -v var2 '%q' "$var1"
-    cp extras/settings.py $SERVER_ROOT/PyScadaServer
-    (
-	cd $SERVER_ROOT/PyScadaServer
-	sed -i "s/SECRET_KEY.*/$var2/g" settings.py
-	sed -i "s/PyScada_db'/${answer_db_name}'/g" settings.py
-    )
-
-    cp extras/urls.py $SERVER_ROOT/PyScadaServer
 fi
 
 (
