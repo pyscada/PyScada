@@ -67,7 +67,8 @@ echo 'date :'
 echo $(date)
 read -p "Is the date and time correct ? [y/n]: " answer_date
 if [[ "$answer_date" == "n" ]]; then
-  exit
+  echo "please set the date correctly"
+  exit 1
 fi
 
 read -p "Use proxy ? [http://proxy:port or n]: " answer_proxy
