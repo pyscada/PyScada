@@ -153,8 +153,8 @@ if [[ "$answer_update" == "n" ]]; then
   useradd -r pyscada
   mkdir -p /home/pyscada
   chown -R pyscada:pyscada /home/pyscada
-  mkdir -p $INSTALL_ROOT/http
-  chown -R pyscada:pyscada $INSTALL_ROOT
+  mkdir -p $INSTALL_ROOT/http/measurement_data_dumps
+  chown -R pyscada:pyscada $INSTALL_ROOT/http/measurement_data_dumps
 
   touch ${log_file_dir}pyscada_{daemon,debug}.log
   chown pyscada:pyscada ${log_file_dir}pyscada_{daemon,debug}.log
