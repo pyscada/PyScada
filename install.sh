@@ -89,6 +89,8 @@ read -p "Install channels and redis ? [y/n]: " answer_channels
     read -p "DB user ? [PyScada-user]: " answer_db_user
     read -p "DB password ? [PyScada-user-password]: " answer_db_password
 
+    read -p "admin name ?  " admin_name
+    read -p "admin email ? Error logs will be sent to this mail: " admin_email
   fi
   if [[ "$answer_db_name" == "" ]]; then
     answer_db_name="PyScada_db"
@@ -100,6 +102,8 @@ read -p "Install channels and redis ? [y/n]: " answer_channels
     answer_db_password="PyScada-user-password"
   fi
 
+  project_admins=$(echo "('${admin_name}', '${admin_email}')")
+  echo $project_admins
   echo $answer_db_name
 
   read -p "Auto add pyscada plugins ? [True/False]: " auto_add_apps
@@ -224,6 +228,7 @@ with open("./tests/project_template_tmp/project_name/settings.py-tpl", "r+") as 
                    "db_password": "${answer_db_password}",
                    "project_root": "${INSTALL_ROOT}",
                    "log_file_dir": "${log_file_dir}",
+                   "project_admins": "${project_admins}",
                    "auto_add_apps": "${auto_add_apps}",
                    "additional_apps": "",
                    "additional_settings": "",

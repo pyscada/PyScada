@@ -159,6 +159,10 @@ USE_TZ = True
 
 LOGIN_REDIRECT_URL = '/'
 
+ADMINS = [{{ project_admins|safe }}]
+
+MANAGERS = [{{ project_admins|safe }}]
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/{{ docs_version }}/howto/static-files/
@@ -219,25 +223,30 @@ LOGGING = {
             'maxBytes': 15728640,  # 1024 * 1024 * 15B = 15MB
             'backupCount': 5,
         },
+        "mail_admins": {
+            "level": "ERROR",
+            "class": "django.utils.log.AdminEmailHandler",
+            "include_html": True,
+        },
     },
     'loggers': {
         '': {
-            'handlers': ['file'],
+            'handlers': ['file', 'mail_admins'],
             'level': 'ERROR',
             'propagate': True,
         },
         'django': {
-            'handlers': ['file'],
+            'handlers': ['file', 'mail_admins'],
             'level': 'INFO',
             'propagate': False,
         },
         'pyscada': {
-            'handlers': ['file'],
+            'handlers': ['file', 'mail_admins'],
             'level': 'DEBUG',
             'propagate': False,
         },
         'gunicorn': {
-            'handlers': ['file'],
+            'handlers': ['file', 'mail_admins'],
             'level': 'INFO',
             'propagate': False,
         },
