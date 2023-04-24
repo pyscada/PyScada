@@ -176,6 +176,8 @@ if [[ "$answer_update" == "n" ]]; then
   mkdir -p $INSTALL_ROOT/http/measurement_data_dumps
   chown -R pyscada:pyscada $INSTALL_ROOT/http/measurement_data_dumps
 
+  mkdir ${log_file_dir}
+  chown pyscada:pyscada ${log_file_dir}
   touch ${log_file_dir}pyscada_{daemon,debug}.log
   chown pyscada:pyscada ${log_file_dir}pyscada_{daemon,debug}.log
 
