@@ -12,3 +12,4 @@ docs/_build
 # Emacs backup files
 *~
 /tests/test/*
+/tests/project_template_tmp/*
