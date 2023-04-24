@@ -11,7 +11,6 @@ from django.template.loader import get_template
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from django.forms.models import BaseInlineFormSet
 
 from six import text_type
 import traceback
