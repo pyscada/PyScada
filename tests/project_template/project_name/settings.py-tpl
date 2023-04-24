@@ -85,19 +85,6 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-if importlib.util.find_spec('django_cas_ng') is not None:
-    INSTALLED_APPS += [
-        'django_cas_ng',
-    ]
-    AUTHENTICATION_BACKENDS += [
-        'django_cas_ng.backends.CASBackend',
-    ]
-    CAS_SERVER_URL = 'https://sso.univ-pau.fr/cas/'
-    CAS_VERSION = '2'
-    CAS_EXTRA_LOGIN_KWARGS = {'proxies': {'https': 'http://cache.iutbayonne.univ-pau.fr:3128'}, 'timeout': 5}
-
-    UNAUTHENTICATED_REDIRECT = '/accounts/choose_login/'
-
 ROOT_URLCONF = '{{ project_name }}.urls'
 
 TEMPLATES = [
