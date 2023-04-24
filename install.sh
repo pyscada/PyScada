@@ -66,13 +66,13 @@ function wget_proxy(){
 echo 'date :'
 echo $(date)
 read -p "Is the date and time correct ? [y/n]: " answer_date
-if [[ "$answer_date" == "n" ]]; then
-  echo "please set the date correctly"
+if [[ "$answer_date" != "y" ]]; then
+  echo "please set the date correctly or enter 'y'"
   exit 1
 fi
 
 read -p "Use proxy ? [http://proxy:port or n]: " answer_proxy
-if [[ "answer_proxy" == "" ]]; then
+if [[ "$answer_proxy" == "" ]]; then
   echo "please select 'n' or enter a valid proxy"
   exit 1
 fi
@@ -84,13 +84,24 @@ pip3 list | grep -i -E 'pyscada|channels|asgiref'
 read -p "Update only (don't create db, user, copy services, settings and urls...) ? [y/n]: " answer_update
 read -p "Install channels and redis ? [y/n]: " answer_channels
 
-if [[ "$answer_update" == "n" ]]; then
-  read -p "DB name ? [PyScada_db]: " answer_db_name
-fi
-if [[ "$answer_db_name" == "" ]]; then
-  answer_db_name="PyScada_db"
-fi
-echo $answer_db_name
+  if [[ "$answer_update" == "n" ]]; then
+    read -p "DB name ? [PyScada_db]: " answer_db_name
+    read -p "DB user ? [PyScada-user]: " answer_db_user
+    read -p "DB password ? [PyScada-user-password]: " answer_db_password
+
+  fi
+  if [[ "$answer_db_name" == "" ]]; then
+    answer_db_name="PyScada_db"
+  fi
+  if [[ "$answer_db_user" == "" ]]; then
+    answer_db_user="PyScada-user"
+  fi
+  if [[ "$answer_db_password" == "" ]]; then
+    answer_db_password="PyScada-user-password"
+  fi
+
+  echo $answer_db_name
+
 
 echo "Stopping PyScada"
 systemctl stop pyscada gunicorn gunicorn.socket
@@ -165,8 +176,7 @@ if [[ "$answer_update" == "n" ]]; then
 fi
 
 SERVER_ROOT=$INSTALL_ROOT/PyScadaServer
-answer_db_user="PyScada-user"
-answer_db_password="PyScada-user-password"
+
 if [[ "$answer_update" == "n" ]]; then
     # Create DB
     mysql <<-EOF
