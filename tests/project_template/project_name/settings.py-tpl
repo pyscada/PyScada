@@ -215,9 +215,11 @@ LOGGING = {
     'handlers': {
         'file': {
             'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': '{{ log_file_dir }}/pyscada_debug.log',
+            'class': 'concurrent_log_handler.ConcurrentRotatingFileHandler',
+            'filename': '{{ log_file_dir }}pyscada_debug.log',
             'formatter': 'standard',
+            'maxBytes': 15728640,  # 1024 * 1024 * 15B = 15MB
+            'backupCount': 5,
         },
     },
     'loggers': {

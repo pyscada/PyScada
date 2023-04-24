@@ -43,6 +43,7 @@ setup(
         'asgiref',
         'monthdelta',
         'six',
+        'concurrent-log-handler',  # rotating logs for multiprocess
     ],
     packages=find_packages(exclude=["project", "project.*"]),
     include_package_data=True,
