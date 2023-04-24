@@ -102,6 +102,15 @@ read -p "Install channels and redis ? [y/n]: " answer_channels
 
   echo $answer_db_name
 
+  read -p "Auto add pyscada plugins ? [True/False]: " auto_add_apps
+  if [[ "$auto_add_apps" == "True" ]]; then
+    echo 'You need to restart pyscada and gunicorn after (un)installing any pyscada plugin.'
+  elif [[ "$auto_add_apps" == "False" ]]; then
+    echo 'You need manually add a plugin to the django project settings and restart pyscada and gunicorn after (un)installing any pyscada plugin.'
+  else
+    echo "Please answer True or False. Aborting."
+    exit 1
+  fi
 
 echo "Stopping PyScada"
 systemctl stop pyscada gunicorn gunicorn.socket
@@ -187,7 +196,7 @@ if [[ "$answer_update" == "n" ]]; then
 		IDENTIFIED BY '${answer_db_password}';
 EOF
 
-# add db infor to django template 
+# add db informations to django template
 mkdir ./tests/project_template_tmp
 cp -r ./tests/project_template/* ./tests/project_template_tmp/
 python3 <<-EOF
@@ -213,9 +222,10 @@ with open("./tests/project_template_tmp/project_name/settings.py-tpl", "r+") as 
                    "db_password": "${answer_db_password}",
                    "project_root": "${INSTALL_ROOT}",
                    "log_file_dir": "${log_file_dir}",
+                   "auto_add_apps": "${auto_add_apps}",
                    "additional_apps": "",
                    "additional_settings": "",
-	           })
+                   })
     f.seek(0)
     f.write(template.render(context))
     f.truncate()
