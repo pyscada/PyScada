@@ -172,6 +172,9 @@ class Scheduler(object):
                                            process_class='pyscada.utils.scheduler.Process')
         parent_process.save()
         # check for processes to add in init block of each app
+        if 'pyscada.core' not in settings.INSTALLED_APPS:
+            # append core to initialize pyscada.event and pyscada.mail
+            settings.INSTALLED_APPS.append('pyscada.core')
         for app in settings.INSTALLED_APPS:
             m = __import__(app, fromlist=[str('a')])
             self.stderr.write("app %s\n" % app)
