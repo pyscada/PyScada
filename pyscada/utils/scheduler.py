@@ -321,6 +321,17 @@ class Scheduler(object):
             logger.debug('no such process in BackgroundProcesses\n')
             sys.exit(0)
 
+        # kill all the sub processes
+        for process in BackgroundProcess.objects.filter(done=False, pid__gt=0):
+            try:
+                kill(process.pid, 9)
+            except:
+                pass
+        # Init the DB
+        if not self.init_db():
+            logger.debug('Init DB failed\n')
+            sys.exit(0)
+
         self.process_id = master_process.pk
         master_process.pid = self.pid
         master_process.last_update = now()
