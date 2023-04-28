@@ -52,7 +52,8 @@ from django.db.transaction import TransactionManagementError
 from django.db.models import Q
 from django.db.utils import IntegrityError
 
-from pyscada.models import BackgroundProcess, DeviceWriteTask, Device, RecordedData, DeviceReadTask
+from pyscada.models import BackgroundProcess, DeviceWriteTask, Device, RecordedData, DeviceReadTask, VariableProperty
+from pyscada.utils import set_bit
 from django.utils.timezone import now
 import logging
 
@@ -1192,19 +1193,56 @@ class SingleDeviceDAQProcess(Process):
         # data from a write
         data = []
         # process write tasks
-        # Do all the write task for this device starting with the oldest
-        dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                              (Q(variable__device_id=self.device_id) |
-                                               Q(variable_property__variable__device_id=self.device_id)))\
-            .order_by('start')
-        if hasattr(self, 'dwt_received') and self.dwt_received and len(dwts) == 0:
+
+        variable_as_decimal = {}
+        # iterate on VPs write tasks
+        for task in DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False, variable_property__variable__device_id=self.device_id).order_by('start'):
+            # scale if needed
+            if task.variable_property.variable.scaling is not None:
+                task.value = task.variable_property.variable.scaling.scale_output_value(task.value)
+            # process bit proterty to change variable bit value
+            if len(task.variable_property.name.split("bit")) == 2 and \
+              task.variable_property.name.split("bit")[0] == "" and \
+              task.variable_property.name.split("bit")[1].isdigit() and \
+              int(task.variable_property.name.split("bit")[1]) < task.variable_property.variable.get_bits_by_class():
+                if task.variable_property.variable not in variable_as_decimal:
+                    variable_as_decimal[task.variable_property.variable] = {}
+                variable_as_decimal[task.variable_property.variable][task.variable_property.name.split("bit")[1]] = task.value
+            # Save the VP value
+            vp = VariableProperty.objects.update_property(variable_property=task.variable_property, value=task.value)
+            if vp:
+                # Set the VP task as done
+                task.done = True
+                task.finished = time()
+                task.save(update_fields=['done', 'finished'])
+            else:
+                logger.debug('VP not found for device write task %d' % task.pk)
+                task.failed = True
+                task.finished = time()
+                task.save(update_fields=['done', 'finished'])
+
+        # Get and change the variable value which has bit VP
+        for var, item in variable_as_decimal.items():
+            if var.query_prev_value(0):
+                prev_value = var.prev_value
+            else:
+                prev_value = 0
+            for bit, value in item.items():
+                prev_value = set_bit(int(prev_value), int(bit), bool(value))
+            # Create a new device write task for this varaible with the new value
+            dwt = DeviceWriteTask(variable=var, value=prev_value)
+            dwt.save()
+
+        # Do all the variable write task for this device starting with the oldest
+        dwts = DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False, variable__device_id=self.device_id).order_by('start')
+        if hasattr(self, 'dwt_received') and self.dwt_received and dwts.count() == 0:
             sleep(0.5)
             logger.info("DeviceWriteTask bulk_created but not found, wait 0.5s")
             dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
                                                   (Q(variable__device_id=self.device_id) |
                                                    Q(variable_property__variable__device_id=self.device_id)))\
                 .order_by('start')
-            if len(dwts) == 0:
+            if dwt.count() == 0:
                 logger.info("DeviceWriteTask still not found")
         self.dwt_received = False
         for task in dwts:
@@ -1234,16 +1272,16 @@ class SingleDeviceDAQProcess(Process):
         drts = DeviceReadTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
                                              (Q(device_id=self.device_id) | Q(variable__device_id=self.device_id) |
                                               Q(variable_property__variable__device_id=self.device_id)))
-        if hasattr(self, 'drt_received') and self.drt_received and len(drts) == 0:
+        if hasattr(self, 'drt_received') and self.drt_received and drts.count() == 0:
             sleep(0.5)
             logger.info("DeviceReadTask bulk_created but not found, wait 0.5s")
             drts = DeviceReadTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
                                                  (Q(device_id=self.device_id) | Q(variable__device_id=self.device_id) |
                                                   Q(variable_property__variable__device_id=self.device_id)))
-            if len(drts) == 0:
+            if drts.count() == 0:
                 logger.info("DeviceReadTask still not found")
         self.drt_received = False
-        if (time() - self.last_query > self.dt_query_data) or len(drts):
+        if (time() - self.last_query > self.dt_query_data) or drts.count():
             # TODO : Read data for a variable or a VP only
 
             self.last_query = time()
@@ -1261,6 +1299,17 @@ class SingleDeviceDAQProcess(Process):
 
         if isinstance(data, list):
             if len(data) > 0:
+                # For all recorded data, if a variable is defined, find bit VP and set the bit value
+                for l in data:
+                    for d in l:
+                        if d.variable is not None:
+                            for vp in d.variable.variableproperty_set.all():
+                                if len(vp.name.split("bit")) == 2 and \
+                                vp.name.split("bit")[0] == "" and \
+                                vp.name.split("bit")[1].isdigit() and \
+                                int(vp.name.split("bit")[1]) < vp.variable.get_bits_by_class():
+                                    bit = (d.value() >> int(vp.name.split("bit")[1])) & 1
+                                    VariableProperty.objects.update_property(vp, value=bit)
                 return 1, data
         return 1, None
 
@@ -1321,18 +1370,58 @@ class MultiDeviceDAQProcess(Process):
         data = [[]]
         for device_id, device in self.devices.items():
             # process write tasks
+
+            variable_as_decimal = {}
+            # iterate on VPs write tasks
+            for task in DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False, variable_property__variable__device_id=device_id).order_by('start'):
+                # scale if needed
+                if task.variable_property.variable.scaling is not None:
+                    task.value = task.variable_property.variable.scaling.scale_output_value(task.value)
+                # process bit proterty to change variable bit value
+                if len(task.variable_property.name.split("bit")) == 2 and \
+                task.variable_property.name.split("bit")[0] == "" and \
+                task.variable_property.name.split("bit")[1].isdigit() and \
+                int(task.variable_property.name.split("bit")[1]) <= task.variable_property.variable.get_bits_by_class():
+                    if task.variable_property.variable not in variable_as_decimal:
+                        variable_as_decimal[task.variable_property.variable] = {}
+                    variable_as_decimal[task.variable_property.variable][task.variable_property.name.split("bit")[1]] = task.value
+                # Save the VP value
+                vp = VariableProperty.objects.update_property(variable_property=task.variable_property, value=task.value)
+                if vp:
+                    # Set the VP task as done
+                    task.done = True
+                    task.finished = time()
+                    task.save(update_fields=['done', 'finished'])
+                else:
+                    logger.debug('VP not found for device write task %d' % task.pk)
+                    task.failed = True
+                    task.finished = time()
+                    task.save(update_fields=['done', 'finished'])
+
+            # Get and change the variable value which has bit VP
+            for var, item in variable_as_decimal.items():
+                if var.query_prev_value(0):
+                    prev_value = var.prev_value
+                else:
+                    prev_value = 0
+                for bit, value in item.items():
+                    prev_value = set_bit(int(prev_value), int(bit), bool(value))
+                # Create a new device write task for this varaible with the new value
+                dwt = DeviceWriteTask(variable=var, value=prev_value)
+                dwt.save()
+
             dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
                                                   (Q(variable__device_id=device_id) |
                                                    Q(variable_property__variable__device_id=device_id)))\
                 .order_by('start')
-            if hasattr(self, 'dwt_received') and self.dwt_received and len(dwts) == 0:
+            if hasattr(self, 'dwt_received') and self.dwt_received and dwts.count() == 0:
                 sleep(0.5)
                 logger.info("DeviceWriteTask bulk_created but not found, wait 0.5s")
                 dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
                                                       (Q(variable__device_id=device_id) |
                                                        Q(variable_property__variable__device_id=device_id)))\
                     .order_by('start')
-                if len(dwts) == 0:
+                if dwts.count() == 0:
                     logger.info("DeviceWriteTask still not found")
             for task in dwts:
                 if task.variable is not None and task.variable.scaling is not None:
@@ -1362,17 +1451,17 @@ class MultiDeviceDAQProcess(Process):
                                              (Q(device_id__in=self.device_ids) |
                                               Q(variable__device_id__in=self.device_ids) |
                                               Q(variable_property__variable__device_id__in=self.device_ids)))
-        if hasattr(self, 'drt_received') and self.drt_received and len(drts) == 0:
+        if hasattr(self, 'drt_received') and self.drt_received and drts.count() == 0:
             sleep(0.5)
             logger.info("DeviceReadTask bulk_created but not found, wait 0.5s")
             drts = DeviceReadTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
                                                  (Q(device_id__in=self.device_ids) |
                                                   Q(variable__device_id__in=self.device_ids) |
                                                   Q(variable_property__variable__device_id__in=self.device_ids)))
-            if len(drts) == 0:
+            if drts.count() == 0:
                 logger.info("DeviceReadTask still not found")
         self.drt_received = False
-        if time() - self.last_query > self.dt_query_data or len(drts):
+        if time() - self.last_query > self.dt_query_data or drts.count():
             self.last_query = time()
             for device_id, device in self.devices.items():
                 # Query data
@@ -1393,6 +1482,17 @@ class MultiDeviceDAQProcess(Process):
 
         if isinstance(data, list):
             if len(data) > 0:
+                # For all recorded data, if a variable is defined, find bit VP and set the bit value
+                for l in data:
+                    for d in l:
+                        if d.variable is not None:
+                            for vp in d.variable.variableproperty_set.all():
+                                if len(vp.name.split("bit")) == 2 and \
+                                vp.name.split("bit")[0] == "" and \
+                                vp.name.split("bit")[1].isdigit() and \
+                                int(vp.name.split("bit")[1]) < vp.variable.get_bits_by_class():
+                                    bit = (d.value() >> int(vp.name.split("bit")[1])) & 1
+                                    VariableProperty.objects.update_property(vp, value=bit)
                 return 1, data
         return 1, None
 
