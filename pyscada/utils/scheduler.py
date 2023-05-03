@@ -1169,7 +1169,7 @@ class SingleDeviceDAQProcess(Process):
         """
         self.device = Device.objects.filter(protocol__daq_daemon=1, id=self.device_id).first()
         if not self.device:
-            logger.error("Cannot initialized process for %s. Device not found." % self.device_id)
+            logger.error(f"Cannot initialize process for {self.device_id}. Device not found.")
             self.device = None
             return False
         if not self.device.active:
