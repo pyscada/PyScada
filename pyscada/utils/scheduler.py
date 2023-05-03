@@ -1242,7 +1242,7 @@ class SingleDeviceDAQProcess(Process):
                                                   (Q(variable__device_id=self.device_id) |
                                                    Q(variable_property__variable__device_id=self.device_id)))\
                 .order_by('start')
-            if dwt.count() == 0:
+            if dwts.count() == 0:
                 logger.info("DeviceWriteTask still not found")
         self.dwt_received = False
         for task in dwts:
