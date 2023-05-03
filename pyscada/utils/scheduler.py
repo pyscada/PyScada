@@ -845,7 +845,12 @@ class Process(object):
                     self.dwt_received = True
                 if 'ProcessSignal' in a:
                     logger.debug("Received ProcessSignal %s on channel_layer for %s" % (a['ProcessSignal'], self.label))
-                #logger.debug(a)
+
+                # BUG : need to empty the channel_layer, if not the channel layer keep the message for each run loop
+                try:
+                    await wait_for(self.channel_layer.receive(message), timeout=0.01)
+                except asyncioTimeoutError:
+                    pass
         else:
             #logger.debug("sleep for %s - %s" % (self.process_id, dt))
             sleep(dt)
