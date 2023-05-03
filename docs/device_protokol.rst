@@ -17,6 +17,7 @@ Device Protocol IDs
 - 13: `SML (Smart Meter Language) <https://github.com/gkend/PyScada-SML>`_
 - 14: `File <https://github.com/pyscada/PyScada-File>`_
 - 15: `MeterBus (MBus) <https://github.com/pyscada/PyScada-MeterBus>`_
+- 16: Generic dummy device
 - 8X: Custom Worker
 - 93 `Reserved (Serial) <https://github.com/clavay/PyScada-Serial>`_
 - 94 `Reserved (WebService) <https://github.com/clavay/PyScada-WebService>`_
