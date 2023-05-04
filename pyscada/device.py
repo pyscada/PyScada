@@ -5,7 +5,7 @@ from pyscada.models import DeviceProtocol, VariableProperty
 import pyscada
 
 import sys
-from time import time, sleep
+from time import time, sleep, time_ns
 import logging
 logger = logging.getLogger(__name__)
 
