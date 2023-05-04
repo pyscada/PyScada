@@ -119,7 +119,7 @@ class GenericHandlerDevice:
         return None
 
     def time(self):
-        return time()
+        return time_ns() / 1000000000
 
 
 class GenericDevice:
@@ -186,6 +186,6 @@ class GenericDevice:
                 if not self.variables[item].writeable:
                     return False
                 read_value = self._h.write_data(variable_id, value, task)
-                if read_value is not None and self.variables[item].update_value(read_value, time()):
+                if read_value is not None and self.variables[item].update_value(read_value, time_ns() / 1000000000):
                     output.append(self.variables[item].create_recorded_data_element())
         return output

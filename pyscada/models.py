@@ -2031,12 +2031,12 @@ class RecordedData(models.Model):
     def __init__(self, *args, **kwargs):
         if 'timestamp' in kwargs:
             try:
-                timestamp = int(kwargs.pop('timestamp'))
+                timestamp = kwargs.pop('timestamp')
             except ValueError as e:
                 logger.error(f'RecordedData timestamp: {e}')
-                timestamp = time.time()
+                timestamp = time.time_ns() / 1000000000
         else:
-            timestamp = time.time()
+            timestamp = time.time_ns() / 1000000000
 
         if 'variable_id' in kwargs:
             variable_id = kwargs['variable_id']
