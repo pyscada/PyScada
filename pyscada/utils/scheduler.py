@@ -1353,10 +1353,10 @@ class MultiDeviceDAQProcess(Process):
             try:
                 if not item:
                     logger.error("Cannot add device %s to process %s. Device not found."
-                                 % (self.device_id, self.process_id))
+                                 % (item.id, self.process_id))
                     continue
                 if not item.active:
-                    logger.info("Device %s is not active. Not added to process %s." % (self.device_id, self.process_id))
+                    logger.info("Device %s is not active. Not added to process %s." % (item.id, self.process_id))
                     continue
                 tmp_device = item.get_device_instance()
                 if tmp_device is not None:
