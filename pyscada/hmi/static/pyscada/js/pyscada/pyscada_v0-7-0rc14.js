@@ -3,7 +3,7 @@
 version 0.8.0
 
 Copyright (c) 2013-2023 Martin Schröder, Camille Lavayssière
-Licensed under the GPL.
+Licensed under the AGPL.
 
 */
 
