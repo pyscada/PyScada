@@ -1313,7 +1313,7 @@ class SingleDeviceDAQProcess(Process):
                                 vp.name.split("bit")[0] == "" and \
                                 vp.name.split("bit")[1].isdigit() and \
                                 int(vp.name.split("bit")[1]) < vp.variable.get_bits_by_class():
-                                    bit = (d.value() >> int(vp.name.split("bit")[1])) & 1
+                                    bit = (int(d.value()) >> int(vp.name.split("bit")[1])) & 1
                                     VariableProperty.objects.update_property(vp, value=bit)
                 return 1, data
         return 1, None
