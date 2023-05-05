@@ -184,6 +184,7 @@ class GenericDevice:
         for item in self.variables:
             if self.variables[item].id == variable_id:
                 if not self.variables[item].writeable:
+                    logger.info(f"Variable '{self.variables[item]}' is not writeable. Write task refused.")
                     return False
                 read_value = self._h.write_data(variable_id, value, task)
                 if read_value is not None and self.variables[item].update_value(read_value, time_ns() / 1000000000):
