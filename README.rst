@@ -87,5 +87,5 @@ Contribute
 License
 -------
 
-The project is licensed under the _GNU General Public License v3 (GPLv3)_.
+The project is licensed under the _GNU Affero General Public License v3 (AGPLv3)_.
 -
