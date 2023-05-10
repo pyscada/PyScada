@@ -54,10 +54,11 @@
             <!-- Display options -->
             {% if item.display_value_options.type == 0 %}
                 <!-- Classic Div -->
-                {% if item.display_value_options.color_only == 0 %}
-                    {% include "value_field.html" %}
-                {% else %}
+                {% if item.value_class == 'BOOL' or item.value_class == 'BOOLEAN' or item.display_value_options.color_only == 1 %}
+                    <!-- boolean display -->
                     {% include "button.html" %}
+                {% else %}
+                    {% include "value_field.html" %}
                 {% endif %}
             {% elif item.display_value_options.type == 3 %}
                 <!-- Gauge -->
