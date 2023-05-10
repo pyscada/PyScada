@@ -514,8 +514,8 @@ var store_temp_ajax_data = null;
   * @param {number|boolean} val Data format
   * @returns {*} Returns data type of 'val' in the data dictionnary
   */
- function dictionary(id,val){
-     var dict = get_config_from_hidden_config("variable", 'id', id, 'dictionary');
+ function dictionary(id, val, type){
+     var dict = get_config_from_hidden_config(type, 'id', id, 'dictionary');
      if (typeof dict != 'undefined'){
          l = get_config_from_hidden_configs("dictionaryitem", 'id', 'dictionary')
          for (item in l){
@@ -580,10 +580,10 @@ var store_temp_ajax_data = null;
 
      var type = null;
      var v_id = null;
-     if (get_config_from_hidden_config("controlitem", 'id', id, 'variable') != null) {
+     if (get_config_from_hidden_config("controlitem", 'id', id, 'variable') != 'None') {
         type = "variable";
         v_id = get_config_from_hidden_config("controlitem", 'id', id, 'variable');
-     }else if (get_config_from_hidden_config("controlitem", 'id', id, 'variable-property') != null) {
+     }else if (get_config_from_hidden_config("controlitem", 'id', id, 'variable-property') != 'None') {
         type = "variableproperty";
         v_id = get_config_from_hidden_config("controlitem", 'id', id, 'variable-property');
      }
@@ -658,7 +658,7 @@ var store_temp_ajax_data = null;
  function update_data_values(key,val,time){
 
      // CHECKING 'key' TYPE :
-     if (key.split("-")[0] == "var") {var type="variable";} else {var type="variableproperty";}
+     if (key.split("-")[0] == "var") {var type="variable";} else {var type="variable-property";}
 
      // get the unit
      var unit_id = get_config_from_hidden_config(type,'id',key.split("-")[1],'unit')
@@ -712,58 +712,89 @@ var store_temp_ajax_data = null;
 
 
      // TYPE OF 'val' :
-     // NUMBER :
-     if (typeof(val)==="number"){
+     // NUMBER and BOOLEAN :
+     if (typeof(val)==="number" || typeof(val)==="boolean"){
 
-         var r_val = Number(val);
+        if (typeof(val)==="number") {
+            var r_val = Number(val);
 
-         // adjusting r_val
-         if(Math.abs(r_val) == 0 ){
-             r_val = 0;
-         }else if(Math.abs(r_val) < 0.001) {
-             r_val = r_val.toExponential(2);
-         }else if (Math.abs(r_val) < 0.01) {
-             r_val = r_val.toPrecision(1);
-         }else if(Math.abs(r_val) < 0.1) {
-             r_val = r_val.toPrecision(2);
-         }else if(Math.abs(r_val) < 1) {
-             r_val = r_val.toPrecision(3);
-         }else if(r_val > 100) {
-             r_val = r_val.toPrecision(4);
-         }else{
-             r_val = r_val.toPrecision(4);
-         }
+            // adjusting r_val
+            if(Math.abs(r_val) == 0 ){
+                r_val = 0;
+            }else if(Math.abs(r_val) < 0.001) {
+                r_val = r_val.toExponential(2);
+            }else if (Math.abs(r_val) < 0.01) {
+                r_val = r_val.toPrecision(1);
+            }else if(Math.abs(r_val) < 0.1) {
+                r_val = r_val.toPrecision(2);
+            }else if(Math.abs(r_val) < 1) {
+                r_val = r_val.toPrecision(3);
+            }else if(r_val > 100) {
+                r_val = r_val.toPrecision(4);
+            }else{
+                r_val = r_val.toPrecision(4);
+            }
+        }else {
+            var r_val = val;
+            // set button colors
+            if (r_val === 0 | r_val == false) {
+                $('button.btn-success.write-task-btn.' + key).addClass("update-able");
+                $('button.update-able.write-task-btn.' + key).addClass("btn-default");
+                $('button.update-able.write-task-btn.' + key).removeClass("btn-success");
 
-         // colors
+                r_val = 0;
+
+                //$(".type-numeric." + key).html(0);
+                if ($('input.'+ key).attr("placeholder") == "") {
+                    $('input.'+ key).attr("placeholder",0);
+                }
+            } else if (typeof(val)==="boolean"){
+                r_val = 1;
+
+                $('button.btn-default.write-task-btn.' + key).addClass("update-able");
+                $('button.update-able.write-task-btn.' + key).removeClass("btn-default");
+                $('button.update-able.write-task-btn.' + key).addClass("btn-success");
+
+                //$(".type-numeric." + key).html(1);
+                if ($('input.'+ key).attr("placeholder") == "") {
+                    $('input.'+ key).attr("placeholder",1);
+                }
+            }
+        }
+
+         // timestamp, dictionary and color
          document.querySelectorAll(".control-item.type-numeric." + key).forEach(function(e) {
              var control_item_id = e.id;
              var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'display-value-options');
-             //var color_mode = $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode');
-             var color_mode = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'mode');
-             var color_type = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color_type');
+             var color_only = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-only');
+             var ci_type = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'type');
              var timestamp_conversion_value = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'timestamp-conversion');
-             var dictionary_value = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'dictionary');
-             var var_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'variable');
-             var dictionary_value = get_config_from_hidden_config("variable", 'id', var_id, 'dictionary');
-             if (color_mode != 1 ) {
-                 var r_val_temp = r_val;
-                 if (timestamp_conversion_value != null && timestamp_conversion_value != 0){
-                     // Transform timestamps
-                     r_val_temp=timestamp_conversion(timestamp_conversion_value,val);
-                 }else if (dictionary_value != null && dictionary_value != 0){
-                     // Transform value in dictionaries
-                     r_val_temp=dictionary(var_id,val);
-                 }
-                 // Set the text value
-                 document.querySelector("#" + control_item_id).innerHTML = r_val_temp + " " + unit;
+             var var_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], type);
+             var dictionary_value = get_config_from_hidden_config(type.replace('-', ''), 'id', var_id, 'dictionary');
+             var ci_label = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'label');
+             if (display_value_option_id == 'None' || color_only == 'False') {
+                if (typeof(val)==="number") {
+                    if (timestamp_conversion_value != null && timestamp_conversion_value != 0 && typeof(timestamp_conversion_value) != "undefined"){
+                        // Transform timestamps
+                        r_val=timestamp_conversion(timestamp_conversion_value,val);
+                    }else {
+                        // Transform value in dictionaries
+                        r_val=dictionary(var_id, val, type.replace('-', ''));
+                    }
+                    // Set the text value
+                    document.querySelector("#" + control_item_id).innerHTML = r_val + " " + unit;
+                }else if(typeof(val)==="boolean"){
+                    // Set the text value
+                    e.querySelector('.boolean-value').innerHTML = ci_label + " : " + dictionary(var_id, val, type.replace('-', '')) + " " + unit;
+                }
              }
-             if (color_type != 0 && color_mode != 0){
+             if (display_value_option_id == 'None' || ci_type == 0){
                  // Change background color
                  e.style.backgroundColor = update_data_colors(control_item_id,val);
              }
          })
 
-         // timestamps
+         // update chart legend variable value
          if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && time < DATA_DISPLAY_FROM_TIMESTAMP) {
          }else if (DATA_DISPLAY_TO_TIMESTAMP > 0 && time > DATA_DISPLAY_TO_TIMESTAMP) {
          }else if (DATA_FROM_TIMESTAMP > 0 && time < DATA_FROM_TIMESTAMP) {
@@ -772,100 +803,12 @@ var store_temp_ajax_data = null;
              $(".legendValue.type-numeric." + key).html(r_val);
          }
 
+         // update sliding panel menu variable value
          $(".label .type-numeric." + key).html(r_val);
 
+         // set input placeholder value : displayed in the input field before the user enters a value
          if ($('input.'+ key).attr("placeholder") == "") {
              $('input.'+ key).attr("placeholder",r_val);
-         }
-
-         // unixtime
-         var date = new Date(val*1000);
-         $(".type-numeric.unixtime_local_date_time." + key).html(date.toLocaleString());
-         $(".type-numeric.unixtime_utc_date_time." + key).html(date.toUTCString());
-         $(".type-numeric.hex_str_full." + key).html(val.toString(16).toUpperCase());
-     }
-
-     // BOOLEAN :
-     // set value fields
-     if (typeof(val)==="boolean"){
-         // set button colors
-         if (val === 0 | val == false) {
-             $(".label.type-bool." + key).addClass("label-default");
-             $(".label.type-bool." + key).removeClass("label-primary");
-             $(".label.type-bool." + key).removeClass("label-info");
-             $(".label.type-bool." + key).removeClass("label-success");
-             $(".label.type-bool." + key).removeClass("label-warning");
-             $(".label.type-bool." + key).removeClass("label-danger");
-
-             // inverted
-             $(".label.type-bool.status-red-inv." + key).addClass("label-danger");
-             $(".label.type-bool.status-red-inv." + key).removeClass("label-default");
-
-             $('button.btn-success.write-task-btn.' + key).addClass("update-able");
-             $('button.update-able.write-task-btn.' + key).addClass("btn-default");
-             $('button.update-able.write-task-btn.' + key).removeClass("btn-success");
-
-             val = 0;
-
-             //$(".type-numeric." + key).html(0);
-             if ($('input.'+ key).attr("placeholder") == "") {
-                 $('input.'+ key).attr("placeholder",0);
-             }
-         } else {
-             $(".label.type-bool." + key).removeClass("label-default");
-             $(".label.type-bool.status-blue." + key).addClass("label-primary");
-             $(".label.type-bool.status-info." + key).addClass("label-info");
-             $(".label.type-bool.status-green." + key).addClass("label-success");
-             $(".label.type-bool.status-yellow." + key).addClass("label-warning");
-             $(".label.type-bool.status-red." + key).addClass("label-danger");
-
-             // inverted
-             $(".label.type-bool.status-red-inv." + key).removeClass("label-danger");
-             $(".label.type-bool.status-red-inv." + key).addClass("label-default");
-
-             val = 1;
-
-             $('button.btn-default.write-task-btn.' + key).addClass("update-able");
-             $('button.update-able.write-task-btn.' + key).removeClass("btn-default");
-             $('button.update-able.write-task-btn.' + key).addClass("btn-success");
-
-             //$(".type-numeric." + key).html(1);
-             if ($('input.'+ key).attr("placeholder") == "") {
-                 $('input.'+ key).attr("placeholder",1);
-             }
-         }
-
-         $(".label .type-numeric." + key).html(val);
-
-         // timestamps
-         if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && time < DATA_DISPLAY_FROM_TIMESTAMP) {
-         }else if (DATA_DISPLAY_TO_TIMESTAMP > 0 && time > DATA_DISPLAY_TO_TIMESTAMP) {
-         }else if (DATA_FROM_TIMESTAMP > 0 && time < DATA_FROM_TIMESTAMP) {
-         }else if (DATA_TO_TIMESTAMP > 0 && time > DATA_TO_TIMESTAMP) {
-         }else { $(".legendValue.type-numeric." + key).html(val); }
-
-         // colors
-         for (i = 0; i < $(".control-item.type-numeric." + key).length; ++i) {
-             var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', i, 'display-value-options');
-             //var color_mode = $(".variable-config[data-color-mode][data-id=" + $(".control-item.type-numeric." + key)[i].id + "]").attr('data-color-mode');
-             var color_mode = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'mode');
-             var color_type = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color_type');
-             var dictionary_value = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'dictionary');
-             var var_id = get_config_from_hidden_config("controlitem", 'id', i, 'variable');
-             var dictionary_value = get_config_from_hidden_config("variable", 'id', var_id, 'dictionary');
-             if (color_mode != 1 ) {
-                 var r_val_temp = r_val;
-                 if (dictionary_value != null && dictionary_value != 0){
-                     // Transform value in dictionaries
-                     r_val_temp=dictionary($(".control-item.type-numeric." + key)[i].id,val);
-                 }
-                 // Set the text value
-                 $("#" + $(".control-item.type-numeric." + key)[i].id).html(r_val_temp);
-             }
-             if (color_type != 0 && color_mode != 0){
-                 // Change background color
-                 $($(".control-item.type-numeric." + key)[i]).css("background-color", update_data_colors($(".control-item.type-numeric." + key)[i].id,val));
-             }
          }
      }
 
