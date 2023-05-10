@@ -16,7 +16,9 @@
             </button>
             <span style="color:red;height:12px;" data-toggle="tooltip" data-placement="top" title="" data-original-title="Very old value (>10 polling interval)" class="glyphicon glyphicon-alert hidden"></span>
             <span style="color:orange;height:12px;" data-toggle="tooltip" data-placement="top" title="" data-original-title="Old value (between 3 and 10 polling interval)" class="glyphicon glyphicon-exclamation-sign hidden"></span>
-            {{ item.label }}
+            <span class="boolean-value">
+              {{ item.label }}
+            </span>
         </span>
         <!--<span class="input-group-addon input-group-addon-label control-item type-numeric {{ item.web_class_str }}" id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}" data-toggle="tooltip" data-placement="top" title="" data-original-title="" data-html="true">Loading...</span>-->
     </div>
