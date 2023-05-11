@@ -2868,7 +2868,7 @@ class Mail(models.Model):
             return False
         # send the mail
         try:
-            if send_mail(self.subject, self.message, settings.DEFAULT_FROM_EMAIL, [self.to_email], fail_silently=True,
+            if send_mail(self.subject, self.message, settings.DEFAULT_FROM_EMAIL, [self.to_email], fail_silently=False,
                          html_message=self.html_message):
                 self.done = True
                 self.timestamp = time.time()
@@ -2879,8 +2879,8 @@ class Mail(models.Model):
                 self.timestamp = time.time()
                 self.save()
                 return False
-        except (IndexError, ValueError) as e:
-            logger.debug("Mail exception : %s" % e)
+        except Exception as e:
+            logger.warning(f"Send mail exception : {e}")
             self.send_fail_count = self.send_fail_count + 1
             self.timestamp = time.time()
             self.save()
