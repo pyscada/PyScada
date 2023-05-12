@@ -664,7 +664,7 @@ class WidgetContent(models.Model):
             else:
                 return '', '', ''
         except:
-            logger.error('%s unhandled exception\n%s' % (content_model, traceback.format_exc()))
+            logger.error(f'{content_model} unhandled exception', exc_info=True)
             # todo del self
             return '', '', ''
 
@@ -678,9 +678,9 @@ class WidgetContent(models.Model):
             if isinstance(content_class, models.base.ModelBase):
                 return content_class.objects.get(pk=self.content_pk)
         except ModuleNotFoundError:
-            logger.info(f"{class_name} of {class_path} not found. A module not installed ?")
+            logger.info(f"{class_name} of {class_path} not found. A module is not installed ?")
         except:
-            logger.error('%s unhandled exception\n%s' % (class_path, traceback.format_exc()))
+            logger.error(f'{class_path} unhandled exception', exc_info=True)
         return None
 
     def __str__(self):

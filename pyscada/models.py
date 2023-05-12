@@ -518,7 +518,7 @@ class VariablePropertyManager(models.Manager):
             try:
                 vp.save()
             except ValueError as e:
-                logger.error("Error while saving VP value : " + str(e))
+                logger.error("Error while saving VP value : " + str(e), exc_info=True)
             return vp
         else:
             return None
@@ -629,7 +629,7 @@ class Device(models.Model):
             device_class = getattr(mod, 'Device')
             return device_class(self)
         except:
-            logger.error('%s(%d), unhandled exception\n%s' % (self.short_name, getpid(), traceback.format_exc()))
+            logger.error(f'{self.short_name}({getpid()}), unhandled exception', exc_info=True)
             return None
 
 
@@ -1241,7 +1241,7 @@ class Variable(models.Model):
             pass
         except:
             logger.error(
-                '%s, unhandled exception in COV Receiver application\n%s' % (self.name, traceback.format_exc()))
+                f'{self.name}, unhandled exception in COV Receiver application', exc_info=True)
 
     def convert_string_value(self, value):
         try:
@@ -2033,7 +2033,6 @@ class RecordedData(models.Model):
             try:
                 timestamp = kwargs.pop('timestamp')
             except ValueError as e:
-                logger.error(f'RecordedData timestamp: {e}')
                 timestamp = time.time_ns() / 1000000000
         else:
             timestamp = time.time_ns() / 1000000000
@@ -2207,7 +2206,7 @@ class BackgroundProcess(models.Model):
             process_class = getattr(mod, class_name.__str__())
             return process_class(**kwargs)
         except:
-            logger.error('%s(%d), unhandled exception\n%s' % (self.label, getpid(), traceback.format_exc()))
+            logger.error(f'{self.label}({getpid()}), unhandled exception', exc_info=True)
             return None
 
     def restart(self):

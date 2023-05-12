@@ -313,7 +313,7 @@ class Scheduler(object):
                                                               label=self.label,
                                                               enabled=True).first()
         except OperationalError as e:
-            logger.error("Cant't connect to the DB : " + str(e))
+            logger.error("Cant't connect to the DB", exc_info=True)
             #self.delete_pid(force_del=True)
             sys.exit(0)
         self.pid = getpid()
@@ -394,7 +394,7 @@ class Scheduler(object):
                 if sig is None:
                     self.manage_processes()
                 elif sig not in self.SIGNALS:
-                    logger.error('%s, unhandled signal %d' % (self.label, sig))
+                    logger.error(f'{self.label}, unhandled signal {sig}', exc_info=True)
                     continue
                 elif sig == signal.SIGTERM:
                     logger.debug('%s, termination signal' % self.label)
@@ -424,7 +424,7 @@ class Scheduler(object):
             self.delete_pid()
             sys.exit(0)
         except:
-            logger.error('%s(%d), unhandled exception\n%s' % (self.label, getpid(), traceback.format_exc()))
+            logger.error(f'{self.label}({getpid()}), unhandled exception', exc_info=True)
 
     def manage_processes(self):
         """
@@ -535,13 +535,14 @@ class Scheduler(object):
             try:
                 sp = BackgroundProcess.objects.filter(pk=1).first()
             except OperationalError as e:
-                logger.error("Cant't connect to the DB : " + str(e))
+                logger.error("Cant't connect to the DB", exc_info=True)
                 self.delete_pid(force_del=True)
                 sys.exit(0)
             if sp:
                 self.pid = sp.pid
         if self.pid is None or self.pid == 0:
-            logger.error("can't determine process id exiting.")
+            # todo : raise exception
+            logger.error("Can't determine process id exiting.")
             return False
         if self.pid != getpid():
             # calling from outside the daemon instance
@@ -810,12 +811,11 @@ class Process(object):
             self.stop()
             sys.exit(0)
         except OperationalError as e:
-            logger.debug('%s, DB connection lost' % self.label)
-            logger.debug(e)
+            logger.error(f'{self.label}, DB connection lost', exc_info=True)
             self.stop()
             sys.exit(0)
         except:
-            logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
+            logger.error(f'{self.label}, unhandled exception', exc_info=True)
             self.stop()
             sys.exit(0)
 
@@ -1005,9 +1005,12 @@ class SingleDeviceDAQProcessWorker(Process):
                                                    {'device_id': process['device_id']}))
                         bp.save()
                         process['id'] = bp.id
-                        process['failed'] += 1
+                    elif process['failed'] == 3:
+                        # todo : raise exception
+                        logger.error(f"process {self.bp_label % process['key']} failed 3 times")
                     else:
-                        logger.error('process %s failed more than 3 times' % (self.bp_label % process['key']))
+                        logger.warning(f"process {self.bp_label % process['key']} failed more than 3 times")
+                    process['failed'] += 1
             except:
                 logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
 
@@ -1127,9 +1130,12 @@ class MultiDeviceDAQProcessWorker(Process):
                                                    {'device_ids': process['device_ids']}))
                         bp.save()
                         process['id'] = bp.id
-                        process['failed'] += 1
+                    elif process['failed'] == 3:
+                        # todo : raise exception
+                        logger.error(f"process {self.bp_label % process['key']} failed 3 times")
                     else:
-                        logger.error('process %s failed more then 3 times' % (self.bp_label % process['key']))
+                        logger.warning(f"process {self.bp_label % process['key']} failed more than 3 times")
+                    process['failed'] += 1
             except:
                 logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
 
@@ -1174,7 +1180,7 @@ class SingleDeviceDAQProcess(Process):
         """
         self.device = Device.objects.filter(protocol__daq_daemon=1, id=self.device_id).first()
         if not self.device:
-            logger.error(f"Cannot initialize process for {self.device_id}. Device not found.")
+            logger.warning(f"Cannot initialize process for {self.device_id}. Device not found.")
             self.device = None
             return False
         if not self.device.active:
@@ -1186,9 +1192,7 @@ class SingleDeviceDAQProcess(Process):
         try:
             self.device = self.device.get_device_instance()
         except:
-            var = traceback.format_exc()
-            logger.error("Exception while initialisation of DAQ Process for Device %d %s %s" % (
-                self.device_id, linesep, var))
+            logger.error(f"Exception while initialisation of DAQ Process for Device {self.device_id}", exc_info=True)
             self.device = None
             return False
 
@@ -1352,8 +1356,7 @@ class MultiDeviceDAQProcess(Process):
         for item in Device.objects.filter(protocol__daq_daemon=1, id__in=self.device_ids):
             try:
                 if not item:
-                    logger.error("Cannot add device %s to process %s. Device not found."
-                                 % (item.id, self.process_id))
+                    logger.warning(f"Cannot add device {item.id} to process {self.process_id}. Device not found.")
                     continue
                 if not item.active:
                     logger.info("Device %s is not active. Not added to process %s." % (item.id, self.process_id))
@@ -1365,8 +1368,7 @@ class MultiDeviceDAQProcess(Process):
                     self.dt_query_data = min(self.dt_query_data, item.polling_interval)
             except:
                 var = traceback.format_exc()
-                logger.error("Exception while initialisation of DAQ Process for Device %d %s %s" % (
-                    item.pk, linesep, var))
+                logger.error(f"Exception while initialisation of DAQ Process for Device {item.pk}", exc_info=True)
         if len(self.devices.items()) == 0:
             return False
         return True
