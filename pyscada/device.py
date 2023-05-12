@@ -40,7 +40,7 @@ class GenericHandlerDevice:
                 p = DeviceProtocol.objects.get(id=self._protocol)
             except DeviceProtocol.DoesNotExist:
                 p = None
-            logger.error(f"Wrong handler selected : it's for {p} device while device protocol is {self._device.protocol}")
+            logger.warning(f"Wrong handler selected : it's for {p} device while device protocol is {self._device.protocol}")
             return False
 
         #self.accessibility()
@@ -151,7 +151,7 @@ class GenericDevice:
             self.driver_handler_ok = True
         except ImportError:
             self.driver_handler_ok = False
-            logger.error("Handler import error : %s" % self.device.short_name)
+            logger.error(f"Handler import error : {self.device.short_name}", exc_info=True)
 
         # Wait 5 seconds to let changes appears in DB.
         sleep(5)

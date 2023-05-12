@@ -242,7 +242,6 @@ class VariableAdminFrom(forms.ModelForm):
             d = Device.objects.get(id=int(self.data.get("device", None)))
             if hasattr(self.instance, "protocol_id") and d is not None and \
                     d.protocol.id == self.instance.protocol_id:
-                logger.error("Saving new inline for %s" % self.data.get('protocol', None))
                 return True
         return super().has_changed()
 
@@ -343,14 +342,12 @@ class DeviceForm(forms.ModelForm):
         if self.data.get('protocol', None) is not None:
             if hasattr(self.instance, "protocol_id") and \
                     self.data.get('protocol', None) == str(self.instance.protocol_id):
-                logger.error("Saving new inline for %s" % self.data.get('protocol', None))
                 return True
         else:
             if hasattr(self.instance, "protocol_id") and \
                     hasattr(self.instance, "parent_device") and self.instance.parent_device() is not None and \
                     self.instance.parent_device().protocol is not None and \
                     self.instance.parent_device().protocol.id == self.instance.protocol_id:
-                logger.error("Saving existing inline for %s" % self.instance.parent_device())
                 return True
         return super().has_changed()
 
