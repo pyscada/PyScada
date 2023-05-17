@@ -28,7 +28,7 @@
  - fixed custom html panel variable not uptading in hmi
  - added restart_daemon field in background task model
  - added check of write permissions for pid and log file in DaemonHandler
- 
+
 0.7.0b5
  - added color chooser to VariableAdmin
  - fixed display bool values in charts
@@ -44,7 +44,7 @@
  - changed Title in HMI views
  - added pollinginterval field in device model
  - fixed chart legend template
- 
+
  0.7.0b7
  - fixed data export (record starts with 0)
  - fixed RecordedData manager
@@ -62,7 +62,7 @@
 0.7.0b10
  - added Visa and Phant Device support
  - minor fixes in the Export of Data
- 
+
 0.7.0b11
  - fixed Export without mean values
  - fixed managementcommand for Data Export
@@ -70,25 +70,25 @@
 
 0.7.0b12
   - fixed export
-  - added datetime fields to Export 
+  - added datetime fields to Export
   - added pytz to the requirements
-  
+
 0.7.0b13
   - fixed modbus write task
   - fixed Event handling
-  
+
 0.7.0b14
   - fixed handling of int16 values in RecordedData Model
   - added custom admin interface
   - added filter to variable state admin view
   - added unit column to variable admin
-  
+
 0.7.0b15
   - added 1-Wire support (experimental)
-	
+
 0.7.0b16
   - fixed handling of dead tasks in data export
-  
+
 0.7.0b17
   - added support for custom daq devices
   - updated docs
@@ -98,8 +98,8 @@
   - added OWFS support to onewire device
   - updated to django 1.11
   - added download link for export files to export job
-  - fixed daemon handler 
-  
+  - fixed daemon handler
+
 0.7.0b19, 0.7.0b20, 0.7.0b21
   - changed daemon handling to support multitasking
   - rearranged admin for Device and Variables
@@ -127,7 +127,7 @@
 
 0.7.0rc2
   - fixed "-" bug in view link_title
-  - fixed visa daq restart handler 
+  - fixed visa daq restart handler
   - fixed hmi "AutoUpdateButton" not working
   - updated docs, updated readme
   - added utils.blow_up function to convert database data from change of value to constant timestep data
@@ -311,3 +311,85 @@
   - core : Moving to django 4.2
   - docs : fixed urls in the docs
   - added a testscript for the instalation routine
+  - core : display value option refactoring. Control items display value option code refactoring. Allows more than 3 color.
+  - fix django requirements. It should be a coma separated list.
+  - moved to new namespace packet format (PEP420) : this was nessesary to make the use of venv possible
+  - Fix django 4.0 login : change the default value for LOGIN_REDIRECT_URL in settings.py
+  - Fix django 4.0 CSRF_TRUSTED_ORIGINS : change the nginx config to forward the protocol used (http or https) because : Changed in Django 4.0: The values in older versions must only include the hostname (possibly with a leading dot) and not the scheme or an asterisk.
+  - Fix when a plugin is uninstalled but the WidgetContent defined in this plugin remain and is selected in an active widget. Add an information log.
+  - modbus : fix migration test
+  - update install shell : system and docker options
+  - modbus : fix test : remove pyvisa from settings template
+  - HMI GroupDisplayPermission no groups :
+    - add GroupDisplayPermission for users without any group (blank=True).
+    - auto create in the hmi/0072 migration.
+    - this GroupDisplayPermission cannot be deleted in the admin interface.
+    - this group allow everything by default (exclude is empty for each OneToOne related model).
+    - add ValidationError for duplicate GroupDisplayPermission.
+    - auto collapse only empty inlines in GroupDisplayPermission admin.
+    - update get_group_display_permission_list in utils.
+    - use get_group_display_permission_list in read and write task.
+  - CompexEvent with multiple output variables and refactoring
+    - Change names :
+    - * ComplexEventGroup > ComplexEvent
+    - * ComplexEvent > ComplexEventLevel
+    - * ComplexEventItem > ComplexEventInput
+    - add ComplexEventOutput to set multiple output variable values when a ComplexEventLevel is active or when no level in active for a ComplexEvent.
+  - Remove unused import
+  - add informations to pyscada.mail
+  - init_db for event and mail add pyscada.core to installed app in init_db
+  - use concurrent_log_handler to rotate logs
+  - remove django_cas_ng config from settings
+  - send mails to admins and managers
+  - force channel layer to be empty
+    - since the version 4 of channel redis version, the channel layer is not
+    - empty after the first read
+    - we read it again to empty it
+    - maybe it is related to
+    - django/channels_redis#348
+    - or to django/channels_redis#366
+  - Create background process for generic device
+    - use id 16 for the generic process worker as 1 is taken by the scheduler
+    - but id 1 is taken for generic protocol id
+    - by defaut the generic device don't do nothing
+    - use the dummy handler to save
+  - Allow millisecond timestamp for recorded data
+    - Replace time() by time_ns / 1000000000 in
+    - GenericDevice (write)
+    - GenericHandlerDevice (time)
+    - RecordedData (init)
+    - Do not force timestamp in recorded data init to be integer beforce id calculation.
+  - add handler for dummy waveforms
+    - Create waveforms for a generic device.
+    - Type can be sinus, square and triangle.
+    - Properties are set using variable properties: type, amplitude, start_timestamp, frequency and duty cycle.
+    - Variable Property type should be a string.
+    - default is:
+    - "type": "sinus",  # sinus, square, triangle
+    - "amplitude": 1.0,  # peak to peak value
+    - "start_timestamp": 0.0,  # in second from 01/01/1970 00:00:00
+    - "frequency": 0.1,  # Hz
+    - "duty_cycle": 0.5,  # between 0 and 1, duty cycle for square and for
+    - triangle : Width of the rising ramp as a proportion of the total cycle.
+    - Default is 1, producing a rising ramp, while 0 produces a falling ramp.
+    - width = 0.5 produces a triangle wave. If an array, causes wave shape to
+    - change over time, and must be the same length as t.
+  - log for device write task : log when DWT for a variable not writeable
+  - fix boolean with display option
+    - use button.html for boolean with display options and for non boolean with color only display option
+  - add span for display button : use this span to display the value next to the control item label
+  - fix variable property control item
+    - fix dictionary, color for VP
+    - merge number and boolean in update data values to simplify the code
+    - remove unused boolean classes
+  - add offset property to generic waveform handler
+  - send mail fail not silently : show the error message in a warning log
+  - refactor logs
+    - remove some error logs
+    - replace error logs by warning logs
+    - use f-strings in error logs
+    - add exc_info=True to log traceback and send it to ADMINS (see settings.py)
+    - log as error when a process failed 3 times (to send a mail to ADMINS) then log as warning
+  - set AdminEmailHandler settings
+  - update gitignore for docker
+  - fix export when a filename is given
