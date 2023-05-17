@@ -35,7 +35,7 @@ author = 'Martin Schröder'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '0.7.1rc1'
+release = '0.8.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -72,7 +72,7 @@ master_doc = 'index'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -170,7 +170,7 @@ texinfo_documents = [
 
 html_context = {
     "display_github": True, # Integrate GitHub
-    "github_user": "trombastic", # Username
+    "github_user": "pyscada", # Username
     "github_repo": "PyScada", # Repo name
     "github_version": "master", # Version
     "conf_py_path": "/docs/", # Path in the checkout to the docs root

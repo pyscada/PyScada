@@ -3,13 +3,13 @@ Device Protocol IDs
 
 
 - 1: Reserved (Scheduler)
-- 2: SystemStat
-- 3: Modbus
+- 2: `SystemStat <https://github.com/pyscada/PyScada-SystemStat>`_
+- 3: `Modbus <https://github.com/pyscada/PyScada-Modbus>`_
 - 4: `BACNet <https://github.com/pyscada/PyScada-BACNet>`_
-- 5: VISA
-- 6: 1-Wire
-- 7: Phant
-- 8: SMBus
+- 5: `VISA <https://github.com/pyscada/PyScada-VISA>`_
+- 6: `1-Wire <https://github.com/pyscada/PyScada-OneWire>`_
+- 7: `Phant <https://github.com/pyscada/PyScada-Phant>`_
+- 8: `SMBus <https://github.com/pyscada/PyScada-SMBus>`_
 - 9: Reserved (Jofra350)
 - 10: `GPIO <https://github.com/pyscada/PyScada-GPIO>`_
 - 11: `Reserved (PT104) <https://github.com/pyscada/PyScada-PT104>`_
@@ -27,4 +27,3 @@ Device Protocol IDs
 - 98: Reserved (Report)
 - 99: reserved (Export)
 - 100+: reserved for dynamic
-

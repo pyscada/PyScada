@@ -1,3 +1,6 @@
+Update from old versions
+========================
+
 0.6.x to 0.7.x
 --------------
 
@@ -23,7 +26,7 @@ systemd
 ::
 
 
-    sudo wget https://raw.githubusercontent.com/trombastic/PyScada/dev/0.7.x/extras/service/systemd/pyscada_daemon.service -O /etc/systemd/system/pyscada_daemon.service
+    sudo wget https://raw.githubusercontent.com/pyscada/PyScada/master/extras/service/systemd/pyscada_daemon.service -O /etc/systemd/system/pyscada_daemon.service
     sudo systemctl enable pyscada_daemon
     sudo systemctl disable pyscada_daq
     sudo systemctl disable pyscada_event

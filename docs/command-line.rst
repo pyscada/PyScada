@@ -1,74 +1,53 @@
 Command-line
 ============
 
-Start the PyScada Daemons
--------------------------
-
-SysV-init and upstart:
-
-::
-
-	service pyscada_daq_daemon start
-	service pyscada_daemon start
-	service gunicorn_pyscada start
-
+Restart the PyScada Daemons
+---------------------------
 
 systemd:
 
-::
+.. code-block:: shell
 
+	sudo systemctl restart pyscada
 
-	systemctl start "pyscada_*"
-
-
-Django manage command:
-
-::
-
-	python manage.py PyScadaDaemonHandler daemon_name start
-
-
-Start Gunicorn
---------------
-
-SysV-init and upstart:
-
-::
-
-	service gunicorn_django start
-
+Restart Gunicorn
+----------------
 
 systemd:
 
-::
+.. code-block:: shell
 
-	systemctl start gunicorn.service
+	sudo systemctl restart gunicorn.service
 
+Restart NGINX
+-------------
 
+systemd:
 
-.. _sec-get-installed-pyscada-version:
+.. code-block:: shell
 
+	sudo systemctl restart nginx
 
 Get Installed PyScada Version
 -----------------------------
 
-::
+.. code-block:: shell
 
-	cd ~/www/PyScadaServer
-	python manage.py shell
+	cd /var/www/pyscada/PyScadaServer
+	sudo -u pyscada python3 manage.py shell
 	import pyscada
-	pyscada.__version__
+	pyscada.core.__version__
 	exit()
 
 
 Export Recorded Data Tables
 ---------------------------
 
-::
+.. code-block:: shell
 
-	python manage.py PyScadaExportData # last 24 houres
-	python manage.py PyScadaExportData "01-Mar-2015 00:00:00" # from 01. of March until now
+	sudo -u pyscada python3 manage.py PyScadaExportData # last 24 houres
+	sudo -u pyscada python3 manage.py PyScadaExportData --start_time "01-03-2015 00:00:00" # from 01. of March 2015 until now
 	# from 01. of March until now, with the given filename
-	python manage.py PyScadaExportData "01-Mar-2015 00:00:00" "filename.h5" 
+	sudo -u pyscada python3 manage.py PyScadaExportData --start_time "01-Mar-2015 00:00:00" --filename "filename.h5"
 	# from 01. of March until 10. of March, with the given filename
-	python manage.py PyScadaExportData "01-Mar-2015 00:00:00" "filename.h5" "10-Mar-2015 00:00:00"
+	sudo -u pyscada python3 manage.py PyScadaExportData --start_time "01-03-2015 00:00:00" --filename "filename.h5" --stop_time "10-03-2015 00:00:00"
