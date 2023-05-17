@@ -12,21 +12,13 @@ A Open Source SCADA System with HTML5 HMI, build using the Django framework. If 
    :maxdepth: 2
    :caption: Installation and Commandline
 
-   installation
-   django_settings
-   nginx_setup
-   docker
+   quick_install
    update
    command-line
    frontend
    backend
-   phant
-   device_protokol
+   device_protocol
    grafana
-   raspberryPiOS
-   visa
-
-
 
 Indices and tables
 ==================
@@ -34,19 +26,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-
-
-
-Autodoc
-=======
-
-.. automodule:: pyscada.admin
-
-.. automodule:: pyscada.models
-
-.. js:autofunction:: data_handler_ajax
-
-.. js:autoclass:: Bar
-   :members:
-   :private-members:

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import traceback
+
 import pyscada.hmi.models
 from pyscada.core import version as core_version
 from pyscada.models import RecordedData, VariableProperty, Variable, Device
@@ -320,37 +322,30 @@ def form_read_task(request):
                 return HttpResponse(status=200)
         else:
             if item_type == 'variable':
-                exc = pyscada.hmi.models.GroupDisplayPermission.objects.filter(
-                    hmi_group__in=request.user.groups.iterator(),
-                    controlitemgroupdisplaypermission__type=1)
-                if GroupDisplayPermission.objects.filter(
-                        hmi_group__in=request.user.groups.iterator(),
-                        controlitemgroupdisplaypermission__type=0,
-                        controlitemgroupdisplaypermission__control_items__type=1,
-                        controlitemgroupdisplaypermission__control_items__variable__pk=key).exists() or \
-                        (exc.exists() and not exc.filter(
-                            controlitemgroupdisplaypermission__control_items__type=1,
-                            controlitemgroupdisplaypermission__control_items__variable__pk=key).exists()):
+                if get_group_display_permission_list(ControlItem.objects, request.user.groups.all()).filter(
+                        type=1, variable_id=key
+                    ).exists():
                     crt = DeviceReadTask(device=Variable.objects.get(pk=key).device, start=time.time(),
                                          user=request.user)
                     crt.create_and_notificate(crt)
                     return HttpResponse(status=200)
+                else:
+                    logger.warning(f"User {request.user} has no right to add read task "
+                                   f"for variable {Variable.objects.get(pk=key)}")
+                    return HttpResponse(status=404)
             elif item_type == 'variable_property':
-                exc = pyscada.hmi.models.GroupDisplayPermission.objects.filter(
-                    hmi_group__in=request.user.groups.iterator(),
-                    controlitemgroupdisplaypermission__type=1)
-                if GroupDisplayPermission.objects.filter(
-                        hmi_group__in=request.user.groups.iterator(),
-                        controlitemgroupdisplaypermission__type=0,
-                        controlitemgroupdisplaypermission__control_items__type=0,
-                        controlitemgroupdisplaypermission__control_items__variable_property__pk=key).exists() or \
-                        (exc.exists() and not exc.filter(
-                            controlitemgroupdisplaypermission__control_items__type=0,
-                            controlitemgroupdisplaypermission__control_items__variable_property__pk=key).exists()):
+                if get_group_display_permission_list(ControlItem.objects, request.user.groups.all()).filter(
+                        type=1, variable_property_id=key
+                    ).exists():
                     crt = DeviceReadTask(device=VariableProperty.objects.get(pk=key).variable.device, start=time.time(),
                                          user=request.user)
                     crt.create_and_notificate(crt)
                     return HttpResponse(status=200)
+                else:
+                    logger.warning(f"User {request.user} has no right to add read task "
+                                   f"for variable property {VariableProperty.objects.get(pk=key)}")
+                    return HttpResponse(status=404)
+        logger.warning(f"Wrong read task request, POST is : {request.POST}")
     return HttpResponse(status=404)
 
 
@@ -360,7 +355,6 @@ def form_write_task(request):
         key = int(request.POST['key'])
         item_type = request.POST['item_type']
         value = request.POST['value']
-        #logger.debug("key : %s - value %s - type %s" % (key, value, item_type))
         # check if float as DeviceWriteTask doesn't support string values
         try:
             float(value)
@@ -380,17 +374,9 @@ def form_write_task(request):
                 return HttpResponse(status=200)
         else:
             if item_type == 'variable':
-                exc = pyscada.hmi.models.GroupDisplayPermission.objects.filter(
-                    hmi_group__in=request.user.groups.iterator(),
-                    controlitemgroupdisplaypermission__type=1)
-                if GroupDisplayPermission.objects.filter(
-                        hmi_group__in=request.user.groups.iterator(),
-                        controlitemgroupdisplaypermission__type=0,
-                        controlitemgroupdisplaypermission__control_items__type=0,
-                        controlitemgroupdisplaypermission__control_items__variable__pk=key).exists() or \
-                        (exc.exists() and not exc.filter(
-                            controlitemgroupdisplaypermission__control_items__type=0,
-                            controlitemgroupdisplaypermission__control_items__variable__pk=key).exists()):
+                if get_group_display_permission_list(ControlItem.objects, request.user.groups.all()).filter(
+                        type=0, variable_id=key
+                    ).exists():
                     cwt = DeviceWriteTask(variable_id=key, value=value, start=time.time(),
                                           user=request.user)
                     cwt.create_and_notificate(cwt)
@@ -398,17 +384,9 @@ def form_write_task(request):
                 else:
                     logger.debug("Missing group display permission for write task (variable %s)" % key)
             elif item_type == 'variable_property':
-                exc = pyscada.hmi.models.GroupDisplayPermission.objects.filter(
-                    hmi_group__in=request.user.groups.iterator(),
-                    controlitemgroupdisplaypermission__type=1)
-                if GroupDisplayPermission.objects.filter(
-                        hmi_group__in=request.user.groups.iterator(),
-                        controlitemgroupdisplaypermission__type=0,
-                        controlitemgroupdisplaypermission__control_items__type=0,
-                        controlitemgroupdisplaypermission__control_items__variable_property__pk=key).exists() or \
-                        (exc.exists() and not exc.filter(
-                        controlitemgroupdisplaypermission__control_items__type=0,
-                        controlitemgroupdisplaypermission__control_items__variable_property__pk=key).exists()):
+                if get_group_display_permission_list(ControlItem.objects, request.user.groups.all()).filter(
+                        type=0, variable_property_id=key
+                    ).exists():
                     cwt = DeviceWriteTask(variable_property_id=key, value=value, start=time.time(),
                                           user=request.user)
                     cwt.create_and_notificate(cwt)
@@ -505,6 +483,19 @@ def get_cache_data(request):
 
     if data is None:
         data = {}
+
+    # Add data for variable not logging to RecordedData model (as systemstat timestamps).
+    for v_id in active_variables:
+        if int(v_id) not in data:
+            try:
+                v = Variable.objects.get(id=v_id)
+                v.query_prev_value(timestamp_from/1000)
+                # add 5 seconds to let the request from the server to come
+                if v.timestamp_old is not None and v.timestamp_old <= timestamp_to + 5 and v.prev_value is not None:
+                    data[int(v_id)] = [[v.timestamp_old * 1000, v.prev_value]]
+            except:
+                #logger.warning(traceback.format_exc())
+                pass
 
     data['variable_properties'] = {}
     data['variable_properties_last_modified'] = {}

@@ -42,15 +42,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'pyscada.core',
-    'pyscada.modbus',
-    'pyscada.phant',
-    'pyscada.visa',
+    'pyscada',
     'pyscada.hmi',
-    'pyscada.systemstat',
     'pyscada.export',
-    'pyscada.onewire',
-    'pyscada.smbus',
 ]
 
 installed_packages = pkg_resources.working_set
@@ -75,6 +69,8 @@ if importlib.util.find_spec('channels') is not None:
             },
         },
     }
+
+LOGIN_REDIRECT_URL = '/'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.models import Event, ComplexEventGroup
+from pyscada.models import Event, ComplexEvent
 from pyscada.utils.scheduler import Process as BaseProcess
 import logging
 
@@ -21,7 +21,7 @@ class Process(BaseProcess):
         for item in Event.objects.all():
             item.do_event_check()
 
-        for item in ComplexEventGroup.objects.all():
+        for item in ComplexEvent.objects.all():
             item.do_event_check()
 
         return 1, None

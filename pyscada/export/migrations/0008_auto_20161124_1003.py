@@ -25,5 +25,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(convert_unixtime_float_to_datetime)
+        migrations.RunPython(convert_unixtime_float_to_datetime, reverse_code=migrations.RunPython.noop)
     ]

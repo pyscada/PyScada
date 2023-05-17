@@ -11,3 +11,13 @@ docs/_build
 
 # Emacs backup files
 *~
+/tests/test/*
+/tests/project_template_tmp/*
+
+/docker/nginx/ssl/*
+/docker/pyscada/pyscada.zip
+/docker/pyscada/project_template.zip
+logs_install.txt
+logs_docker.txt
+/docker/mysql/Dockerfile
+/docker/docker-compose.yml

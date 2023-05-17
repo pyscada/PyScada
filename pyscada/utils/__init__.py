@@ -14,29 +14,39 @@ logger = logging.getLogger(__name__)
 
 
 def _get_objects_for_html(list_to_append=None, obj=None, exclude_model_names=None):
-    if exclude_model_names is None:
-        exclude_model_names = list()
-    if list_to_append is None:
-        list_to_append = set()
+    if obj is not None:
+        if exclude_model_names is None:
+            exclude_model_names = list()
+        if list_to_append is None:
+            list_to_append = set()
 
-    if obj not in list_to_append:
-        list_to_append.update([obj])
-    # ForeignKey and OneToOne
-    for field in obj._meta.local_fields:
-        if (type(field).many_to_one or type(field).one_to_one) and getattr(obj, field.name) is not None and \
-                field.name not in exclude_model_names:
-            if hasattr(field, '_get_objects_for_html'):
-                list_to_append.update(field._get_objects_for_html(list_to_append))
-            else:
-                list_to_append.update(_get_objects_for_html(list_to_append, getattr(obj, field.name)))
-    # ManyToMany
-    for fields in obj._meta.local_many_to_many:
-        for field in getattr(obj, fields.name).all():
-            if field not in exclude_model_names:
-                if hasattr(field, '_get_objects_for_html'):
-                    list_to_append.update(field._get_objects_for_html(list_to_append))
+        if obj not in list_to_append:
+            list_to_append.update([obj])
+        # ForeignKey and OneToOne
+        for field in obj._meta.local_fields:
+            if (type(field).many_to_one or type(field).one_to_one) and getattr(obj, field.name) is not None and \
+                    field.name not in exclude_model_names:
+                if hasattr(field.related_model, '_get_objects_for_html'):
+                    list_to_append.update(getattr(obj, field.name)._get_objects_for_html(list_to_append))
                 else:
-                    list_to_append.update(_get_objects_for_html(list_to_append, field))
+                    list_to_append.update(_get_objects_for_html(list_to_append, getattr(obj, field.name)))
+        # ManyToMany
+        for fields in obj._meta.local_many_to_many:
+            for field in getattr(obj, fields.name).all():
+                if field not in exclude_model_names:
+                    if hasattr(field, '_get_objects_for_html'):
+                        list_to_append.update(field._get_objects_for_html(list_to_append))
+                    else:
+                        list_to_append.update(_get_objects_for_html(list_to_append, field))
+        # Related OneToOne
+        for field in obj._meta.related_objects:
+            if field.one_to_one and hasattr(obj, field.name) and field.name not in exclude_model_names and getattr(obj, field.name) not in list_to_append:
+                name = field.field.name
+                field = getattr(obj, field.name)
+                if hasattr(field, '_get_objects_for_html'):
+                    list_to_append.update(field._get_objects_for_html(list_to_append, exclude_model_names=[name]))
+                else:
+                    list_to_append.update(_get_objects_for_html(list_to_append, field, exclude_model_names=[name]))
 
     return list_to_append
 
@@ -50,16 +60,25 @@ def get_group_display_permission_list(items, groups):
         QuerySet of items filtered
     """
     if len(groups) == 0:
-        return items.all()
-    result = items.filter(
-        groupdisplaypermission__group_display_permission__hmi_group__in=groups,
-        groupdisplaypermission__type=0,
-    ).distinct()
-    if items.first() is not None and items.first().groupdisplaypermission.model.objects.filter(type=1).exists():
-        result = result | items.exclude(
+        result = items.filter(
+            groupdisplaypermission__group_display_permission__hmi_group__isnull=True,
+            groupdisplaypermission__type=0,
+        ).distinct()
+        if items.first() is not None and items.first().groupdisplaypermission.model.objects.filter(type=1, group_display_permission__hmi_group=None).exists():
+            result = result | items.exclude(
+                groupdisplaypermission__group_display_permission__hmi_group__isnull=True,
+                groupdisplaypermission__type=1
+            ).distinct()
+    else:
+        result = items.filter(
             groupdisplaypermission__group_display_permission__hmi_group__in=groups,
-            groupdisplaypermission__type=1,
-            groupdisplaypermission__group_display_permission__isnull=False).distinct()
+            groupdisplaypermission__type=0,
+        ).distinct()
+        if items.first() is not None and items.first().groupdisplaypermission.model.objects.filter(type=1, group_display_permission__hmi_group__in=groups).exists():
+            result = result | items.exclude(
+                groupdisplaypermission__group_display_permission__hmi_group__in=groups,
+                groupdisplaypermission__type=1
+            ).distinct()
     return result
 
 
@@ -279,3 +298,12 @@ def max_pass(my_marks, my_pass, compare='lte'):
             elif max_value < x < my_pass and compare == 'lt':
                 max_value = x
     return max_value
+
+
+def set_bit(v, index, x):
+    """Set the index:th bit of v to 1 if x is truthy, else to 0, and return the new value."""
+    mask = 1 << index   # Compute mask, an integer with just bit 'index' set.
+    v &= ~mask          # Clear the bit indicated by the mask (if x is False)
+    if x:
+        v |= mask         # If x was True, set the bit indicated by the mask.
+    return v            # Return the result, we're done.

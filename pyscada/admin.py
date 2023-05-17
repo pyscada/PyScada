@@ -9,7 +9,7 @@ from pyscada.models import Unit, Dictionary, DictionaryItem
 from pyscada.models import DeviceWriteTask, DeviceReadTask
 from pyscada.models import Log
 from pyscada.models import BackgroundProcess
-from pyscada.models import ComplexEventGroup, ComplexEvent, ComplexEventItem
+from pyscada.models import ComplexEvent, ComplexEventLevel, ComplexEventInput, ComplexEventOutput
 from pyscada.models import Event
 from pyscada.models import RecordedEvent, RecordedData
 from pyscada.models import Mail
@@ -19,11 +19,11 @@ from django import forms
 from django.contrib.admin import AdminSite
 from django.contrib.auth.models import User, Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.db.models.fields.related import OneToOneRel
 
 from django import forms
-from django.core.exceptions import ValidationError
+from django.db.utils import ProgrammingError, OperationalError
 from django.conf import settings
 
 import datetime
@@ -242,7 +242,6 @@ class VariableAdminFrom(forms.ModelForm):
             d = Device.objects.get(id=int(self.data.get("device", None)))
             if hasattr(self.instance, "protocol_id") and d is not None and \
                     d.protocol.id == self.instance.protocol_id:
-                logger.error("Saving new inline for %s" % self.data.get('protocol', None))
                 return True
         return super().has_changed()
 
@@ -287,6 +286,7 @@ class VariableStateAdmin(admin.ModelAdmin):
         )
 
     def last_value(self, instance):
+        """
         element = RecordedData.objects.last_element(variable_id=instance.pk)
         if element:
             return datetime.datetime.fromtimestamp(
@@ -294,6 +294,16 @@ class VariableStateAdmin(admin.ModelAdmin):
                    + ' : ' + element.value().__str__() + ' ' + instance.unit.unit
         else:
             return ' - : NaN ' + instance.unit.unit
+        """
+
+        try:
+            v = Variable.objects.get(id=instance.pk)
+            if v.query_prev_value(0):
+                return datetime.datetime.fromtimestamp(v.timestamp_old).strftime('%Y-%m-%d %H:%M:%S') \
+                       + ' : ' + v.prev_value.__str__() + ' ' + instance.unit.unit
+        except Variable.DoesNotExist:
+            pass
+        return ' - : NaN ' + instance.unit.unit
 
     def get_queryset(self, request):
         """Limit Pages to those that belong to the request's user."""
@@ -332,21 +342,19 @@ class DeviceForm(forms.ModelForm):
         if self.data.get('protocol', None) is not None:
             if hasattr(self.instance, "protocol_id") and \
                     self.data.get('protocol', None) == str(self.instance.protocol_id):
-                logger.error("Saving new inline for %s" % self.data.get('protocol', None))
                 return True
         else:
             if hasattr(self.instance, "protocol_id") and \
                     hasattr(self.instance, "parent_device") and self.instance.parent_device() is not None and \
                     self.instance.parent_device().protocol is not None and \
                     self.instance.parent_device().protocol.id == self.instance.protocol_id:
-                logger.error("Saving existing inline for %s" % self.instance.parent_device())
                 return True
         return super().has_changed()
 
 
 class DeviceAdmin(admin.ModelAdmin):
-    list_display = ('id', 'short_name', 'description', 'protocol', 'active', 'polling_interval',)
-    list_editable = ('active', 'polling_interval',)
+    list_display = ('id', 'short_name', 'description', 'protocol', 'active', 'polling_interval', 'instrument_handler')
+    list_editable = ('active', 'polling_interval', 'instrument_handler')
     list_display_links = ('short_name', 'description',)
     list_filter = ('protocol', 'active', 'polling_interval',)
     actions = [silent_delete]
@@ -371,30 +379,37 @@ class DeviceAdmin(admin.ModelAdmin):
         inlines.append(cl)
 
     # List only activated protocols
-    protocol_list = []
+    protocol_list = list()
     protocol_list.append("generic")
     if hasattr(settings, 'INSTALLED_APPS'):
-        for app in settings.INSTALLED_APPS:
-            if 'pyscada' in app:
-                protocol_list.append(app.split(".")[1])
+        try:
+            for protocol in DeviceProtocol.objects.filter(app_name__in=settings.INSTALLED_APPS):
+                protocol_list.append(protocol.protocol)
+        except ProgrammingError:
+            pass
+        except OperationalError:
+            pass
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         # For new device, show all the protocols from the installed apps in settings.py
         # For existing device, show only the selected protocol to avoid changing
         if db_field.name == "protocol":
-            if 'object_id' in request.resolver_match.kwargs and Device.objects.get(id=request.resolver_match.kwargs['object_id']) is not None:
+            if 'object_id' in request.resolver_match.kwargs \
+            and Device.objects.get(id=request.resolver_match.kwargs['object_id']) is not None \
+            and Device.objects.get(id=request.resolver_match.kwargs['object_id']).protocol:
                 kwargs["queryset"] = DeviceProtocol.objects.filter(protocol__in=[Device.objects.get(id=request.resolver_match.kwargs['object_id']).protocol.protocol,])
             else:
                 kwargs["queryset"] = DeviceProtocol.objects.filter(protocol__in=self.protocol_list)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
-    # Add JS file to display the right inline
+    # Add JS file to display the right inline and to hide/show fields
     class Media:
         js = (
             # To be sure the jquery files are loaded before our js file
             'admin/js/vendor/jquery/jquery.min.js',
             'admin/js/jquery.init.js',
             'pyscada/js/admin/display_inline_protocols_device.js',
+            'pyscada/js/admin/hideshow.js',
         )
 
 
@@ -609,8 +624,8 @@ class BackgroundProcessAdmin(admin.ModelAdmin):
 
 
 class RecordedEventAdmin(admin.ModelAdmin):
-    list_display = ('id', 'event', 'complex_event_group', 'time_begin', 'time_end', 'active',)
-    list_display_links = ('event', 'complex_event_group',)
+    list_display = ('id', 'event', 'complex_event', 'time_begin', 'time_end', 'active',)
+    list_display_links = ('event', 'complex_event',)
     list_filter = ('event', 'active')
     readonly_fields = ('time_begin', 'time_end',)
     save_as = True
@@ -626,15 +641,22 @@ class MailAdmin(admin.ModelAdmin):
         return datetime.datetime.fromtimestamp(int(instance.timestamp)).strftime('%Y-%m-%d %H:%M:%S')
 
 
-class ComplexEventAdminInline(admin.TabularInline):
-    model = ComplexEvent
+class ComplexEventOutputAdminInline(admin.TabularInline):
+    model = ComplexEventOutput
+    extra = 0
+    show_change_link = False
+    fields = ('variable', 'value')
+
+
+class ComplexEventLevelAdminInline(admin.TabularInline):
+    model = ComplexEventLevel
     extra = 0
     show_change_link = True
     readonly_fields = ('active',)
 
 
-class ComplexEventItemAdminInline(admin.StackedInline):
-    model = ComplexEventItem
+class ComplexEventInputAdminInline(admin.StackedInline):
+    model = ComplexEventInput
     extra = 0
     fieldsets = (
         (None, {
@@ -646,29 +668,31 @@ class ComplexEventItemAdminInline(admin.StackedInline):
     raw_id_fields = ('variable', 'variable_limit_low', 'variable_limit_high',)
 
 
-class ComplexEventGroupAdmin(admin.ModelAdmin):
-    list_display = ('id', 'label', 'variable_to_change', 'default_send_mail', 'default_value', 'last_level',)
+class ComplexEventAdmin(admin.ModelAdmin):
+    list_display = ('id', 'label', 'default_send_mail', 'last_level',)
     list_display_links = ('id', 'label',)
-    list_filter = ('variable_to_change', 'default_send_mail', 'default_value',)
+    list_filter = ('default_send_mail',)
     filter_horizontal = ('complex_mail_recipients',)
-    inlines = [ComplexEventAdminInline]
-    raw_id_fields = ('variable_to_change',)
+    inlines = [ComplexEventLevelAdminInline, ComplexEventOutputAdminInline]
     readonly_fields = ('last_level',)
     save_as = True
     save_as_continue = True
 
 
-class ComplexEventAdmin(admin.ModelAdmin):
-    list_display = ('id', 'level', 'send_mail', 'new_value', 'complex_event_group', 'order', 'active',)
+class ComplexEventLevelAdmin(admin.ModelAdmin):
+    list_display = ('id', 'level', 'send_mail', 'complex_event', 'order', 'active',)
     list_display_links = ('id',)
-    list_filter = ('complex_event_group__label', 'level', 'send_mail',)
-    inlines = [ComplexEventItemAdminInline]
+    list_filter = ('complex_event__label', 'level', 'send_mail',)
+    inlines = [ComplexEventInputAdminInline, ComplexEventOutputAdminInline]
     readonly_fields = ('active',)
     save_as = True
     save_as_continue = True
 
+    def has_module_permission(self, request):
+        return False
 
-class ComplexEventItemAdmin(admin.ModelAdmin):
+
+class ComplexEventInputAdmin(admin.ModelAdmin):
     list_display = ('id', 'fixed_limit_low', 'variable_limit_low', 'limit_low_type', 'hysteresis_low', 'variable',
                     'fixed_limit_high', 'variable_limit_high', 'limit_high_type', 'hysteresis_high',)
     list_display_links = ('id',)
@@ -727,8 +751,8 @@ admin_site.register(PeriodicField, PeriodicFieldAdmin)
 admin_site.register(ExtendedCalculatedVariable, CalculatedVariableAdmin)
 admin_site.register(Scaling, ScalingAdmin)
 admin_site.register(Unit)
-admin_site.register(ComplexEventGroup, ComplexEventGroupAdmin)
 admin_site.register(ComplexEvent, ComplexEventAdmin)
+admin_site.register(ComplexEventLevel, ComplexEventLevelAdmin)
 admin_site.register(Event, EventAdmin)
 admin_site.register(RecordedEvent, RecordedEventAdmin)
 admin_site.register(Mail, MailAdmin)

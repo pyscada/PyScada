@@ -54,36 +54,11 @@
             <!-- Display options -->
             {% if item.display_value_options.type == 0 %}
                 <!-- Classic Div -->
-                {% if item.display_value_options.color_type == 0 %}
-                    <!-- No color -->
-                    {% if item.display_value_options.mode == 0 %}
-                        <!-- Value only -->
-                        {% include "value_field.html" %}
-                    {% elif item.display_value_options.mode == 1 %}
-                        <!-- Color only -->
-                        Display option "{{ item.display_value_options.name }}" config error : type="no color" and mode="color only"
-                    {% elif item.display_value_options.mode == 2 %}
-                        <!-- Value and color -->
-                        Display option "{{ item.display_value_options.name }}" config error : type="no color" and mode="value and color"
-                    {% else %}
-                        <!-- else 1 -->
-                        Display option "{{ item.display_value_options.name }}" error 1
-                    {% endif %}
+                {% if item.value_class == 'BOOL' or item.value_class == 'BOOLEAN' or item.display_value_options.color_only == 1 %}
+                    <!-- boolean display -->
+                    {% include "button.html" %}
                 {% else %}
-                    <!-- 2, 3 colors or gradient -->
-                    {% if item.display_value_options.mode == 0 %}
-                        <!-- Value only -->
-                        Display option "{{ item.display_value_options.name }}" config error : type="2, 3 colors or gradient" and mode="value only"
-                    {% elif item.display_value_options.mode == 1 %}
-                        <!-- Color only -->
-                        {% include "button.html" %}
-                    {% elif item.display_value_options.mode == 2 %}
-                        <!-- Value and color only -->
-                        {% include "value_field.html" %}
-                    {% else %}
-                        <!-- else 2 -->
-                        Display option "{{ item.display_value_options.name }}" error 2
-                    {% endif %}
+                    {% include "value_field.html" %}
                 {% endif %}
             {% elif item.display_value_options.type == 3 %}
                 <!-- Gauge -->
@@ -92,6 +67,6 @@
         {% endif %}
     {% else %}
         <!-- else 3 -->
-        Display option "{{ item.display_value_options.name }}" error 3
+        Control item type is wrong : {{ item.type }} !
     {% endif %}
 {% endif %}

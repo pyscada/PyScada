@@ -15,10 +15,11 @@ class Command(BaseCommand):
                             help='the starting time to begin the export from, can be either unixtimestamp or string in "%d-%b-%Y %H:%M:%S" style')
         parser.add_argument('--stop_time', dest='stop_time', default=None, type=str,
                             help='the last time to export, can be either unixtimestamp or string in "%d-%b-%Y %H:%M:%S" style')
-    
+
     def handle(self, *args, **options):
-        
+
         if options['filename'] is None:
             export_recordeddata_to_file(options['start_time'],options['stop_time'])
         elif options['filename'] is not None:
-            export_recordeddata_to_file(options['start_time'],options['stop_time'],os.path.abspath(options['filename']))
+            #export_recordeddata_to_file(options['start_time'],options['stop_time'],os.path.abspath(options['filename']))
+            export_recordeddata_to_file(options['start_time'],options['stop_time'],options['filename'])

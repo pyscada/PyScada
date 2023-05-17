@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.db.utils import IntegrityError
+from django.db.utils import IntegrityError, ProgrammingError
 from django.contrib.auth.models import User
 from django.conf import settings
 
@@ -10,6 +10,8 @@ from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.utils.timezone import now, make_aware, is_naive
 from django.db.models.signals import post_save
+from django.db.models.fields.related import OneToOneRel
+from django.forms.models import BaseInlineFormSet
 
 from pyscada.utils import blow_up_data, timestamp_to_datetime, min_pass, max_pass
 from pyscada.utils import _get_objects_for_html as get_objects_for_html
@@ -21,7 +23,11 @@ import datetime
 import json
 import signal
 from monthdelta import monthdelta
-from os import kill, waitpid, WNOHANG
+from os import kill, waitpid
+import os
+if os.name != 'nt':
+    from os import WNOHANG
+
 from struct import *
 from os import getpid
 from dateutil import relativedelta
@@ -512,7 +518,7 @@ class VariablePropertyManager(models.Manager):
             try:
                 vp.save()
             except ValueError as e:
-                logger.error("Error while saving VP value : " + str(e))
+                logger.error("Error while saving VP value : " + str(e), exc_info=True)
             return vp
         else:
             return None
@@ -552,6 +558,27 @@ class DeviceProtocol(models.Model):
         return self.protocol
 
 
+class DeviceHandler(models.Model):
+    name = models.CharField(default='', max_length=255)
+    handler_class = models.CharField(default='pyscada.visa.devices.HP3456A', max_length=255,
+                                     help_text='a Base class to extend can be found at '
+                                               'pyscada.PROTOCOL.devices.GenericDevice. '
+                                               'Exemple : pyscada.visa.devices.HP3456A, '
+                                               'pyscada.smbus.devices.ups_pico, '
+                                               'pyscada.serial.devices.AirLinkGX450')
+    handler_path = models.CharField(default=None, max_length=255, null=True, blank=True,
+                                    help_text='If no handler class, pyscada will look at the path. '
+                                              'Exemple : /home/pi/my_handler.py')
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        # TODO : select only devices of selected variables
+        post_save.send_robust(sender=DeviceHandler, instance=Device.objects.first())
+        super(DeviceHandler, self).save(*args, **kwargs)
+
+
 class Device(models.Model):
     id = models.AutoField(primary_key=True)
     short_name = models.CharField(max_length=400, default='')
@@ -587,6 +614,7 @@ class Device(models.Model):
     )
     polling_interval = models.FloatField(default=polling_interval_choices[3][0], choices=polling_interval_choices)
     protocol = models.ForeignKey(DeviceProtocol, null=True, on_delete=models.CASCADE)
+    instrument_handler = models.ForeignKey(DeviceHandler, null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         # display protocol for the JS filter for inline variables (hmi.static.pyscada.js.admin)
@@ -601,29 +629,8 @@ class Device(models.Model):
             device_class = getattr(mod, 'Device')
             return device_class(self)
         except:
-            logger.error('%s(%d), unhandled exception\n%s' % (self.short_name, getpid(), traceback.format_exc()))
+            logger.error(f'{self.short_name}({getpid()}), unhandled exception', exc_info=True)
             return None
-
-
-class DeviceHandler(models.Model):
-    name = models.CharField(default='', max_length=255)
-    handler_class = models.CharField(default='pyscada.visa.devices.HP3456A', max_length=255,
-                                     help_text='a Base class to extend can be found at '
-                                               'pyscada.PROTOCOL.devices.GenericDevice. '
-                                               'Exemple : pyscada.visa.devices.HP3456A, '
-                                               'pyscada.smbus.devices.ups_pico, '
-                                               'pyscada.serial.devices.AirLinkGX450')
-    handler_path = models.CharField(default=None, max_length=255, null=True, blank=True,
-                                    help_text='If no handler class, pyscada will look at the path. '
-                                              'Exemple : /home/pi/my_handler.py')
-
-    def __str__(self):
-        return self.name
-
-    def save(self, *args, **kwargs):
-        # TODO : select only devices of selected variables
-        post_save.send_robust(sender=DeviceHandler, instance=Device.objects.first())
-        super(DeviceHandler, self).save(*args, **kwargs)
 
 
 class Unit(models.Model):
@@ -693,10 +700,35 @@ class Dictionary(models.Model):
                     return None
         return label_found or value
 
+    def append(self, label, value, silent=False):
+        try:
+            DictionaryItem.objects.get(label=label, value=value, dictionary=self)
+            if not silent:
+                logger.warning('Item ({}:{}) for dictionary {} already exist'.format(label, value, self))
+        except DictionaryItem.DoesNotExist:
+            di = DictionaryItem(label=label, value=value, dictionary=self)
+            di.save()
+
+    def remove(self, label=None, value=None):
+        if label is not None and value is not None:
+            DictionaryItem.objects.filter(label=label, value=value).delete()
+        elif label is not None:
+            DictionaryItem.objects.filter(label=label).delete()
+        elif value is not None:
+            DictionaryItem.objects.filter(value=value).delete()
+
+    def _get_objects_for_html(self, list_to_append=None, obj=None, exclude_model_names=None):
+        list_to_append = get_objects_for_html(list_to_append, self, exclude_model_names)
+        if obj is None:
+            for item in self.dictionaryitem_set.all():
+                list_to_append = get_objects_for_html(list_to_append, item, ['dictionary'])
+
+        return list_to_append
+
 
 class DictionaryItem(models.Model):
     id = models.AutoField(primary_key=True)
-    label = models.CharField(max_length=400, default='')
+    label = models.CharField(max_length=400, default='', blank=True)
     value = models.CharField(max_length=400, default='')
     dictionary = models.ForeignKey(Dictionary, blank=True, null=True, on_delete=models.CASCADE)
 
@@ -964,10 +996,14 @@ class Variable(models.Model):
         else:
             return 16
 
-    def query_prev_value(self, time_min=None):
+    def query_prev_value(self, time_min=None, use_protocol_variable=True):
         """
         get the last value and timestamp from the database
         """
+        pv = self.get_protocol_variable()
+        if use_protocol_variable and pv is not None and hasattr(pv, 'query_prev_value'):
+            return pv.query_prev_value(time_min)
+
         time_max = time.time() * 2097152 * 1000 + 2097151
         if time_min is None:
             time_min = time_max - (3 * 3660 * 1000 * 2097152)
@@ -1205,7 +1241,7 @@ class Variable(models.Model):
             pass
         except:
             logger.error(
-                '%s, unhandled exception in COV Receiver application\n%s' % (self.name, traceback.format_exc()))
+                f'{self.name}, unhandled exception in COV Receiver application', exc_info=True)
 
     def convert_string_value(self, value):
         try:
@@ -1240,6 +1276,16 @@ class Variable(models.Model):
             list_to_append = get_objects_for_html(list_to_append, self.calculatedvariable, ['variable_calculated_fields', 'store_variable'])
 
         return list_to_append
+
+    def get_protocol_variable(self):
+        related_variables = [field for field in Variable._meta.get_fields() if issubclass(type(field), OneToOneRel)]
+        for v in related_variables:
+            try:
+                if hasattr(self, v.name) and hasattr(getattr(self, v.name), 'protocol_id') and hasattr(self, "device") and getattr(self, v.name).protocol_id == self.device.protocol.id:
+                    return getattr(self, v.name)
+            except ProgrammingError:
+                pass
+        return None
 
 
 def validate_nonzero(value):
@@ -1409,7 +1455,7 @@ class CalculatedVariable(models.Model):
             self.check_period(self.period.start_from, now(), force_write, add_partial_info)
 
     def check_period(self, d1, d2, force_write=False, add_partial_info=False):
-        logger.debug("Check period of %s [%s - %s]" % (self.store_variable, d1, d2))
+        #logger.debug("Check period of %s [%s - %s]" % (self.store_variable, d1, d2))
         self.state = "Checking [%s to %s]" % (d1, d2)
         self.state = self.state[0:100]
         self.save(update_fields=['state'])
@@ -1421,7 +1467,7 @@ class CalculatedVariable(models.Model):
         output = []
 
         if self.period_diff_quantity(d1, d2) is None:
-            logger.debug("No period in date interval : %s (%s %s)" % (self.period, d1, d2))
+            #logger.debug("No period in date interval : %s (%s %s)" % (self.period, d1, d2))
             self.state = "[%s to %s] < %s" % (d1, d2, str(self.period.period_factor) +
                                               self.period.period_choices[self.period.period][1])
             self.state = self.state[0:100]
@@ -1458,7 +1504,7 @@ class CalculatedVariable(models.Model):
             except AttributeError:
                 v_stored = []
             if not force_write and len(v_stored) and len(v_stored[self.store_variable.id][0]):
-                logger.debug("Value already exist in RecordedData for %s - %s" %(d1, d1 + td))
+                logger.debug("Value already exist in RecordedData for %s - %s" % (d1, d1 + td))
                 pass
             else:
                 calc_value = self.get_value(d1, d1 + td)
@@ -1472,7 +1518,7 @@ class CalculatedVariable(models.Model):
         if len(output):
             self.last_check = output[-1].date_saved  # + td
         else:
-            logger.debug("Nothing to add")
+            #logger.debug("Nothing to add")
             self.last_check = min(d1, d2, now())
 
         # Add partial last value when then is data but the period is not elapsed
@@ -1739,8 +1785,8 @@ class CalculatedVariable(models.Model):
 
 class DeviceWriteTask(models.Model):
     id = models.AutoField(primary_key=True)
-    variable = models.ForeignKey('Variable', blank=True, null=True, on_delete=models.SET_NULL)
-    variable_property = models.ForeignKey('VariableProperty', blank=True, null=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey(Variable, blank=True, null=True, on_delete=models.SET_NULL)
+    variable_property = models.ForeignKey(VariableProperty, blank=True, null=True, on_delete=models.SET_NULL)
     value = models.FloatField()
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     start = models.FloatField(default=0)  # TODO DateTimeField
@@ -1754,7 +1800,7 @@ class DeviceWriteTask(models.Model):
         elif self.variable_property:
             return self.variable_property.variable.name + ' : ' + self.variable_property.name
         else:
-            return self.id
+            return str(self.id)
 
     @property
     def get_device_id(self):
@@ -1797,9 +1843,9 @@ class DeviceWriteTask(models.Model):
 
 class DeviceReadTask(models.Model):
     id = models.AutoField(primary_key=True)
-    device = models.ForeignKey('Device', blank=True, null=True, on_delete=models.SET_NULL)
-    variable = models.ForeignKey('Variable', blank=True, null=True, on_delete=models.SET_NULL)
-    variable_property = models.ForeignKey('VariableProperty', blank=True, null=True, on_delete=models.SET_NULL)
+    device = models.ForeignKey(Device, blank=True, null=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey(Variable, blank=True, null=True, on_delete=models.SET_NULL)
+    variable_property = models.ForeignKey(VariableProperty, blank=True, null=True, on_delete=models.SET_NULL)
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     start = models.FloatField(default=0)  # TODO DateTimeField
     finished = models.FloatField(default=0, blank=True)  # TODO DateTimeField
@@ -1872,7 +1918,7 @@ class RecordedDataOld(models.Model):
     value_int32 = models.IntegerField(null=True, blank=True)  # uint8, int16, uint16, int32
     value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64
     value_float64 = models.FloatField(null=True, blank=True)  # float64
-    variable = models.ForeignKey('Variable', null=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey(Variable, null=True, on_delete=models.SET_NULL)
     objects = RecordedDataValueManager()
 
     def __init__(self, *args, **kwargs):
@@ -1977,16 +2023,19 @@ class RecordedData(models.Model):
     value_int32 = models.IntegerField(null=True, blank=True)  # uint8, int16, uint16, int32
     value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64, int48
     value_float64 = models.FloatField(null=True, blank=True)  # float64, float48
-    variable = models.ForeignKey('Variable', null=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey(Variable, null=True, on_delete=models.SET_NULL)
     objects = RecordedDataValueManager()
 
     #
 
     def __init__(self, *args, **kwargs):
         if 'timestamp' in kwargs:
-            timestamp = kwargs.pop('timestamp')
+            try:
+                timestamp = kwargs.pop('timestamp')
+            except ValueError as e:
+                timestamp = time.time_ns() / 1000000000
         else:
-            timestamp = time.time()
+            timestamp = time.time_ns() / 1000000000
 
         if 'variable_id' in kwargs:
             variable_id = kwargs['variable_id']
@@ -2072,8 +2121,8 @@ class RecordedData(models.Model):
             return None
 
     def save(self, *args, **kwargs):
-        if self.date is None:
-            self.date = now()
+        if self.date_saved is None:
+            self.date_saved = now()
         super(RecordedData, self).save(*args, **kwargs)
 
 
@@ -2157,7 +2206,7 @@ class BackgroundProcess(models.Model):
             process_class = getattr(mod, class_name.__str__())
             return process_class(**kwargs)
         except:
-            logger.error('%s(%d), unhandled exception\n%s' % (self.label, getpid(), traceback.format_exc()))
+            logger.error(f'{self.label}({getpid()}), unhandled exception', exc_info=True)
             return None
 
     def restart(self):
@@ -2216,14 +2265,10 @@ class BackgroundProcess(models.Model):
             return self._stop(signum=signum)
 
 
-class ComplexEventGroup(models.Model):
+class ComplexEvent(models.Model):
     id = models.AutoField(primary_key=True)
     label = models.CharField(max_length=400, default='')
     complex_mail_recipients = models.ManyToManyField(User, blank=True)
-    variable_to_change = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
-                                           related_name="complex_variable_to_change",
-                                           help_text="Change the value on event changes")
-    default_value = models.FloatField(default=None, blank=True, null=True, help_text="Set if no activated event")
     default_send_mail = models.BooleanField(default=False, help_text="Send mail if no activated event")
     last_level = models.SmallIntegerField(default=-1)
 
@@ -2240,7 +2285,7 @@ class ComplexEventGroup(models.Model):
         var_list_final = {}
         vp_list_final = {}
 
-        for item in self.complexevent_set.all().order_by('order'):
+        for item in self.complexeventlevel_set.all().order_by('order'):
             (is_valid, var_list, vp_list) = item.is_valid()
             if item_found is None and not active and self.last_level != item.level and is_valid:
                 # logger.debug("item %s is valid : level %s" % (item, item.level))
@@ -2249,7 +2294,7 @@ class ComplexEventGroup(models.Model):
                 vp_list_final = vp_list
                 self.last_level = item.level
                 self.save()
-                prev_event = RecordedEvent.objects.filter(complex_event_group=self, active=True)
+                prev_event = RecordedEvent.objects.filter(complex_event=self, active=True)
                 if prev_event:
                     if item.stop_recording:  # Stop recording
                         # logger.debug("stop recording")
@@ -2260,7 +2305,7 @@ class ComplexEventGroup(models.Model):
                 else:
                     if not item.stop_recording:  # Start Recording
                         # logger.debug("start recording")
-                        prev_event = RecordedEvent(complex_event_group=self, time_begin=timestamp, active=True)
+                        prev_event = RecordedEvent(complex_event=self, time_begin=timestamp, active=True)
                         prev_event.save()
             active = active or item.active
 
@@ -2270,20 +2315,23 @@ class ComplexEventGroup(models.Model):
                 for recipient in self.complex_mail_recipients.exclude(email=''):
                     Mail(None, subject, message, html_message, recipient.email, time.time()).save()
 
-            # Change value
-            if item_found.new_value is not None and self.variable_to_change is not None and \
-                    self.variable_to_change.update_value(item_found.new_value, timestamp):
-                temp_item = self.variable_to_change.create_recorded_data_element()
-                temp_item.date_saved = now()
-                RecordedData.objects.bulk_create([temp_item])
+            # Change values
+            for var_to_change in item_found.complexeventoutput_set.all():
+                if var_to_change.value is not None and var_to_change.variable is not None:
+                    user, _ = User.objects.get_or_create(username='ComplexEvents')
+                    dwt = DeviceWriteTask(variable=var_to_change.variable, value=var_to_change.value, user=user,
+                                        start=timestamp)
+                    dwt.create_and_notificate(dwt)
 
         elif not active and self.last_level != -1:
             self.last_level = -1
             self.save()
-            if self.default_value and self.variable_to_change.update_value(self.default_value, timestamp):
-                temp_item = self.variable_to_change.create_recorded_data_element()
-                temp_item.date_saved = now()
-                RecordedData.objects.bulk_create([temp_item])
+            for var_to_change in self.complexeventoutput_set.all():
+                if var_to_change.value is not None and var_to_change.variable is not None:
+                    user, _ = User.objects.get_or_create(username='ComplexEvents')
+                    dwt = DeviceWriteTask(variable=var_to_change.variable, value=var_to_change.value, user=user,
+                                        start=timestamp)
+                    dwt.create_and_notificate(dwt)
             if self.default_send_mail:
                 (subject, message, html_message,) = self.compose_mail(None, {}, {})
                 for recipient in self.complex_mail_recipients.exclude(email=''):
@@ -2291,7 +2339,7 @@ class ComplexEventGroup(models.Model):
 
             # logger.debug("level = -1")
             # No active event : stop recording
-            prev_event = RecordedEvent.objects.filter(complex_event_group=self, active=True)
+            prev_event = RecordedEvent.objects.filter(complex_event=self, active=True)
             if prev_event:
                 # logger.debug("stop recording2")
                 prev_event = prev_event.last()
@@ -2424,7 +2472,7 @@ class ComplexEventGroup(models.Model):
         return subject_str, "", message_str
 
 
-class ComplexEvent(models.Model):
+class ComplexEventLevel(models.Model):
     id = models.AutoField(primary_key=True)
     level_choices = (
         (0, 'informative'),
@@ -2434,7 +2482,6 @@ class ComplexEvent(models.Model):
     )
     level = models.PositiveSmallIntegerField(default=0, choices=level_choices)
     send_mail = models.BooleanField(default=False)
-    new_value = models.FloatField(default=None, blank=True, null=True, help_text="For the group variable to change")
     order = models.PositiveSmallIntegerField(default=0)
     stop_recording = models.BooleanField(default=False)
     validation_choices = (
@@ -2445,7 +2492,7 @@ class ComplexEvent(models.Model):
     validation = models.PositiveSmallIntegerField(default=0, choices=validation_choices)
     custom_validation = models.CharField(max_length=400, default='', blank=True, null=True)
     active = models.BooleanField(default=False)
-    complex_event_group = models.ForeignKey(ComplexEventGroup, on_delete=models.CASCADE)
+    complex_event = models.ForeignKey(ComplexEvent, on_delete=models.CASCADE)
 
     def is_valid(self):
         valid = False
@@ -2453,9 +2500,9 @@ class ComplexEvent(models.Model):
         vp_infos = {}
         if self.validation == 0:  # OR
             valid = False
-        elif self.validation == 1 and self.complexeventitem_set.count():  # AND
+        elif self.validation == 1 and self.complexeventinput_set.count():  # AND
             valid = True
-        for item in self.complexeventitem_set.all():
+        for item in self.complexeventinput_set.all():
             (in_limit, item_info) = item.in_limit()
             if in_limit is None:
                 if self.validation == 1:
@@ -2477,10 +2524,19 @@ class ComplexEvent(models.Model):
         return valid, vars_infos, vp_infos
 
     def __str__(self):
-        return self.complex_event_group.label + "-" + self.level_choices[self.level][1]
+        return self.complex_event.label + "-" + self.level_choices[self.level][1]
 
 
-class ComplexEventItem(models.Model):
+class ComplexEventOutput(models.Model):
+    id = models.AutoField(primary_key=True)
+    variable = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
+                                           help_text="Variable to change on event changes")
+    value = models.CharField(max_length=400)
+    complex_event = models.ForeignKey(ComplexEvent, blank=True, null=True, on_delete=models.CASCADE)
+    complex_event_level = models.ForeignKey(ComplexEventLevel, blank=True, null=True, on_delete=models.CASCADE)
+
+
+class ComplexEventInput(models.Model):
     id = models.AutoField(primary_key=True)
     fixed_limit_low = models.FloatField(default=0, blank=True, null=True)
     variable_limit_low = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
@@ -2510,7 +2566,7 @@ class ComplexEventItem(models.Model):
     limit_high_type = models.PositiveSmallIntegerField(default=0, choices=limit_high_type_choices)
     hysteresis_high = models.FloatField(default=0)
     active = models.BooleanField(default=False)
-    complex_event = models.ForeignKey(ComplexEvent, on_delete=models.CASCADE)
+    complex_event_level = models.ForeignKey(ComplexEventLevel, on_delete=models.CASCADE)
 
     def in_limit(self):
         item_value = None
@@ -2776,7 +2832,7 @@ class Event(models.Model):
 class RecordedEvent(models.Model):
     id = models.AutoField(primary_key=True)
     event = models.ForeignKey(Event, null=True, on_delete=models.CASCADE)
-    complex_event_group = models.ForeignKey(ComplexEventGroup, null=True, on_delete=models.CASCADE)
+    complex_event = models.ForeignKey(ComplexEvent, null=True, on_delete=models.CASCADE)
     time_begin = models.FloatField(default=0)  # TODO DateTimeField
     time_end = models.FloatField(null=True, blank=True)  # TODO DateTimeField
     active = models.BooleanField(default=False, blank=True)
@@ -2784,8 +2840,8 @@ class RecordedEvent(models.Model):
     def __str__(self):
         if self.event:
             return self.event.label
-        elif self.complex_event_group:
-            return self.complex_event_group.label
+        elif self.complex_event:
+            return self.complex_event.label
 
 
 class Mail(models.Model):
@@ -2811,7 +2867,7 @@ class Mail(models.Model):
             return False
         # send the mail
         try:
-            if send_mail(self.subject, self.message, settings.DEFAULT_FROM_EMAIL, [self.to_email], fail_silently=True,
+            if send_mail(self.subject, self.message, settings.DEFAULT_FROM_EMAIL, [self.to_email], fail_silently=False,
                          html_message=self.html_message):
                 self.done = True
                 self.timestamp = time.time()
@@ -2822,8 +2878,8 @@ class Mail(models.Model):
                 self.timestamp = time.time()
                 self.save()
                 return False
-        except (IndexError, ValueError) as e:
-            logger.debug("Mail exception : %s" % e)
+        except Exception as e:
+            logger.warning(f"Send mail exception : {e}")
             self.send_fail_count = self.send_fail_count + 1
             self.timestamp = time.time()
             self.save()

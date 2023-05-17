@@ -52,7 +52,8 @@ from django.db.transaction import TransactionManagementError
 from django.db.models import Q
 from django.db.utils import IntegrityError
 
-from pyscada.models import BackgroundProcess, DeviceWriteTask, Device, RecordedData, DeviceReadTask
+from pyscada.models import BackgroundProcess, DeviceWriteTask, Device, RecordedData, DeviceReadTask, VariableProperty
+from pyscada.utils import set_bit
 from django.utils.timezone import now
 import logging
 
@@ -172,10 +173,10 @@ class Scheduler(object):
                                            process_class='pyscada.utils.scheduler.Process')
         parent_process.save()
         # check for processes to add in init block of each app
+        if 'pyscada.core' not in settings.INSTALLED_APPS:
+            # append core to initialize pyscada.event and pyscada.mail
+            settings.INSTALLED_APPS.append('pyscada.core')
         for app in settings.INSTALLED_APPS:
-            if app == 'pyscada':
-                self.stderr.write(colorize("Warning: please change 'pyscada' to 'pyscada.core' in the INSTALLED_APPS section of the settings.py!\n",fg='red',opts=('bold',)))
-                app = 'pyscada.core'
             m = __import__(app, fromlist=[str('a')])
             self.stderr.write("app %s\n" % app)
             if hasattr(m, 'parent_process_list'):
@@ -269,9 +270,15 @@ class Scheduler(object):
         if not access(self.pid_file_name, F_OK):
             return None
 
-        with open(self.pid_file_name, 'r') as f:
-            pid = int(f.read().strip())
-        return pid
+        # try reading the pid during 5 seconds
+        for i in range(1, 6):
+            try:
+                with open(self.pid_file_name, 'r') as f:
+                    pid = int(f.read().strip())
+                return pid
+            except ValueError:
+                sleep(1)
+        return None
 
     def delete_pid(self, force_del=False):
         """
@@ -306,13 +313,24 @@ class Scheduler(object):
                                                               label=self.label,
                                                               enabled=True).first()
         except OperationalError as e:
-            logger.error("Cant't connect to the DB : " + str(e))
+            logger.error("Cant't connect to the DB", exc_info=True)
             #self.delete_pid(force_del=True)
             sys.exit(0)
         self.pid = getpid()
         if not master_process:
             self.delete_pid(force_del=True)
             logger.debug('no such process in BackgroundProcesses\n')
+            sys.exit(0)
+
+        # kill all the sub processes
+        for process in BackgroundProcess.objects.filter(done=False, pid__gt=0):
+            try:
+                kill(process.pid, 9)
+            except:
+                pass
+        # Init the DB
+        if not self.init_db():
+            logger.debug('Init DB failed\n')
             sys.exit(0)
 
         self.process_id = master_process.pk
@@ -376,7 +394,7 @@ class Scheduler(object):
                 if sig is None:
                     self.manage_processes()
                 elif sig not in self.SIGNALS:
-                    logger.error('%s, unhandled signal %d' % (self.label, sig))
+                    logger.error(f'{self.label}, unhandled signal {sig}', exc_info=True)
                     continue
                 elif sig == signal.SIGTERM:
                     logger.debug('%s, termination signal' % self.label)
@@ -406,7 +424,7 @@ class Scheduler(object):
             self.delete_pid()
             sys.exit(0)
         except:
-            logger.error('%s(%d), unhandled exception\n%s' % (self.label, getpid(), traceback.format_exc()))
+            logger.error(f'{self.label}({getpid()}), unhandled exception', exc_info=True)
 
     def manage_processes(self):
         """
@@ -517,13 +535,14 @@ class Scheduler(object):
             try:
                 sp = BackgroundProcess.objects.filter(pk=1).first()
             except OperationalError as e:
-                logger.error("Cant't connect to the DB : " + str(e))
+                logger.error("Cant't connect to the DB", exc_info=True)
                 self.delete_pid(force_del=True)
                 sys.exit(0)
             if sp:
                 self.pid = sp.pid
         if self.pid is None or self.pid == 0:
-            logger.error("can't determine process id exiting.")
+            # todo : raise exception
+            logger.error("Can't determine process id exiting.")
             return False
         if self.pid != getpid():
             # calling from outside the daemon instance
@@ -782,17 +801,21 @@ class Process(object):
                             raise ConnectionResetError
                     except ConnectionResetError:
                         sleep(dt)
+                    except OSError as e:
+                        logger.warning(e)
+                        sleep(dt)
+                    except Exception as e:
+                        logger.warning(e)
 
         except StopIteration:
             self.stop()
             sys.exit(0)
         except OperationalError as e:
-            logger.debug('%s, DB connection lost' % self.label)
-            logger.debug(e)
+            logger.error(f'{self.label}, DB connection lost', exc_info=True)
             self.stop()
             sys.exit(0)
         except:
-            logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
+            logger.error(f'{self.label}, unhandled exception', exc_info=True)
             self.stop()
             sys.exit(0)
 
@@ -822,7 +845,12 @@ class Process(object):
                     self.dwt_received = True
                 if 'ProcessSignal' in a:
                     logger.debug("Received ProcessSignal %s on channel_layer for %s" % (a['ProcessSignal'], self.label))
-                #logger.debug(a)
+
+                # BUG : need to empty the channel_layer, if not the channel layer keep the message for each run loop
+                try:
+                    await wait_for(self.channel_layer.receive(message), timeout=0.01)
+                except asyncioTimeoutError:
+                    pass
         else:
             #logger.debug("sleep for %s - %s" % (self.process_id, dt))
             sleep(dt)
@@ -869,7 +897,7 @@ class Process(object):
                 except (ChannelFull, ConnectionRefusedError):
                     logger.info("Channel full : " + str(self.scheduler_pid) + '_ProcessAction_for_' + str(self.process_id))
                     pass
-                except RuntimeWarning:
+                except (RuntimeWarning, RuntimeError):
                     pass
 
     def stop(self, signum=None, frame=None):
@@ -977,9 +1005,12 @@ class SingleDeviceDAQProcessWorker(Process):
                                                    {'device_id': process['device_id']}))
                         bp.save()
                         process['id'] = bp.id
-                        process['failed'] += 1
+                    elif process['failed'] == 3:
+                        # todo : raise exception
+                        logger.error(f"process {self.bp_label % process['key']} failed 3 times")
                     else:
-                        logger.error('process %s failed more than 3 times' % (self.bp_label % process['key']))
+                        logger.warning(f"process {self.bp_label % process['key']} failed more than 3 times")
+                    process['failed'] += 1
             except:
                 logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
 
@@ -1099,9 +1130,12 @@ class MultiDeviceDAQProcessWorker(Process):
                                                    {'device_ids': process['device_ids']}))
                         bp.save()
                         process['id'] = bp.id
-                        process['failed'] += 1
+                    elif process['failed'] == 3:
+                        # todo : raise exception
+                        logger.error(f"process {self.bp_label % process['key']} failed 3 times")
                     else:
-                        logger.error('process %s failed more then 3 times' % (self.bp_label % process['key']))
+                        logger.warning(f"process {self.bp_label % process['key']} failed more than 3 times")
+                    process['failed'] += 1
             except:
                 logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
 
@@ -1146,7 +1180,7 @@ class SingleDeviceDAQProcess(Process):
         """
         self.device = Device.objects.filter(protocol__daq_daemon=1, id=self.device_id).first()
         if not self.device:
-            logger.error("Cannot initialized process for %s. Device not found." % self.device_id)
+            logger.warning(f"Cannot initialize process for {self.device_id}. Device not found.")
             self.device = None
             return False
         if not self.device.active:
@@ -1158,9 +1192,7 @@ class SingleDeviceDAQProcess(Process):
         try:
             self.device = self.device.get_device_instance()
         except:
-            var = traceback.format_exc()
-            logger.error("Exception while initialisation of DAQ Process for Device %d %s %s" % (
-                self.device_id, linesep, var))
+            logger.error(f"Exception while initialisation of DAQ Process for Device {self.device_id}", exc_info=True)
             self.device = None
             return False
 
@@ -1170,26 +1202,67 @@ class SingleDeviceDAQProcess(Process):
         # data from a write
         data = []
         # process write tasks
-        # Do all the write task for this device starting with the oldest
-        dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                              (Q(variable__device_id=self.device_id) |
-                                               Q(variable_property__variable__device_id=self.device_id)))\
-            .order_by('start')
-        if hasattr(self, 'dwt_received') and self.dwt_received and len(dwts) == 0:
+
+        variable_as_decimal = {}
+        # iterate on VPs write tasks
+        for task in DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False, variable_property__variable__device_id=self.device_id).order_by('start'):
+            # scale if needed
+            if task.variable_property.variable.scaling is not None:
+                task.value = task.variable_property.variable.scaling.scale_output_value(task.value)
+            # process bit proterty to change variable bit value
+            if len(task.variable_property.name.split("bit")) == 2 and \
+              task.variable_property.name.split("bit")[0] == "" and \
+              task.variable_property.name.split("bit")[1].isdigit() and \
+              int(task.variable_property.name.split("bit")[1]) < task.variable_property.variable.get_bits_by_class():
+                if task.variable_property.variable not in variable_as_decimal:
+                    variable_as_decimal[task.variable_property.variable] = {}
+                variable_as_decimal[task.variable_property.variable][task.variable_property.name.split("bit")[1]] = task.value
+            # Save the VP value
+            vp = VariableProperty.objects.update_property(variable_property=task.variable_property, value=task.value)
+            if vp:
+                # Set the VP task as done
+                task.done = True
+                task.finished = time()
+                task.save(update_fields=['done', 'finished'])
+            else:
+                logger.debug('VP not found for device write task %d' % task.pk)
+                task.failed = True
+                task.finished = time()
+                task.save(update_fields=['done', 'finished'])
+
+        # Get and change the variable value which has bit VP
+        for var, item in variable_as_decimal.items():
+            if var.query_prev_value(0):
+                prev_value = var.prev_value
+            else:
+                prev_value = 0
+            for bit, value in item.items():
+                prev_value = set_bit(int(prev_value), int(bit), bool(value))
+            # Create a new device write task for this varaible with the new value
+            dwt = DeviceWriteTask(variable=var, value=prev_value)
+            dwt.save()
+
+        # Do all the variable write task for this device starting with the oldest
+        dwts = DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False, variable__device_id=self.device_id).order_by('start')
+        if hasattr(self, 'dwt_received') and self.dwt_received and dwts.count() == 0:
             sleep(0.5)
             logger.info("DeviceWriteTask bulk_created but not found, wait 0.5s")
             dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
                                                   (Q(variable__device_id=self.device_id) |
                                                    Q(variable_property__variable__device_id=self.device_id)))\
                 .order_by('start')
-            if len(dwts) == 0:
+            if dwts.count() == 0:
                 logger.info("DeviceWriteTask still not found")
         self.dwt_received = False
         for task in dwts:
-            if task.variable.scaling is not None:
+            if task.variable is not None and task.variable.scaling is not None:
                 task.value = task.variable.scaling.scale_output_value(task.value)
             if self.device is not None:
-                tmp_data = self.device.write_data(task.variable.id, task.value, task)
+                if task.variable is not None:
+                    var_id = task.variable.id
+                else:
+                    var_id = None
+                tmp_data = self.device.write_data(var_id, task.value, task)
                 if isinstance(tmp_data, list):
                     if len(tmp_data) > 0:
                         task.done = True
@@ -1208,16 +1281,16 @@ class SingleDeviceDAQProcess(Process):
         drts = DeviceReadTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
                                              (Q(device_id=self.device_id) | Q(variable__device_id=self.device_id) |
                                               Q(variable_property__variable__device_id=self.device_id)))
-        if hasattr(self, 'drt_received') and self.drt_received and len(drts) == 0:
+        if hasattr(self, 'drt_received') and self.drt_received and drts.count() == 0:
             sleep(0.5)
             logger.info("DeviceReadTask bulk_created but not found, wait 0.5s")
             drts = DeviceReadTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
                                                  (Q(device_id=self.device_id) | Q(variable__device_id=self.device_id) |
                                                   Q(variable_property__variable__device_id=self.device_id)))
-            if len(drts) == 0:
+            if drts.count() == 0:
                 logger.info("DeviceReadTask still not found")
         self.drt_received = False
-        if (time() - self.last_query > self.dt_query_data) or len(drts):
+        if (time() - self.last_query > self.dt_query_data) or drts.count():
             # TODO : Read data for a variable or a VP only
 
             self.last_query = time()
@@ -1235,6 +1308,17 @@ class SingleDeviceDAQProcess(Process):
 
         if isinstance(data, list):
             if len(data) > 0:
+                # For all recorded data, if a variable is defined, find bit VP and set the bit value
+                for l in data:
+                    for d in l:
+                        if d.variable is not None:
+                            for vp in d.variable.variableproperty_set.all():
+                                if len(vp.name.split("bit")) == 2 and \
+                                vp.name.split("bit")[0] == "" and \
+                                vp.name.split("bit")[1].isdigit() and \
+                                int(vp.name.split("bit")[1]) < vp.variable.get_bits_by_class():
+                                    bit = (int(d.value()) >> int(vp.name.split("bit")[1])) & 1
+                                    VariableProperty.objects.update_property(vp, value=bit)
                 return 1, data
         return 1, None
 
@@ -1272,11 +1356,10 @@ class MultiDeviceDAQProcess(Process):
         for item in Device.objects.filter(protocol__daq_daemon=1, id__in=self.device_ids):
             try:
                 if not item:
-                    logger.error("Cannot add device %s to process %s. Device not found."
-                                 % (self.device_id, self.process_id))
+                    logger.warning(f"Cannot add device {item.id} to process {self.process_id}. Device not found.")
                     continue
                 if not item.active:
-                    logger.info("Device %s is not active. Not added to process %s." % (self.device_id, self.process_id))
+                    logger.info("Device %s is not active. Not added to process %s." % (item.id, self.process_id))
                     continue
                 tmp_device = item.get_device_instance()
                 if tmp_device is not None:
@@ -1285,8 +1368,7 @@ class MultiDeviceDAQProcess(Process):
                     self.dt_query_data = min(self.dt_query_data, item.polling_interval)
             except:
                 var = traceback.format_exc()
-                logger.error("Exception while initialisation of DAQ Process for Device %d %s %s" % (
-                    item.pk, linesep, var))
+                logger.error(f"Exception while initialisation of DAQ Process for Device {item.pk}", exc_info=True)
         if len(self.devices.items()) == 0:
             return False
         return True
@@ -1295,23 +1377,67 @@ class MultiDeviceDAQProcess(Process):
         data = [[]]
         for device_id, device in self.devices.items():
             # process write tasks
+
+            variable_as_decimal = {}
+            # iterate on VPs write tasks
+            for task in DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False, variable_property__variable__device_id=device_id).order_by('start'):
+                # scale if needed
+                if task.variable_property.variable.scaling is not None:
+                    task.value = task.variable_property.variable.scaling.scale_output_value(task.value)
+                # process bit proterty to change variable bit value
+                if len(task.variable_property.name.split("bit")) == 2 and \
+                task.variable_property.name.split("bit")[0] == "" and \
+                task.variable_property.name.split("bit")[1].isdigit() and \
+                int(task.variable_property.name.split("bit")[1]) <= task.variable_property.variable.get_bits_by_class():
+                    if task.variable_property.variable not in variable_as_decimal:
+                        variable_as_decimal[task.variable_property.variable] = {}
+                    variable_as_decimal[task.variable_property.variable][task.variable_property.name.split("bit")[1]] = task.value
+                # Save the VP value
+                vp = VariableProperty.objects.update_property(variable_property=task.variable_property, value=task.value)
+                if vp:
+                    # Set the VP task as done
+                    task.done = True
+                    task.finished = time()
+                    task.save(update_fields=['done', 'finished'])
+                else:
+                    logger.debug('VP not found for device write task %d' % task.pk)
+                    task.failed = True
+                    task.finished = time()
+                    task.save(update_fields=['done', 'finished'])
+
+            # Get and change the variable value which has bit VP
+            for var, item in variable_as_decimal.items():
+                if var.query_prev_value(0):
+                    prev_value = var.prev_value
+                else:
+                    prev_value = 0
+                for bit, value in item.items():
+                    prev_value = set_bit(int(prev_value), int(bit), bool(value))
+                # Create a new device write task for this varaible with the new value
+                dwt = DeviceWriteTask(variable=var, value=prev_value)
+                dwt.save()
+
             dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
                                                   (Q(variable__device_id=device_id) |
                                                    Q(variable_property__variable__device_id=device_id)))\
                 .order_by('start')
-            if hasattr(self, 'dwt_received') and self.dwt_received and len(dwts) == 0:
+            if hasattr(self, 'dwt_received') and self.dwt_received and dwts.count() == 0:
                 sleep(0.5)
                 logger.info("DeviceWriteTask bulk_created but not found, wait 0.5s")
                 dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
                                                       (Q(variable__device_id=device_id) |
                                                        Q(variable_property__variable__device_id=device_id)))\
                     .order_by('start')
-                if len(dwts) == 0:
+                if dwts.count() == 0:
                     logger.info("DeviceWriteTask still not found")
             for task in dwts:
-                if task.variable.scaling is not None:
+                if task.variable is not None and task.variable.scaling is not None:
                     task.value = task.variable.scaling.scale_output_value(task.value)
-                tmp_data = device.write_data(task.variable.id, task.value, task)
+                if task.variable is not None:
+                    var_id = task.variable.id
+                else:
+                    var_id = None
+                tmp_data = device.write_data(var_id, task.value, task)
                 if isinstance(tmp_data, list):
                     if len(tmp_data) > 0:
                         task.done = True
@@ -1332,17 +1458,17 @@ class MultiDeviceDAQProcess(Process):
                                              (Q(device_id__in=self.device_ids) |
                                               Q(variable__device_id__in=self.device_ids) |
                                               Q(variable_property__variable__device_id__in=self.device_ids)))
-        if hasattr(self, 'drt_received') and self.drt_received and len(drts) == 0:
+        if hasattr(self, 'drt_received') and self.drt_received and drts.count() == 0:
             sleep(0.5)
             logger.info("DeviceReadTask bulk_created but not found, wait 0.5s")
             drts = DeviceReadTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
                                                  (Q(device_id__in=self.device_ids) |
                                                   Q(variable__device_id__in=self.device_ids) |
                                                   Q(variable_property__variable__device_id__in=self.device_ids)))
-            if len(drts) == 0:
+            if drts.count() == 0:
                 logger.info("DeviceReadTask still not found")
         self.drt_received = False
-        if time() - self.last_query > self.dt_query_data or len(drts):
+        if time() - self.last_query > self.dt_query_data or drts.count():
             self.last_query = time()
             for device_id, device in self.devices.items():
                 # Query data
@@ -1363,6 +1489,17 @@ class MultiDeviceDAQProcess(Process):
 
         if isinstance(data, list):
             if len(data) > 0:
+                # For all recorded data, if a variable is defined, find bit VP and set the bit value
+                for l in data:
+                    for d in l:
+                        if d.variable is not None:
+                            for vp in d.variable.variableproperty_set.all():
+                                if len(vp.name.split("bit")) == 2 and \
+                                vp.name.split("bit")[0] == "" and \
+                                vp.name.split("bit")[1].isdigit() and \
+                                int(vp.name.split("bit")[1]) < vp.variable.get_bits_by_class():
+                                    bit = (d.value() >> int(vp.name.split("bit")[1])) & 1
+                                    VariableProperty.objects.update_property(vp, value=bit)
                 return 1, data
         return 1, None
 

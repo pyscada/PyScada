@@ -1,13 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from pyscada.systemstat import PROTOCOL_ID as systemstat_PROTOCOL_ID
-from pyscada.modbus import PROTOCOL_ID as modbus_PROTOCOL_ID
-from pyscada.visa import PROTOCOL_ID as visa_PROTOCOL_ID
-from pyscada.onewire import PROTOCOL_ID as onewire_PROTOCOL_ID
-from pyscada.phant import PROTOCOL_ID as phant_PROTOCOL_ID
-from pyscada.smbus import PROTOCOL_ID as smbus_PROTOCOL_ID
-
 from django.db import migrations
 
 
@@ -18,12 +11,7 @@ def forwards_func(apps, schema_editor):
     Device = apps.get_model("pyscada", "Device")
     db_alias = schema_editor.connection.alias
     protocol_list = []
-    protocol_ids = {'systemstat':systemstat_PROTOCOL_ID,
-                    'modbus': modbus_PROTOCOL_ID,
-                    'visa': visa_PROTOCOL_ID,
-                    'onewire': onewire_PROTOCOL_ID,
-                    'phant': phant_PROTOCOL_ID,
-                    'smbus': smbus_PROTOCOL_ID}
+    protocol_ids = {}
 
     # create intermediate device protocol schema
     for dp in DeviceProtocol.objects.using(db_alias).all():
@@ -54,50 +42,6 @@ def forwards_func(apps, schema_editor):
     # delete all old device protocol schema
     DeviceProtocol.objects.using(db_alias).filter(pk__range=(2,100)).delete()
     # create new device protocol schema
-    DeviceProtocol.objects.using(db_alias).bulk_create([
-        DeviceProtocol(pk=systemstat_PROTOCOL_ID,
-                       protocol='systemstat',
-                       description='Local System Monitoring',
-                       app_name='pyscada.systemstat',
-                       device_class='pyscada.systemstat.device',
-                       daq_daemon=True,
-                       single_thread=True),
-        DeviceProtocol(pk=modbus_PROTOCOL_ID,
-                       protocol='modbus',
-                       description='Modbus Device',
-                       app_name='pyscada.modbus',
-                       device_class='pyscada.modbus.device',
-                       daq_daemon=True,
-                       single_thread=True),
-        DeviceProtocol(pk=visa_PROTOCOL_ID,
-                       protocol='visa',
-                       description='VISA Device',
-                       app_name='pyscada.visa',
-                       device_class='pyscada.visa.device',
-                       daq_daemon=True,
-                       single_thread=True),
-        DeviceProtocol(pk=onewire_PROTOCOL_ID,
-                       protocol='onewire',
-                       description='1Wire Device',
-                       app_name='pyscada.onewire',
-                       device_class='pyscada.onewire.device',
-                       daq_daemon=True,
-                       single_thread=True),
-        DeviceProtocol(pk=phant_PROTOCOL_ID,
-                       protocol='phant',
-                       description='Phant Webservice Device',
-                       app_name='pyscada.phant',
-                       device_class='None',
-                       daq_daemon=False,
-                       single_thread=True),
-        DeviceProtocol(pk=smbus_PROTOCOL_ID,
-                       protocol='smbus',
-                       description='SMBus/I2C Device',
-                       app_name='pyscada.smbus',
-                       device_class='pyscada.smbus.device',
-                       daq_daemon=True,
-                       single_thread=True),
-    ])
     # migrate intermediate protocol ids to new protocol ids
     for p_ids in protocol_list:
         Device.objects.using(db_alias).filter(protocol_id=p_ids[0]).update(protocol_id=p_ids[1])

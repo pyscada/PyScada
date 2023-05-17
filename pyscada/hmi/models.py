@@ -10,7 +10,7 @@ from django.contrib.auth.models import Group
 from django.template.loader import get_template
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from six import text_type
 import traceback
@@ -99,6 +99,17 @@ class WidgetContentModel(models.Model):
         wc.content_str = self.__str__()
         wc.save()
 
+    def get_widget_content_entry(self):
+        def fullname(o):
+            return o.__module__ + "." + o.__class__.__name__
+        try:
+            return WidgetContent.objects.get(content_pk=self.pk,
+                          content_model=fullname(self),
+                          content_str=self.__str__())
+        except WidgetContent.DoesNotExist:
+            logger.warning(f'Widget content not found for {self}')
+            return None
+
     def delete_duplicates(self):
         for i in WidgetContent.objects.all():
             c = WidgetContent.objects.filter(content_pk=i.content_pk, content_model=i.content_model).count()
@@ -154,49 +165,52 @@ class DisplayValueOption(models.Model):
         (3, 'Circular gauge'),
     )
     type = models.PositiveSmallIntegerField(default=0, choices=type_choices)
-    color_type_choices = (
-        (0, 'No color'),
-        (1, '2 color'),
-        (2, '3 colors'),
-        (3, 'color gradient'),)
-    color_type = models.PositiveSmallIntegerField(default=0, choices=color_type_choices,
-                                                  help_text="For boolean no level needed and will use color 1 "
-                                                            "and 2")
-    color_level_1 = models.FloatField(default=0)
-    color_level_1_type_choices = (
-        (0, 'color 1 =< level 1'),
-        (1, 'color 1 < level 1'),)
-    color_level_1_type = models.PositiveSmallIntegerField(default=0, choices=color_level_1_type_choices,
-                                                          help_text="Only needed for 2 or 3 colors")
 
-    color_level_2 = models.FloatField(default=50, help_text="Only needed for 3 colors and gradient")
-    color_level_2_type_choices = (
-        (0, 'color 2 =< level 2'),
-        (1, 'color 2 < level 2'),)
-    color_level_2_type = models.PositiveSmallIntegerField(default=0, choices=color_level_2_type_choices,
-                                                          help_text="Only needed for 3 colors")
-
-    color_1 = models.ForeignKey(Color, null=True, blank=True, on_delete=models.SET_NULL, related_name="color_1")
-    color_2 = models.ForeignKey(Color, null=True, blank=True, on_delete=models.SET_NULL, related_name="color_2")
-    color_3 = models.ForeignKey(Color, null=True, blank=True, on_delete=models.SET_NULL, related_name="color_3",
-                                help_text="Only needed for 3 colors")
-
-    mode_choices = (
-        (0, 'Value only'),
-        (1, 'Color only'),
-        (2, 'Value and color'),)
-    mode = models.PositiveSmallIntegerField(default=0, choices=mode_choices)
+    color = models.ForeignKey(Color, null=True, blank=True, on_delete=models.CASCADE,
+                              help_text="Default color if no level defined, can be null.<br>"
+                                        "Color < or =< first level, if a level is defined.")
+    color_only = models.BooleanField(default=False, help_text="If true, will not display the value.")
+    gradient = models.BooleanField(default=False, help_text="Need 1 color option to be defined.")
+    gradient_higher_level = models.FloatField(default=0,
+                                              help_text="Color defined above will be used for this level.")
 
     timestamp_conversion_choices = (
         (0, 'None'),
-        (1, 'Timestamp to local date'),
-        (2, 'Timestamp to local time'),
-        (3, 'Timestamp to local date and time'),)
+        (1, 'Timestamp in milliseconds to local date'),
+        (2, 'Timestamp in milliseconds to local time'),
+        (3, 'Timestamp in milliseconds to local date and time'),
+        (4, 'Timestamp in seconds to local date'),
+        (5, 'Timestamp in seconds to local time'),
+        (6, 'Timestamp in seconds to local date and time'),)
     timestamp_conversion = models.PositiveSmallIntegerField(default=0,
                                                             choices=timestamp_conversion_choices)
 
     def __str__(self):
         return self.name
+
+    def _get_objects_for_html(self, list_to_append=None, obj=None, exclude_model_names=None):
+        list_to_append = get_objects_for_html(list_to_append, self, exclude_model_names)
+        for item in self.displayvaluecoloroption_set.all():
+            list_to_append = get_objects_for_html(list_to_append, item, ['display_value_option'])
+        return list_to_append
+
+
+class DisplayValueColorOption(models.Model):
+    display_value_option = models.ForeignKey(DisplayValueOption, on_delete=models.CASCADE)
+    color_level = models.FloatField()
+    color_level_type_choices = (
+        (0, 'color =< level'),
+        (1, 'color < level'),)
+    color_level_type = models.PositiveSmallIntegerField(default=0, choices=color_level_type_choices)
+    color = models.ForeignKey(Color, null=True, blank=True, on_delete=models.CASCADE,
+                              help_text="Let blank for no color below the selected level.")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['display_value_option', 'color_level', 'color_level_type'],
+                                    name='unique_display_value_color_option')
+        ]
+        ordering = ['color_level', '-color_level_type']
 
 
 class ControlItem(models.Model):
@@ -322,14 +336,15 @@ class ControlItem(models.Model):
 
     def threshold_values(self):
         tv = dict()
-        if self.display_value_options is not None and self.display_value_options.mode > 0:
-            if self.display_value_options.color_type == 1:
-                tv[self.display_value_options.color_level_1] = self.display_value_options.color_1.color_code()
-                tv["max"] = self.display_value_options.color_2.color_code()
-            if self.display_value_options.color_type == 2:
-                tv[self.display_value_options.color_level_1] = self.display_value_options.color_1.color_code()
-                tv[self.display_value_options.color_level_2] = self.display_value_options.color_2.color_code()
-                tv["max"] = self.display_value_options.color_3.color_code()
+        if self.display_value_options is not None and self.display_value_options.color is not None:
+            if len(self.display_value_options.displayvaluecoloroption_set.all()) == 0:
+                tv["max"] = self.display_value_options.color.color_code()
+            else:
+                prev_color = self.display_value_options.color
+                for dvco in self.display_value_options.displayvaluecoloroption_set.all():
+                    tv[dvco.color_level] = prev_color.color_code()
+                    prev_color = dvco.color
+                tv["max"] = prev_color.color_code()
         return json.dumps(tv)
 
     def gauge_params(self):
@@ -344,6 +359,10 @@ class ControlItem(models.Model):
             return self.variable_property.dictionary
         elif self.variable:
             return self.variable.dictionary
+
+    def _get_objects_for_html(self, list_to_append=None, obj=None, exclude_model_names=None):
+        list_to_append = get_objects_for_html(list_to_append, self, exclude_model_names)
+        return list_to_append
 
 
 class Chart(WidgetContentModel):
@@ -527,7 +546,10 @@ class ControlPanel(WidgetContentModel):
         opts["object_config_list"] = set()
         opts["object_config_list"].update(self._get_objects_for_html())
         opts["custom_fields_list"] = {'variable': [{'name': 'refresh-requested-timestamp', 'value': ""},
-                                                   {'name': 'value-timestamp', 'value': ''}, ]}
+                                                   {'name': 'value-timestamp', 'value': ''}, ],
+                                      'variableproperty': [{'name': 'refresh-requested-timestamp', 'value': ""},
+                                                           {'name': 'value-timestamp', 'value': ''}, ],
+                                      }
         return main_content, sidebar_content, opts
 
 
@@ -642,7 +664,7 @@ class WidgetContent(models.Model):
             else:
                 return '', '', ''
         except:
-            logger.error('%s unhandled exception\n%s' % (content_model, traceback.format_exc()))
+            logger.error(f'{content_model} unhandled exception', exc_info=True)
             # todo del self
             return '', '', ''
 
@@ -655,10 +677,11 @@ class WidgetContent(models.Model):
             content_class = getattr(mod, class_name.__str__())
             if isinstance(content_class, models.base.ModelBase):
                 return content_class.objects.get(pk=self.content_pk)
-            return None
+        except ModuleNotFoundError:
+            logger.info(f"{class_name} of {class_path} not found. A module is not installed ?")
         except:
-            logger.error('%s unhandled exception\n%s' % (class_path, traceback.format_exc()))
-            return None
+            logger.error(f'{class_path} unhandled exception', exc_info=True)
+        return None
 
     def __str__(self):
         return '%s [%d] %s' % (self.content_model.split('.')[-1], self.content_pk, self.content_str)  # todo add more infos
@@ -671,6 +694,9 @@ class CssClass(models.Model):
 
     def __str__(self):
         return self.title
+
+    class Meta:
+        verbose_name_plural = 'Css Classes'
 
 
 class Widget(models.Model):
@@ -730,11 +756,14 @@ class View(models.Model):
 
 
 class GroupDisplayPermission(models.Model):
-    hmi_group = models.OneToOneField(Group, null=True, on_delete=models.CASCADE)
+    hmi_group = models.OneToOneField(Group, blank=True, null=True, on_delete=models.CASCADE)
     type_choices = ((0, 'allow'), (1, 'exclude'),)
 
     def __str__(self):
-        return self.hmi_group.name
+        if self.hmi_group is not None:
+            return self.hmi_group.name
+        else:
+            return "Users without any group"
 
 
 class PieGroupDisplayPermission(models.Model):
@@ -745,7 +774,7 @@ class PieGroupDisplayPermission(models.Model):
     pies = models.ManyToManyField(Pie, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
 
 
 class PageGroupDisplayPermission(models.Model):
@@ -755,8 +784,8 @@ class PageGroupDisplayPermission(models.Model):
                                                       '<br>If exclude: allows all items except the selected ones.')
     pages = models.ManyToManyField(Page, blank=True, related_name='groupdisplaypermission')
 
-    #def __str__(self):
-    #    return self.group_display_permission.hmi_group.name
+    def __str__(self):
+        return str(self.group_display_permission)
 
 
 class SlidingPanelMenuGroupDisplayPermission(models.Model):
@@ -767,7 +796,7 @@ class SlidingPanelMenuGroupDisplayPermission(models.Model):
     sliding_panel_menus = models.ManyToManyField(SlidingPanelMenu, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
 
 
 class ChartGroupDisplayPermission(models.Model):
@@ -778,7 +807,7 @@ class ChartGroupDisplayPermission(models.Model):
     charts = models.ManyToManyField(Chart, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
 
 
 class ControlItemGroupDisplayPermission(models.Model):
@@ -789,7 +818,7 @@ class ControlItemGroupDisplayPermission(models.Model):
     control_items = models.ManyToManyField(ControlItem, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
 
 
 class FormGroupDisplayPermission(models.Model):
@@ -800,7 +829,7 @@ class FormGroupDisplayPermission(models.Model):
     forms = models.ManyToManyField(Form, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
 
 
 class WidgetGroupDisplayPermission(models.Model):
@@ -811,7 +840,7 @@ class WidgetGroupDisplayPermission(models.Model):
     widgets = models.ManyToManyField(Widget, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
 
 
 class CustomHTMLPanelGroupDisplayPermission(models.Model):
@@ -822,7 +851,7 @@ class CustomHTMLPanelGroupDisplayPermission(models.Model):
     custom_html_panels = models.ManyToManyField(CustomHTMLPanel, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
 
 
 class ViewGroupDisplayPermission(models.Model):
@@ -833,7 +862,7 @@ class ViewGroupDisplayPermission(models.Model):
     views = models.ManyToManyField(View, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
 
 
 class ProcessFlowDiagramGroupDisplayPermission(models.Model):
@@ -844,4 +873,4 @@ class ProcessFlowDiagramGroupDisplayPermission(models.Model):
     process_flow_diagram = models.ManyToManyField(ProcessFlowDiagram, blank=True, related_name='groupdisplaypermission')
 
     def __str__(self):
-        return self.group_display_permission.hmi_group.name
+        return str(self.group_display_permission)
