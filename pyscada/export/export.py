@@ -43,10 +43,10 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
 
     if isinstance(time_max, string_types):
         # convert date strings
-        time_max = mktime(datetime.strptime(time_max, "%d-%b-%Y %H:%M:%S").timetuple())
+        time_max = mktime(datetime.strptime(time_max, "%d-%m-%Y %H:%M:%S").timetuple())
     if isinstance(time_min, string_types):
         # convert date strings
-        time_min = mktime(datetime.strptime(time_min, "%d-%b-%Y %H:%M:%S").timetuple())
+        time_min = mktime(datetime.strptime(time_min, "%d-%m-%Y %H:%M:%S").timetuple())
 
     # add default time_min
     if time_max is None:
@@ -59,6 +59,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
         file_extension = '.h5'
     elif filename is not None:
         file_extension = '.' + filename.split('.')[-1]
+        filename = filename[:len(filename) - len(filename.split('.')[-1]) - 1]
     # validate file type
     if file_extension not in ['.h5', '.mat', '.csv']:
         if tp is not None:
@@ -69,55 +70,57 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
         return
 
     #
-    if filename is None:
-        if hasattr(settings, 'PYSCADA_EXPORT'):
-            if 'output_folder' in settings.PYSCADA_EXPORT:
-                backup_file_path = os.path.expanduser(settings.PYSCADA_EXPORT['output_folder'])
-            else:
-                backup_file_path = os.path.expanduser('~/measurement_data_dumps')
+    if hasattr(settings, 'PYSCADA_EXPORT'):
+        if 'output_folder' in settings.PYSCADA_EXPORT:
+            backup_file_path = os.path.expanduser(settings.PYSCADA_EXPORT['output_folder'])
         else:
             backup_file_path = os.path.expanduser('~/measurement_data_dumps')
+    else:
+        backup_file_path = os.path.expanduser('~/measurement_data_dumps')
 
-        # add filename prefix
-        backup_file_name = 'measurement_data'
-        if hasattr(settings, 'PYSCADA_EXPORT'):
-            if 'file_prefix' in settings.PYSCADA_EXPORT:
-                backup_file_name = settings.PYSCADA_EXPORT['file_prefix'] + backup_file_name
-        # create output dir if not existing
-        if not os.path.exists(backup_file_path):
-            os.mkdir(backup_file_path)
+    # add filename prefix
+    backup_file_name = 'measurement_data'
+    if hasattr(settings, 'PYSCADA_EXPORT'):
+        if 'file_prefix' in settings.PYSCADA_EXPORT:
+            backup_file_name = settings.PYSCADA_EXPORT['file_prefix'] + backup_file_name
+    # create output dir if not existing
+    if not os.path.exists(backup_file_path):
+        os.mkdir(backup_file_path)
 
-        # validate time values
-        db_time_min = RecordedData.objects.filter(variable__isnull=False).first()  # todo add RecordedDataOld
-        if not db_time_min:
-            if tp is not None:
-                tp.last_update = now()
-                tp.message = 'no data to export'
-                tp.failed = 1
-                tp.save()
-            return
-        time_min = max(db_time_min.time_value(), time_min)
+    # validate time values
+    db_time_min = RecordedData.objects.filter(variable__isnull=False).first()  # todo add RecordedDataOld
+    if not db_time_min:
+        if tp is not None:
+            tp.last_update = now()
+            tp.message = 'no data to export'
+            tp.failed = 1
+            tp.save()
+        return
+    time_min = max(db_time_min.time_value(), time_min)
 
-        db_time_max = RecordedData.objects.last()  # todo add RecordedDataOld
-        if not db_time_max:
-            if tp is not None:
-                tp.last_update = now()
-                tp.message = 'no data to export'
-                tp.failed = 1
-                tp.save()
-            return
-        time_max = min(db_time_max.time_value(), time_max)
+    db_time_max = RecordedData.objects.last()  # todo add RecordedDataOld
+    if not db_time_max:
+        if tp is not None:
+            tp.last_update = now()
+            tp.message = 'no data to export'
+            tp.failed = 1
+            tp.save()
+        return
+    time_max = min(db_time_max.time_value(), time_max)
 
-        # filename  and suffix
-        cdstr_from = datetime.fromtimestamp(time_min).strftime("%Y_%m_%d_%H%M")
-        cdstr_to = datetime.fromtimestamp(time_max).strftime("%Y_%m_%d_%H%M")
+    # filename  and suffix
+    cdstr_from = datetime.fromtimestamp(time_min).strftime("%Y_%m_%d_%H%M")
+    cdstr_to = datetime.fromtimestamp(time_max).strftime("%Y_%m_%d_%H%M")
 
+    if filename is None:
         if 'filename_suffix' in kwargs:
             filename = os.path.join(backup_file_path,
                                     backup_file_name + '_' + cdstr_from + '_' + cdstr_to + '_' + kwargs[
                                         'filename_suffix'])
         else:
             filename = os.path.join(backup_file_path, backup_file_name + '_' + cdstr_from + '_' + cdstr_to)
+    else:
+        filename = os.path.join(backup_file_path, filename)
 
     # check if file exists
     if os.path.exists(filename + file_extension) and not append_to_file:
