@@ -25,8 +25,6 @@ if [[ $EUID -ne 0 ]]; then
   exit -1
 fi
 
-
-
 check_exit_status() {
   local message=$1
   local exit_status=$2
@@ -97,7 +95,8 @@ function questions_setup(){
   # db params
   read -p "Database name [PyScada_db]: " answer_db_name
   read -p "Database user [PyScada-user]: " answer_db_user
-  read -p "Database password [PyScada-user-password]: " answer_db_password
+  read -sp "Database password (your input is hidden) [PyScada-user-password]: " answer_db_password
+  echo "\n"
 
   if [[ "$answer_db_name" == "" ]]; then
     answer_db_name="PyScada_db"
@@ -178,38 +177,16 @@ function template_setup(){
   sed -i '/backupCount/d' "$SETTINGS_TPL"
   check_exit_status "add mysql HOST failed" $?
 
-  python3 <<-EOF
-import django
-from django.conf import settings
-from django.template.loader import render_to_string
-
-settings.configure(
-    TEMPLATES=[{
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['./'],  # script dir
-  'OPTIONS': {'string_if_invalid': '{{ %s }}'}, # prevents the other template tags to be replaced by ''
-    }]
-)
-
-django.setup()
-from django.template import Template, Context
-with open("$SETTINGS_TPL", "r+") as f:
-  template = Template(f.read())
-  context = Context({
-                "db_name": "${answer_db_name}",
-                "db_user": "${answer_db_user}",
-                "db_password": "${answer_db_password}",
-                "project_root": "/src/pyscada/",
-                "log_file_dir": "/src/pyscada/",
-                "project_admins": "${project_admins}",
-                "auto_add_apps": "${answer_auto_add_apps}",
-                "additional_apps": "",
-                "additional_settings": "",
-                })
-  f.seek(0)
-  f.write(template.render(context))
-  f.truncate()
-EOF
+  # set up django settings file
+  sed -i "s|{{ db_name }}|$answer_db_name|g"  $SETTINGS_TPL
+  sed -i "s|{{ db_user }}|$answer_db_user|g"  $SETTINGS_TPL
+  sed -i "s|{{ db_password }}|$answer_db_password|g"  $SETTINGS_TPL
+  sed -i "s|{{ project_root }}|\/src\/pyscada\/|g"  $SETTINGS_TPL
+  sed -i "s|{{ log_file_dir }}|\/src\/pyscada\/|g"  $SETTINGS_TPL
+  sed -i "s|{{ project_admins\|safe }}|$project_admins|g"  $SETTINGS_TPL
+  sed -i "s|{{ auto_add_apps }}|$answer_auto_add_apps|g"  $SETTINGS_TPL
+  sed -i "s|{{ additional_apps }}||g"  $SETTINGS_TPL
+  sed -i "s|{{ additional_settings }}||g"  $SETTINGS_TPL
 
   rm ./pyscada/project_template.zip
   cd ../tests/project_template_tmp
@@ -234,6 +211,9 @@ check_exit_status "docker service is not running. Start it using : sudo systemct
 
 echo "The installation may take some time"
 sleep 0
+
+command -v zip >/dev/null 2>&1
+check_exit_status "Zip is not installed, install it with : sudo apt install zip" $?
 
 # Execute commands from ./docker
 cd docker
