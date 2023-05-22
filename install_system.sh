@@ -124,7 +124,8 @@ function questions_clean_install_setup(){
 
   read -p "DB name ? [PyScada_db]: " answer_db_name
   read -p "DB user ? [PyScada-user]: " answer_db_user
-  read -p "DB password ? [PyScada-user-password]: " answer_db_password
+  read -sp "DB password ? [PyScada-user-password]: " answer_db_password
+  echo "\n"
 
   admin_name_setup
   regex_mail
@@ -185,11 +186,11 @@ function questions_setup(){
   regex_proxy
 
   # Channels and redis
-  read -p "Install channels and redis ? [y/n]: " answer_channels
+  read -p "Install channels and redis to speed up inter pyscada process communications ? [y/n]: " answer_channels
 
   # Clean installation or not
   while true; do
-    read -p "Update only don't create db, user, copy services, settings and urls...) ? [y/n]: " answer_update
+    read -p "Update only : if 'y' it will not create DB, superuser, copy services, settings and urls... On a fresh install you should answer 'n' ? [y/n]: " answer_update
     if [[ "$answer_update" == "y" ]]; then
       break
     elif [[ "$answer_update" == "n" ]]; then
