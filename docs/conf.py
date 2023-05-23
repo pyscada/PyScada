@@ -20,8 +20,8 @@
 # -- Project information -----------------------------------------------------
 
 project = 'PyScada'
-copyright = '2019, Martin Schröder'
-author = 'Martin Schröder'
+copyright = '2023, Martin Schröder, Camille Lavayssiere'
+author = 'Martin Schröder, Camille Lavayssiere'
 
 # The short X.Y version
 version = ''
