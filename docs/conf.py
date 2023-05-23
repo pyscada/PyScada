@@ -16,15 +16,6 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-# Django setup
-import os
-import sys
-import django
-sys.path.insert(0, os.path.abspath('..'))
-sys.path.append("/var/www/pyscada/PyScadaServer/PyScadaServer/")
-os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
-django.setup()
-
 
 # -- Project information -----------------------------------------------------
 
@@ -48,7 +39,6 @@ release = '0.8.0'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
     'sphinx_js',
 ]
 
