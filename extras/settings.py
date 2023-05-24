@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'pyscada',
+    'pyscada.core',
     'pyscada.hmi',
     'pyscada.export',
 ]
