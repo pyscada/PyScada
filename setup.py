@@ -11,7 +11,7 @@ CLASSIFIERS = [
     'Framework :: Django',
     'Intended Audience :: Developers',
     'Intended Audience :: Science/Research',
-    'License :: OSI Approved :: GNU Affero General Public License v3 (AGPLv3)',
+    'License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)',
     'Operating System :: POSIX',
     'Operating System :: MacOS :: MacOS X',
     'Programming Language :: Python',
