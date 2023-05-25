@@ -96,7 +96,7 @@ function questions_setup(){
   read -p "Database name [PyScada_db]: " answer_db_name
   read -p "Database user [PyScada-user]: " answer_db_user
   read -sp "Database password (your input is hidden) [PyScada-user-password]: " answer_db_password
-  echo "\n"
+  echo ""
 
   if [[ "$answer_db_name" == "" ]]; then
     answer_db_name="PyScada_db"

@@ -125,7 +125,7 @@ function questions_clean_install_setup(){
   read -p "DB name ? [PyScada_db]: " answer_db_name
   read -p "DB user ? [PyScada-user]: " answer_db_user
   read -sp "DB password ? [PyScada-user-password]: " answer_db_password
-  echo "\n"
+  echo ""
 
   admin_name_setup
   regex_mail
