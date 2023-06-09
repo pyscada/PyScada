@@ -36,7 +36,7 @@ html {
 }
 body {
 	font-family: robotoregular, Arial, sans-serif;
-	/* padding-top: 70px; */
+	padding-top: 70px;
 }
 html,body {
 	height:100%;
@@ -64,10 +64,6 @@ html,body {
 
 .input-group-addon {
 	border-radius:0px;
-}
-
-.navbar-fixed-top {
-	position: relative;
 }
 
 .navbar-inverse {
