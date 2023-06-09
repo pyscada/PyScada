@@ -3320,8 +3320,12 @@ function setAggregatedPeriodList(widget_id, var_id) {
   */
  function set_loading_state(key, value) {
      loading_states[key] = value;
-     $('#page-load-label').show();
-     $('#page-load-state').show();
+     if (value < 100) {
+         $('#page-load-label').show();
+         $('#page-load-state').show();
+     }else {
+         hide_loading_state();
+     };
      $('#page-load-label').text(loading_labels[key]);
      if ($('#page-load-state').length > 0) {
          $('#page-load-state')[0].setAttribute('value', (Number.parseFloat(loading_states[key]).toFixed(2)));
