@@ -610,8 +610,8 @@ class ProcessFlowDiagram(WidgetContentModel):
                                             help_text='HTML is not responsive and can display control element<br>'
                                                       'SVG is responsive and cannot display control element')
     process_flow_diagram_items = models.ManyToManyField(ProcessFlowDiagramItem, blank=True)
-    url_height = models.PositiveIntegerField(editable=False, default="100")
-    url_width = models.PositiveIntegerField(editable=False, default="100")
+    url_height = models.PositiveIntegerField(editable=False, default="100", null=True)
+    url_width = models.PositiveIntegerField(editable=False, default="100", null=True)
 
     def __str__(self):
         if self.title:
