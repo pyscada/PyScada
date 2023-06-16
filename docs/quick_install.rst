@@ -36,11 +36,11 @@ Automatic installation on Debian and derivatives
   .. code-block:: shell
 
       sudo apt install wget
-      wget https://github.com/pyscada/PyScada/archive/refs/heads/master.zip -O PyScada-master.zip
+      wget https://github.com/pyscada/PyScada/archive/refs/heads/main.zip -O PyScada-main.zip
       sudo apt install unzip
-      unzip ./PyScada-master.zip
-      rm ./PyScada-master.zip
-      cd PyScada-master
+      unzip ./PyScada-main.zip
+      rm ./PyScada-main.zip
+      cd PyScada-main
 
 2. Install PyScada
 
