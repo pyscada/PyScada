@@ -594,10 +594,13 @@ class ProcessFlowDiagramItem(models.Model):
     visible = models.BooleanField(default=True)
 
     def __str__(self):
-        if self.control_item.label != '':
-            return str(self.id) + ": " + self.control_item.label
+        if self.control_item:
+            if self.control_item.label != '':
+                return str(self.id) + ": " + self.control_item.label
+            else:
+                return str(self.id) + ": " + self.control_item.name
         else:
-            return str(self.id) + ": " + self.control_item.name
+            return str(self.id)
 
 
 class ProcessFlowDiagram(WidgetContentModel):
