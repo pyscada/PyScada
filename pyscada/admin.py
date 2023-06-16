@@ -433,7 +433,14 @@ class VariableAdmin(admin.ModelAdmin):
     related_variables = [field for field in Variable._meta.get_fields() if issubclass(type(field), OneToOneRel)]
     inlines = []
     for v in related_variables:
-        cl = type(v.name, (admin.StackedInline,), dict(model=v.related_model, form=VariableAdminFrom))  # classes=['collapse']
+        variable_dict = dict(model=v.related_model, form=VariableAdminFrom)
+        if hasattr(v.related_model, "fk_name"):
+            variable_dict["fk_name"] = v.related_model.fk_name
+        if hasattr(v.related_model, "FormSet"):
+            variable_dict["formset"] = v.related_model.FormSet
+        if hasattr(v.related_model, "fieldsets"):
+            variable_dict["fieldsets"] = v.related_model.fieldsets
+        cl = type(v.name, (admin.StackedInline,), variable_dict)  # classes=['collapse']
         inlines.append(cl)
 
     # Add JS file to display the right inline
@@ -443,6 +450,7 @@ class VariableAdmin(admin.ModelAdmin):
             'admin/js/vendor/jquery/jquery.min.js',
             'admin/js/jquery.init.js',
             'pyscada/js/admin/display_inline_protocols_variable.js',
+            'pyscada/js/admin/hideshow.js',
         )
 
     def device_name(self, instance):
