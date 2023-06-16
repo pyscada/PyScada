@@ -585,7 +585,7 @@ class CustomHTMLPanel(WidgetContentModel):
 
 class ProcessFlowDiagramItem(models.Model):
     id = models.AutoField(primary_key=True)
-    control_item = models.ForeignKey(ControlItem, default=None, blank=True, null=True, on_delete=models.SET_NULL)
+    control_item = models.ForeignKey(ControlItem, default=None, blank=True, null=True, on_delete=models.CASCADE)
     top = models.PositiveIntegerField(blank=True, default=0)
     left = models.PositiveIntegerField(blank=True, default=0)
     font_size = models.PositiveSmallIntegerField(default=14)
