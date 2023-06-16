@@ -1,4 +1,4 @@
-<div class="widget-body" id="widget-body-{{ widget_pk }}-gauge-{{gauge.pk}}">
+<div class="widget-body gauge-body {{ widget_extra_css_class }}" id="widget-body-{{ widget_pk }}-gauge-{{gauge.pk}}">
     <div class="main-chart-area" style="height:450px; width:100%;">
         <div id="chart-container-{{ widget_pk }}-{{gauge.pk}}" class="gauge-container" style="width: 100%; height:100%;" data-id="{{ item.web_id }}-{{ uuid }}" data-params='{{gauge.gauge_params}}' >
             <div class="chart-placeholder"><div class="loading-gauge" style="vertical-align: middle;">Loading gauge...</div></div>

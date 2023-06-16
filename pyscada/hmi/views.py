@@ -151,7 +151,8 @@ def view(request, link_title):
                 continue
             kwargs = {'visible_control_element_list': visible_control_element_list,
                       'visible_form_list': visible_form_list}
-            mc, sbc, opts = widget.content.create_panel_html(widget_pk=widget.pk, user=request.user, **kwargs)
+            widget_extra_css_class = widget.extra_css_class.css_class if widget.extra_css_class is not None else ""
+            mc, sbc, opts = widget.content.create_panel_html(widget_pk=widget.pk, widget_extra_css_class=widget_extra_css_class, user=request.user, **kwargs)
             if mc is not None and mc != "":
                 main_content.append(dict(html=mc, widget=widget, topbar=sbc))
             else:
@@ -177,6 +178,10 @@ def view(request, link_title):
                 for file_src in opts['javascript_files_list']:
                     if {'src': file_src} not in javascript_files_list:
                         javascript_files_list.append({'src': file_src})
+            if type(opts) == dict and 'css_files_list' in opts:
+                for file_src in opts['css_files_list']:
+                    if {'src': file_src} not in css_files_list:
+                        css_files_list.append({'src': file_src})
             if type(opts) == dict and 'object_config_list' in opts and type(opts['object_config_list'] == list):
                 for obj in opts['object_config_list']:
                     model_name = str(obj._meta.model_name).lower()

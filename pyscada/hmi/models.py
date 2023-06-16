@@ -393,10 +393,11 @@ class Chart(WidgetContentModel):
         :return: main panel html and sidebar html as
         """
         widget_pk = kwargs['widget_pk'] if 'widget_pk' in kwargs else 0
+        widget_extra_css_class = kwargs["widget_extra_css_class"] if "widget_extra_css_class" in kwargs else ""
         main_template = get_template('chart.html')
         sidebar_template = get_template('chart_legend.html')
-        main_content = main_template.render(dict(chart=self, widget_pk=widget_pk))
-        sidebar_content = sidebar_template.render(dict(chart=self, widget_pk=widget_pk))
+        main_content = main_template.render(dict(chart=self, widget_pk=widget_pk, widget_extra_css_class=widget_extra_css_class,))
+        sidebar_content = sidebar_template.render(dict(chart=self, widget_pk=widget_pk, widget_extra_css_class=widget_extra_css_class,))
         opts = dict()
         opts['show_daterangepicker'] = True
         opts['show_timeline'] = True
@@ -463,10 +464,11 @@ class Pie(WidgetContentModel):
         :return: main panel html and sidebar html as
         """
         widget_pk = kwargs['widget_pk'] if 'widget_pk' in kwargs else 0
+        widget_extra_css_class = kwargs["widget_extra_css_class"] if "widget_extra_css_class" in kwargs else ""
         main_template = get_template('pie.html')
         sidebar_template = get_template('chart_legend.html')
-        main_content = main_template.render(dict(pie=self, widget_pk=widget_pk))
-        sidebar_content = sidebar_template.render(dict(chart=self, pie=1, widget_pk=widget_pk))
+        main_content = main_template.render(dict(pie=self, widget_pk=widget_pk, widget_extra_css_class=widget_extra_css_class,))
+        sidebar_content = sidebar_template.render(dict(chart=self, pie=1, widget_pk=widget_pk, widget_extra_css_class=widget_extra_css_class,))
         opts = dict()
         opts['flot'] = True
         opts['topbar'] = True
@@ -526,13 +528,15 @@ class ControlPanel(WidgetContentModel):
         :return: main panel html and sidebar html as
         """
         widget_pk = kwargs['widget_pk'] if 'widget_pk' in kwargs else 0
+        widget_extra_css_class = kwargs["widget_extra_css_class"] if "widget_extra_css_class" in kwargs else ""
         visible_element_list = kwargs['visible_control_element_list'] if 'visible_control_element_list' in kwargs else []
         visible_form_list = kwargs['visible_form_list'] if 'visible_form_list' in kwargs else []
         main_template = get_template('control_panel.html')
         main_content = main_template.render(dict(control_panel=self,
                                                  visible_control_element_list=visible_element_list,
                                                  visible_form_list=visible_form_list,
-                                                 uuid=uuid4().hex, widget_pk=widget_pk))
+                                                 uuid=uuid4().hex, widget_pk=widget_pk,
+                                                 widget_extra_css_class=widget_extra_css_class,))
         sidebar_content = None
         opts = dict()
         opts['flot'] = False
@@ -568,8 +572,10 @@ class CustomHTMLPanel(WidgetContentModel):
 
         :return: main panel html and sidebar html as
         """
+        widget_pk = kwargs['widget_pk'] if 'widget_pk' in kwargs else 0
+        widget_extra_css_class = kwargs["widget_extra_css_class"] if "widget_extra_css_class" in kwargs else ""
         main_template = get_template('custom_html_panel.html')
-        main_content = main_template.render(dict(custom_html_panel=self))
+        main_content = main_template.render(dict(custom_html_panel=self, widget_pk=widget_pk, widget_extra_css_class=widget_extra_css_class,))
         sidebar_content = None
         opts = dict()
         opts["object_config_list"] = set()
@@ -621,10 +627,12 @@ class ProcessFlowDiagram(WidgetContentModel):
         main_template = get_template('process_flow_diagram.html')
         try:
             widget_pk = kwargs['widget_pk'] if 'widget_pk' in kwargs else 0
+            widget_extra_css_class = kwargs["widget_extra_css_class"] if "widget_extra_css_class" in kwargs else ""
             main_content = main_template.render(dict(process_flow_diagram=self,
                                                      height_width_ratio=100 *
                                                      float(self.url_height) / float(self.url_width),
-                                                     uuid=uuid4().hex, widget_pk=widget_pk))
+                                                     uuid=uuid4().hex, widget_pk=widget_pk,
+                                                     widget_extra_css_class=widget_extra_css_class,))
         except ValueError:
             logger.info("ProcessFlowDiagram (%s) has no background image defined" % self)
             main_content = None
@@ -690,7 +698,7 @@ class WidgetContent(models.Model):
 class CssClass(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=400, default='')
-    css_class = models.SlugField(max_length=80, default='')
+    css_class = models.CharField(max_length=250, default='')
 
     def __str__(self):
         return self.title
