@@ -737,12 +737,29 @@ class Widget(models.Model):
 
     def css_class(self):
         widget_size = "col-xs-12 col-sm-12 col-md-12 col-lg-12"
+        widgets = Widget.objects.filter(visible=True, page=self.page, row=self.row, content__isnull=False)
         if self.size == 3:
-            widget_size = "col-xs-12 col-sm-12 col-md-12 col-lg-9"
+            if self.col in [1, 2, 3] and len(widgets.filter(col=0)) == 0:
+                # no widget on same row and column 0: offset 3 on lg
+                widget_size = "col-xs-12 col-sm-12 col-md-12 col-lg-9 col-lg-offset-3"
+            else:
+                widget_size = "col-xs-12 col-sm-12 col-md-12 col-lg-9"
         elif self.size == 2:
-            widget_size = "col-xs-12 col-sm-12 col-md-6 col-lg-6"
+            if self.col == 1 and len(widgets.filter(col=0)) == 0:
+                widget_size = "col-xs-12 col-sm-12 col-md-6 col-md-offset-3 col-lg-6 col-lg-offset-3"
+            elif self.col in [2, 3] and len(widgets.filter(col__in=[0, 1])) == 0:
+                widget_size = "col-xs-12 col-sm-12 col-md-6 col-md-offset-6 col-lg-6 col-lg-offset-6"
+            else:
+                widget_size = "col-xs-12 col-sm-12 col-md-6 col-lg-6"
         elif self.size == 1:
-            widget_size = "col-xs-12 col-sm-6 col-md-6 col-lg-3"
+            if self.col == 1 and len(widgets.filter(col=0)) == 0:
+                widget_size = "col-xs-12 col-sm-6 col-md-6 col-lg-3 col-lg-offset-3"
+            elif self.col == 2 and len(widgets.filter(col__in=[0, 1])) == 0:
+                widget_size = "col-xs-12 col-sm-6 col-sm-offset-6 col-md-6 col-md-offset-6 col-lg-3 col-lg-offset-6"
+            elif self.col == 3 and len(widgets.filter(col__in=[0, 1, 2])) == 0:
+                widget_size = "col-xs-12 col-sm-6 col-sm-offset-6 col-md-6 col-md-offset-6 col-lg-3 col-lg-offset-9"
+            else:
+                widget_size = "col-xs-12 col-sm-6 col-md-6 col-lg-3"
         return 'widget_row_' + str(self.row) + ' widget_col_' + str(self.col) + ' ' + widget_size
 
 
