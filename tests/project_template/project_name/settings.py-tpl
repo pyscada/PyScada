@@ -188,6 +188,7 @@ EMAIL_PREFIX = 'A Message From PyScada'
 # for admins and managers
 SERVER_EMAIL=DEFAULT_FROM_EMAIL
 EMAIL_SUBJECT_PREFIX=EMAIL_PREFIX
+EMAIL_TIMEOUT=5
 
 # PyScada settings
 # https://github.com/pyscada/PyScada
