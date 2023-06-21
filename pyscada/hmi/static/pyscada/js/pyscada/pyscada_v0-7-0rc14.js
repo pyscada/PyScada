@@ -460,6 +460,11 @@ var store_temp_ajax_data = null;
   * @returns {string} Return a date
   */
  function timestamp_conversion(id,val){
+     if (isNaN(val)) {
+         return val;
+     }else {
+         val = parseFloat(val);
+     }
      if (id == 1){
          // convert millisecond timestamp to local date
          val = new Date(val).toDateString();
@@ -776,7 +781,8 @@ var store_temp_ajax_data = null;
                 if (typeof(val)==="number") {
                     if (timestamp_conversion_value != null && timestamp_conversion_value != 0 && typeof(timestamp_conversion_value) != "undefined"){
                         // Transform timestamps
-                        r_val=timestamp_conversion(timestamp_conversion_value,val);
+                        r_val=dictionary(var_id, val, type.replace('-', ''));
+                        r_val=timestamp_conversion(timestamp_conversion_value,r_val);
                     }else {
                         // Transform value in dictionaries
                         r_val=dictionary(var_id, val, type.replace('-', ''));
