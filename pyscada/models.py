@@ -700,14 +700,15 @@ class Dictionary(models.Model):
                     return None
         return label_found or value
 
-    def append(self, label, value, silent=False):
-        try:
-            DictionaryItem.objects.get(label=label, value=value, dictionary=self)
-            if not silent:
+    def append(self, label, value, silent=False, update=None):
+        if update is None:
+            _, created = DictionaryItem.objects.get_or_create(label=label, value=value, dictionary=self)
+            if not created and not silent:
                 logger.warning('Item ({}:{}) for dictionary {} already exist'.format(label, value, self))
-        except DictionaryItem.DoesNotExist:
-            di = DictionaryItem(label=label, value=value, dictionary=self)
-            di.save()
+        elif update == "label":
+            DictionaryItem.objects.update_or_create(value=value, dictionary=self, defaults={"label": label,})
+        elif update == "value":
+            DictionaryItem.objects.update_or_create(label=label, dictionary=self, defaults={"value": value,})
 
     def remove(self, label=None, value=None):
         if label is not None and value is not None:
