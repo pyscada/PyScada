@@ -2285,6 +2285,7 @@ class ComplexEvent(models.Model):
         var_list_final = {}
         vp_list_final = {}
 
+        # check all level by inceasing order, keep the last level
         for item in self.complexeventlevel_set.all().order_by('order'):
             (is_valid, var_list, vp_list) = item.is_valid()
             if item_found is None and not active and self.last_level != item.level and is_valid:
@@ -2309,6 +2310,7 @@ class ComplexEvent(models.Model):
                         prev_event.save()
             active = active or item.active
 
+        # for the highest level, compose mail and change output values
         if item_found is not None:
             if item_found.send_mail:  # Send Mail
                 (subject, message, html_message,) = self.compose_mail(item_found, var_list_final, vp_list_final)
