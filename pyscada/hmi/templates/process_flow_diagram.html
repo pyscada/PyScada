@@ -1,4 +1,7 @@
 <div class="widget-body process-flow-diagram-body {{ widget_extra_css_class }}" >
+    {% for item in process_flow_diagram.process_flow_diagram_items.all %}
+        <div class="hidden variable-config" data-name="{{item.control_item.name}}" data-device-id={{item.control_item.device.id}} data-key="{{item.control_item.key}}" data-init-type="1" data-type="variable" data-device-polling_interval="{{ item.control_item.device.polling_interval }}"></div>
+    {% endfor %}
     <!--<div class="panel panel-primary" style="height: {{ process_flow_diagram.background_image.height|add:"68" }}px; width: {{ process_flow_diagram.background_image.width|add:"30" }}px; margin-left:15px;">-->
     <div class="panel panel-primary">
     {% if process_flow_diagram.title %}
