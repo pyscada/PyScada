@@ -1860,7 +1860,7 @@ class DeviceReadTask(models.Model):
         elif self.device:
             return self.device.short_name
         else:
-            return self.id
+            return str(self.id)
 
     @property
     def get_device_id(self):
