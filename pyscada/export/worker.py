@@ -19,9 +19,8 @@ logger = logging.getLogger(__name__)
 
 try:
     import h5py
-    #logger.debug('%d, h5py import successful' % getpid())
 except:
-    #logger.error('%d, unhandled exception\n%s' % (getpid(), traceback.format_exc()))
+    logger.error('Cannot import h5py', exc_info=True)
     pass
 
 class ExportProcess(BaseProcess):
