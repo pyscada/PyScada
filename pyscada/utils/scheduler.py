@@ -542,7 +542,7 @@ class Scheduler(object):
                 self.pid = sp.pid
         if self.pid is None or self.pid == 0:
             # todo : raise exception
-            logger.error("Can't determine process id exiting.")
+            logger.error("Can't determine process id exiting.", exc_info=True)
             return False
         if self.pid != getpid():
             # calling from outside the daemon instance
@@ -1007,7 +1007,7 @@ class SingleDeviceDAQProcessWorker(Process):
                         process['id'] = bp.id
                     elif process['failed'] == 3:
                         # todo : raise exception
-                        logger.error(f"process {self.bp_label % process['key']} failed 3 times")
+                        logger.error(f"process {self.bp_label % process['key']} failed 3 times", exc_info=True)
                     else:
                         logger.warning(f"process {self.bp_label % process['key']} failed more than 3 times")
                     process['failed'] += 1
@@ -1132,7 +1132,7 @@ class MultiDeviceDAQProcessWorker(Process):
                         process['id'] = bp.id
                     elif process['failed'] == 3:
                         # todo : raise exception
-                        logger.error(f"process {self.bp_label % process['key']} failed 3 times")
+                        logger.error(f"process {self.bp_label % process['key']} failed 3 times", exc_info=True)
                     else:
                         logger.warning(f"process {self.bp_label % process['key']} failed more than 3 times")
                     process['failed'] += 1
