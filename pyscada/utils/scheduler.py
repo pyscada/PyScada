@@ -746,7 +746,7 @@ class Process(object):
                             try:
                                 RecordedData.objects.bulk_create(item, batch_size=1000)
                             except IntegrityError:
-                                logger.debug('RecordedData objects already exists, retry ignoring conflicts')
+                                logger.debug(f'RecordedData objects already exists, retrying ignoring conflicts for : {", ".join(str(i.id) + " " + str(i.variable.id) for i in item)}')
                                 RecordedData.objects.bulk_create(item, batch_size=1000, ignore_conflicts=True)
                     if status == 1:  # Process OK
                         pass
