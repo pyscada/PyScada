@@ -1505,7 +1505,7 @@ class CalculatedVariable(models.Model):
             except AttributeError:
                 v_stored = []
             if not force_write and len(v_stored) and len(v_stored[self.store_variable.id][0]):
-                logger.debug("Value already exist in RecordedData for %s - %s" % (d1, d1 + td))
+                #logger.debug("Value already exist in RecordedData for %s - %s" % (d1, d1 + td))
                 pass
             else:
                 calc_value = self.get_value(d1, d1 + td)
