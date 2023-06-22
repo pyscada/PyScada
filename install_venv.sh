@@ -2,21 +2,37 @@
 
 # todo : add inputs for django admin name, password
 
+# check if the script is run from script directory
+SOURCE=${BASH_SOURCE[0]}
+while [ -L "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
+  SOURCE=$(readlink "$SOURCE")
+  [[ $SOURCE != /* ]] && SOURCE=$DIR/$SOURCE # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+DIR=$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )
+
+if [[ "$DIR" != "$PWD" ]]; then
+  echo "You must run this script from $DIR"
+  exit 1
+fi
+
 # Make sure only root can run our script
 if [[ $EUID -ne 0 ]]; then
   echo "This script must be run as root"
   exit 1
 fi
 
+
 # PATHS CONST
 INSTALL_ROOT=/var/www/pyscada # files will be installed here
 log_file_dir="/var/log/pyscada/" # log files will be here
 SERVER_ROOT=$INSTALL_ROOT/PyScadaServer # django project root
+pyscada_venv=/home/pyscada/.venv
 
 # VAR
 answer_date=""            # Is the date correct
 answer_proxy=""           # Setup of proxy
-answer_config=""          # Will it be install on docker or on system
+answer_config=""          # Will it be install on docker or on venv
 
 answer_db_name=""         # Name of the database
 answer_db_user=""         # Username for the database (not the root)
@@ -26,11 +42,13 @@ answer_channels=""        # Install or not channels and redis
 answer_update=""          # The installation is just an update or not
 answer_auto_add_apps=""   # Auto add apps or manual add (in django configuration)
 
-answer_admin_name=""      # admin name (for the system)
+answer_admin_name=""      # admin name (for errors output)
 answer_admin_mail=""      # admin mail (for errors output)
 
 answer_web_name=""        # web interface admin name
 answer_web_password=""    # web interface admin password
+
+echo -e "\nPyScada python packages will be installed in the virtual environment $pyscada_venv"
 
 function debug(){
   message=$1
@@ -231,6 +249,11 @@ function install_dependences(){
   "
   apt_proxy install -y $DEB_TO_INSTALL
 
+  # Create virtual environment
+  sudo -u pyscada python3 -m venv $pyscada_venv
+  # activate
+  source $pyscada_venv/bin/activate
+
   PIP_TO_INSTALL="
     cffi
     Cython
@@ -251,7 +274,7 @@ function web_setup(){
 
   (
     cd $SERVER_ROOT
-  python3 manage.py shell << EOF
+  sudo -u pyscada -E env PATH=${PATH} python3 manage.py shell << EOF
 try:
   from django.contrib.auth import get_user_model
   from django.db.utils import IntegrityError
@@ -466,6 +489,7 @@ function stop_pyscada(){
     - admin_name_setup
     - regex_mail
 - stop_pyscada
+- user_setup
 - install_dependences
   - apt_proxy
   - pip3_proxy
@@ -474,7 +498,6 @@ function stop_pyscada(){
   - apt_proxy
   - pip3_proxy_not_rust
   - pip3_proxy
-- *user_setup
 - *db_setup
 - *template_setup
 - pyscada_init
@@ -484,6 +507,8 @@ END
 questions_setup
 
 stop_pyscada
+
+user_setup
 
 install_dependences
 
@@ -496,7 +521,6 @@ if [[ "$answer_channels" == "y" ]]; then
 fi
 
 if [[ "$answer_update" == "n" ]]; then
-  user_setup
   db_setup
   template_setup
 fi
