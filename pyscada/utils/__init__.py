@@ -33,7 +33,7 @@ def _get_objects_for_html(list_to_append=None, obj=None, exclude_model_names=Non
         # ManyToMany
         for fields in obj._meta.local_many_to_many:
             for field in getattr(obj, fields.name).all():
-                if field not in exclude_model_names:
+                if fields.name not in exclude_model_names:
                     if hasattr(field, '_get_objects_for_html'):
                         list_to_append.update(field._get_objects_for_html(list_to_append))
                     else:
