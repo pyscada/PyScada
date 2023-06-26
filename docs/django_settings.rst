@@ -21,7 +21,7 @@ Open the urls configuration file and add the necessary rewrite rule to the djang
 
     urlpatterns = [
         url(r'^admin/', admin.site.urls),
-        url(r'^', include('pyscada.hmi.urls')),
+        url(r'^', include('pyscada.core.urls')),
     ]
     ...
 

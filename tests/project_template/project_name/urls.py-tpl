@@ -16,33 +16,6 @@ Including another URLconf
 from django.urls import path, include
 from django.contrib import admin
 
-from pkgutil import iter_modules
-from importlib.util import find_spec
-import pyscada
-
-
-def list_submodules(module):
-    submodules = []
-    for submodule in iter_modules(module.__path__):
-        submodules.append(submodule)
-    return submodules
-
-
 urlpatterns = [
-    path('admin/', admin.site.urls),
-]
-
-
-lsm = list_submodules(pyscada)
-for m in lsm:
-    try:
-        if m.name != 'hmi' and find_spec('pyscada.' + m.name + '.urls'):
-            urlpatterns += [
-                path('', include('pyscada.' + m.name + '.urls')),
-            ]
-    except:
-        pass
-
-urlpatterns += [
-    path('', include('pyscada.hmi.urls')),
+    path('', include('pyscada.core.urls')),
 ]

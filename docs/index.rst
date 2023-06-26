@@ -13,12 +13,14 @@ A Open Source SCADA System with HTML5 HMI, build using the Django framework. If 
    :caption: Installation and Commandline
 
    quick_install
+   plugin_install
    update
    command-line
    frontend
    backend
    device_protocol
    grafana
+   develop
 
 Indices and tables
 ==================
