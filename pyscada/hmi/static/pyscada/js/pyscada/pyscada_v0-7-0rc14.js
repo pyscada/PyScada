@@ -558,7 +558,7 @@ var store_temp_ajax_data = null;
 
      function colorToRgb(color_id) {
         if (color_id == -1) {return [92, 200, 92];}
-        else if (color_id == 0) {return [250, 250, 250];}
+        else if (color_id == 0) {return [210, 210, 210];}
         var r = get_config_from_hidden_config("color", 'id', color_id, 'r');
         var g = get_config_from_hidden_config("color", 'id', color_id, 'g');
         var b = get_config_from_hidden_config("color", 'id', color_id, 'b');
