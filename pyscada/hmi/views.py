@@ -25,6 +25,7 @@ from django.shortcuts import redirect
 from django.contrib.auth import logout
 from django.views.decorators.csrf import requires_csrf_token
 from django.conf import settings
+from django.core.exceptions import PermissionDenied
 
 import time
 import json
@@ -76,8 +77,13 @@ def view(request, link_title):
         if v is None:
             raise View.DoesNotExist
         #v = View.objects.get(link_title=link_title)
-    except (View.DoesNotExist, View.MultipleObjectsReturned):
-        return HttpResponse(status=404)
+    except View.DoesNotExist as e:
+        logger.warning(f"{request.user} has no permission for view {link_title}")
+        raise PermissionDenied("You don't have access to this view.")
+    except View.MultipleObjectsReturned as e:
+        logger.error(f"{e} for view link_title", exc_info=True)
+        raise PermissionDenied(f"Multiples views with this link : {link_title}")
+        #return HttpResponse(status=404)
 
     if v.theme is not None:
         base_template = str(v.theme.base_filename) + ".html"
