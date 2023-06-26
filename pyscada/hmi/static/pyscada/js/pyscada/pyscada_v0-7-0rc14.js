@@ -796,7 +796,11 @@ var store_temp_ajax_data = null;
              }
              if (display_value_option_id == 'None' || ci_type == 0){
                  // Change background color
-                 e.style.backgroundColor = update_data_colors(control_item_id,val);
+                 if (e.classList.contains("process-flow-diagram-item")) {
+                   e.style.fill = update_data_colors(control_item_id,val);
+                 }else {
+                   e.style.backgroundColor = update_data_colors(control_item_id,val);
+                 }
              }
          })
 
