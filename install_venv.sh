@@ -333,15 +333,15 @@ function pyscada_init(){
   (
       cd $SERVER_ROOT
       # Migration and static files
-      sudo -u pyscada python3 manage.py migrate
-      sudo -u pyscada python3 manage.py collectstatic --noinput
+      sudo -u pyscada -E env PATH=${PATH} python3 manage.py migrate
+      sudo -u pyscada -E env PATH=${PATH} python3 manage.py collectstatic --noinput
 
       # Load fixtures with default configuration for chart lin colors and units
-      sudo -u pyscada python3 manage.py loaddata color
-      sudo -u pyscada python3 manage.py loaddata units
+      sudo -u pyscada -E env PATH=${PATH} python3 manage.py loaddata color
+      sudo -u pyscada -E env PATH=${PATH} python3 manage.py loaddata units
 
       # Initialize the background service system of pyscada
-      sudo -u pyscada python3 manage.py pyscada_daemon init
+      sudo -u pyscada -E env PATH=${PATH} python3 manage.py pyscada_daemon init
   )
 
   if [[ "$answer_update" == "n" ]]; then
