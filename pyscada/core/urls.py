@@ -10,11 +10,11 @@ urlpatterns = []
 
 for app in apps.app_configs.values():
     if app.name.startswith('pyscada.') and app.name != "pyscada.core":
-        
+
         try:
             m = __import__(f"{app.name}.urls", fromlist=[str('a')])
             urlpatterns += m.urlpatterns
-        
+        except ModuleNotFoundError:
+            pass
         except Exception as e:
             logger.warning(e, exc_info=True)
-
