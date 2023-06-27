@@ -246,6 +246,7 @@ function install_dependences(){
     python3-mysqldb
     python3-pip
     zlib1g-dev
+    pkg-config
   "
   apt_proxy install -y $DEB_TO_INSTALL
 
