@@ -466,9 +466,7 @@ function user_setup(){
 # stop pyscada and show some python3 packages installed
 function stop_pyscada(){
   debug "stop_pyscada"
-
-  pip3 list | grep -i -E 'pyscada|channels|asgiref'
-
+  
   echo "Stopping PyScada"
   systemctl stop pyscada gunicorn gunicorn.socket
   sleep 1 # Give systemd time to shutdown
