@@ -245,6 +245,7 @@ function install_dependences(){
     python3-dev
     python3-mysqldb
     python3-pip
+    python3-venv
     zlib1g-dev
     pkg-config
   "
