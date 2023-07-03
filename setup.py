@@ -44,6 +44,7 @@ setup(
         'monthdelta',
         'six',
         'concurrent-log-handler',  # rotating logs for multiprocess
+        'scipy',  # for waveform generic handler
     ],
     packages=find_packages(exclude=["project", "project.*"]),
     include_package_data=True,
