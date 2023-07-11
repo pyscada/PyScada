@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 import os
 from pyscada import core
 
@@ -46,7 +46,7 @@ setup(
         'concurrent-log-handler',  # rotating logs for multiprocess
         'scipy',  # for waveform generic handler
     ],
-    packages=find_packages(exclude=["project", "project.*"]),
+    packages=find_namespace_packages(exclude=["project", "project.*"]),
     include_package_data=True,
     zip_safe=False,
     test_suite='runtests.main'
