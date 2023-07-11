@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class Process(BaseProcess):
-
     def __init__(self, dt=5, **kwargs):
         super(Process, self).__init__(dt=dt, **kwargs)
 

@@ -6,14 +6,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0045_auto_20180705_1341'),
+        ("pyscada", "0045_auto_20180705_1341"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='devicewritetask',
-            name='property_name',
+            model_name="devicewritetask",
+            name="property_name",
         ),
     ]

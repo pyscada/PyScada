@@ -7,100 +7,116 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0053_auto_20190307_1423'),
+        ("pyscada", "0053_auto_20190307_1423"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='backgroundprocess',
-            name='label',
-            field=models.CharField(default='', max_length=400),
+            model_name="backgroundprocess",
+            name="label",
+            field=models.CharField(default="", max_length=400),
         ),
         migrations.AlterField(
-            model_name='backgroundprocess',
-            name='message',
-            field=models.CharField(default='', max_length=400),
+            model_name="backgroundprocess",
+            name="message",
+            field=models.CharField(default="", max_length=400),
         ),
         migrations.AlterField(
-            model_name='device',
-            name='description',
-            field=models.TextField(default='', null=True, verbose_name='Description'),
+            model_name="device",
+            name="description",
+            field=models.TextField(default="", null=True, verbose_name="Description"),
         ),
         migrations.AlterField(
-            model_name='device',
-            name='short_name',
-            field=models.CharField(default='', max_length=400),
+            model_name="device",
+            name="short_name",
+            field=models.CharField(default="", max_length=400),
         ),
         migrations.AlterField(
-            model_name='deviceprotocol',
-            name='description',
-            field=models.TextField(default='', null=True, verbose_name='Description'),
+            model_name="deviceprotocol",
+            name="description",
+            field=models.TextField(default="", null=True, verbose_name="Description"),
         ),
         migrations.AlterField(
-            model_name='event',
-            name='label',
-            field=models.CharField(default='', max_length=400),
+            model_name="event",
+            name="label",
+            field=models.CharField(default="", max_length=400),
         ),
         migrations.AlterField(
-            model_name='event',
-            name='variable_limit',
-            field=models.ForeignKey(blank=True, default=None, help_text='you can choose either an fixed limit or an variable limit that is\n                                        dependent on the current value of an variable, if you choose a value other than \n                                        none for variable limit the fixed limit would be ignored', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='variable_limit', to='pyscada.Variable'),
+            model_name="event",
+            name="variable_limit",
+            field=models.ForeignKey(
+                blank=True,
+                default=None,
+                help_text="you can choose either an fixed limit or an variable limit that is\n                                        dependent on the current value of an variable, if you choose a value other than \n                                        none for variable limit the fixed limit would be ignored",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="variable_limit",
+                to="pyscada.Variable",
+            ),
         ),
         migrations.AlterField(
-            model_name='log',
-            name='message',
-            field=models.TextField(default='', verbose_name='message'),
+            model_name="log",
+            name="message",
+            field=models.TextField(default="", verbose_name="message"),
         ),
         migrations.AlterField(
-            model_name='log',
-            name='message_short',
-            field=models.CharField(default='', max_length=400, verbose_name='short message'),
+            model_name="log",
+            name="message_short",
+            field=models.CharField(
+                default="", max_length=400, verbose_name="short message"
+            ),
         ),
         migrations.AlterField(
-            model_name='mail',
-            name='message',
-            field=models.TextField(blank=True, default=''),
+            model_name="mail",
+            name="message",
+            field=models.TextField(blank=True, default=""),
         ),
         migrations.AlterField(
-            model_name='mail',
-            name='subject',
-            field=models.TextField(blank=True, default=''),
+            model_name="mail",
+            name="subject",
+            field=models.TextField(blank=True, default=""),
         ),
         migrations.AlterField(
-            model_name='scaling',
-            name='description',
-            field=models.TextField(blank=True, default='', null=True, verbose_name='Description'),
+            model_name="scaling",
+            name="description",
+            field=models.TextField(
+                blank=True, default="", null=True, verbose_name="Description"
+            ),
         ),
         migrations.AlterField(
-            model_name='unit',
-            name='description',
-            field=models.TextField(default='', null=True, verbose_name='Description'),
+            model_name="unit",
+            name="description",
+            field=models.TextField(default="", null=True, verbose_name="Description"),
         ),
         migrations.AlterField(
-            model_name='unit',
-            name='udunit',
-            field=models.CharField(default='', max_length=500, verbose_name='udUnit'),
+            model_name="unit",
+            name="udunit",
+            field=models.CharField(default="", max_length=500, verbose_name="udUnit"),
         ),
         migrations.AlterField(
-            model_name='variable',
-            name='description',
-            field=models.TextField(default='', verbose_name='Description'),
+            model_name="variable",
+            name="description",
+            field=models.TextField(default="", verbose_name="Description"),
         ),
         migrations.AlterField(
-            model_name='variable',
-            name='short_name',
-            field=models.CharField(blank=True, default='', max_length=80, verbose_name='variable short name'),
+            model_name="variable",
+            name="short_name",
+            field=models.CharField(
+                blank=True,
+                default="",
+                max_length=80,
+                verbose_name="variable short name",
+            ),
         ),
         migrations.AlterField(
-            model_name='variableproperty',
-            name='name',
-            field=models.CharField(blank=True, default='', max_length=255),
+            model_name="variableproperty",
+            name="name",
+            field=models.CharField(blank=True, default="", max_length=255),
         ),
         migrations.AlterField(
-            model_name='variableproperty',
-            name='value_string',
-            field=models.CharField(blank=True, default='', max_length=255),
+            model_name="variableproperty",
+            name="value_string",
+            field=models.CharField(blank=True, default="", max_length=255),
         ),
     ]

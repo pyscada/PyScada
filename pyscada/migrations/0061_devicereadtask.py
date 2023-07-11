@@ -6,25 +6,55 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('pyscada', '0060_auto_20200914_1417'),
+        ("pyscada", "0060_auto_20200914_1417"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='DeviceReadTask',
+            name="DeviceReadTask",
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('start', models.FloatField(default=0)),
-                ('finished', models.FloatField(blank=True, default=0)),
-                ('done', models.BooleanField(blank=True, default=False)),
-                ('failed', models.BooleanField(blank=True, default=False)),
-                ('device', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='pyscada.Device')),
-                ('user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
-                ('variable', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='pyscada.Variable')),
-                ('variable_property', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='pyscada.VariableProperty')),
+                ("id", models.AutoField(primary_key=True, serialize=False)),
+                ("start", models.FloatField(default=0)),
+                ("finished", models.FloatField(blank=True, default=0)),
+                ("done", models.BooleanField(blank=True, default=False)),
+                ("failed", models.BooleanField(blank=True, default=False)),
+                (
+                    "device",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="pyscada.Device",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "variable",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="pyscada.Variable",
+                    ),
+                ),
+                (
+                    "variable_property",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="pyscada.VariableProperty",
+                    ),
+                ),
             ],
         ),
     ]

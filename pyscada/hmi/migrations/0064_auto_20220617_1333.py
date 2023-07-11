@@ -5,66 +5,107 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
-        ('hmi', '0063_move_group_display_permissions'),
+        ("auth", "0012_alter_user_first_name_max_length"),
+        ("hmi", "0063_move_group_display_permissions"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='chartgroupdisplaypermission',
-            name='group_display_permission',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='hmi.groupdisplaypermission'),
+            model_name="chartgroupdisplaypermission",
+            name="group_display_permission",
+            field=models.OneToOneField(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="hmi.groupdisplaypermission",
+            ),
         ),
         migrations.AlterField(
-            model_name='controlitemgroupdisplaypermission',
-            name='group_display_permission',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='hmi.groupdisplaypermission'),
+            model_name="controlitemgroupdisplaypermission",
+            name="group_display_permission",
+            field=models.OneToOneField(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="hmi.groupdisplaypermission",
+            ),
         ),
         migrations.AlterField(
-            model_name='customhtmlpanelgroupdisplaypermission',
-            name='group_display_permission',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='hmi.groupdisplaypermission'),
+            model_name="customhtmlpanelgroupdisplaypermission",
+            name="group_display_permission",
+            field=models.OneToOneField(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="hmi.groupdisplaypermission",
+            ),
         ),
         migrations.AlterField(
-            model_name='formgroupdisplaypermission',
-            name='group_display_permission',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='hmi.groupdisplaypermission'),
+            model_name="formgroupdisplaypermission",
+            name="group_display_permission",
+            field=models.OneToOneField(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="hmi.groupdisplaypermission",
+            ),
         ),
         migrations.AlterField(
-            model_name='groupdisplaypermission',
-            name='hmi_group',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='auth.group'),
+            model_name="groupdisplaypermission",
+            name="hmi_group",
+            field=models.OneToOneField(
+                null=True, on_delete=django.db.models.deletion.CASCADE, to="auth.group"
+            ),
         ),
         migrations.AlterField(
-            model_name='pagegroupdisplaypermission',
-            name='group_display_permission',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='hmi.groupdisplaypermission'),
+            model_name="pagegroupdisplaypermission",
+            name="group_display_permission",
+            field=models.OneToOneField(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="hmi.groupdisplaypermission",
+            ),
         ),
         migrations.AlterField(
-            model_name='piegroupdisplaypermission',
-            name='group_display_permission',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='hmi.groupdisplaypermission'),
+            model_name="piegroupdisplaypermission",
+            name="group_display_permission",
+            field=models.OneToOneField(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="hmi.groupdisplaypermission",
+            ),
         ),
         migrations.AlterField(
-            model_name='processflowdiagramgroupdisplaypermission',
-            name='group_display_permission',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='hmi.groupdisplaypermission'),
+            model_name="processflowdiagramgroupdisplaypermission",
+            name="group_display_permission",
+            field=models.OneToOneField(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="hmi.groupdisplaypermission",
+            ),
         ),
         migrations.AlterField(
-            model_name='slidingpanelmenugroupdisplaypermission',
-            name='group_display_permission',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='hmi.groupdisplaypermission'),
+            model_name="slidingpanelmenugroupdisplaypermission",
+            name="group_display_permission",
+            field=models.OneToOneField(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="hmi.groupdisplaypermission",
+            ),
         ),
         migrations.AlterField(
-            model_name='viewgroupdisplaypermission',
-            name='group_display_permission',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='hmi.groupdisplaypermission'),
+            model_name="viewgroupdisplaypermission",
+            name="group_display_permission",
+            field=models.OneToOneField(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="hmi.groupdisplaypermission",
+            ),
         ),
         migrations.AlterField(
-            model_name='widgetgroupdisplaypermission',
-            name='group_display_permission',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='hmi.groupdisplaypermission'),
+            model_name="widgetgroupdisplaypermission",
+            name="group_display_permission",
+            field=models.OneToOneField(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="hmi.groupdisplaypermission",
+            ),
         ),
     ]

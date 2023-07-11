@@ -5,16 +5,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0003_auto_20151130_1456'),
+        ("hmi", "0003_auto_20151130_1456"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='controlitem',
-            name='variable',
-            field=models.ForeignKey(to='pyscada.Variable', null=True, on_delete=models.SET_NULL),
+            model_name="controlitem",
+            name="variable",
+            field=models.ForeignKey(
+                to="pyscada.Variable", null=True, on_delete=models.SET_NULL
+            ),
         ),
         # migrations.AlterField(
         #     model_name='hmivariable',

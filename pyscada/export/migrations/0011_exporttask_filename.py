@@ -6,15 +6,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('export', '0010_auto_20161128_1049'),
+        ("export", "0010_auto_20161128_1049"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='exporttask',
-            name='filename',
+            model_name="exporttask",
+            name="filename",
             field=models.CharField(blank=True, max_length=1000, null=True),
         ),
     ]

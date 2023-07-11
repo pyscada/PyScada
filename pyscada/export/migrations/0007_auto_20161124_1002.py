@@ -6,30 +6,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('export', '0006_auto_20160404_0949'),
+        ("export", "0006_auto_20160404_0949"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='exporttask',
-            name='datetime_fineshed',
+            model_name="exporttask",
+            name="datetime_fineshed",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='exporttask',
-            name='datetime_max',
+            model_name="exporttask",
+            name="datetime_max",
             field=models.DateTimeField(default=None, null=True),
         ),
         migrations.AddField(
-            model_name='exporttask',
-            name='datetime_min',
+            model_name="exporttask",
+            name="datetime_min",
             field=models.DateTimeField(default=None, null=True),
         ),
         migrations.AddField(
-            model_name='exporttask',
-            name='datetime_start',
+            model_name="exporttask",
+            name="datetime_start",
             field=models.DateTimeField(blank=True, null=True),
         ),
     ]

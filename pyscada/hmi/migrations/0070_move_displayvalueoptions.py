@@ -24,29 +24,81 @@ def move_dvo(apps, schema_editor):
             item.color_only = True
         if item.color_type == 1:
             item.color = item.color_1
-            if dvco.objects.filter(display_value_option=item, color_level=item.color_level_1,
-                                  color_level_type=item.color_level_1_type, color=item.color_2).count() == 0:
-                dictc.append(dvco(display_value_option=item, color_level=item.color_level_1,
-                                  color_level_type=item.color_level_1_type, color=item.color_2))
+            if (
+                dvco.objects.filter(
+                    display_value_option=item,
+                    color_level=item.color_level_1,
+                    color_level_type=item.color_level_1_type,
+                    color=item.color_2,
+                ).count()
+                == 0
+            ):
+                dictc.append(
+                    dvco(
+                        display_value_option=item,
+                        color_level=item.color_level_1,
+                        color_level_type=item.color_level_1_type,
+                        color=item.color_2,
+                    )
+                )
             countc += 1
         elif item.color_type == 2:
             item.color = item.color_1
-            if dvco.objects.filter(display_value_option=item, color_level=item.color_level_1,
-                                  color_level_type=item.color_level_1_type, color=item.color_2).count() == 0:
-                dictc.append(dvco(display_value_option=item, color_level=item.color_level_1,
-                                  color_level_type=item.color_level_1_type, color=item.color_2))
-            if dvco.objects.filter(display_value_option=item, color_level=item.color_level_2,
-                                  color_level_type=item.color_level_2_type, color=item.color_3).count() == 0:
-                dictc.append(dvco(display_value_option=item, color_level=item.color_level_2,
-                                  color_level_type=item.color_level_2_type, color=item.color_3))
+            if (
+                dvco.objects.filter(
+                    display_value_option=item,
+                    color_level=item.color_level_1,
+                    color_level_type=item.color_level_1_type,
+                    color=item.color_2,
+                ).count()
+                == 0
+            ):
+                dictc.append(
+                    dvco(
+                        display_value_option=item,
+                        color_level=item.color_level_1,
+                        color_level_type=item.color_level_1_type,
+                        color=item.color_2,
+                    )
+                )
+            if (
+                dvco.objects.filter(
+                    display_value_option=item,
+                    color_level=item.color_level_2,
+                    color_level_type=item.color_level_2_type,
+                    color=item.color_3,
+                ).count()
+                == 0
+            ):
+                dictc.append(
+                    dvco(
+                        display_value_option=item,
+                        color_level=item.color_level_2,
+                        color_level_type=item.color_level_2_type,
+                        color=item.color_3,
+                    )
+                )
             countc += 2
 
         elif item.color_type == 3:
             item.color = item.color_1
-            if dvco.objects.filter(display_value_option=item, color_level=item.color_level_1,
-                                  color_level_type=item.color_level_1_type, color=item.color_2).count() == 0:
-                dictc.append(dvco(display_value_option=item, color_level=item.color_level_1,
-                                  color_level_type=item.color_level_1_type, color=item.color_2))
+            if (
+                dvco.objects.filter(
+                    display_value_option=item,
+                    color_level=item.color_level_1,
+                    color_level_type=item.color_level_1_type,
+                    color=item.color_2,
+                ).count()
+                == 0
+            ):
+                dictc.append(
+                    dvco(
+                        display_value_option=item,
+                        color_level=item.color_level_1,
+                        color_level_type=item.color_level_1_type,
+                        color=item.color_2,
+                    )
+                )
             item.gradient = True
             item.gradient_higher_level = item.color_level_2
             countc += 1
@@ -54,20 +106,18 @@ def move_dvo(apps, schema_editor):
         dict.append(item)
         count += 1
 
-    logger.info('update %d DisplayValueOption\n' % count)
-    logger.info('create %d DisplayValueColorOption\n' % countc)
+    logger.info("update %d DisplayValueOption\n" % count)
+    logger.info("create %d DisplayValueColorOption\n" % countc)
     DisplayValueColorOption.objects.using(db_alias).bulk_create(dictc)
-    DisplayValueOption.objects.using(db_alias).bulk_update(dict, ['color_only',
-                                                                  'color',
-                                                                  'gradient',
-                                                                  'gradient_higher_level'])
+    DisplayValueOption.objects.using(db_alias).bulk_update(
+        dict, ["color_only", "color", "gradient", "gradient_higher_level"]
+    )
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0100_device_instrument_handler'),
-        ('hmi', '0069_displayvalueoption_color_and_more'),
+        ("pyscada", "0100_device_instrument_handler"),
+        ("hmi", "0069_displayvalueoption_color_and_more"),
     ]
 
     operations = [

@@ -24,7 +24,9 @@ class Process(BaseProcess):
             # then three times
             mail.send_mail()
 
-        for mail in Mail.objects.filter(done=True, timestamp__lt=time() - 60 * 60 * 24 * 7):
+        for mail in Mail.objects.filter(
+            done=True, timestamp__lt=time() - 60 * 60 * 24 * 7
+        ):
             # delete all done emails older then one week
             mail.delete()
         return 1, None

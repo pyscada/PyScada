@@ -5,20 +5,29 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0040_dictionary_dictionaryitem'),
+        ("hmi", "0040_dictionary_dictionaryitem"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='displayvalueoption',
-            name='dictionary',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='hmi.Dictionary'),
+            model_name="displayvalueoption",
+            name="dictionary",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="hmi.Dictionary",
+            ),
         ),
         migrations.AddField(
-            model_name='dropdown',
-            name='dictionary',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='hmi.Dictionary'),
+            model_name="dropdown",
+            name="dictionary",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="hmi.Dictionary",
+            ),
         ),
     ]

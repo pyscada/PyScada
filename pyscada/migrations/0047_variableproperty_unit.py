@@ -6,15 +6,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0046_remove_devicewritetask_property_name'),
+        ("pyscada", "0046_remove_devicewritetask_property_name"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='variableproperty',
-            name='unit',
-            field=models.ForeignKey(blank=True, null=True, on_delete=models.SET(1), to='pyscada.Unit'),
+            model_name="variableproperty",
+            name="unit",
+            field=models.ForeignKey(
+                blank=True, null=True, on_delete=models.SET(1), to="pyscada.Unit"
+            ),
         ),
     ]

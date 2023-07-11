@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0084_auto_20211115_1503'),
+        ("pyscada", "0084_auto_20211115_1503"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='calculatedvariableselector',
-            name='active',
+            model_name="calculatedvariableselector",
+            name="active",
             field=models.BooleanField(default=True),
         ),
     ]

@@ -6,30 +6,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0050_merge_20181130_1143'),
+        ("pyscada", "0050_merge_20181130_1143"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='variable',
-            name='value_max',
+            model_name="variable",
+            name="value_max",
             field=models.FloatField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='variable',
-            name='value_min',
+            model_name="variable",
+            name="value_min",
             field=models.FloatField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='variableproperty',
-            name='value_max',
+            model_name="variableproperty",
+            name="value_max",
             field=models.FloatField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='variableproperty',
-            name='value_min',
+            model_name="variableproperty",
+            name="value_min",
             field=models.FloatField(blank=True, null=True),
         ),
     ]

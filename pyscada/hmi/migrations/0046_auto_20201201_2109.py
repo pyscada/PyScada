@@ -26,14 +26,15 @@ def move_chart_axis(apps, schema_editor):
     count = 0
     timeout = time() + 60 * 5
     for item in chart_set:
-        axis = chart_axis_model(label=item.y_axis_label,
-                                min=item.y_axis_min,
-                                max=item.y_axis_max,
-                                show_plot_points=item.show_plot_points,
-                                show_plot_lines=item.show_plot_lines,
-                                stack=False,
-                                chart=chart_model.objects.get(id=item.id),
-                                )
+        axis = chart_axis_model(
+            label=item.y_axis_label,
+            min=item.y_axis_min,
+            max=item.y_axis_max,
+            show_plot_points=item.show_plot_points,
+            show_plot_lines=item.show_plot_lines,
+            stack=False,
+            chart=chart_model.objects.get(id=item.id),
+        )
         axis.save()
         charts_dict[item.id] = axis.id
 
@@ -42,44 +43,43 @@ def move_chart_axis(apps, schema_editor):
 
         count += 1
 
-    logger.info('wrote %d lines in total\n' % count)
+    logger.info("wrote %d lines in total\n" % count)
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0045_auto_20201201_2100'),
+        ("hmi", "0045_auto_20201201_2100"),
     ]
 
     operations = [
         migrations.RunPython(move_chart_axis, reverse_code=migrations.RunPython.noop),
         migrations.RunPython(move_chart_vars, reverse_code=migrations.RunPython.noop),
         migrations.RemoveField(
-            model_name='chart',
-            name='show_plot_lines',
+            model_name="chart",
+            name="show_plot_lines",
         ),
         migrations.RemoveField(
-            model_name='chart',
-            name='show_plot_points',
+            model_name="chart",
+            name="show_plot_points",
         ),
         migrations.RemoveField(
-            model_name='chart',
-            name='variables',
+            model_name="chart",
+            name="variables",
         ),
         migrations.RemoveField(
-            model_name='chart',
-            name='y_axis_label',
+            model_name="chart",
+            name="y_axis_label",
         ),
         migrations.RemoveField(
-            model_name='chart',
-            name='y_axis_max',
+            model_name="chart",
+            name="y_axis_max",
         ),
         migrations.RemoveField(
-            model_name='chart',
-            name='y_axis_min',
+            model_name="chart",
+            name="y_axis_min",
         ),
         migrations.RemoveField(
-            model_name='chart',
-            name='y_axis_uniquescale',
+            model_name="chart",
+            name="y_axis_uniquescale",
         ),
     ]

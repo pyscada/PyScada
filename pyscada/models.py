@@ -25,7 +25,8 @@ import signal
 from monthdelta import monthdelta
 from os import kill, waitpid
 import os
-if os.name != 'nt':
+
+if os.name != "nt":
     from os import WNOHANG
 
 from struct import *
@@ -45,6 +46,7 @@ try:
     from redis.exceptions import ConnectionError
     from asgiref.sync import async_to_sync
     from asyncio import wait_for
+
     try:
         from asyncio.exceptions import TimeoutError as asyncioTimeoutError
         from asyncio.exceptions import CancelledError as asyncioCancelledError
@@ -57,8 +59,12 @@ try:
         channels_driver = False
     else:
         try:
+
             async def channels_test():
-                await wait_for(channels.layers.get_channel_layer().receive('test'), timeout=0.1)
+                await wait_for(
+                    channels.layers.get_channel_layer().receive("test"), timeout=0.1
+                )
+
             async_to_sync(channels_test)()
             channels_driver = True
         except ConnectionError as e:
@@ -85,34 +91,83 @@ class RecordedDataValueManager(models.Manager):
         if time_max is None:
             time_max = time.time()
         if use_date_saved:
-            return super(RecordedDataValueManager, self).get_queryset().filter(
-                date_saved__range=(timestamp_to_datetime(time_min), timestamp_to_datetime(time_max)), **kwargs)
+            return (
+                super(RecordedDataValueManager, self)
+                .get_queryset()
+                .filter(
+                    date_saved__range=(
+                        timestamp_to_datetime(time_min),
+                        timestamp_to_datetime(time_max),
+                    ),
+                    **kwargs,
+                )
+            )
         else:
-            return super(RecordedDataValueManager, self).get_queryset().filter(
-                id__range=(time_min * 2097152 * 1000, time_max * 2097152 * 1000 + 2097151), **kwargs)
+            return (
+                super(RecordedDataValueManager, self)
+                .get_queryset()
+                .filter(
+                    id__range=(
+                        time_min * 2097152 * 1000,
+                        time_max * 2097152 * 1000 + 2097151,
+                    ),
+                    **kwargs,
+                )
+            )
 
     def last_element(self, use_date_saved=True, **kwargs):
-
-        if 'time_min' in kwargs:
-            time_min = kwargs.pop('time_min')
+        if "time_min" in kwargs:
+            time_min = kwargs.pop("time_min")
         else:
-            time_min = (time.time() - 3660)
+            time_min = time.time() - 3660
 
-        if 'time_max' in kwargs:
-            time_max = kwargs.pop('time_max')
+        if "time_max" in kwargs:
+            time_max = kwargs.pop("time_max")
         else:
             time_max = time.time()
         if use_date_saved:
-            return super(RecordedDataValueManager, self).get_queryset().filter(
-                date_saved__range=(timestamp_to_datetime(time_min), timestamp_to_datetime(time_max)), **kwargs).last()
+            return (
+                super(RecordedDataValueManager, self)
+                .get_queryset()
+                .filter(
+                    date_saved__range=(
+                        timestamp_to_datetime(time_min),
+                        timestamp_to_datetime(time_max),
+                    ),
+                    **kwargs,
+                )
+                .last()
+            )
         else:
-            return super(RecordedDataValueManager, self).get_queryset().filter(
-                id__range=(time_min * 2097152 * 1000, time_max * 2097152 * 1000 + 2097151), **kwargs).last()
+            return (
+                super(RecordedDataValueManager, self)
+                .get_queryset()
+                .filter(
+                    id__range=(
+                        time_min * 2097152 * 1000,
+                        time_max * 2097152 * 1000 + 2097151,
+                    ),
+                    **kwargs,
+                )
+                .last()
+            )
 
-    def get_values_in_time_range(self, time_min=None, time_max=None, query_first_value=False, time_in_ms=False,
-                                 key_is_variable_name=False, add_timestamp_field=False, add_fake_data=False,
-                                 add_latest_value=True, blow_up=False, use_date_saved=False,
-                                 use_recorded_data_old=False, add_date_saved_max_field=False, **kwargs):
+    def get_values_in_time_range(
+        self,
+        time_min=None,
+        time_max=None,
+        query_first_value=False,
+        time_in_ms=False,
+        key_is_variable_name=False,
+        add_timestamp_field=False,
+        add_fake_data=False,
+        add_latest_value=True,
+        blow_up=False,
+        use_date_saved=False,
+        use_recorded_data_old=False,
+        add_date_saved_max_field=False,
+        **kwargs,
+    ):
         # logger.debug('%r' % [time_min, time_max])
         if time_min is None:
             time_min = 0
@@ -134,19 +189,19 @@ class RecordedDataValueManager(models.Manager):
         date_saved_max = time_min
         values = {}
         var_filter = True
-        if 'variable' in kwargs:
-            variables = Variable.objects.filter(pk=kwargs['variable'].pk)
-        elif 'variable_id' in kwargs:
-            variables = Variable.objects.filter(pk=kwargs['variable_id'])
-        elif 'variable_pk__in' in kwargs:
+        if "variable" in kwargs:
+            variables = Variable.objects.filter(pk=kwargs["variable"].pk)
+        elif "variable_id" in kwargs:
+            variables = Variable.objects.filter(pk=kwargs["variable_id"])
+        elif "variable_pk__in" in kwargs:
             # return all values for the given variables
-            variables = Variable.objects.filter(pk__in=kwargs['variable_pk__in'])
-        elif 'variable_id__in' in kwargs:
+            variables = Variable.objects.filter(pk__in=kwargs["variable_pk__in"])
+        elif "variable_id__in" in kwargs:
             # return all values for the given variables
-            variables = Variable.objects.filter(pk__in=kwargs['variable_id__in'])
-        elif 'variable__in' in kwargs:
+            variables = Variable.objects.filter(pk__in=kwargs["variable_id__in"])
+        elif "variable__in" in kwargs:
             # return all values for the given variables
-            variables = kwargs['variable__in']
+            variables = kwargs["variable__in"]
         else:
             variables = Variable.objects.all()
             var_filter = False
@@ -157,7 +212,7 @@ class RecordedDataValueManager(models.Manager):
         else:
             f_time_scale = 1
 
-        variable_ids = variables.values_list('pk', flat=True)
+        variable_ids = variables.values_list("pk", flat=True)
         # only filter by variable wenn less the 70% of all variables are queried
         if len(variable_ids) > float(Variable.objects.count()) * 0.7:
             var_filter = False
@@ -173,45 +228,114 @@ class RecordedDataValueManager(models.Manager):
         while query_time_min < time_max:
             if use_date_saved:
                 if var_filter:
-                    tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
-                        date_saved__range=(timestamp_to_datetime(query_time_min),
-                                           timestamp_to_datetime(min(query_time_max, time_max))),
-                        variable__in=variables
-                    ).values_list('variable_id', 'pk', 'value_float64',
-                                  'value_int64', 'value_int32', 'value_int16',
-                                  'value_boolean', 'date_saved'))
+                    tmp = list(
+                        super(RecordedDataValueManager, self)
+                        .get_queryset()
+                        .filter(
+                            date_saved__range=(
+                                timestamp_to_datetime(query_time_min),
+                                timestamp_to_datetime(min(query_time_max, time_max)),
+                            ),
+                            variable__in=variables,
+                        )
+                        .values_list(
+                            "variable_id",
+                            "pk",
+                            "value_float64",
+                            "value_int64",
+                            "value_int32",
+                            "value_int16",
+                            "value_boolean",
+                            "date_saved",
+                        )
+                    )
                 else:
-                    tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
-                        date_saved__range=(timestamp_to_datetime(query_time_min),
-                                           timestamp_to_datetime(min(query_time_max, time_max)))
-                    ).values_list('variable_id', 'pk', 'value_float64',
-                                  'value_int64', 'value_int32', 'value_int16', 'value_boolean', 'date_saved'))
+                    tmp = list(
+                        super(RecordedDataValueManager, self)
+                        .get_queryset()
+                        .filter(
+                            date_saved__range=(
+                                timestamp_to_datetime(query_time_min),
+                                timestamp_to_datetime(min(query_time_max, time_max)),
+                            )
+                        )
+                        .values_list(
+                            "variable_id",
+                            "pk",
+                            "value_float64",
+                            "value_int64",
+                            "value_int32",
+                            "value_int16",
+                            "value_boolean",
+                            "date_saved",
+                        )
+                    )
             else:
                 if var_filter:
-                    tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
-                        id__range=(query_time_min * 2097152 * 1000, min(query_time_max * 2097152 * 1000 + 2097151,
-                                                                        time_max * 2097152 * 1000 + 2097151)),
-                        variable__in=variables
-                    ).values_list('variable_id', 'pk', 'value_float64',
-                                  'value_int64', 'value_int32', 'value_int16',
-                                  'value_boolean', 'date_saved'))
+                    tmp = list(
+                        super(RecordedDataValueManager, self)
+                        .get_queryset()
+                        .filter(
+                            id__range=(
+                                query_time_min * 2097152 * 1000,
+                                min(
+                                    query_time_max * 2097152 * 1000 + 2097151,
+                                    time_max * 2097152 * 1000 + 2097151,
+                                ),
+                            ),
+                            variable__in=variables,
+                        )
+                        .values_list(
+                            "variable_id",
+                            "pk",
+                            "value_float64",
+                            "value_int64",
+                            "value_int32",
+                            "value_int16",
+                            "value_boolean",
+                            "date_saved",
+                        )
+                    )
                 else:
-                    tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
-                        id__range=(query_time_min * 2097152 * 1000, min(query_time_max * 2097152 * 1000 + 2097151,
-                                                                        time_max * 2097152 * 1000 + 2097151))
-                    ).values_list('variable_id', 'pk', 'value_float64',
-                                  'value_int64', 'value_int32', 'value_int16', 'value_boolean', 'date_saved'))
+                    tmp = list(
+                        super(RecordedDataValueManager, self)
+                        .get_queryset()
+                        .filter(
+                            id__range=(
+                                query_time_min * 2097152 * 1000,
+                                min(
+                                    query_time_max * 2097152 * 1000 + 2097151,
+                                    time_max * 2097152 * 1000 + 2097151,
+                                ),
+                            )
+                        )
+                        .values_list(
+                            "variable_id",
+                            "pk",
+                            "value_float64",
+                            "value_int64",
+                            "value_int32",
+                            "value_int16",
+                            "value_boolean",
+                            "date_saved",
+                        )
+                    )
 
             for item in tmp:
                 if item[0] not in variable_ids:
                     continue
                 if not item[0] in values:
                     values[item[0]] = []
-                tmp_time = float(item[1] - item[0]) / (2097152.0 * 1000)  # calc the timestamp in seconds
+                tmp_time = float(item[1] - item[0]) / (
+                    2097152.0 * 1000
+                )  # calc the timestamp in seconds
                 tmp_time_max = max(tmp_time, tmp_time_max)
                 tmp_time_min = min(tmp_time, tmp_time_min)
                 tmp_time = tmp_time * f_time_scale
-                date_saved_max = max(date_saved_max, time.mktime(item[7].utctimetuple())+item[7].microsecond/1e6)
+                date_saved_max = max(
+                    date_saved_max,
+                    time.mktime(item[7].utctimetuple()) + item[7].microsecond / 1e6,
+                )
                 if item[2] is not None:  # float64
                     values[item[0]].append([tmp_time, item[2]])  # time, value
                 elif item[3] is not None:  # int64
@@ -245,21 +369,51 @@ class RecordedDataValueManager(models.Manager):
                 if vid not in values.keys():
                     update_first_value_list.append(vid)
 
-        if len(update_first_value_list) > 0:  # TODO add n times the recording interval to the range (3600 + n)
+        if (
+            len(update_first_value_list) > 0
+        ):  # TODO add n times the recording interval to the range (3600 + n)
             if use_date_saved:
-                tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
-                    use_date_saved__range=(timestamp_to_datetime(time_min - 3660), timestamp_to_datetime(time_min)),
-                    variable_id__in=update_first_value_list
-                ).values_list('variable_id', 'pk', 'value_float64',
-                              'value_int64', 'value_int32', 'value_int16',
-                              'value_boolean'))
+                tmp = list(
+                    super(RecordedDataValueManager, self)
+                    .get_queryset()
+                    .filter(
+                        use_date_saved__range=(
+                            timestamp_to_datetime(time_min - 3660),
+                            timestamp_to_datetime(time_min),
+                        ),
+                        variable_id__in=update_first_value_list,
+                    )
+                    .values_list(
+                        "variable_id",
+                        "pk",
+                        "value_float64",
+                        "value_int64",
+                        "value_int32",
+                        "value_int16",
+                        "value_boolean",
+                    )
+                )
             else:
-                tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
-                    id__range=((time_min - 3660) * 2097152 * 1000, time_min * 2097152 * 1000),
-                    variable_id__in=update_first_value_list
-                ).values_list('variable_id', 'pk', 'value_float64',
-                              'value_int64', 'value_int32', 'value_int16',
-                              'value_boolean'))
+                tmp = list(
+                    super(RecordedDataValueManager, self)
+                    .get_queryset()
+                    .filter(
+                        id__range=(
+                            (time_min - 3660) * 2097152 * 1000,
+                            time_min * 2097152 * 1000,
+                        ),
+                        variable_id__in=update_first_value_list,
+                    )
+                    .values_list(
+                        "variable_id",
+                        "pk",
+                        "value_float64",
+                        "value_int64",
+                        "value_int32",
+                        "value_int16",
+                        "value_boolean",
+                    )
+                )
 
             first_values = {}
             for item in tmp:
@@ -284,75 +438,114 @@ class RecordedDataValueManager(models.Manager):
                 if key in first_values:
                     if key not in values:
                         values[key] = []
-                    values[key].insert(0, [time_min * f_time_scale, first_values[key][1]])
+                    values[key].insert(
+                        0, [time_min * f_time_scale, first_values[key][1]]
+                    )
 
-        '''
+        """
         add a data point before the next change of state
-        '''
+        """
         if add_fake_data:
             for key in values:
                 i = 1
                 while i < len(values[key]):
-                    if values[key][i][0] - values[key][i - 1][0] > 1.0 and values[key][i][1] != values[key][i - 1][1]:
-                        values[key].insert(i, [values[key][i][0], values[key][i - 1][1]])
+                    if (
+                        values[key][i][0] - values[key][i - 1][0] > 1.0
+                        and values[key][i][1] != values[key][i - 1][1]
+                    ):
+                        values[key].insert(
+                            i, [values[key][i][0], values[key][i - 1][1]]
+                        )
                         i += 2
                     else:
                         i += 1
-        '''
+        """
         blow up data
-        '''
+        """
 
         if blow_up:
-            if 'mean_value_period' in kwargs:
-                mean_value_period = kwargs['mean_value_period']
+            if "mean_value_period" in kwargs:
+                mean_value_period = kwargs["mean_value_period"]
             else:
                 mean_value_period = 5.0
-            if 'no_mean_value' in kwargs:
-                no_mean_value = kwargs['no_mean_value']
+            if "no_mean_value" in kwargs:
+                no_mean_value = kwargs["no_mean_value"]
             else:
                 no_mean_value = True
-            timevalues = np.arange(np.ceil(time_min / mean_value_period) * mean_value_period*f_time_scale,
-                                   np.floor(time_max / mean_value_period) * mean_value_period*f_time_scale,
-                                   mean_value_period * f_time_scale)
+            timevalues = np.arange(
+                np.ceil(time_min / mean_value_period)
+                * mean_value_period
+                * f_time_scale,
+                np.floor(time_max / mean_value_period)
+                * mean_value_period
+                * f_time_scale,
+                mean_value_period * f_time_scale,
+            )
 
             for key in values:
-                values[key] = blow_up_data(values[key], timevalues, mean_value_period*f_time_scale, no_mean_value)
-            values['timevalues'] = timevalues
+                values[key] = blow_up_data(
+                    values[key],
+                    timevalues,
+                    mean_value_period * f_time_scale,
+                    no_mean_value,
+                )
+            values["timevalues"] = timevalues
 
-        '''
+        """
         change output tuple key from pk to variable name
-        '''
+        """
         if key_is_variable_name:
             for item in variables:
                 if item.pk in values:
                     values[item.name] = values.pop(item.pk)
-        '''
+        """
         add the timestamp of the most recent value
-        '''
+        """
         if add_timestamp_field:
             if timestamp_max == 0:
                 timestamp_max = time_min
-            values['timestamp'] = timestamp_max * f_time_scale
+            values["timestamp"] = timestamp_max * f_time_scale
 
         if add_date_saved_max_field:
-            values['date_saved_max'] = date_saved_max * f_time_scale
+            values["date_saved_max"] = date_saved_max * f_time_scale
         return values
 
-    def db_data(self, variable_ids, time_min, time_max, time_in_ms=True, query_first_value=False):
+    def db_data(
+        self, variable_ids, time_min, time_max, time_in_ms=True, query_first_value=False
+    ):
         """
 
         :return:
         """
 
         variable_ids = [int(pk) for pk in variable_ids]
-        tmp = list(super(RecordedDataValueManager, self).get_queryset().filter(
-            id__range=((time_min - 3660) * 2097152 * 1000, time_max * 2097152 * 1000),
-            date_saved__range=(timestamp_to_datetime(time_min - 3660 if query_first_value else time_min),
-                               timestamp_to_datetime(time_max)),
-            variable_id__in=variable_ids
-        ).values_list('variable_id', 'pk', 'value_float64',
-                      'value_int64', 'value_int32', 'value_int16',
-                      'value_boolean', 'date_saved'))
+        tmp = list(
+            super(RecordedDataValueManager, self)
+            .get_queryset()
+            .filter(
+                id__range=(
+                    (time_min - 3660) * 2097152 * 1000,
+                    time_max * 2097152 * 1000,
+                ),
+                date_saved__range=(
+                    timestamp_to_datetime(
+                        time_min - 3660 if query_first_value else time_min
+                    ),
+                    timestamp_to_datetime(time_max),
+                ),
+                variable_id__in=variable_ids,
+            )
+            .values_list(
+                "variable_id",
+                "pk",
+                "value_float64",
+                "value_int64",
+                "value_int32",
+                "value_int16",
+                "value_boolean",
+                "date_saved",
+            )
+        )
 
         if time_in_ms:
             f_time_scale = 1000
@@ -385,41 +578,65 @@ class RecordedDataValueManager(models.Manager):
                 continue
             if not item[0] in values:
                 values[item[0]] = []
-                times[item[0]] = {'time_min': time_max, 'time_max': 0}
-            tmp_time = float(item[1] - item[0]) / (2097152.0 * 1000)  # calc the timestamp in seconds
-            date_saved_max = max(date_saved_max, time.mktime(item[7].utctimetuple()) + item[7].microsecond / 1e6)
+                times[item[0]] = {"time_min": time_max, "time_max": 0}
+            tmp_time = float(item[1] - item[0]) / (
+                2097152.0 * 1000
+            )  # calc the timestamp in seconds
+            date_saved_max = max(
+                date_saved_max,
+                time.mktime(item[7].utctimetuple()) + item[7].microsecond / 1e6,
+            )
             tmp_time_max = max(tmp_time, tmp_time_max)
             tmp_time_min = min(tmp_time, tmp_time_min)
             values[item[0]].append([tmp_time * f_time_scale, get_rd_value(item)])
-            if tmp_time < times[item[0]]['time_min']:
-                times[item[0]]['time_min'] = tmp_time
-            if tmp_time > times[item[0]]['time_max']:
-                times[item[0]]['time_max'] = tmp_time
+            if tmp_time < times[item[0]]["time_min"]:
+                times[item[0]]["time_min"] = tmp_time
+            if tmp_time > times[item[0]]["time_max"]:
+                times[item[0]]["time_max"] = tmp_time
 
         if query_first_value:
             for pk in variable_ids:
                 if pk not in values:
                     values[pk] = []
                 if pk in times:
-                    last_element = self.last_element(use_date_saved=True, time_min=0,
-                                                     time_max=times[pk]['time_min'], variable_id=pk)
+                    last_element = self.last_element(
+                        use_date_saved=True,
+                        time_min=0,
+                        time_max=times[pk]["time_min"],
+                        variable_id=pk,
+                    )
                     if last_element is not None:
-                        values[pk].insert(0, [(float(last_element.pk - last_element.variable_id) / (2097152.0 * 1000))
-                                              * f_time_scale, last_element.value()])
+                        values[pk].insert(
+                            0,
+                            [
+                                (
+                                    float(last_element.pk - last_element.variable_id)
+                                    / (2097152.0 * 1000)
+                                )
+                                * f_time_scale,
+                                last_element.value(),
+                            ],
+                        )
 
-        values['timestamp'] = max(tmp_time_max, time_min) * f_time_scale
-        values['date_saved_max'] = date_saved_max * f_time_scale
+        values["timestamp"] = max(tmp_time_max, time_min) * f_time_scale
+        values["date_saved_max"] = date_saved_max * f_time_scale
 
         return values
 
 
 class VariablePropertyManager(models.Manager):
-    """
+    """ """
 
-    """
-
-    def update_or_create_property(self, variable, name, value, value_class='string', property_class=None,
-                                  timestamp=None, **kwargs):
+    def update_or_create_property(
+        self,
+        variable,
+        name,
+        value,
+        value_class="string",
+        property_class=None,
+        timestamp=None,
+        **kwargs,
+    ):
         """
 
         :param variable: Variable Object
@@ -431,32 +648,47 @@ class VariablePropertyManager(models.Manager):
         :return: VariableProperty Object
         """
         if type(variable) == Variable:
-            kwargs = {'name': name.upper(), 'variable_id': variable.pk}
+            kwargs = {"name": name.upper(), "variable_id": variable.pk}
         elif type(variable) == int or type(variable) == float:
-            kwargs = {'name': name.upper(), 'variable_id': variable}
+            kwargs = {"name": name.upper(), "variable_id": variable}
         else:
-            logger.debug("update_or_create_property failed with variable : " + str(variable) +
-                         " - and property name : " + str(name))
+            logger.debug(
+                "update_or_create_property failed with variable : "
+                + str(variable)
+                + " - and property name : "
+                + str(name)
+            )
             return None
 
-        vp = super(VariablePropertyManager, self).get_queryset().filter(**kwargs).first()
-        kwargs['value_class'] = value_class.upper()
+        vp = (
+            super(VariablePropertyManager, self).get_queryset().filter(**kwargs).first()
+        )
+        kwargs["value_class"] = value_class.upper()
         if timestamp is not None:
-            kwargs['timestamp'] = timestamp
+            kwargs["timestamp"] = timestamp
         if property_class is not None:
-            kwargs['property_class'] = property_class
-        if value_class.upper() in ['STRING']:
-            kwargs['value_string'] = str(value)[:VariableProperty._meta.get_field('value_string').max_length]
-        elif value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
-            kwargs['value_float64'] = value
-        elif value_class.upper() in ['INT64', 'UINT32', 'DWORD']:
-            kwargs['value_int64'] = value
-        elif value_class.upper() in ['WORD', 'UINT', 'UINT16', 'INT32']:
-            kwargs['value_int32'] = value
-        elif value_class.upper() in ['INT16', 'INT8', 'UINT8']:
-            kwargs['value_int16'] = value
-        elif value_class.upper() in ['BOOL', 'BOOLEAN']:
-            kwargs['value_boolean'] = value
+            kwargs["property_class"] = property_class
+        if value_class.upper() in ["STRING"]:
+            kwargs["value_string"] = str(value)[
+                : VariableProperty._meta.get_field("value_string").max_length
+            ]
+        elif value_class.upper() in [
+            "FLOAT",
+            "FLOAT64",
+            "DOUBLE",
+            "FLOAT32",
+            "SINGLE",
+            "REAL",
+        ]:
+            kwargs["value_float64"] = value
+        elif value_class.upper() in ["INT64", "UINT32", "DWORD"]:
+            kwargs["value_int64"] = value
+        elif value_class.upper() in ["WORD", "UINT", "UINT16", "INT32"]:
+            kwargs["value_int32"] = value
+        elif value_class.upper() in ["INT16", "INT8", "UINT8"]:
+            kwargs["value_int16"] = value
+        elif value_class.upper() in ["BOOL", "BOOLEAN"]:
+            kwargs["value_boolean"] = value
         if vp:
             # update
             for key, value in kwargs.items():
@@ -471,11 +703,19 @@ class VariablePropertyManager(models.Manager):
 
     def get_property(self, variable, name, **kwargs):
         if type(variable) == Variable:
-            vp = super(VariablePropertyManager, self).get_queryset().filter(variable_id=variable.pk,
-                                                                            name=name.upper(), **kwargs).first()
+            vp = (
+                super(VariablePropertyManager, self)
+                .get_queryset()
+                .filter(variable_id=variable.pk, name=name.upper(), **kwargs)
+                .first()
+            )
         elif type(variable) == int or type(variable) == float:
-            vp = super(VariablePropertyManager, self).get_queryset().filter(variable_id=variable,
-                                                                            name=name.upper(), **kwargs).first()
+            vp = (
+                super(VariablePropertyManager, self)
+                .get_queryset()
+                .filter(variable_id=variable, name=name.upper(), **kwargs)
+                .first()
+            )
         else:
             return None
         if vp:
@@ -483,35 +723,62 @@ class VariablePropertyManager(models.Manager):
         else:
             return None
 
-    def update_property(self, variable_property=None, variable=None, name=None, value=None, **kwargs):
+    def update_property(
+        self, variable_property=None, variable=None, name=None, value=None, **kwargs
+    ):
         if type(variable_property) == VariableProperty:
-            vp = super(VariablePropertyManager, self).get_queryset().filter(pk=variable_property.pk
-                                                                            ).first()
+            vp = (
+                super(VariablePropertyManager, self)
+                .get_queryset()
+                .filter(pk=variable_property.pk)
+                .first()
+            )
         elif type(variable_property) == int or type(variable_property) == float:
-            vp = super(VariablePropertyManager, self).get_queryset().filter(pk=variable_property
-                                                                            ).first()
+            vp = (
+                super(VariablePropertyManager, self)
+                .get_queryset()
+                .filter(pk=variable_property)
+                .first()
+            )
         elif type(variable) == Variable:
-            vp = super(VariablePropertyManager, self).get_queryset().filter(variable_id=variable.pk,
-                                                                            name=name.upper(), **kwargs).first()
+            vp = (
+                super(VariablePropertyManager, self)
+                .get_queryset()
+                .filter(variable_id=variable.pk, name=name.upper(), **kwargs)
+                .first()
+            )
         elif type(variable) == int or type(variable) == float:
-            vp = super(VariablePropertyManager, self).get_queryset().filter(variable_id=variable,
-                                                                            name=name.upper(), **kwargs).first()
+            vp = (
+                super(VariablePropertyManager, self)
+                .get_queryset()
+                .filter(variable_id=variable, name=name.upper(), **kwargs)
+                .first()
+            )
         else:
             return None
         if vp:
             value_class = vp.value_class
-            if value_class.upper() in ['STRING']:
+            if value_class.upper() in ["STRING"]:
                 value = "" if value is None else value
-                vp.value_string = value[:VariableProperty._meta.get_field('value_string').max_length]
-            elif value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
+                vp.value_string = value[
+                    : VariableProperty._meta.get_field("value_string").max_length
+                ]
+            elif value_class.upper() in [
+                "FLOAT",
+                "FLOAT64",
+                "DOUBLE",
+                "FLOAT32",
+                "SINGLE",
+                "REAL",
+            ]:
                 vp.value_float64 = value
-            elif value_class.upper() in ['INT64', 'UINT32', 'DWORD']:
+            elif value_class.upper() in ["INT64", "UINT32", "DWORD"]:
                 vp.value_int64 = value
-            elif value_class.upper() in ['WORD', 'UINT', 'UINT16', 'INT32']:
+            elif value_class.upper() in ["WORD", "UINT", "UINT16", "INT32"]:
                 vp.value_int32 = value
-            elif value_class.upper() in ['INT16', 'INT8', 'UINT8']:
+            elif value_class.upper() in ["INT16", "INT8", "UINT8"]:
                 vp.value_int16 = value
-            elif value_class.upper() in ['BOOL', 'BOOLEAN']:
+            elif value_class.upper() in ["BOOL", "BOOLEAN"]:
                 value = False if value is None else value
                 vp.value_boolean = value
             vp.last_modified = now()
@@ -535,22 +802,26 @@ class Color(models.Model):
     B = models.PositiveSmallIntegerField(default=0)
 
     def __str__(self):
-        return 'rgb(' + str(self.R) + ', ' + str(self.G) + ', ' + str(self.B) + ', ' + ')'
+        return (
+            "rgb(" + str(self.R) + ", " + str(self.G) + ", " + str(self.B) + ", " + ")"
+        )
 
     def color_code(self):
-        return '#%02x%02x%02x' % (self.R, self.G, self.B)
+        return "#%02x%02x%02x" % (self.R, self.G, self.B)
 
     def color_rect_html(self):
-        return '<div style="width:4px;height:0;border:5px solid #%02x%02x%02x;overflow:hidden"></div>' % (
-            self.R, self.G, self.B)
+        return (
+            '<div style="width:4px;height:0;border:5px solid #%02x%02x%02x;overflow:hidden"></div>'
+            % (self.R, self.G, self.B)
+        )
 
 
 class DeviceProtocol(models.Model):
     id = models.AutoField(primary_key=True)
-    protocol = models.CharField(max_length=400, default='generic')
-    description = models.TextField(default='', verbose_name="Description", null=True)
-    app_name = models.CharField(max_length=400, default='pyscada.PROTOCOL')
-    device_class = models.CharField(max_length=400, default='pyscada.PROTOCOL.device')
+    protocol = models.CharField(max_length=400, default="generic")
+    description = models.TextField(default="", verbose_name="Description", null=True)
+    app_name = models.CharField(max_length=400, default="pyscada.PROTOCOL")
+    device_class = models.CharField(max_length=400, default="pyscada.PROTOCOL.device")
     daq_daemon = models.BooleanField()
     single_thread = models.BooleanField()
 
@@ -559,16 +830,24 @@ class DeviceProtocol(models.Model):
 
 
 class DeviceHandler(models.Model):
-    name = models.CharField(default='', max_length=255)
-    handler_class = models.CharField(default='pyscada.visa.devices.HP3456A', max_length=255,
-                                     help_text='a Base class to extend can be found at '
-                                               'pyscada.PROTOCOL.devices.GenericDevice. '
-                                               'Exemple : pyscada.visa.devices.HP3456A, '
-                                               'pyscada.smbus.devices.ups_pico, '
-                                               'pyscada.serial.devices.AirLinkGX450')
-    handler_path = models.CharField(default=None, max_length=255, null=True, blank=True,
-                                    help_text='If no handler class, pyscada will look at the path. '
-                                              'Exemple : /home/pi/my_handler.py')
+    name = models.CharField(default="", max_length=255)
+    handler_class = models.CharField(
+        default="pyscada.visa.devices.HP3456A",
+        max_length=255,
+        help_text="a Base class to extend can be found at "
+        "pyscada.PROTOCOL.devices.GenericDevice. "
+        "Exemple : pyscada.visa.devices.HP3456A, "
+        "pyscada.smbus.devices.ups_pico, "
+        "pyscada.serial.devices.AirLinkGX450",
+    )
+    handler_path = models.CharField(
+        default=None,
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text="If no handler class, pyscada will look at the path. "
+        "Exemple : /home/pi/my_handler.py",
+    )
 
     def __str__(self):
         return self.name
@@ -581,63 +860,71 @@ class DeviceHandler(models.Model):
 
 class Device(models.Model):
     id = models.AutoField(primary_key=True)
-    short_name = models.CharField(max_length=400, default='')
-    description = models.TextField(default='', verbose_name="Description", null=True)
+    short_name = models.CharField(max_length=400, default="")
+    description = models.TextField(default="", verbose_name="Description", null=True)
     active = models.BooleanField(default=True)
     byte_order_choices = (
-        ('1-0-3-2', '1-0-3-2'),
-        ('0-1-2-3', '0-1-2-3'),
-        ('2-3-0-1', '2-3-0-1'),
-        ('3-2-1-0', '3-2-1-0'),
+        ("1-0-3-2", "1-0-3-2"),
+        ("0-1-2-3", "0-1-2-3"),
+        ("2-3-0-1", "2-3-0-1"),
+        ("3-2-1-0", "3-2-1-0"),
     )
-    byte_order = models.CharField(max_length=15, default='1-0-3-2', choices=byte_order_choices)
+    byte_order = models.CharField(
+        max_length=15, default="1-0-3-2", choices=byte_order_choices
+    )
     polling_interval_choices = (
-        (0.1, '100 Milliseconds'),
-        (0.5, '500 Milliseconds'),
-        (1.0, '1 Second'),
-        (5.0, '5 Seconds'),
-        (10.0, '10 Seconds'),
-        (15.0, '15 Seconds'),
-        (30.0, '30 Seconds'),
-        (60.0, '1 Minute'),
-        (150.0, '2.5 Mintues'),
-        (300.0, '5 Minutes'),
-        (360.0, '6 Minutes (10 times per Hour)'),
-        (600.0, '10 Minutes'),
-        (900.0, '15 Minutes'),
-        (1800.0, '30 Minutes'),
-        (3600.0, '1 Hour'),
-        (21600.0, '6 Hours'),
-        (43200.0, '12 Hours'),
-        (86400.0, '1 Day'),
-        (604800.0, '1 Week'),
+        (0.1, "100 Milliseconds"),
+        (0.5, "500 Milliseconds"),
+        (1.0, "1 Second"),
+        (5.0, "5 Seconds"),
+        (10.0, "10 Seconds"),
+        (15.0, "15 Seconds"),
+        (30.0, "30 Seconds"),
+        (60.0, "1 Minute"),
+        (150.0, "2.5 Mintues"),
+        (300.0, "5 Minutes"),
+        (360.0, "6 Minutes (10 times per Hour)"),
+        (600.0, "10 Minutes"),
+        (900.0, "15 Minutes"),
+        (1800.0, "30 Minutes"),
+        (3600.0, "1 Hour"),
+        (21600.0, "6 Hours"),
+        (43200.0, "12 Hours"),
+        (86400.0, "1 Day"),
+        (604800.0, "1 Week"),
     )
-    polling_interval = models.FloatField(default=polling_interval_choices[3][0], choices=polling_interval_choices)
+    polling_interval = models.FloatField(
+        default=polling_interval_choices[3][0], choices=polling_interval_choices
+    )
     protocol = models.ForeignKey(DeviceProtocol, null=True, on_delete=models.CASCADE)
-    instrument_handler = models.ForeignKey(DeviceHandler, null=True, blank=True, on_delete=models.SET_NULL)
+    instrument_handler = models.ForeignKey(
+        DeviceHandler, null=True, blank=True, on_delete=models.SET_NULL
+    )
 
     def __str__(self):
         # display protocol for the JS filter for inline variables (hmi.static.pyscada.js.admin)
         if self.protocol is not None:
             return self.protocol.protocol + "-" + self.short_name
         else:
-            return 'generic-' + self.short_name
+            return "generic-" + self.short_name
 
     def get_device_instance(self):
         try:
-            mod = __import__(self.protocol.device_class, fromlist=['Device'])
-            device_class = getattr(mod, 'Device')
+            mod = __import__(self.protocol.device_class, fromlist=["Device"])
+            device_class = getattr(mod, "Device")
             return device_class(self)
         except:
-            logger.error(f'{self.short_name}({getpid()}), unhandled exception', exc_info=True)
+            logger.error(
+                f"{self.short_name}({getpid()}), unhandled exception", exc_info=True
+            )
             return None
 
 
 class Unit(models.Model):
     id = models.AutoField(primary_key=True)
     unit = models.CharField(max_length=80, verbose_name="Unit")
-    description = models.TextField(default='', verbose_name="Description", null=True)
-    udunit = models.CharField(max_length=500, verbose_name="udUnit", default='')
+    description = models.TextField(default="", verbose_name="Description", null=True)
+    udunit = models.CharField(max_length=500, verbose_name="udUnit", default="")
 
     def __str__(self):
         return self.unit
@@ -648,7 +935,9 @@ class Unit(models.Model):
 
 class Scaling(models.Model):
     id = models.AutoField(primary_key=True)
-    description = models.TextField(default='', verbose_name="Description", null=True, blank=True)
+    description = models.TextField(
+        default="", verbose_name="Description", null=True, blank=True
+    )
     input_low = models.FloatField()
     input_high = models.FloatField()
     output_low = models.FloatField()
@@ -659,9 +948,18 @@ class Scaling(models.Model):
         if self.description:
             return self.description
         else:
-            return str(self.id) + '_[' + str(self.input_low) + ':' + \
-                   str(self.input_high) + '] -> [' + str(self.output_low) + ':' \
-                   + str(self.output_low) + ']'
+            return (
+                str(self.id)
+                + "_["
+                + str(self.input_low)
+                + ":"
+                + str(self.input_high)
+                + "] -> ["
+                + str(self.output_low)
+                + ":"
+                + str(self.output_low)
+                + "]"
+            )
 
     def scale_value(self, input_value):
         input_value = float(input_value)
@@ -672,16 +970,18 @@ class Scaling(models.Model):
 
     def scale_output_value(self, input_value):
         input_value = float(input_value)
-        norm_value = (input_value - self.output_low) / (self.output_high - self.output_low)
+        norm_value = (input_value - self.output_low) / (
+            self.output_high - self.output_low
+        )
         return norm_value * (self.input_high - self.input_low) + self.input_low
 
 
 class Dictionary(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=400, default='')
+    name = models.CharField(max_length=400, default="")
 
     def __str__(self):
-        return text_type(str(self.id) + ': ' + self.name)
+        return text_type(str(self.id) + ": " + self.name)
 
     def dict_as_json(self):
         items_list = dict()
@@ -696,19 +996,40 @@ class Dictionary(models.Model):
                 if label_found is None:
                     label_found = item.label
                 else:
-                    logger.info('Dictionary %s has various items with value = %s' % (str(self), value))
+                    logger.info(
+                        "Dictionary %s has various items with value = %s"
+                        % (str(self), value)
+                    )
                     return None
         return label_found or value
 
     def append(self, label, value, silent=False, update=None):
         if update is None:
-            _, created = DictionaryItem.objects.get_or_create(label=label, value=value, dictionary=self)
+            _, created = DictionaryItem.objects.get_or_create(
+                label=label, value=value, dictionary=self
+            )
             if not created and not silent:
-                logger.warning('Item ({}:{}) for dictionary {} already exist'.format(label, value, self))
+                logger.warning(
+                    "Item ({}:{}) for dictionary {} already exist".format(
+                        label, value, self
+                    )
+                )
         elif update == "label":
-            DictionaryItem.objects.update_or_create(value=value, dictionary=self, defaults={"label": label,})
+            DictionaryItem.objects.update_or_create(
+                value=value,
+                dictionary=self,
+                defaults={
+                    "label": label,
+                },
+            )
         elif update == "value":
-            DictionaryItem.objects.update_or_create(label=label, dictionary=self, defaults={"value": value,})
+            DictionaryItem.objects.update_or_create(
+                label=label,
+                dictionary=self,
+                defaults={
+                    "value": value,
+                },
+            )
 
     def remove(self, label=None, value=None):
         if label is not None and value is not None:
@@ -718,84 +1039,107 @@ class Dictionary(models.Model):
         elif value is not None:
             DictionaryItem.objects.filter(value=value).delete()
 
-    def _get_objects_for_html(self, list_to_append=None, obj=None, exclude_model_names=None):
+    def _get_objects_for_html(
+        self, list_to_append=None, obj=None, exclude_model_names=None
+    ):
         list_to_append = get_objects_for_html(list_to_append, self, exclude_model_names)
         if obj is None:
             for item in self.dictionaryitem_set.all():
-                list_to_append = get_objects_for_html(list_to_append, item, ['dictionary'])
+                list_to_append = get_objects_for_html(
+                    list_to_append, item, ["dictionary"]
+                )
 
         return list_to_append
 
 
 class DictionaryItem(models.Model):
     id = models.AutoField(primary_key=True)
-    label = models.CharField(max_length=400, default='', blank=True)
-    value = models.CharField(max_length=400, default='')
-    dictionary = models.ForeignKey(Dictionary, blank=True, null=True, on_delete=models.CASCADE)
+    label = models.CharField(max_length=400, default="", blank=True)
+    value = models.CharField(max_length=400, default="")
+    dictionary = models.ForeignKey(
+        Dictionary, blank=True, null=True, on_delete=models.CASCADE
+    )
 
     def __str__(self):
-        return text_type(str(self.id) + ': ' + self.label)
+        return text_type(str(self.id) + ": " + self.label)
 
 
 class VariableProperty(models.Model):
     id = models.AutoField(primary_key=True)
-    variable = models.ForeignKey('Variable', null=True, on_delete=models.CASCADE)
-    property_class_choices = ((None, 'other or no Class specified'),
-                              ('device', 'Device Property'),
-                              ('data_record', 'Recorded Data'),
-                              ('daemon', 'Daemon Property'),
-                              )
-    property_class = models.CharField(default=None, blank=True, null=True, max_length=255,
-                                      choices=property_class_choices)
-    value_class_choices = (('FLOAT32', 'REAL (FLOAT32)'),
-                           ('FLOAT32', 'SINGLE (FLOAT32)'),
-                           ('FLOAT32', 'FLOAT32'),
-                           ('UNIXTIMEF32', 'UNIXTIMEF32'),
-                           ('FLOAT64', 'LREAL (FLOAT64)'),
-                           ('FLOAT64', 'FLOAT  (FLOAT64)'),
-                           ('FLOAT64', 'DOUBLE (FLOAT64)'),
-                           ('FLOAT64', 'FLOAT64'),
-                           ('UNIXTIMEF64', 'UNIXTIMEF64'),
-                           ('INT64', 'INT64'),
-                           ('UINT64', 'UINT64'),
-                           ('UNIXTIMEI64', 'UNIXTIMEI64'),
-                           ('UNIXTIMEI32', 'UNIXTIMEI32'),
-                           ('INT32', 'INT32'),
-                           ('UINT32', 'DWORD (UINT32)'),
-                           ('UINT32', 'UINT32'),
-                           ('INT16', 'INT (INT16)'),
-                           ('INT16', 'INT16'),
-                           ('UINT16', 'WORD (UINT16)'),
-                           ('UINT16', 'UINT (UINT16)'),
-                           ('UINT16', 'UINT16'),
-                           ('BOOLEAN', 'BOOL (BOOLEAN)'),
-                           ('BOOLEAN', 'BOOLEAN'),
-                           ('STRING', 'STRING'),
-                           )
-    value_class = models.CharField(max_length=15, default='FLOAT64', verbose_name="value_class",
-                                   choices=value_class_choices)
-    name = models.CharField(default='', blank=True, max_length=255)
+    variable = models.ForeignKey("Variable", null=True, on_delete=models.CASCADE)
+    property_class_choices = (
+        (None, "other or no Class specified"),
+        ("device", "Device Property"),
+        ("data_record", "Recorded Data"),
+        ("daemon", "Daemon Property"),
+    )
+    property_class = models.CharField(
+        default=None,
+        blank=True,
+        null=True,
+        max_length=255,
+        choices=property_class_choices,
+    )
+    value_class_choices = (
+        ("FLOAT32", "REAL (FLOAT32)"),
+        ("FLOAT32", "SINGLE (FLOAT32)"),
+        ("FLOAT32", "FLOAT32"),
+        ("UNIXTIMEF32", "UNIXTIMEF32"),
+        ("FLOAT64", "LREAL (FLOAT64)"),
+        ("FLOAT64", "FLOAT  (FLOAT64)"),
+        ("FLOAT64", "DOUBLE (FLOAT64)"),
+        ("FLOAT64", "FLOAT64"),
+        ("UNIXTIMEF64", "UNIXTIMEF64"),
+        ("INT64", "INT64"),
+        ("UINT64", "UINT64"),
+        ("UNIXTIMEI64", "UNIXTIMEI64"),
+        ("UNIXTIMEI32", "UNIXTIMEI32"),
+        ("INT32", "INT32"),
+        ("UINT32", "DWORD (UINT32)"),
+        ("UINT32", "UINT32"),
+        ("INT16", "INT (INT16)"),
+        ("INT16", "INT16"),
+        ("UINT16", "WORD (UINT16)"),
+        ("UINT16", "UINT (UINT16)"),
+        ("UINT16", "UINT16"),
+        ("BOOLEAN", "BOOL (BOOLEAN)"),
+        ("BOOLEAN", "BOOLEAN"),
+        ("STRING", "STRING"),
+    )
+    value_class = models.CharField(
+        max_length=15,
+        default="FLOAT64",
+        verbose_name="value_class",
+        choices=value_class_choices,
+    )
+    name = models.CharField(default="", blank=True, max_length=255)
     value_boolean = models.BooleanField(default=False, blank=True)  # boolean
     value_int16 = models.SmallIntegerField(null=True, blank=True)  # int16, uint8, int8
-    value_int32 = models.IntegerField(null=True, blank=True)  # uint8, int16, uint16, int32
+    value_int32 = models.IntegerField(
+        null=True, blank=True
+    )  # uint8, int16, uint16, int32
     value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64
     value_float64 = models.FloatField(null=True, blank=True)  # float64
-    value_string = models.CharField(default='', blank=True, max_length=1000)
+    value_string = models.CharField(default="", blank=True, max_length=1000)
     timestamp = models.DateTimeField(blank=True, null=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET(1), blank=True, null=True)
     objects = VariablePropertyManager()
     value_min = models.FloatField(null=True, blank=True)
     value_max = models.FloatField(null=True, blank=True)
-    min_type_choices = (('lte', '<='),
-                        ('lt', '<'),
-                        )
-    max_type_choices = (('gte', '>='),
-                        ('gt', '>'),
-                        )
-    min_type = models.CharField(max_length=4, default='lte', choices=min_type_choices)
-    max_type = models.CharField(max_length=4, default='gte', choices=max_type_choices)
+    min_type_choices = (
+        ("lte", "<="),
+        ("lt", "<"),
+    )
+    max_type_choices = (
+        ("gte", ">="),
+        ("gt", ">"),
+    )
+    min_type = models.CharField(max_length=4, default="lte", choices=min_type_choices)
+    max_type = models.CharField(max_length=4, default="gte", choices=max_type_choices)
     last_modified = models.DateTimeField(auto_now=True)
-    dictionary = models.ForeignKey(Dictionary, blank=True, null=True, on_delete=models.SET_NULL)
+    dictionary = models.ForeignKey(
+        Dictionary, blank=True, null=True, on_delete=models.SET_NULL
+    )
 
     last_value = None
     value_changed = False
@@ -804,122 +1148,163 @@ class VariableProperty(models.Model):
         verbose_name_plural = "variable properties"
 
     def __str__(self):
-        return self.get_property_class_display() + ': ' + self.name
+        return self.get_property_class_display() + ": " + self.name
 
     def value(self):
         value_class = self.value_class
-        if value_class.upper() in ['STRING']:
+        if value_class.upper() in ["STRING"]:
             return self.value_string
-        elif value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
+        elif value_class.upper() in [
+            "FLOAT",
+            "FLOAT64",
+            "DOUBLE",
+            "FLOAT32",
+            "SINGLE",
+            "REAL",
+        ]:
             return self.value_float64
-        elif value_class.upper() in ['INT64', 'UINT32', 'DWORD']:
+        elif value_class.upper() in ["INT64", "UINT32", "DWORD"]:
             return self.value_int64
-        elif value_class.upper() in ['WORD', 'UINT', 'UINT16', 'INT32']:
+        elif value_class.upper() in ["WORD", "UINT", "UINT16", "INT32"]:
             return self.value_int32
-        elif value_class.upper() in ['INT16', 'INT8', 'UINT8']:
+        elif value_class.upper() in ["INT16", "INT8", "UINT8"]:
             return self.value_int16
-        elif value_class.upper() in ['BOOL', 'BOOLEAN']:
+        elif value_class.upper() in ["BOOL", "BOOLEAN"]:
             return self.value_boolean
         return None
 
     def web_key(self):
-        return '%d-%s' % (self.variable.pk, self.name.upper().replace(':', '-'))
+        return "%d-%s" % (self.variable.pk, self.name.upper().replace(":", "-"))
 
     def item_type(self):
         return "variable_property"
 
     def convert_string_value(self, value):
         if self.dictionary is None:
-            d = Dictionary(name=str(self.name) + '_auto_created')
+            d = Dictionary(name=str(self.name) + "_auto_created")
             d.save()
             self.dictionary = d
-            Variable.objects.bulk_update([self], ['dictionary'])
+            Variable.objects.bulk_update([self], ["dictionary"])
             self.refresh_from_db()
         if not len(self.dictionary.dictionaryitem_set.filter(label=str(value))):
             max_value = 0
             for di in self.dictionary.dictionaryitem_set.all():
                 max_value = max(float(max_value), float(di.value))
-            DictionaryItem(label=str(value), value=int(max_value) + 1, dictionary=self.dictionary).save()
-            #logger.debug('new value : %s' % (int(max_value) + 1))
+            DictionaryItem(
+                label=str(value), value=int(max_value) + 1, dictionary=self.dictionary
+            ).save()
+            # logger.debug('new value : %s' % (int(max_value) + 1))
             return int(max_value) + 1
         elif len(self.dictionary.dictionaryitem_set.filter(label=str(value))) == 1:
-            #logger.debug('value found : %s' % self.dictionary.dictionaryitem_set.get(label=str(value)).value)
+            # logger.debug('value found : %s' % self.dictionary.dictionaryitem_set.get(label=str(value)).value)
             return float(self.dictionary.dictionaryitem_set.get(label=str(value)).value)
         else:
-            logger.warning('%s duplicate values found of %s in dictionary %s' %
-                           (len(self.dictionary.dictionaryitem_set.filter(label=str(value))), value, self.dictionary))
-            return float(self.dictionary.dictionaryitem_set.filter(label=str(value)).first().value)
+            logger.warning(
+                "%s duplicate values found of %s in dictionary %s"
+                % (
+                    len(self.dictionary.dictionaryitem_set.filter(label=str(value))),
+                    value,
+                    self.dictionary,
+                )
+            )
+            return float(
+                self.dictionary.dictionaryitem_set.filter(label=str(value))
+                .first()
+                .value
+            )
 
 
 class Variable(models.Model):
     """
-        Stores a variable entry, related to :mod:`pyscada.Device`,
-        :mod:`pyscada.Unit`, (optional) :mod:`pyscada.Scaling`,
-        (optional) :mod:`pyscada.Color` and (optional) :mod:`pyscada.Dictionary`.
+    Stores a variable entry, related to :mod:`pyscada.Device`,
+    :mod:`pyscada.Unit`, (optional) :mod:`pyscada.Scaling`,
+    (optional) :mod:`pyscada.Color` and (optional) :mod:`pyscada.Dictionary`.
     """
+
     id = models.AutoField(primary_key=True)
     name = models.SlugField(max_length=200, verbose_name="variable name", unique=True)
-    description = models.TextField(default='', verbose_name="Description")
+    description = models.TextField(default="", verbose_name="Description")
     device = models.ForeignKey(Device, null=True, on_delete=models.CASCADE)
     active = models.BooleanField(default=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET(1))
     writeable = models.BooleanField(default=False)
-    value_class_choices = (('FLOAT32', 'REAL (FLOAT32)'),
-                           ('FLOAT32', 'SINGLE (FLOAT32)'),
-                           ('FLOAT32', 'FLOAT32'),
-                           ('UNIXTIMEF32', 'UNIXTIMEF32'),
-                           ('FLOAT64', 'LREAL (FLOAT64)'),
-                           ('FLOAT64', 'FLOAT  (FLOAT64)'),
-                           ('FLOAT64', 'DOUBLE (FLOAT64)'),
-                           ('FLOAT64', 'FLOAT64'),
-                           ('UNIXTIMEF64', 'UNIXTIMEF64'),
-                           ('FLOAT48', 'FLOAT48'),
-                           ('INT64', 'INT64'),
-                           ('UINT64', 'UINT64'),
-                           ('UNIXTIMEI64', 'UNIXTIMEI64'),
-                           ('INT48', 'INT48'),
-                           ('UNIXTIMEI32', 'UNIXTIMEI32'),
-                           ('INT32', 'INT32'),
-                           ('UINT32', 'DWORD (UINT32)'),
-                           ('UINT32', 'UINT32'),
-                           ('INT16', 'INT (INT16)'),
-                           ('INT16', 'INT16'),
-                           ('UINT16', 'WORD (UINT16)'),
-                           ('UINT16', 'UINT (UINT16)'),
-                           ('UINT16', 'UINT16'),
-                           ('INT8', 'INT8'),
-                           ('UINT8', 'UINT8'),
-                           ('BOOLEAN', 'BOOL (BOOLEAN)'),
-                           ('BOOLEAN', 'BOOLEAN'),
-                           )
-    scaling = models.ForeignKey(Scaling, null=True, blank=True, on_delete=models.SET_NULL)
-    value_class = models.CharField(max_length=15, default='FLOAT64', verbose_name="value_class",
-                                   choices=value_class_choices)
+    value_class_choices = (
+        ("FLOAT32", "REAL (FLOAT32)"),
+        ("FLOAT32", "SINGLE (FLOAT32)"),
+        ("FLOAT32", "FLOAT32"),
+        ("UNIXTIMEF32", "UNIXTIMEF32"),
+        ("FLOAT64", "LREAL (FLOAT64)"),
+        ("FLOAT64", "FLOAT  (FLOAT64)"),
+        ("FLOAT64", "DOUBLE (FLOAT64)"),
+        ("FLOAT64", "FLOAT64"),
+        ("UNIXTIMEF64", "UNIXTIMEF64"),
+        ("FLOAT48", "FLOAT48"),
+        ("INT64", "INT64"),
+        ("UINT64", "UINT64"),
+        ("UNIXTIMEI64", "UNIXTIMEI64"),
+        ("INT48", "INT48"),
+        ("UNIXTIMEI32", "UNIXTIMEI32"),
+        ("INT32", "INT32"),
+        ("UINT32", "DWORD (UINT32)"),
+        ("UINT32", "UINT32"),
+        ("INT16", "INT (INT16)"),
+        ("INT16", "INT16"),
+        ("UINT16", "WORD (UINT16)"),
+        ("UINT16", "UINT (UINT16)"),
+        ("UINT16", "UINT16"),
+        ("INT8", "INT8"),
+        ("UINT8", "UINT8"),
+        ("BOOLEAN", "BOOL (BOOLEAN)"),
+        ("BOOLEAN", "BOOLEAN"),
+    )
+    scaling = models.ForeignKey(
+        Scaling, null=True, blank=True, on_delete=models.SET_NULL
+    )
+    value_class = models.CharField(
+        max_length=15,
+        default="FLOAT64",
+        verbose_name="value_class",
+        choices=value_class_choices,
+    )
     cov_increment = models.FloatField(default=0, verbose_name="COV")
-    byte_order_choices = (('default', 'default (specified by device byte order)',),
-                          ('1-0-3-2', '1-0-3-2'),
-                          ('0-1-2-3', '0-1-2-3'),
-                          ('2-3-0-1', '2-3-0-1'),
-                          ('3-2-1-0', '3-2-1-0'),
-                          )
-    short_name = models.CharField(default='', max_length=80, verbose_name="variable short name", blank=True)
-    chart_line_color = models.ForeignKey(Color, null=True, default=None, blank=True, on_delete=models.SET_NULL)
-    chart_line_thickness_choices = ((3, '3Px'),)
-    chart_line_thickness = models.PositiveSmallIntegerField(default=3, choices=chart_line_thickness_choices)
+    byte_order_choices = (
+        (
+            "default",
+            "default (specified by device byte order)",
+        ),
+        ("1-0-3-2", "1-0-3-2"),
+        ("0-1-2-3", "0-1-2-3"),
+        ("2-3-0-1", "2-3-0-1"),
+        ("3-2-1-0", "3-2-1-0"),
+    )
+    short_name = models.CharField(
+        default="", max_length=80, verbose_name="variable short name", blank=True
+    )
+    chart_line_color = models.ForeignKey(
+        Color, null=True, default=None, blank=True, on_delete=models.SET_NULL
+    )
+    chart_line_thickness_choices = ((3, "3Px"),)
+    chart_line_thickness = models.PositiveSmallIntegerField(
+        default=3, choices=chart_line_thickness_choices
+    )
     value_min = models.FloatField(null=True, blank=True)
     value_max = models.FloatField(null=True, blank=True)
-    min_type_choices = (('lte', '<='),
-                        ('lt', '<'),
-                        )
-    max_type_choices = (('gte', '>='),
-                        ('gt', '>'),
-                        )
-    min_type = models.CharField(max_length=4, default='lte', choices=min_type_choices)
-    max_type = models.CharField(max_length=4, default='gte', choices=max_type_choices)
-    dictionary = models.ForeignKey(Dictionary, blank=True, null=True, on_delete=models.SET_NULL)
+    min_type_choices = (
+        ("lte", "<="),
+        ("lt", "<"),
+    )
+    max_type_choices = (
+        ("gte", ">="),
+        ("gt", ">"),
+    )
+    min_type = models.CharField(max_length=4, default="lte", choices=min_type_choices)
+    max_type = models.CharField(max_length=4, default="gte", choices=max_type_choices)
+    dictionary = models.ForeignKey(
+        Dictionary, blank=True, null=True, on_delete=models.SET_NULL
+    )
 
     def hmi_name(self):
-        if self.short_name and self.short_name != '-' and self.short_name != '':
+        if self.short_name and self.short_name != "-" and self.short_name != "":
             return self.short_name
         else:
             return self.name
@@ -936,7 +1321,7 @@ class Variable(models.Model):
                 c = c % c_id
             return Color.objects.get(id=c_id).color_code()
 
-    '''
+    """
     M: Mantissa
     E: Exponent
     S: Sign
@@ -946,9 +1331,11 @@ class Variable(models.Model):
     0-1-2-3 MMMMMMMM MMMMMMMM EMMMMMMM SEEEEEEE
     2-3-0-1 EMMMMMMM SEEEEEEE MMMMMMMM MMMMMMMM
     3-2-1-0 SEEEEEEE EMMMMMMM MMMMMMMM MMMMMMMM
-    '''
+    """
 
-    byte_order = models.CharField(max_length=15, default='default', choices=byte_order_choices)
+    byte_order = models.CharField(
+        max_length=15, default="default", choices=byte_order_choices
+    )
 
     # for RecodedVariable
     value = None
@@ -980,19 +1367,44 @@ class Variable(models.Model):
         `FLOAT48` 'INT48'                  	48	3 WORD
         `FLOAT64` `LREAL` `FLOAT` `DOUBLE`	64	4 WORD
         """
-        if self.value_class.upper() in ['FLOAT64', 'DOUBLE', 'FLOAT', 'LREAL', 'UNIXTIMEI64', 'UNIXTIMEF64', 'INT64',
-                                        'UINT64']:
+        if self.value_class.upper() in [
+            "FLOAT64",
+            "DOUBLE",
+            "FLOAT",
+            "LREAL",
+            "UNIXTIMEI64",
+            "UNIXTIMEF64",
+            "INT64",
+            "UINT64",
+        ]:
             return 64
-        if self.value_class.upper() in ['FLOAT48', 'INT48']:
+        if self.value_class.upper() in ["FLOAT48", "INT48"]:
             return 48
-        if self.value_class.upper() in ['FLOAT32', 'SINGLE', 'INT32', 'UINT32', 'DWORD', 'BCD32', 'BCD24', 'REAL',
-                                        'UNIXTIMEI32', 'UNIXTIMEF32']:
+        if self.value_class.upper() in [
+            "FLOAT32",
+            "SINGLE",
+            "INT32",
+            "UINT32",
+            "DWORD",
+            "BCD32",
+            "BCD24",
+            "REAL",
+            "UNIXTIMEI32",
+            "UNIXTIMEF32",
+        ]:
             return 32
-        if self.value_class.upper() in ['INT16', 'INT', 'WORD', 'UINT', 'UINT16', 'BCD16']:
+        if self.value_class.upper() in [
+            "INT16",
+            "INT",
+            "WORD",
+            "UINT",
+            "UINT16",
+            "BCD16",
+        ]:
             return 16
-        if self.value_class.upper() in ['INT8', 'UINT8', 'BYTE', 'BCD8']:
+        if self.value_class.upper() in ["INT8", "UINT8", "BYTE", "BCD8"]:
             return 8
-        if self.value_class.upper() in ['BOOL', 'BOOLEAN']:
+        if self.value_class.upper() in ["BOOL", "BOOLEAN"]:
             return 1
         else:
             return 16
@@ -1002,7 +1414,7 @@ class Variable(models.Model):
         get the last value and timestamp from the database
         """
         pv = self.get_protocol_variable()
-        if use_protocol_variable and pv is not None and hasattr(pv, 'query_prev_value'):
+        if use_protocol_variable and pv is not None and hasattr(pv, "query_prev_value"):
             return pv.query_prev_value(time_min)
 
         time_max = time.time() * 2097152 * 1000 + 2097151
@@ -1028,12 +1440,18 @@ class Variable(models.Model):
             if type(value) == str:
                 value = self.convert_string_value(value)
             else:
-                logger.info("Value read for %s format not supported : %s" % (self, type(value)))
+                logger.info(
+                    "Value read for %s format not supported : %s" % (self, type(value))
+                )
                 value = None
         except TypeError:
             pass
 
-        if self.scaling is None or value is None or self.value_class.upper() in ['BOOL', 'BOOLEAN']:
+        if (
+            self.scaling is None
+            or value is None
+            or self.value_class.upper() in ["BOOL", "BOOLEAN"]
+        ):
             self.value = value
         else:
             self.value = self.scaling.scale_value(value)
@@ -1066,161 +1484,241 @@ class Variable(models.Model):
 
     def decode_value(self, value):
         #
-        if self.byte_order == 'default':
+        if self.byte_order == "default":
             byte_order = self.device.byte_order
         else:
             byte_order = self.byte_order
 
-        if self.value_class.upper() in ['FLOAT32', 'SINGLE', 'REAL', 'UNIXTIMEF32']:
-            target_format = 'f'
-            source_format = '2H'
-        elif self.value_class.upper() in ['UINT32', 'DWORD', 'UNIXTIMEI32']:
-            target_format = 'I'
-            source_format = '2H'
-        elif self.value_class.upper() in ['INT32']:
-            target_format = 'i'
-            source_format = '2H'
-        elif self.value_class.upper() in ['FLOAT48']:
-            target_format = 'f'
-            source_format = '3H'
-        elif self.value_class.upper() in ['INT48']:
-            target_format = 'q'
-            source_format = '3H'
-        elif self.value_class.upper() in ['FLOAT64', 'DOUBLE', 'FLOAT', 'LREAL', 'UNIXTIMEF64']:
-            target_format = 'd'
-            source_format = '4H'
-        elif self.value_class.upper() in ['UINT64']:
-            target_format = 'Q'
-            source_format = '4H'
-        elif self.value_class.upper() in ['INT64', 'UNIXTIMEI64']:
-            target_format = 'q'
-            source_format = '4H'
-        elif self.value_class.upper() in ['INT16', 'INT']:
-            if byte_order in ['1-0-3-2', '3-2-1-0']:
+        if self.value_class.upper() in ["FLOAT32", "SINGLE", "REAL", "UNIXTIMEF32"]:
+            target_format = "f"
+            source_format = "2H"
+        elif self.value_class.upper() in ["UINT32", "DWORD", "UNIXTIMEI32"]:
+            target_format = "I"
+            source_format = "2H"
+        elif self.value_class.upper() in ["INT32"]:
+            target_format = "i"
+            source_format = "2H"
+        elif self.value_class.upper() in ["FLOAT48"]:
+            target_format = "f"
+            source_format = "3H"
+        elif self.value_class.upper() in ["INT48"]:
+            target_format = "q"
+            source_format = "3H"
+        elif self.value_class.upper() in [
+            "FLOAT64",
+            "DOUBLE",
+            "FLOAT",
+            "LREAL",
+            "UNIXTIMEF64",
+        ]:
+            target_format = "d"
+            source_format = "4H"
+        elif self.value_class.upper() in ["UINT64"]:
+            target_format = "Q"
+            source_format = "4H"
+        elif self.value_class.upper() in ["INT64", "UNIXTIMEI64"]:
+            target_format = "q"
+            source_format = "4H"
+        elif self.value_class.upper() in ["INT16", "INT"]:
+            if byte_order in ["1-0-3-2", "3-2-1-0"]:
                 # only convert to from uint to int
-                return unpack('h', pack('H', value[0]))[0]
+                return unpack("h", pack("H", value[0]))[0]
             else:
                 # swap bytes
-                return unpack('>h', pack('<H', value[0]))[0]
-        elif self.value_class.upper() in ['BCD32', 'BCD24', 'BCD16']:
-            target_format = 'f'
-            source_format = '2H'
+                return unpack(">h", pack("<H", value[0]))[0]
+        elif self.value_class.upper() in ["BCD32", "BCD24", "BCD16"]:
+            target_format = "f"
+            source_format = "2H"
             return value[0]
         else:
             return value[0]
 
         #
-        if source_format == '2H':
-            if byte_order == '1-0-3-2':
+        if source_format == "2H":
+            if byte_order == "1-0-3-2":
                 return unpack(target_format, pack(source_format, value[0], value[1]))[0]
-            if byte_order == '3-2-1-0':
+            if byte_order == "3-2-1-0":
                 return unpack(target_format, pack(source_format, value[1], value[0]))[0]
-            if byte_order == '0-1-2-3':
-                return unpack(target_format, pack(source_format, unpack('>H', pack('<H', value[0]))[0],
-                                                  unpack('>H', pack('<H', value[1]))[0]))[0]
-            if byte_order == '2-3-0-1':
-                return unpack(target_format, pack(source_format, unpack('>H', pack('<H', value[1]))[0],
-                                                  unpack('>H', pack('<H', value[0]))[0]))[0]
-        elif source_format == '3H':
-            source_format = '4H'
-            if byte_order == '1-0-3-2':
-                return unpack(target_format, pack(source_format, 0, value[0], value[1], value[2]))[0]
-            if byte_order == '3-2-1-0':
-                return unpack(target_format, pack(source_format, value[2], value[1], value[0], 0))[0]
-            if byte_order == '0-1-2-3':
-                return unpack(target_format, pack(source_format, 0, unpack('>H', pack('<H', value[0]))[0],
-                                                  unpack('>H', pack('<H', value[1]))[0],
-                                                  unpack('>H', pack('<H', value[2]))[0]))[0]
-            if byte_order == '2-3-0-1':
-                return unpack(target_format, pack(source_format, 0, unpack('>H', pack('<H', value[2]))[0],
-                                                  unpack('>H', pack('<H', value[1]))[0],
-                                                  unpack('>H', pack('<H', value[0]))[0]))[0]
-            source_format = '3H'
+            if byte_order == "0-1-2-3":
+                return unpack(
+                    target_format,
+                    pack(
+                        source_format,
+                        unpack(">H", pack("<H", value[0]))[0],
+                        unpack(">H", pack("<H", value[1]))[0],
+                    ),
+                )[0]
+            if byte_order == "2-3-0-1":
+                return unpack(
+                    target_format,
+                    pack(
+                        source_format,
+                        unpack(">H", pack("<H", value[1]))[0],
+                        unpack(">H", pack("<H", value[0]))[0],
+                    ),
+                )[0]
+        elif source_format == "3H":
+            source_format = "4H"
+            if byte_order == "1-0-3-2":
+                return unpack(
+                    target_format, pack(source_format, 0, value[0], value[1], value[2])
+                )[0]
+            if byte_order == "3-2-1-0":
+                return unpack(
+                    target_format, pack(source_format, value[2], value[1], value[0], 0)
+                )[0]
+            if byte_order == "0-1-2-3":
+                return unpack(
+                    target_format,
+                    pack(
+                        source_format,
+                        0,
+                        unpack(">H", pack("<H", value[0]))[0],
+                        unpack(">H", pack("<H", value[1]))[0],
+                        unpack(">H", pack("<H", value[2]))[0],
+                    ),
+                )[0]
+            if byte_order == "2-3-0-1":
+                return unpack(
+                    target_format,
+                    pack(
+                        source_format,
+                        0,
+                        unpack(">H", pack("<H", value[2]))[0],
+                        unpack(">H", pack("<H", value[1]))[0],
+                        unpack(">H", pack("<H", value[0]))[0],
+                    ),
+                )[0]
+            source_format = "3H"
         else:
-            if byte_order == '1-0-3-2':
-                return unpack(target_format, pack(source_format, value[0], value[1], value[2], value[3]))[0]
-            if byte_order == '3-2-1-0':
-                return unpack(target_format, pack(source_format, value[3], value[2], value[1], value[0]))[0]
-            if byte_order == '0-1-2-3':
-                return unpack(target_format, pack(source_format, unpack('>H', pack('<H', value[0])),
-                                                  unpack('>H', pack('<H', value[1])),
-                                                  unpack('>H', pack('<H', value[2])),
-                                                  unpack('>H', pack('<H', value[3]))))[0]
-            if byte_order == '2-3-0-1':
-                return unpack(target_format, pack(source_format, unpack('>H', pack('<H', value[3])),
-                                                  unpack('>H', pack('<H', value[2])),
-                                                  unpack('>H', pack('<H', value[1])),
-                                                  unpack('>H', pack('<H', value[0]))))[0]
+            if byte_order == "1-0-3-2":
+                return unpack(
+                    target_format,
+                    pack(source_format, value[0], value[1], value[2], value[3]),
+                )[0]
+            if byte_order == "3-2-1-0":
+                return unpack(
+                    target_format,
+                    pack(source_format, value[3], value[2], value[1], value[0]),
+                )[0]
+            if byte_order == "0-1-2-3":
+                return unpack(
+                    target_format,
+                    pack(
+                        source_format,
+                        unpack(">H", pack("<H", value[0])),
+                        unpack(">H", pack("<H", value[1])),
+                        unpack(">H", pack("<H", value[2])),
+                        unpack(">H", pack("<H", value[3])),
+                    ),
+                )[0]
+            if byte_order == "2-3-0-1":
+                return unpack(
+                    target_format,
+                    pack(
+                        source_format,
+                        unpack(">H", pack("<H", value[3])),
+                        unpack(">H", pack("<H", value[2])),
+                        unpack(">H", pack("<H", value[1])),
+                        unpack(">H", pack("<H", value[0])),
+                    ),
+                )[0]
 
     def encode_value(self, value):
-        if self.value_class.upper() in ['FLOAT32', 'SINGLE', 'REAL', 'UNIXTIMEF32']:
-            source_format = 'f'
-            target_format = '2H'
-        elif self.value_class.upper() in ['UINT32', 'DWORD', 'UNIXTIMEI32']:
-            source_format = 'I'
-            target_format = '2H'
-        elif self.value_class.upper() in ['INT32']:
-            source_format = 'i'
-            target_format = '2H'
-        elif self.value_class.upper() in ['FLOAT48']:
-            source_format = 'f'
-            target_format = '3H'
-        elif self.value_class.upper() in ['INT48']:
-            source_format = 'q'
-            target_format = '3H'
-        elif self.value_class.upper() in ['FLOAT64', 'DOUBLE', 'FLOAT', 'LREAL', 'UNIXTIMEF64']:
-            source_format = 'd'
-            target_format = '4H'
-        elif self.value_class.upper() in ['UINT64']:
-            source_format = 'Q'
-            target_format = '4H'
-        elif self.value_class.upper() in ['INT64', 'UNIXTIMEI64']:
-            source_format = 'q'
-            target_format = '4H'
+        if self.value_class.upper() in ["FLOAT32", "SINGLE", "REAL", "UNIXTIMEF32"]:
+            source_format = "f"
+            target_format = "2H"
+        elif self.value_class.upper() in ["UINT32", "DWORD", "UNIXTIMEI32"]:
+            source_format = "I"
+            target_format = "2H"
+        elif self.value_class.upper() in ["INT32"]:
+            source_format = "i"
+            target_format = "2H"
+        elif self.value_class.upper() in ["FLOAT48"]:
+            source_format = "f"
+            target_format = "3H"
+        elif self.value_class.upper() in ["INT48"]:
+            source_format = "q"
+            target_format = "3H"
+        elif self.value_class.upper() in [
+            "FLOAT64",
+            "DOUBLE",
+            "FLOAT",
+            "LREAL",
+            "UNIXTIMEF64",
+        ]:
+            source_format = "d"
+            target_format = "4H"
+        elif self.value_class.upper() in ["UINT64"]:
+            source_format = "Q"
+            target_format = "4H"
+        elif self.value_class.upper() in ["INT64", "UNIXTIMEI64"]:
+            source_format = "q"
+            target_format = "4H"
 
-        elif self.value_class.upper() in ['BCD32', 'BCD24', 'BCD16']:
-            source_format = 'f'
-            target_format = '2H'
+        elif self.value_class.upper() in ["BCD32", "BCD24", "BCD16"]:
+            source_format = "f"
+            target_format = "2H"
             return value[0]
         else:
             return value[0]
         output = unpack(target_format, pack(source_format, value))
         #
-        if self.byte_order == 'default':
+        if self.byte_order == "default":
             byte_order = self.device.byte_order
         else:
             byte_order = self.byte_order
-        if target_format == '2H':
-            if byte_order == '1-0-3-2':
+        if target_format == "2H":
+            if byte_order == "1-0-3-2":
                 return output
-            if byte_order == '3-2-1-0':
+            if byte_order == "3-2-1-0":
                 return [output[1], output[0]]
-            if byte_order == '0-1-2-3':
-                return [unpack('>H', pack('<H', output[0])), unpack('>H', pack('<H', output[1]))]
-            if byte_order == '2-3-0-1':
-                return [unpack('>H', pack('<H', output[1])), unpack('>H', pack('<H', output[0]))]
-        elif target_format == '3H':
-                if byte_order == '1-0-3-2':
-                    return output
-                if byte_order == '3-2-1-0':
-                    return [output[2], output[1], output[0]]
-                if byte_order == '0-1-2-3':
-                    return [unpack('>H', pack('<H', output[0]))[0], unpack('>H', pack('<H', output[1]))[0],
-                            unpack('>H', pack('<H', output[2]))[0]]
-                if byte_order == '2-3-0-1':
-                    return [unpack('>H', pack('<H', output[2]))[0],
-                            unpack('>H', pack('<H', output[1]))[0], unpack('>H', pack('<H', output[0]))[0]]
-        else:
-            if byte_order == '1-0-3-2':
+            if byte_order == "0-1-2-3":
+                return [
+                    unpack(">H", pack("<H", output[0])),
+                    unpack(">H", pack("<H", output[1])),
+                ]
+            if byte_order == "2-3-0-1":
+                return [
+                    unpack(">H", pack("<H", output[1])),
+                    unpack(">H", pack("<H", output[0])),
+                ]
+        elif target_format == "3H":
+            if byte_order == "1-0-3-2":
                 return output
-            if byte_order == '3-2-1-0':
+            if byte_order == "3-2-1-0":
+                return [output[2], output[1], output[0]]
+            if byte_order == "0-1-2-3":
+                return [
+                    unpack(">H", pack("<H", output[0]))[0],
+                    unpack(">H", pack("<H", output[1]))[0],
+                    unpack(">H", pack("<H", output[2]))[0],
+                ]
+            if byte_order == "2-3-0-1":
+                return [
+                    unpack(">H", pack("<H", output[2]))[0],
+                    unpack(">H", pack("<H", output[1]))[0],
+                    unpack(">H", pack("<H", output[0]))[0],
+                ]
+        else:
+            if byte_order == "1-0-3-2":
+                return output
+            if byte_order == "3-2-1-0":
                 return [output[3], output[2], output[1], output[0]]
-            if byte_order == '0-1-2-3':
-                return [unpack('>H', pack('<H', output[0])), unpack('>H', pack('<H', output[1])),
-                        unpack('>H', pack('<H', output[2])), unpack('>H', pack('<H', output[3]))]
-            if byte_order == '2-3-0-1':
-                return [unpack('>H', pack('<H', output[3])), unpack('>H', pack('<H', output[2])),
-                        unpack('>H', pack('<H', output[1])), unpack('>H', pack('<H', output[0]))]
+            if byte_order == "0-1-2-3":
+                return [
+                    unpack(">H", pack("<H", output[0])),
+                    unpack(">H", pack("<H", output[1])),
+                    unpack(">H", pack("<H", output[2])),
+                    unpack(">H", pack("<H", output[3])),
+                ]
+            if byte_order == "2-3-0-1":
+                return [
+                    unpack(">H", pack("<H", output[3])),
+                    unpack(">H", pack("<H", output[2])),
+                    unpack(">H", pack("<H", output[1])),
+                    unpack(">H", pack("<H", output[0])),
+                ]
 
     def create_recorded_data_element(self):
         """
@@ -1228,7 +1726,9 @@ class Variable(models.Model):
         """
         if self.store_value and self.value is not None:
             # self._send_cov_notification(self.timestamp, self.value)
-            return RecordedData(timestamp=self.timestamp, variable=self, value=self.value)
+            return RecordedData(
+                timestamp=self.timestamp, variable=self, value=self.value
+            )
         else:
             return None
 
@@ -1242,47 +1742,84 @@ class Variable(models.Model):
             pass
         except:
             logger.error(
-                f'{self.name}, unhandled exception in COV Receiver application', exc_info=True)
+                f"{self.name}, unhandled exception in COV Receiver application",
+                exc_info=True,
+            )
 
     def convert_string_value(self, value):
         try:
             return float(value)
         except ValueError:
             if self.dictionary is None:
-                d = Dictionary(name=str(self.name) + '_auto_created')
+                d = Dictionary(name=str(self.name) + "_auto_created")
                 d.save()
                 self.dictionary = d
-                Variable.objects.bulk_update([self], ['dictionary'])
+                Variable.objects.bulk_update([self], ["dictionary"])
                 self.refresh_from_db()
             if not len(self.dictionary.dictionaryitem_set.filter(label=str(value))):
                 max_value = 0
                 for di in self.dictionary.dictionaryitem_set.all():
                     max_value = max(float(max_value), float(di.value))
-                DictionaryItem(label=str(value), value=int(max_value) + 1, dictionary=self.dictionary).save()
-                #logger.debug('new value : %s' % (int(max_value) + 1))
+                DictionaryItem(
+                    label=str(value),
+                    value=int(max_value) + 1,
+                    dictionary=self.dictionary,
+                ).save()
+                # logger.debug('new value : %s' % (int(max_value) + 1))
                 return int(max_value) + 1
             elif len(self.dictionary.dictionaryitem_set.filter(label=str(value))) == 1:
-                #logger.debug('value found : %s' % self.dictionary.dictionaryitem_set.get(label=str(value)).value)
-                return float(self.dictionary.dictionaryitem_set.get(label=str(value)).value)
+                # logger.debug('value found : %s' % self.dictionary.dictionaryitem_set.get(label=str(value)).value)
+                return float(
+                    self.dictionary.dictionaryitem_set.get(label=str(value)).value
+                )
             else:
-                logger.warning('%s duplicate values found of %s in dictionary %s' %
-                               (len(self.dictionary.dictionaryitem_set.filter(label=str(value))), value, self.dictionary))
-                return float(self.dictionary.dictionaryitem_set.filter(label=str(value)).first().value)
+                logger.warning(
+                    "%s duplicate values found of %s in dictionary %s"
+                    % (
+                        len(
+                            self.dictionary.dictionaryitem_set.filter(label=str(value))
+                        ),
+                        value,
+                        self.dictionary,
+                    )
+                )
+                return float(
+                    self.dictionary.dictionaryitem_set.filter(label=str(value))
+                    .first()
+                    .value
+                )
 
-    def _get_objects_for_html(self, list_to_append=None, obj=None, exclude_model_names=None):
+    def _get_objects_for_html(
+        self, list_to_append=None, obj=None, exclude_model_names=None
+    ):
         list_to_append = get_objects_for_html(list_to_append, self, exclude_model_names)
-        if hasattr(self, 'calculatedvariableselector'):
-            list_to_append = self.calculatedvariableselector._get_objects_for_html(list_to_append, None, ['main_variable'])
-        if hasattr(self, 'calculatedvariable'):
-            list_to_append = get_objects_for_html(list_to_append, self.calculatedvariable, ['variable_calculated_fields', 'store_variable'])
+        if hasattr(self, "calculatedvariableselector"):
+            list_to_append = self.calculatedvariableselector._get_objects_for_html(
+                list_to_append, None, ["main_variable"]
+            )
+        if hasattr(self, "calculatedvariable"):
+            list_to_append = get_objects_for_html(
+                list_to_append,
+                self.calculatedvariable,
+                ["variable_calculated_fields", "store_variable"],
+            )
 
         return list_to_append
 
     def get_protocol_variable(self):
-        related_variables = [field for field in Variable._meta.get_fields() if issubclass(type(field), OneToOneRel)]
+        related_variables = [
+            field
+            for field in Variable._meta.get_fields()
+            if issubclass(type(field), OneToOneRel)
+        ]
         for v in related_variables:
             try:
-                if hasattr(self, v.name) and hasattr(getattr(self, v.name), 'protocol_id') and hasattr(self, "device") and getattr(self, v.name).protocol_id == self.device.protocol.id:
+                if (
+                    hasattr(self, v.name)
+                    and hasattr(getattr(self, v.name), "protocol_id")
+                    and hasattr(self, "device")
+                    and getattr(self, v.name).protocol_id == self.device.protocol.id
+                ):
                     return getattr(self, v.name)
             except ProgrammingError:
                 pass
@@ -1292,13 +1829,15 @@ class Variable(models.Model):
 def validate_nonzero(value):
     if value == 0:
         raise ValidationError(
-            _('Quantity %(value)s is not allowed'),
-            params={'value': value},
+            _("Quantity %(value)s is not allowed"),
+            params={"value": value},
         )
 
 
 def start_from_default():
-    return make_aware(datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time()))
+    return make_aware(
+        datetime.datetime.combine(datetime.date.today(), datetime.datetime.min.time())
+    )
 
 
 class PeriodicField(models.Model):
@@ -1307,64 +1846,78 @@ class PeriodicField(models.Model):
     Example: - store the min of each month.
     - store difference of each day between 9am an 8:59am
     """
-    type_choices = ((0, 'min'),
-                    (1, 'max'),
-                    (2, 'total'),
-                    (3, 'difference'),
-                    (4, 'difference percent'),
-                    (5, 'delta'),
-                    (6, 'mean'),
-                    (7, 'first'),
-                    (8, 'last'),
-                    (9, 'count'),
-                    (10, 'count value'),
-                    (11, 'range'),
-                    (12, 'step'),
-                    (13, 'change count'),
-                    (14, 'distinct count'),
-                    )
-    type = models.SmallIntegerField(choices=type_choices,
-                                    help_text="Min: Minimum value of a field<br>"
-                                              "Max: Maximum value of a field<br>"
-                                              "Total: Sum of all values in a field<br>"
-                                              "Difference: Difference between first and last value of a field<br>"
-                                              "Difference percent: Percentage change between "
-                                              "first and last value of a field<br>"
-                                              "Delta: Cumulative change in value, only counts increments<br>"
-                                              "Mean: Mean value of all values in a field<br>"
-                                              "First: First value in a field<br>"
-                                              "Last: Last value in a field<br>"
-                                              "Count: Number of values in a field<br>"
-                                              "Count value: Number of a value in a field<br>"
-                                              "Range: Difference between maximum and minimum values of a field<br>"
-                                              "Step: Minimal interval between values of a field<br>"
-                                              "Change count: Number of times the field’s value changes<br>"
-                                              "Distinct count: Number of unique values in a field")
-    property = models.CharField(default='', blank=True, null=True,
-                                max_length=255, help_text="Min: superior or equal this value, ex: 53.5 "
-                                                          "(use >53.5 for strictly superior)<br>"
-                                                          "Max: lower or equal this value, ex: 53.5 "
-                                                          "(use <53.5 for strictly lower)<br>"
-                                                          "Count value : enter the value to count")
-    start_from = models.DateTimeField(default=start_from_default,
-                                      help_text="Calculate from this DateTime and then each period_factor*period")
-    period_choices = ((0, 'second'),
-                      (1, 'minute'),
-                      (2, 'hour'),
-                      (3, 'day'),
-                      (4, 'week'),
-                      (5, 'month'),
-                      (6, 'year'),
-                      )
+
+    type_choices = (
+        (0, "min"),
+        (1, "max"),
+        (2, "total"),
+        (3, "difference"),
+        (4, "difference percent"),
+        (5, "delta"),
+        (6, "mean"),
+        (7, "first"),
+        (8, "last"),
+        (9, "count"),
+        (10, "count value"),
+        (11, "range"),
+        (12, "step"),
+        (13, "change count"),
+        (14, "distinct count"),
+    )
+    type = models.SmallIntegerField(
+        choices=type_choices,
+        help_text="Min: Minimum value of a field<br>"
+        "Max: Maximum value of a field<br>"
+        "Total: Sum of all values in a field<br>"
+        "Difference: Difference between first and last value of a field<br>"
+        "Difference percent: Percentage change between "
+        "first and last value of a field<br>"
+        "Delta: Cumulative change in value, only counts increments<br>"
+        "Mean: Mean value of all values in a field<br>"
+        "First: First value in a field<br>"
+        "Last: Last value in a field<br>"
+        "Count: Number of values in a field<br>"
+        "Count value: Number of a value in a field<br>"
+        "Range: Difference between maximum and minimum values of a field<br>"
+        "Step: Minimal interval between values of a field<br>"
+        "Change count: Number of times the field’s value changes<br>"
+        "Distinct count: Number of unique values in a field",
+    )
+    property = models.CharField(
+        default="",
+        blank=True,
+        null=True,
+        max_length=255,
+        help_text="Min: superior or equal this value, ex: 53.5 "
+        "(use >53.5 for strictly superior)<br>"
+        "Max: lower or equal this value, ex: 53.5 "
+        "(use <53.5 for strictly lower)<br>"
+        "Count value : enter the value to count",
+    )
+    start_from = models.DateTimeField(
+        default=start_from_default,
+        help_text="Calculate from this DateTime and then each period_factor*period",
+    )
+    period_choices = (
+        (0, "second"),
+        (1, "minute"),
+        (2, "hour"),
+        (3, "day"),
+        (4, "week"),
+        (5, "month"),
+        (6, "year"),
+    )
     period = models.SmallIntegerField(choices=period_choices)
-    period_factor = models.PositiveSmallIntegerField(default=1, validators=[validate_nonzero],
-                                                     help_text='Example: set to 2 and choose '
-                                                               'minute to have a 2 minutes period')
+    period_factor = models.PositiveSmallIntegerField(
+        default=1,
+        validators=[validate_nonzero],
+        help_text="Example: set to 2 and choose " "minute to have a 2 minutes period",
+    )
 
     def __str__(self):
         s = self.type_choices[self.type][1] + "-"
-        if self.property != '' and self.property is not None:
-            s += str(self.property).replace('<', 'lt').replace('>', 'gt') + "-"
+        if self.property != "" and self.property is not None:
+            s += str(self.property).replace("<", "lt").replace(">", "gt") + "-"
         s += str(self.period_factor) + self.period_choices[self.period][1]
         if self.period_factor > 1:
             s += "s"
@@ -1372,14 +1925,15 @@ class PeriodicField(models.Model):
         return s
 
     def validate_unique(self, exclude=None):
-        qs = PeriodicField.objects.filter(type=self.type,
-                                          property=self.property,
-                                          start_from=self.start_from,
-                                          period=self.period,
-                                          period_factor=self.period_factor,
-                                          ).exclude(id=self.id)
+        qs = PeriodicField.objects.filter(
+            type=self.type,
+            property=self.property,
+            start_from=self.start_from,
+            period=self.period,
+            period_factor=self.period_factor,
+        ).exclude(id=self.id)
         if len(qs):
-            raise ValidationError('This periodic field already exist.')
+            raise ValidationError("This periodic field already exist.")
 
 
 class CalculatedVariableSelector(models.Model):
@@ -1394,12 +1948,20 @@ class CalculatedVariableSelector(models.Model):
             d = Device.objects.get(short_name=self.dname)
         except Device.DoesNotExist:
             d = Device.objects.create(
-            short_name=self.dname,
-            description="Device used to store calculated variables",
-            protocol_id=1)
-        sv_name = v.name[:Variable._meta.get_field('name').max_length - len(str(period).replace(":", "-")) - 1] \
-            + "-" + str(period).replace(":", "-")
-        sv_name = sv_name[:Variable._meta.get_field('name').max_length]
+                short_name=self.dname,
+                description="Device used to store calculated variables",
+                protocol_id=1,
+            )
+        sv_name = (
+            v.name[
+                : Variable._meta.get_field("name").max_length
+                - len(str(period).replace(":", "-"))
+                - 1
+            ]
+            + "-"
+            + str(period).replace(":", "-")
+        )
+        sv_name = sv_name[: Variable._meta.get_field("name").max_length]
         if len(Variable.objects.filter(name=sv_name)) == 0:
             v.id = None
             v.name = sv_name
@@ -1408,10 +1970,12 @@ class CalculatedVariableSelector(models.Model):
             v.cov_increment = -1
             v.device_id = d.id
             v.scaling = None
-            v.value_class = 'FLOAT64'
+            v.value_class = "FLOAT64"
             v.save()
             logger.debug("Create CalculatedVariable: " + sv_name)
-            pv = CalculatedVariable(store_variable=v, variable_calculated_fields=self, period=period)
+            pv = CalculatedVariable(
+                store_variable=v, variable_calculated_fields=self, period=period
+            )
         else:
             pv = None
 
@@ -1425,26 +1989,36 @@ class CalculatedVariableSelector(models.Model):
             if cv is not None:
                 cvs.append(cv)
 
-        #logger.debug(cvs)
+        # logger.debug(cvs)
         CalculatedVariable.objects.bulk_create(cvs)
 
     def __str__(self):
         return self.main_variable.name
 
-    def _get_objects_for_html(self, list_to_append=None, obj=None, exclude_model_names=None):
+    def _get_objects_for_html(
+        self, list_to_append=None, obj=None, exclude_model_names=None
+    ):
         list_to_append = get_objects_for_html(list_to_append, self, exclude_model_names)
         for calculatedvariable in self.calculatedvariable_set.all():
-            list_to_append = get_objects_for_html(list_to_append, calculatedvariable, ['variable_calculated_fields',])
+            list_to_append = get_objects_for_html(
+                list_to_append,
+                calculatedvariable,
+                [
+                    "variable_calculated_fields",
+                ],
+            )
 
         return list_to_append
 
 
 class CalculatedVariable(models.Model):
     store_variable = models.OneToOneField(Variable, on_delete=models.CASCADE)
-    variable_calculated_fields = models.ForeignKey(CalculatedVariableSelector, on_delete=models.CASCADE)
+    variable_calculated_fields = models.ForeignKey(
+        CalculatedVariableSelector, on_delete=models.CASCADE
+    )
     period = models.ForeignKey(PeriodicField, on_delete=models.CASCADE)
     last_check = models.DateTimeField(blank=True, null=True)
-    state = models.CharField(default='', max_length=100)
+    state = models.CharField(default="", max_length=100)
 
     def __str__(self):
         return self.store_variable.name
@@ -1453,13 +2027,15 @@ class CalculatedVariable(models.Model):
         if self.last_check is not None:
             self.check_period(self.last_check, now(), force_write, add_partial_info)
         else:
-            self.check_period(self.period.start_from, now(), force_write, add_partial_info)
+            self.check_period(
+                self.period.start_from, now(), force_write, add_partial_info
+            )
 
     def check_period(self, d1, d2, force_write=False, add_partial_info=False):
-        #logger.debug("Check period of %s [%s - %s]" % (self.store_variable, d1, d2))
+        # logger.debug("Check period of %s [%s - %s]" % (self.store_variable, d1, d2))
         self.state = "Checking [%s to %s]" % (d1, d2)
         self.state = self.state[0:100]
-        self.save(update_fields=['state'])
+        self.save(update_fields=["state"])
 
         if is_naive(d1):
             d1 = make_aware(d1)
@@ -1468,11 +2044,15 @@ class CalculatedVariable(models.Model):
         output = []
 
         if self.period_diff_quantity(d1, d2) is None:
-            #logger.debug("No period in date interval : %s (%s %s)" % (self.period, d1, d2))
-            self.state = "[%s to %s] < %s" % (d1, d2, str(self.period.period_factor) +
-                                              self.period.period_choices[self.period.period][1])
+            # logger.debug("No period in date interval : %s (%s %s)" % (self.period, d1, d2))
+            self.state = "[%s to %s] < %s" % (
+                d1,
+                d2,
+                str(self.period.period_factor)
+                + self.period.period_choices[self.period.period][1],
+            )
             self.state = self.state[0:100]
-            self.save(update_fields=['state'])
+            self.save(update_fields=["state"])
             return None
 
         td = self.add_timedelta()
@@ -1481,35 +2061,50 @@ class CalculatedVariable(models.Model):
         if d is None:
             self.state = "No time range found [%s to %s] %s" % (d1, d2, self.period)
             self.state = self.state[0:100]
-            self.save(update_fields=['state'])
+            self.save(update_fields=["state"])
             return None
         [d1, d2] = d
 
         if self.period_diff_quantity(d1, d2) is None:
-            logger.debug("No period in new date interval : %s (%s %s)" % (self.period, d1, d2))
-            self.state = "[%s to %s] < %s" % (d1, d2, str(self.period.period_factor) +
-                                              self.period.period_choices[self.period.period][1])
+            logger.debug(
+                "No period in new date interval : %s (%s %s)" % (self.period, d1, d2)
+            )
+            self.state = "[%s to %s] < %s" % (
+                d1,
+                d2,
+                str(self.period.period_factor)
+                + self.period.period_choices[self.period.period][1],
+            )
             self.state = self.state[0:100]
-            self.save(update_fields=['state'])
+            self.save(update_fields=["state"])
             return None
 
-        #logger.debug("Valid range : %s - %s" % (d1, d2))
+        # logger.debug("Valid range : %s - %s" % (d1, d2))
 
         while d2 >= d1 + td and d1 + td <= now():
-            #logger.debug("add for %s - %s" % (d1, d1 + td))
+            # logger.debug("add for %s - %s" % (d1, d1 + td))
             td1 = d1.timestamp()
             try:
-                v_stored = RecordedData.objects.get_values_in_time_range(time_min=td1, time_max=td1 + 1,
-                                                                         variable=self.store_variable,
-                                                                         add_latest_value=False)
+                v_stored = RecordedData.objects.get_values_in_time_range(
+                    time_min=td1,
+                    time_max=td1 + 1,
+                    variable=self.store_variable,
+                    add_latest_value=False,
+                )
             except AttributeError:
                 v_stored = []
-            if not force_write and len(v_stored) and len(v_stored[self.store_variable.id][0]):
-                #logger.debug("Value already exist in RecordedData for %s - %s" % (d1, d1 + td))
+            if (
+                not force_write
+                and len(v_stored)
+                and len(v_stored[self.store_variable.id][0])
+            ):
+                # logger.debug("Value already exist in RecordedData for %s - %s" % (d1, d1 + td))
                 pass
             else:
                 calc_value = self.get_value(d1, d1 + td)
-                if calc_value is not None and self.store_variable.update_value(calc_value, td1):
+                if calc_value is not None and self.store_variable.update_value(
+                    calc_value, td1
+                ):
                     item = self.store_variable.create_recorded_data_element()
                     item.date_saved = d1
                     if item is not None:
@@ -1519,16 +2114,20 @@ class CalculatedVariable(models.Model):
         if len(output):
             self.last_check = output[-1].date_saved  # + td
         else:
-            #logger.debug("Nothing to add")
+            # logger.debug("Nothing to add")
             self.last_check = min(d1, d2, now())
 
         # Add partial last value when then is data but the period is not elapsed
         # do not use this data in last check to recalculate it again till the period is elapsed
         calc_value = self.get_value(d2 - td, d2)
         td2 = (d2 - td).timestamp()
-        if add_partial_info and calc_value is not None and self.store_variable.update_value(calc_value, td2):
+        if (
+            add_partial_info
+            and calc_value is not None
+            and self.store_variable.update_value(calc_value, td2)
+        ):
             item = self.store_variable.create_recorded_data_element()
-            item.date_saved = d2-td
+            item.date_saved = d2 - td
             if item is not None:
                 output.append(item)
 
@@ -1538,17 +2137,22 @@ class CalculatedVariable(models.Model):
             for c in output:
                 m += str(c) + " " + str(c.date_saved) + " - "
             logger.debug(m)
-            RecordedData.objects.bulk_create(output, batch_size=100, ignore_conflicts=True)
+            RecordedData.objects.bulk_create(
+                output, batch_size=100, ignore_conflicts=True
+            )
 
         self.state = "Checked [%s to %s]" % (d1, d2)
         self.state = self.state[0:100]
-        self.save(update_fields=['last_check', 'state'])
+        self.save(update_fields=["last_check", "state"])
 
     def get_value(self, d1, d2):
         try:
-            tmp = RecordedData.objects.get_values_in_time_range(variable=self.variable_calculated_fields.main_variable,
-                                                                time_min=d1.timestamp(), time_max=d2.timestamp(),
-                                                                time_in_ms=True,)
+            tmp = RecordedData.objects.get_values_in_time_range(
+                variable=self.variable_calculated_fields.main_variable,
+                time_min=d1.timestamp(),
+                time_max=d2.timestamp(),
+                time_in_ms=True,
+            )
         except AttributeError:
             tmp = []
         values = []
@@ -1556,73 +2160,87 @@ class CalculatedVariable(models.Model):
             for v in tmp[self.variable_calculated_fields.main_variable.id]:
                 values.append(v[1])
             type_str = self.period.type_choices[self.period.type][1]
-            if type_str == 'min':
+            if type_str == "min":
                 p = str(self.period.property)
-                if p == '' or p is None or p == 'None':
+                if p == "" or p is None or p == "None":
                     res = min(values)
-                elif p.startswith('<'):
+                elif p.startswith("<"):
                     try:
-                        p = float(p.split('<')[1])
-                        res = min_pass(values, p, 'gt')
+                        p = float(p.split("<")[1])
+                        res = min_pass(values, p, "gt")
                     except ValueError:
-                        logger.warning("Period field %s property after < is not a float : %s" % (self.period, self.period.property))
+                        logger.warning(
+                            "Period field %s property after < is not a float : %s"
+                            % (self.period, self.period.property)
+                        )
                         res = None
                 else:
                     try:
                         p = float(p)
-                        res = min_pass(values, p, 'gte')
+                        res = min_pass(values, p, "gte")
                     except ValueError:
-                        logger.warning("Period field %s property is not a float : %s" % (self.period, self.period.property))
+                        logger.warning(
+                            "Period field %s property is not a float : %s"
+                            % (self.period, self.period.property)
+                        )
                         res = None
-            elif type_str == 'max':
+            elif type_str == "max":
                 p = str(self.period.property)
-                if p == '' or p is None or p == 'None':
+                if p == "" or p is None or p == "None":
                     res = max(values)
-                elif p.startswith('>'):
+                elif p.startswith(">"):
                     try:
-                        p = float(p.split('>')[1])
-                        res = max_pass(values, p, 'lt')
+                        p = float(p.split(">")[1])
+                        res = max_pass(values, p, "lt")
                     except ValueError:
-                        logger.warning("Period field %s property after > is not a float : %s" % (self.period, self.period.property))
+                        logger.warning(
+                            "Period field %s property after > is not a float : %s"
+                            % (self.period, self.period.property)
+                        )
                         res = None
                 else:
                     try:
                         p = float(p)
-                        res = max_pass(values, p, 'lte')
+                        res = max_pass(values, p, "lte")
                     except ValueError:
-                        logger.warning("Period field %s property is not a float : %s" % (self.period, self.period.property))
+                        logger.warning(
+                            "Period field %s property is not a float : %s"
+                            % (self.period, self.period.property)
+                        )
                         res = None
-            elif type_str == 'total':
+            elif type_str == "total":
                 res = sum(values)
-            elif type_str == 'difference':
+            elif type_str == "difference":
                 res = values[-1] - values[0]
-            elif type_str == 'difference percent':
+            elif type_str == "difference percent":
                 res = (values[-1] - values[0]) / min(values)
-            elif type_str == 'delta':
+            elif type_str == "delta":
                 res = 0
                 v = None
                 for i in values:
                     if v is not None and i - v > 0:
                         res += i - v
                     v = i
-            elif type_str == 'mean':
+            elif type_str == "mean":
                 res = np.mean(values)
-            elif type_str == 'first':
+            elif type_str == "first":
                 res = values[0]
-            elif type_str == 'last':
+            elif type_str == "last":
                 res = values[-1]
-            elif type_str == 'count':
+            elif type_str == "count":
                 res = len(values)
-            elif type_str == 'count value':
+            elif type_str == "count value":
                 try:
                     p = float(self.period.property)
                     res = values.count(p)
                 except ValueError:
-                    logger.warning("Period field %s property is not a float" % self.period)
+                    logger.warning(
+                        "Period field %s property is not a float" % self.period
+                    )
                     res = None
-            elif type_str == 'range':
+            elif type_str == "range":
                 res = max(values) - min(values)
-            elif type_str == 'step':
+            elif type_str == "step":
                 res = 0
                 j = None
                 if len(values) > 1:
@@ -1632,7 +2250,7 @@ class CalculatedVariable(models.Model):
                         j = i
                 else:
                     res = None
-            elif type_str == 'change count':
+            elif type_str == "change count":
                 res = 0
                 j = None
                 if len(values) > 1:
@@ -1642,16 +2260,16 @@ class CalculatedVariable(models.Model):
                         j = i
                 else:
                     res = None
-            elif type_str == 'distinct count':
+            elif type_str == "distinct count":
                 res = len(set(values))
             else:
-                logger.warning ("Periodic field type unknown")
+                logger.warning("Periodic field type unknown")
                 res = None
 
-            #logger.debug(str(d1) + " " + str(self.period) + " " + str(res))
+            # logger.debug(str(d1) + " " + str(self.period) + " " + str(res))
             return res
         else:
-            #logger.debug("No values for this period")
+            # logger.debug("No values for this period")
             return None
 
     def get_valid_range(self, d1, d2):
@@ -1702,7 +2320,7 @@ class CalculatedVariable(models.Model):
         dd_end = d_end * td + self.period.start_from
 
         if dd_end > d2:
-            logger.debug("%s > %s" %(dd_end, d2))
+            logger.debug("%s > %s" % (dd_end, d2))
             dd_end -= self.add_timedelta(self._period_diff_quantity(d2, dd_end))
             logger.debug("dd_end : %s" % dd_end)
 
@@ -1713,37 +2331,37 @@ class CalculatedVariable(models.Model):
             delta = self.period.period_factor
         td = None
         period_str = self.period.period_choices[self.period.period][1]
-        if period_str == 'year':
+        if period_str == "year":
             td = monthdelta(12) * delta
-        elif period_str == 'month':
+        elif period_str == "month":
             td = monthdelta(delta)
-        elif period_str == 'week':
+        elif period_str == "week":
             td = datetime.timedelta(weeks=delta)
-        elif period_str == 'day':
+        elif period_str == "day":
             td = datetime.timedelta(days=delta)
-        elif period_str == 'hour':
+        elif period_str == "hour":
             td = datetime.timedelta(hours=delta)
-        elif period_str == 'minute':
+        elif period_str == "minute":
             td = datetime.timedelta(minutes=delta)
-        elif period_str == 'second':
+        elif period_str == "second":
             td = datetime.timedelta(seconds=delta)
         return td
 
     def _period_diff_quantity(self, d1, d2):
         period_str = self.period.period_choices[self.period.period][1]
-        if period_str == 'year':
+        if period_str == "year":
             res = self.years_diff_quantity(d1, d2)
-        elif period_str == 'month':
+        elif period_str == "month":
             res = self.months_diff_quantity(d1, d2)
-        elif period_str == 'week':
+        elif period_str == "week":
             res = self.weeks_diff_quantity(d1, d2)
-        elif period_str == 'day':
+        elif period_str == "day":
             res = self.days_diff_quantity(d1, d2)
-        elif period_str == 'hour':
+        elif period_str == "hour":
             res = self.hours_diff_quantity(d1, d2)
-        elif period_str == 'minute':
+        elif period_str == "minute":
             res = self.minutes_diff_quantity(d1, d2)
-        elif period_str == 'second':
+        elif period_str == "second":
             res = self.seconds_diff_quantity(d1, d2)
         return res
 
@@ -1758,36 +2376,43 @@ class CalculatedVariable(models.Model):
         return relativedelta.relativedelta(d2, d1).years
 
     def months_diff_quantity(self, d1, d2):
-        return relativedelta.relativedelta(d2, d1).months + self.years_diff_quantity(d1, d2) * 12
+        return (
+            relativedelta.relativedelta(d2, d1).months
+            + self.years_diff_quantity(d1, d2) * 12
+        )
 
     def weeks_diff_quantity(self, d1, d2):
         return self.days_diff_quantity(d1, d2) / 7
 
     def days_diff_quantity(self, d1, d2):
         diff = (d2 - d1).total_seconds() / 60 / 60 / 24
-        #logger.debug("Days: " + str(diff))
+        # logger.debug("Days: " + str(diff))
         return diff
 
     def hours_diff_quantity(self, d1, d2):
         diff = (d2 - d1).total_seconds() / 60 / 60
-        #logger.debug("Hours: " + str(diff))
+        # logger.debug("Hours: " + str(diff))
         return diff
 
     def minutes_diff_quantity(self, d1, d2):
         diff = (d2 - d1).total_seconds() / 60
-        #logger.debug("Minutes: " + str(diff))
+        # logger.debug("Minutes: " + str(diff))
         return diff
 
     def seconds_diff_quantity(self, d1, d2):
         diff = (d2 - d1).total_seconds()
-        #logger.debug("Seconds: " + str(diff))
+        # logger.debug("Seconds: " + str(diff))
         return diff
 
 
 class DeviceWriteTask(models.Model):
     id = models.AutoField(primary_key=True)
-    variable = models.ForeignKey(Variable, blank=True, null=True, on_delete=models.SET_NULL)
-    variable_property = models.ForeignKey(VariableProperty, blank=True, null=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey(
+        Variable, blank=True, null=True, on_delete=models.SET_NULL
+    )
+    variable_property = models.ForeignKey(
+        VariableProperty, blank=True, null=True, on_delete=models.SET_NULL
+    )
     value = models.FloatField()
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     start = models.FloatField(default=0)  # TODO DateTimeField
@@ -1799,7 +2424,11 @@ class DeviceWriteTask(models.Model):
         if self.variable:
             return self.variable.name
         elif self.variable_property:
-            return self.variable_property.variable.name + ' : ' + self.variable_property.name
+            return (
+                self.variable_property.variable.name
+                + " : "
+                + self.variable_property.name
+            )
         else:
             return str(self.id)
 
@@ -1828,25 +2457,44 @@ class DeviceWriteTask(models.Model):
                     device_id = dwt.get_device_id
                     for bp in BackgroundProcess.objects.all():
                         _device_id = bp.get_device_id()
-                        if type(_device_id) == list and len(_device_id) > 0 and dwt.get_device_id in _device_id:
+                        if (
+                            type(_device_id) == list
+                            and len(_device_id) > 0
+                            and dwt.get_device_id in _device_id
+                        ):
                             device_id = _device_id[0]
                             logger.debug(device_id)
                     channel_layer = channels.layers.get_channel_layer()
                     channel_layer.capacity = 1
-                    async_to_sync(channel_layer.send)(str(scheduler_pid) + '_DeviceAction_for_' + str(device_id),
-                                                      {'DeviceWriteTask': str(dwt.get_device_id)})
+                    async_to_sync(channel_layer.send)(
+                        str(scheduler_pid) + "_DeviceAction_for_" + str(device_id),
+                        {"DeviceWriteTask": str(dwt.get_device_id)},
+                    )
                 except ChannelFull:
-                    logger.info("Channel full : " + str(scheduler_pid) + '_DeviceAction_for_' + str(dwt.get_device_id))
+                    logger.info(
+                        "Channel full : "
+                        + str(scheduler_pid)
+                        + "_DeviceAction_for_"
+                        + str(dwt.get_device_id)
+                    )
                     pass
-                except (AttributeError, ConnectionRefusedError, InvalidChannelLayerError):
+                except (
+                    AttributeError,
+                    ConnectionRefusedError,
+                    InvalidChannelLayerError,
+                ):
                     pass
 
 
 class DeviceReadTask(models.Model):
     id = models.AutoField(primary_key=True)
     device = models.ForeignKey(Device, blank=True, null=True, on_delete=models.SET_NULL)
-    variable = models.ForeignKey(Variable, blank=True, null=True, on_delete=models.SET_NULL)
-    variable_property = models.ForeignKey(VariableProperty, blank=True, null=True, on_delete=models.SET_NULL)
+    variable = models.ForeignKey(
+        Variable, blank=True, null=True, on_delete=models.SET_NULL
+    )
+    variable_property = models.ForeignKey(
+        VariableProperty, blank=True, null=True, on_delete=models.SET_NULL
+    )
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     start = models.FloatField(default=0)  # TODO DateTimeField
     finished = models.FloatField(default=0, blank=True)  # TODO DateTimeField
@@ -1857,7 +2505,11 @@ class DeviceReadTask(models.Model):
         if self.variable:
             return self.variable.name
         elif self.variable_property:
-            return self.variable_property.variable.name + ' : ' + self.variable_property.name
+            return (
+                self.variable_property.variable.name
+                + " : "
+                + self.variable_property.name
+            )
         elif self.device:
             return self.device.short_name
         else:
@@ -1890,16 +2542,31 @@ class DeviceReadTask(models.Model):
                     device_id = drt.get_device_id
                     for bp in BackgroundProcess.objects.all():
                         _device_id = bp.get_device_id()
-                        if type(_device_id) == list and len(_device_id) > 0 and drt.get_device_id in _device_id:
+                        if (
+                            type(_device_id) == list
+                            and len(_device_id) > 0
+                            and drt.get_device_id in _device_id
+                        ):
                             device_id = _device_id[0]
                     channel_layer = channels.layers.get_channel_layer()
                     channel_layer.capacity = 1
-                    async_to_sync(channel_layer.send)(str(scheduler_pid) + '_DeviceAction_for_' + str(device_id),
-                                                      {'DeviceReadTask': str(drt.get_device_id)})
+                    async_to_sync(channel_layer.send)(
+                        str(scheduler_pid) + "_DeviceAction_for_" + str(device_id),
+                        {"DeviceReadTask": str(drt.get_device_id)},
+                    )
                 except ChannelFull:
-                    logger.info("Channel full : " + str(scheduler_pid) + '_DeviceAction_for_' + str(drt.get_device_id))
+                    logger.info(
+                        "Channel full : "
+                        + str(scheduler_pid)
+                        + "_DeviceAction_for_"
+                        + str(drt.get_device_id)
+                    )
                     pass
-                except (AttributeError, ConnectionRefusedError, InvalidChannelLayerError):
+                except (
+                    AttributeError,
+                    ConnectionRefusedError,
+                    InvalidChannelLayerError,
+                ):
                     pass
 
 
@@ -1916,49 +2583,70 @@ class RecordedDataOld(models.Model):
     id = models.BigIntegerField(primary_key=True)
     value_boolean = models.BooleanField(default=False, blank=True)  # boolean
     value_int16 = models.SmallIntegerField(null=True, blank=True)  # int16, uint8, int8
-    value_int32 = models.IntegerField(null=True, blank=True)  # uint8, int16, uint16, int32
+    value_int32 = models.IntegerField(
+        null=True, blank=True
+    )  # uint8, int16, uint16, int32
     value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64
     value_float64 = models.FloatField(null=True, blank=True)  # float64
     variable = models.ForeignKey(Variable, null=True, on_delete=models.SET_NULL)
     objects = RecordedDataValueManager()
 
     def __init__(self, *args, **kwargs):
-        if 'timestamp' in kwargs:
-            timestamp = kwargs.pop('timestamp')
+        if "timestamp" in kwargs:
+            timestamp = kwargs.pop("timestamp")
         else:
             timestamp = time.time()
-        if 'variable_id' in kwargs:
-            variable_id = kwargs['variable_id']
-        elif 'variable' in kwargs:
-            variable_id = kwargs['variable'].pk
+        if "variable_id" in kwargs:
+            variable_id = kwargs["variable_id"]
+        elif "variable" in kwargs:
+            variable_id = kwargs["variable"].pk
         else:
             variable_id = None
 
-        if variable_id is not None and 'id' not in kwargs:
-            kwargs['id'] = int(int(int(timestamp * 1000) * 2097152) + variable_id)
-        if 'variable' in kwargs and 'value' in kwargs:
-            if kwargs['variable'].value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
-                kwargs['value_float64'] = float(kwargs.pop('value'))
-            elif kwargs['variable'].scaling and not kwargs['variable'].value_class.upper() in ['BOOL', 'BOOLEAN']:
-                kwargs['value_float64'] = float(kwargs.pop('value'))
-            elif kwargs['variable'].value_class.upper() in ['INT64', 'UINT32', 'DWORD']:
-                kwargs['value_int64'] = int(kwargs.pop('value'))
-                if kwargs['value_int64'].bit_length() > 64:
+        if variable_id is not None and "id" not in kwargs:
+            kwargs["id"] = int(int(int(timestamp * 1000) * 2097152) + variable_id)
+        if "variable" in kwargs and "value" in kwargs:
+            if kwargs["variable"].value_class.upper() in [
+                "FLOAT",
+                "FLOAT64",
+                "DOUBLE",
+                "FLOAT32",
+                "SINGLE",
+                "REAL",
+            ]:
+                kwargs["value_float64"] = float(kwargs.pop("value"))
+            elif kwargs["variable"].scaling and not kwargs[
+                "variable"
+            ].value_class.upper() in ["BOOL", "BOOLEAN"]:
+                kwargs["value_float64"] = float(kwargs.pop("value"))
+            elif kwargs["variable"].value_class.upper() in ["INT64", "UINT32", "DWORD"]:
+                kwargs["value_int64"] = int(kwargs.pop("value"))
+                if kwargs["value_int64"].bit_length() > 64:
                     # todo throw exeption or do anything
                     pass
-            elif kwargs['variable'].value_class.upper() in ['WORD', 'UINT', 'UINT16', 'INT32']:
-                kwargs['value_int32'] = int(kwargs.pop('value'))
-                if kwargs['value_int32'].bit_length() > 32:
+            elif kwargs["variable"].value_class.upper() in [
+                "WORD",
+                "UINT",
+                "UINT16",
+                "INT32",
+            ]:
+                kwargs["value_int32"] = int(kwargs.pop("value"))
+                if kwargs["value_int32"].bit_length() > 32:
                     # todo throw exeption or do anything
                     pass
-            elif kwargs['variable'].value_class.upper() in ['INT16', 'INT8', 'UINT8', 'INT']:
-                kwargs['value_int16'] = int(kwargs.pop('value'))
-                if kwargs['value_int16'].bit_length() > 15:
+            elif kwargs["variable"].value_class.upper() in [
+                "INT16",
+                "INT8",
+                "UINT8",
+                "INT",
+            ]:
+                kwargs["value_int16"] = int(kwargs.pop("value"))
+                if kwargs["value_int16"].bit_length() > 15:
                     # todo throw exeption or do anything
                     pass
 
-            elif kwargs['variable'].value_class.upper() in ['BOOL', 'BOOLEAN']:
-                kwargs['value_boolean'] = bool(kwargs.pop('value'))
+            elif kwargs["variable"].value_class.upper() in ["BOOL", "BOOLEAN"]:
+                kwargs["value_boolean"] = bool(kwargs.pop("value"))
 
         # call the django model __init__
         super(RecordedDataOld, self).__init__(*args, **kwargs)
@@ -1988,17 +2676,24 @@ class RecordedDataOld(models.Model):
         if value_class is None:
             value_class = self.variable.value_class
 
-        if value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL']:
+        if value_class.upper() in [
+            "FLOAT",
+            "FLOAT64",
+            "DOUBLE",
+            "FLOAT32",
+            "SINGLE",
+            "REAL",
+        ]:
             return self.value_float64
-        elif self.variable.scaling and not value_class.upper() in ['BOOL', 'BOOLEAN']:
+        elif self.variable.scaling and not value_class.upper() in ["BOOL", "BOOLEAN"]:
             return self.value_float64
-        elif value_class.upper() in ['INT64', 'UINT32', 'DWORD']:
+        elif value_class.upper() in ["INT64", "UINT32", "DWORD"]:
             return self.value_int64
-        elif value_class.upper() in ['WORD', 'UINT', 'UINT16', 'INT32']:
+        elif value_class.upper() in ["WORD", "UINT", "UINT16", "INT32"]:
             return self.value_int32
-        elif value_class.upper() in ['INT16', 'INT8', 'UINT8']:
+        elif value_class.upper() in ["INT16", "INT8", "UINT8"]:
             return self.value_int16
-        elif value_class.upper() in ['BOOL', 'BOOLEAN']:
+        elif value_class.upper() in ["BOOL", "BOOLEAN"]:
             return self.value_boolean
         else:
             return None
@@ -2021,7 +2716,9 @@ class RecordedData(models.Model):
     date_saved = models.DateTimeField(blank=True, null=True, db_index=True)
     value_boolean = models.BooleanField(default=False, blank=True)  # boolean
     value_int16 = models.SmallIntegerField(null=True, blank=True)  # int16, uint8, int8
-    value_int32 = models.IntegerField(null=True, blank=True)  # uint8, int16, uint16, int32
+    value_int32 = models.IntegerField(
+        null=True, blank=True
+    )  # uint8, int16, uint16, int32
     value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64, int48
     value_float64 = models.FloatField(null=True, blank=True)  # float64, float48
     variable = models.ForeignKey(Variable, null=True, on_delete=models.SET_NULL)
@@ -2030,47 +2727,71 @@ class RecordedData(models.Model):
     #
 
     def __init__(self, *args, **kwargs):
-        if 'timestamp' in kwargs:
+        if "timestamp" in kwargs:
             try:
-                timestamp = kwargs.pop('timestamp')
+                timestamp = kwargs.pop("timestamp")
             except ValueError as e:
                 timestamp = time.time_ns() / 1000000000
         else:
             timestamp = time.time_ns() / 1000000000
 
-        if 'variable_id' in kwargs:
-            variable_id = kwargs['variable_id']
-        elif 'variable' in kwargs:
-            variable_id = kwargs['variable'].pk
+        if "variable_id" in kwargs:
+            variable_id = kwargs["variable_id"]
+        elif "variable" in kwargs:
+            variable_id = kwargs["variable"].pk
         else:
             variable_id = None
 
-        if variable_id is not None and 'id' not in kwargs:
-            kwargs['id'] = int(int(int(timestamp * 1000) * 2097152) + variable_id)
-        if 'variable' in kwargs and 'value' in kwargs:
-            if kwargs['variable'].value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL',
-                                                          'FLOAT48']:
-                kwargs['value_float64'] = float(kwargs.pop('value'))
-            elif kwargs['variable'].scaling and not kwargs['variable'].value_class.upper() in ['BOOL', 'BOOLEAN']:
-                kwargs['value_float64'] = float(kwargs.pop('value'))
-            elif kwargs['variable'].value_class.upper() in ['INT64', 'UINT32', 'DWORD', 'INT48']:
-                kwargs['value_int64'] = int(kwargs.pop('value'))
-                if kwargs['value_int64'].bit_length() > 64:
+        if variable_id is not None and "id" not in kwargs:
+            kwargs["id"] = int(int(int(timestamp * 1000) * 2097152) + variable_id)
+        if "variable" in kwargs and "value" in kwargs:
+            if kwargs["variable"].value_class.upper() in [
+                "FLOAT",
+                "FLOAT64",
+                "DOUBLE",
+                "FLOAT32",
+                "SINGLE",
+                "REAL",
+                "FLOAT48",
+            ]:
+                kwargs["value_float64"] = float(kwargs.pop("value"))
+            elif kwargs["variable"].scaling and not kwargs[
+                "variable"
+            ].value_class.upper() in ["BOOL", "BOOLEAN"]:
+                kwargs["value_float64"] = float(kwargs.pop("value"))
+            elif kwargs["variable"].value_class.upper() in [
+                "INT64",
+                "UINT32",
+                "DWORD",
+                "INT48",
+            ]:
+                kwargs["value_int64"] = int(kwargs.pop("value"))
+                if kwargs["value_int64"].bit_length() > 64:
                     # todo throw exeption or do anything
                     pass
-            elif kwargs['variable'].value_class.upper() in ['WORD', 'UINT', 'UINT16', 'INT32']:
-                kwargs['value_int32'] = int(kwargs.pop('value'))
-                if kwargs['value_int32'].bit_length() > 32:
+            elif kwargs["variable"].value_class.upper() in [
+                "WORD",
+                "UINT",
+                "UINT16",
+                "INT32",
+            ]:
+                kwargs["value_int32"] = int(kwargs.pop("value"))
+                if kwargs["value_int32"].bit_length() > 32:
                     # todo throw exeption or do anything
                     pass
-            elif kwargs['variable'].value_class.upper() in ['INT16', 'INT8', 'UINT8', 'INT']:
-                kwargs['value_int16'] = int(kwargs.pop('value'))
-                if kwargs['value_int16'].bit_length() > 15:
+            elif kwargs["variable"].value_class.upper() in [
+                "INT16",
+                "INT8",
+                "UINT8",
+                "INT",
+            ]:
+                kwargs["value_int16"] = int(kwargs.pop("value"))
+                if kwargs["value_int16"].bit_length() > 15:
                     # todo throw exeption or do anything
                     pass
 
-            elif kwargs['variable'].value_class.upper() in ['BOOL', 'BOOLEAN']:
-                kwargs['value_boolean'] = bool(kwargs.pop('value'))
+            elif kwargs["variable"].value_class.upper() in ["BOOL", "BOOLEAN"]:
+                kwargs["value_boolean"] = bool(kwargs.pop("value"))
 
         # call the django model __init__
         super(RecordedData, self).__init__(*args, **kwargs)
@@ -2106,17 +2827,25 @@ class RecordedData(models.Model):
         if value_class is None:
             value_class = self.variable.value_class
 
-        if value_class.upper() in ['FLOAT', 'FLOAT64', 'DOUBLE', 'FLOAT32', 'SINGLE', 'REAL', 'FLOAT48']:
+        if value_class.upper() in [
+            "FLOAT",
+            "FLOAT64",
+            "DOUBLE",
+            "FLOAT32",
+            "SINGLE",
+            "REAL",
+            "FLOAT48",
+        ]:
             return self.value_float64
-        elif self.variable.scaling and not value_class.upper() in ['BOOL', 'BOOLEAN']:
+        elif self.variable.scaling and not value_class.upper() in ["BOOL", "BOOLEAN"]:
             return self.value_float64
-        elif value_class.upper() in ['INT64', 'UINT32', 'DWORD', 'INT48']:
+        elif value_class.upper() in ["INT64", "UINT32", "DWORD", "INT48"]:
             return self.value_int64
-        elif value_class.upper() in ['WORD', 'UINT', 'UINT16', 'INT32']:
+        elif value_class.upper() in ["WORD", "UINT", "UINT16", "INT32"]:
             return self.value_int32
-        elif value_class.upper() in ['INT16', 'INT8', 'UINT8']:
+        elif value_class.upper() in ["INT16", "INT8", "UINT8"]:
             return self.value_int16
-        elif value_class.upper() in ['BOOL', 'BOOLEAN']:
+        elif value_class.upper() in ["BOOL", "BOOLEAN"]:
             return self.value_boolean
         else:
             return None
@@ -2132,21 +2861,25 @@ class Log(models.Model):
     id = models.BigIntegerField(primary_key=True)
     level = models.IntegerField(default=0, verbose_name="level")
     timestamp = models.FloatField()  # TODO DateTimeField
-    message_short = models.CharField(max_length=400, default='', verbose_name="short message")
-    message = models.TextField(default='', verbose_name="message")
+    message_short = models.CharField(
+        max_length=400, default="", verbose_name="short message"
+    )
+    message = models.TextField(default="", verbose_name="message")
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
 
     def __init__(self, *args, **kwargs):
-        if 'timestamp' in kwargs:
-            timestamp = kwargs['timestamp']
+        if "timestamp" in kwargs:
+            timestamp = kwargs["timestamp"]
         else:
             timestamp = time.time()
-            kwargs['timestamp'] = timestamp
-        if 'id' not in kwargs:
-            if 'level' in kwargs:
-                kwargs['id'] = int(int(int(timestamp * 1000) * 2097152) + kwargs['level'])
+            kwargs["timestamp"] = timestamp
+        if "id" not in kwargs:
+            if "level" in kwargs:
+                kwargs["id"] = int(
+                    int(int(timestamp * 1000) * 2097152) + kwargs["level"]
+                )
             else:
-                kwargs['id'] = int(int(int(timestamp * 1000) * 2097152) + 0)
+                kwargs["id"] = int(int(int(timestamp * 1000) * 2097152) + 0)
         super(Log, self).__init__(*args, **kwargs)
 
     def __str__(self):
@@ -2156,18 +2889,28 @@ class Log(models.Model):
 class BackgroundProcess(models.Model):
     id = models.AutoField(primary_key=True)
     pid = models.IntegerField(default=0)
-    label = models.CharField(max_length=400, default='')
-    message = models.CharField(max_length=400, default='')
+    label = models.CharField(max_length=400, default="")
+    message = models.CharField(max_length=400, default="")
     enabled = models.BooleanField(default=False, blank=True)
     done = models.BooleanField(default=False, blank=True)
     failed = models.BooleanField(default=False, blank=True)
-    parent_process = models.ForeignKey('BackgroundProcess', null=True, on_delete=models.SET_NULL, blank=True)
-    process_class = models.CharField(max_length=400, blank=True, default='pyscada.utils.scheduler.Process',
-                                     help_text="from pyscada.utils.scheduler import Process")
-    process_class_kwargs = models.CharField(max_length=400, default='{}', blank=True,
-                                            help_text='''arguments in json format will be passed as kwargs while the
+    parent_process = models.ForeignKey(
+        "BackgroundProcess", null=True, on_delete=models.SET_NULL, blank=True
+    )
+    process_class = models.CharField(
+        max_length=400,
+        blank=True,
+        default="pyscada.utils.scheduler.Process",
+        help_text="from pyscada.utils.scheduler import Process",
+    )
+    process_class_kwargs = models.CharField(
+        max_length=400,
+        default="{}",
+        blank=True,
+        help_text="""arguments in json format will be passed as kwargs while the
                                             init of the process instance, example:
-                                            {"keywordA":"value1", "keywordB":7}''')
+                                            {"keywordA":"value1", "keywordB":7}""",
+    )
     last_update = models.DateTimeField(null=True, blank=True)
     running_since = models.DateTimeField(null=True, blank=True)
 
@@ -2175,17 +2918,17 @@ class BackgroundProcess(models.Model):
         verbose_name_plural = "Background Processes"
 
     def __str__(self):
-        return self.label + ': ' + self.message
+        return self.label + ": " + self.message
 
     def get_device_id(self):
         try:
             kwargs = json.loads(self.process_class_kwargs)
         except:
             kwargs = {}
-        if 'device_id' in kwargs:
-            return kwargs['device_id']
-        elif 'device_ids' in kwargs:
-            return kwargs['device_ids']
+        if "device_id" in kwargs:
+            return kwargs["device_id"]
+        elif "device_ids" in kwargs:
+            return kwargs["device_ids"]
         else:
             return None
 
@@ -2196,18 +2939,20 @@ class BackgroundProcess(models.Model):
         except:
             kwargs = {}
         #
-        kwargs['label'] = self.label
-        kwargs['process_id'] = self.pk
-        kwargs['parent_process_id'] = self.parent_process.pk
+        kwargs["label"] = self.label
+        kwargs["process_id"] = self.pk
+        kwargs["parent_process_id"] = self.parent_process.pk
 
-        class_name = self.process_class.split('.')[-1]
-        class_path = self.process_class.replace('.' + class_name, '')
+        class_name = self.process_class.split(".")[-1]
+        class_path = self.process_class.replace("." + class_name, "")
         try:
             mod = __import__(class_path, fromlist=[class_name.__str__()])
             process_class = getattr(mod, class_name.__str__())
             return process_class(**kwargs)
         except:
-            logger.error(f'{self.label}({getpid()}), unhandled exception', exc_info=True)
+            logger.error(
+                f"{self.label}({getpid()}), unhandled exception", exc_info=True
+            )
             return None
 
     def restart(self):
@@ -2217,10 +2962,9 @@ class BackgroundProcess(models.Model):
         :return:
         """
         if self.pid != 0 and self.pid is not None:
-
             try:
                 kill(self.pid, signal.SIGUSR1)
-                logger.debug('%d: send SIGUSR1 to %d' % (self.pk, self.pid))
+                logger.debug("%d: send SIGUSR1 to %d" % (self.pk, self.pid))
                 return True
             except OSError as e:
                 return False
@@ -2232,13 +2976,15 @@ class BackgroundProcess(models.Model):
         :return:
         """
         if self.pid != 0 and self.pid is not None:
-            logger.debug('send %s to daemon' % signum)
+            logger.debug("send %s to daemon" % signum)
             try:
                 kill(self.pid, signum)
             except OSError as e:
                 if e.errno == errno.ESRCH:
                     try:
-                        logger.debug('%s: process id %d is terminated' % (self, self.pid))
+                        logger.debug(
+                            "%s: process id %d is terminated" % (self, self.pid)
+                        )
                         return True
                     except:
                         return False
@@ -2268,18 +3014,18 @@ class BackgroundProcess(models.Model):
 
 class ComplexEvent(models.Model):
     id = models.AutoField(primary_key=True)
-    label = models.CharField(max_length=400, default='')
+    label = models.CharField(max_length=400, default="")
     complex_mail_recipients = models.ManyToManyField(User, blank=True)
-    default_send_mail = models.BooleanField(default=False, help_text="Send mail if no activated event")
+    default_send_mail = models.BooleanField(
+        default=False, help_text="Send mail if no activated event"
+    )
     last_level = models.SmallIntegerField(default=-1)
 
     def __str__(self):
         return self.label
 
     def do_event_check(self):
-        """
-
-        """
+        """ """
         item_found = None
         timestamp = time.time()
         active = False
@@ -2287,16 +3033,23 @@ class ComplexEvent(models.Model):
         vp_list_final = {}
 
         # check all level by inceasing order, keep the last level
-        for item in self.complexeventlevel_set.all().order_by('order'):
+        for item in self.complexeventlevel_set.all().order_by("order"):
             (is_valid, var_list, vp_list) = item.is_valid()
-            if item_found is None and not active and self.last_level != item.level and is_valid:
+            if (
+                item_found is None
+                and not active
+                and self.last_level != item.level
+                and is_valid
+            ):
                 # logger.debug("item %s is valid : level %s" % (item, item.level))
                 item_found = item
                 var_list_final = var_list
                 vp_list_final = vp_list
                 self.last_level = item.level
                 self.save()
-                prev_event = RecordedEvent.objects.filter(complex_event=self, active=True)
+                prev_event = RecordedEvent.objects.filter(
+                    complex_event=self, active=True
+                )
                 if prev_event:
                     if item.stop_recording:  # Stop recording
                         # logger.debug("stop recording")
@@ -2307,38 +3060,76 @@ class ComplexEvent(models.Model):
                 else:
                     if not item.stop_recording:  # Start Recording
                         # logger.debug("start recording")
-                        prev_event = RecordedEvent(complex_event=self, time_begin=timestamp, active=True)
+                        prev_event = RecordedEvent(
+                            complex_event=self, time_begin=timestamp, active=True
+                        )
                         prev_event.save()
             active = active or item.active
 
         # for the highest level, compose mail and change output values
         if item_found is not None:
             if item_found.send_mail:  # Send Mail
-                (subject, message, html_message,) = self.compose_mail(item_found, var_list_final, vp_list_final)
-                for recipient in self.complex_mail_recipients.exclude(email=''):
-                    Mail(None, subject, message, html_message, recipient.email, time.time()).save()
+                (
+                    subject,
+                    message,
+                    html_message,
+                ) = self.compose_mail(item_found, var_list_final, vp_list_final)
+                for recipient in self.complex_mail_recipients.exclude(email=""):
+                    Mail(
+                        None,
+                        subject,
+                        message,
+                        html_message,
+                        recipient.email,
+                        time.time(),
+                    ).save()
 
             # Change values
             for var_to_change in item_found.complexeventoutput_set.all():
-                if var_to_change.value is not None and var_to_change.variable is not None:
-                    user, _ = User.objects.get_or_create(username='ComplexEvents')
-                    dwt = DeviceWriteTask(variable=var_to_change.variable, value=var_to_change.value, user=user,
-                                        start=timestamp)
+                if (
+                    var_to_change.value is not None
+                    and var_to_change.variable is not None
+                ):
+                    user, _ = User.objects.get_or_create(username="ComplexEvents")
+                    dwt = DeviceWriteTask(
+                        variable=var_to_change.variable,
+                        value=var_to_change.value,
+                        user=user,
+                        start=timestamp,
+                    )
                     dwt.create_and_notificate(dwt)
 
         elif not active and self.last_level != -1:
             self.last_level = -1
             self.save()
             for var_to_change in self.complexeventoutput_set.all():
-                if var_to_change.value is not None and var_to_change.variable is not None:
-                    user, _ = User.objects.get_or_create(username='ComplexEvents')
-                    dwt = DeviceWriteTask(variable=var_to_change.variable, value=var_to_change.value, user=user,
-                                        start=timestamp)
+                if (
+                    var_to_change.value is not None
+                    and var_to_change.variable is not None
+                ):
+                    user, _ = User.objects.get_or_create(username="ComplexEvents")
+                    dwt = DeviceWriteTask(
+                        variable=var_to_change.variable,
+                        value=var_to_change.value,
+                        user=user,
+                        start=timestamp,
+                    )
                     dwt.create_and_notificate(dwt)
             if self.default_send_mail:
-                (subject, message, html_message,) = self.compose_mail(None, {}, {})
-                for recipient in self.complex_mail_recipients.exclude(email=''):
-                    Mail(None, subject, message, html_message, recipient.email, time.time()).save()
+                (
+                    subject,
+                    message,
+                    html_message,
+                ) = self.compose_mail(None, {}, {})
+                for recipient in self.complex_mail_recipients.exclude(email=""):
+                    Mail(
+                        None,
+                        subject,
+                        message,
+                        html_message,
+                        recipient.email,
+                        time.time(),
+                    ).save()
 
             # logger.debug("level = -1")
             # No active event : stop recording
@@ -2351,10 +3142,10 @@ class ComplexEvent(models.Model):
                 prev_event.save()
 
     def compose_mail(self, item_found, var_list, vp_list):
-        if hasattr(settings, 'EMAIL_PREFIX'):
+        if hasattr(settings, "EMAIL_PREFIX"):
             subject_str = settings.EMAIL_PREFIX
         else:
-            subject_str = ''
+            subject_str = ""
 
         if item_found is not None and item_found.active:
             if item_found.level == 0:  # infomation
@@ -2367,8 +3158,14 @@ class ComplexEvent(models.Model):
                 subject_str += " - Alert! - "
             subject_str += self.label + " - An event is active"
             message_str = "The event group " + self.label + " has been triggered<br>"
-            message_str += "Level : " + item_found.level_choices[item_found.level][1] + "<br>"
-            message_str += "Validation : " + item_found.validation_choices[item_found.validation][1] + "<br>"
+            message_str += (
+                "Level : " + item_found.level_choices[item_found.level][1] + "<br>"
+            )
+            message_str += (
+                "Validation : "
+                + item_found.validation_choices[item_found.validation][1]
+                + "<br>"
+            )
         else:
             subject_str += " - Information - "
             subject_str += self.label + " No active event"
@@ -2377,100 +3174,160 @@ class ComplexEvent(models.Model):
         message_str += "Date : " + str(datetime.datetime.now().isoformat()) + "<br><br>"
 
         for i in var_list:
-            message_str += str(var_list[i]['type']) + " : " + str(var_list[i]['name']) + " (" + str(i) + ") : "
-            in_limit_str = "<span style='color:red;'>" + str(var_list[i]['in_limit']) + "</span>" if \
-                var_list[i]['in_limit'] else str(var_list[i]['in_limit'])
+            message_str += (
+                str(var_list[i]["type"])
+                + " : "
+                + str(var_list[i]["name"])
+                + " ("
+                + str(i)
+                + ") : "
+            )
+            in_limit_str = (
+                "<span style='color:red;'>" + str(var_list[i]["in_limit"]) + "</span>"
+                if var_list[i]["in_limit"]
+                else str(var_list[i]["in_limit"])
+            )
             message_str += in_limit_str + "<br>"
             message_str += "Last value on "
-            message_str += str(datetime.datetime.isoformat(datetime.datetime.utcfromtimestamp(var_list[i]['datetime'])))
+            message_str += str(
+                datetime.datetime.isoformat(
+                    datetime.datetime.utcfromtimestamp(var_list[i]["datetime"])
+                )
+            )
             message_str += " = "
-            if var_list[i]['label'] is None:
-                message_str += str(var_list[i]['value']) + "<br>"
+            if var_list[i]["label"] is None:
+                message_str += str(var_list[i]["value"]) + "<br>"
             else:
-                message_str += str(var_list[i]['label']) + " (" + str(var_list[i]['value']) + ")<br>"
+                message_str += (
+                    str(var_list[i]["label"])
+                    + " ("
+                    + str(var_list[i]["value"])
+                    + ")<br>"
+                )
 
             message_str += "Limit rules : "
-            if var_list[i]['limit_low_type'] == 0:
+            if var_list[i]["limit_low_type"] == 0:
                 limit_low_type = "< "
             else:
                 limit_low_type = "<= "
-            if var_list[i]['limit_high_type'] == 0:
+            if var_list[i]["limit_high_type"] == 0:
                 limit_high_type = "< "
             else:
                 limit_high_type = "<= "
-            if (var_list[i]['hysteresis_low'] == 0 or var_list[i]['limit_low_value'] is None) and \
-                    (var_list[i]['hysteresis_high'] == 0 or var_list[i]['limit_high_value'] is None):
-                if var_list[i]['limit_low_value'] is not None:
-                    message_str += str(var_list[i]['limit_low_value']) + str(limit_low_type)
+            if (
+                var_list[i]["hysteresis_low"] == 0
+                or var_list[i]["limit_low_value"] is None
+            ) and (
+                var_list[i]["hysteresis_high"] == 0
+                or var_list[i]["limit_high_value"] is None
+            ):
+                if var_list[i]["limit_low_value"] is not None:
+                    message_str += str(var_list[i]["limit_low_value"]) + str(
+                        limit_low_type
+                    )
                 message_str += " value "
-                if var_list[i]['limit_high_value'] is not None:
-                    message_str += str(limit_high_type) + str(var_list[i]['limit_high_value'])
+                if var_list[i]["limit_high_value"] is not None:
+                    message_str += str(limit_high_type) + str(
+                        var_list[i]["limit_high_value"]
+                    )
                 message_str += "<br><br>"
             else:
                 message_str += "To enter the limit : <br>"
-                if var_list[i]['limit_low_value'] is not None:
-                    message_str += str(var_list[i]['limit_low_value'] + var_list[i]['hysteresis_low'])
+                if var_list[i]["limit_low_value"] is not None:
+                    message_str += str(
+                        var_list[i]["limit_low_value"] + var_list[i]["hysteresis_low"]
+                    )
                     message_str += str(limit_low_type)
                 message_str += " value "
-                if var_list[i]['limit_high_value'] is not None:
+                if var_list[i]["limit_high_value"] is not None:
                     message_str += str(limit_high_type)
-                    message_str += str(var_list[i]['limit_high_value'] - var_list[i]['hysteresis_high'])
+                    message_str += str(
+                        var_list[i]["limit_high_value"] - var_list[i]["hysteresis_high"]
+                    )
                 message_str += "<br>"
                 message_str += "To leave the limit : <br>"
-                if var_list[i]['limit_low_value'] is not None:
-                    message_str += str(var_list[i]['limit_low_value'] - var_list[i]['hysteresis_low'])
+                if var_list[i]["limit_low_value"] is not None:
+                    message_str += str(
+                        var_list[i]["limit_low_value"] - var_list[i]["hysteresis_low"]
+                    )
                     message_str += str(limit_low_type)
                 message_str += " value "
-                if var_list[i]['limit_high_value'] is not None:
+                if var_list[i]["limit_high_value"] is not None:
                     message_str += str(limit_high_type)
-                    message_str += str(var_list[i]['limit_high_value'] + var_list[i]['hysteresis_high'])
+                    message_str += str(
+                        var_list[i]["limit_high_value"] + var_list[i]["hysteresis_high"]
+                    )
                 message_str += "<br><br>"
         for i in vp_list:
-            message_str += str(vp_list[i]['type']) + " : " + str(vp_list[i]['name']) + " (" + str(i) + ") : "
-            in_limit_str = "<span style='color:red;'>" + str(vp_list[i]['in_limit']) + "</span>" if \
-                vp_list[i]['in_limit'] else str(vp_list[i]['in_limit'])
+            message_str += (
+                str(vp_list[i]["type"])
+                + " : "
+                + str(vp_list[i]["name"])
+                + " ("
+                + str(i)
+                + ") : "
+            )
+            in_limit_str = (
+                "<span style='color:red;'>" + str(vp_list[i]["in_limit"]) + "</span>"
+                if vp_list[i]["in_limit"]
+                else str(vp_list[i]["in_limit"])
+            )
             message_str += in_limit_str + "<br>"
             message_str += "Last value on "
-            message_str += str(datetime.datetime.isoformat(vp_list[i]['datetime']))
+            message_str += str(datetime.datetime.isoformat(vp_list[i]["datetime"]))
             message_str += " = "
-            if vp_list[i]['label'] is None:
-                message_str += str(vp_list[i]['value']) + "<br>"
+            if vp_list[i]["label"] is None:
+                message_str += str(vp_list[i]["value"]) + "<br>"
             else:
-                message_str += str(vp_list[i]['label']) + " (" + str(vp_list[i]['value']) + ")<br>"
+                message_str += (
+                    str(vp_list[i]["label"]) + " (" + str(vp_list[i]["value"]) + ")<br>"
+                )
             message_str += "Limit rules : "
-            if vp_list[i]['limit_low_type'] == 0:
+            if vp_list[i]["limit_low_type"] == 0:
                 limit_low_type = "<"
             else:
                 limit_low_type = "<="
-            if vp_list[i]['limit_high_type'] == 0:
+            if vp_list[i]["limit_high_type"] == 0:
                 limit_high_type = "<"
             else:
                 limit_high_type = "<="
-            if vp_list[i]['hysteresis_low'] == 0 and vp_list[i]['hysteresis_high'] == 0:
-                if vp_list[i]['limit_low_value'] is not None:
-                    message_str += str(vp_list[i]['limit_low_value']) + str(limit_low_type)
+            if vp_list[i]["hysteresis_low"] == 0 and vp_list[i]["hysteresis_high"] == 0:
+                if vp_list[i]["limit_low_value"] is not None:
+                    message_str += str(vp_list[i]["limit_low_value"]) + str(
+                        limit_low_type
+                    )
                 message_str += " value "
-                if vp_list[i]['limit_high_value'] is not None:
-                    message_str += str(limit_high_type) + str(vp_list[i]['limit_high_value'])
+                if vp_list[i]["limit_high_value"] is not None:
+                    message_str += str(limit_high_type) + str(
+                        vp_list[i]["limit_high_value"]
+                    )
                 message_str += "<br>"
             else:
                 message_str += "To enter the limit : <br>"
-                if vp_list[i]['limit_low_value'] is not None:
-                    message_str += str(vp_list[i]['limit_low_value'] + vp_list[i]['hysteresis_low'])
+                if vp_list[i]["limit_low_value"] is not None:
+                    message_str += str(
+                        vp_list[i]["limit_low_value"] + vp_list[i]["hysteresis_low"]
+                    )
                     message_str += str(limit_low_type)
                 message_str += " value "
-                if vp_list[i]['limit_high_value'] is not None:
+                if vp_list[i]["limit_high_value"] is not None:
                     message_str += str(limit_high_type)
-                    message_str += str(vp_list[i]['limit_high_value'] - vp_list[i]['hysteresis_high'])
+                    message_str += str(
+                        vp_list[i]["limit_high_value"] - vp_list[i]["hysteresis_high"]
+                    )
                 message_str += "<br>"
                 message_str += "To leave the limit : <br>"
-                if vp_list[i]['limit_low_value'] is not None:
-                    message_str += str(vp_list[i]['limit_low_value'] - vp_list[i]['hysteresis_low'])
+                if vp_list[i]["limit_low_value"] is not None:
+                    message_str += str(
+                        vp_list[i]["limit_low_value"] - vp_list[i]["hysteresis_low"]
+                    )
                     message_str += str(limit_low_type)
                 message_str += " value "
-                if vp_list[i]['limit_high_value'] is not None:
+                if vp_list[i]["limit_high_value"] is not None:
                     message_str += str(limit_high_type)
-                    message_str += str(vp_list[i]['limit_high_value'] + vp_list[i]['hysteresis_high'])
+                    message_str += str(
+                        vp_list[i]["limit_high_value"] + vp_list[i]["hysteresis_high"]
+                    )
                 message_str += "<br><br>"
         return subject_str, "", message_str
 
@@ -2478,22 +3335,24 @@ class ComplexEvent(models.Model):
 class ComplexEventLevel(models.Model):
     id = models.AutoField(primary_key=True)
     level_choices = (
-        (0, 'informative'),
-        (1, 'ok'),
-        (2, 'warning'),
-        (3, 'alert'),
+        (0, "informative"),
+        (1, "ok"),
+        (2, "warning"),
+        (3, "alert"),
     )
     level = models.PositiveSmallIntegerField(default=0, choices=level_choices)
     send_mail = models.BooleanField(default=False)
     order = models.PositiveSmallIntegerField(default=0)
     stop_recording = models.BooleanField(default=False)
     validation_choices = (
-        (0, 'OR'),
-        (1, 'AND'),
-        (2, 'Custom'),
+        (0, "OR"),
+        (1, "AND"),
+        (2, "Custom"),
     )
     validation = models.PositiveSmallIntegerField(default=0, choices=validation_choices)
-    custom_validation = models.CharField(max_length=400, default='', blank=True, null=True)
+    custom_validation = models.CharField(
+        max_length=400, default="", blank=True, null=True
+    )
     active = models.BooleanField(default=False)
     complex_event = models.ForeignKey(ComplexEvent, on_delete=models.CASCADE)
 
@@ -2517,9 +3376,9 @@ class ComplexEventLevel(models.Model):
             else:
                 if self.validation == 1:
                     valid = False
-            if item.get_type() == 'variable' and len(item_info):
+            if item.get_type() == "variable" and len(item_info):
                 vars_infos[item.get_id()] = item_info
-            elif item.get_type() == 'variable_property' and len(item_info):
+            elif item.get_type() == "variable_property" and len(item_info):
                 vp_infos[item.get_id()] = item_info
         if self.active != valid:
             self.active = valid
@@ -2532,41 +3391,88 @@ class ComplexEventLevel(models.Model):
 
 class ComplexEventOutput(models.Model):
     id = models.AutoField(primary_key=True)
-    variable = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
-                                           help_text="Variable to change on event changes")
+    variable = models.ForeignKey(
+        Variable,
+        blank=True,
+        null=True,
+        default=None,
+        on_delete=models.SET_NULL,
+        help_text="Variable to change on event changes",
+    )
     value = models.CharField(max_length=400)
-    complex_event = models.ForeignKey(ComplexEvent, blank=True, null=True, on_delete=models.CASCADE)
-    complex_event_level = models.ForeignKey(ComplexEventLevel, blank=True, null=True, on_delete=models.CASCADE)
+    complex_event = models.ForeignKey(
+        ComplexEvent, blank=True, null=True, on_delete=models.CASCADE
+    )
+    complex_event_level = models.ForeignKey(
+        ComplexEventLevel, blank=True, null=True, on_delete=models.CASCADE
+    )
 
 
 class ComplexEventInput(models.Model):
     id = models.AutoField(primary_key=True)
     fixed_limit_low = models.FloatField(default=0, blank=True, null=True)
-    variable_limit_low = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
-                                           related_name="variable_limit_low", help_text='''you can choose either an
+    variable_limit_low = models.ForeignKey(
+        Variable,
+        blank=True,
+        null=True,
+        default=None,
+        on_delete=models.SET_NULL,
+        related_name="variable_limit_low",
+        help_text="""you can choose either an
                                             fixed limit or an variable limit that is dependent on the current value of
                                             an variable, if you choose a value other than  none for variable limit the
-                                            fixed limit would be ignored''')
+                                            fixed limit would be ignored""",
+    )
     limit_low_type_choices = (
-        (0, 'limit < value',),
-        (1, 'limit <= value',),
+        (
+            0,
+            "limit < value",
+        ),
+        (
+            1,
+            "limit <= value",
+        ),
     )
-    limit_low_type = models.PositiveSmallIntegerField(default=0, choices=limit_low_type_choices)
+    limit_low_type = models.PositiveSmallIntegerField(
+        default=0, choices=limit_low_type_choices
+    )
     hysteresis_low = models.FloatField(default=0)
-    variable = models.ForeignKey(Variable, related_name="variable", blank=True, null=True,
-                                 on_delete=models.CASCADE)
-    variable_property = models.ForeignKey(VariableProperty, blank=True, null=True, on_delete=models.CASCADE)
+    variable = models.ForeignKey(
+        Variable,
+        related_name="variable",
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE,
+    )
+    variable_property = models.ForeignKey(
+        VariableProperty, blank=True, null=True, on_delete=models.CASCADE
+    )
     fixed_limit_high = models.FloatField(default=0, blank=True, null=True)
-    variable_limit_high = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
-                                            related_name="variable_limit_high", help_text='''you can choose either an
+    variable_limit_high = models.ForeignKey(
+        Variable,
+        blank=True,
+        null=True,
+        default=None,
+        on_delete=models.SET_NULL,
+        related_name="variable_limit_high",
+        help_text="""you can choose either an
                                             fixed limit or an variable limit that is dependent on the current value of
                                             an variable, if you choose a value other than  none for variable limit the
-                                            fixed limit would be ignored''')
-    limit_high_type_choices = (
-        (0, 'value < limit',),
-        (1, 'value <= limit',),
+                                            fixed limit would be ignored""",
     )
-    limit_high_type = models.PositiveSmallIntegerField(default=0, choices=limit_high_type_choices)
+    limit_high_type_choices = (
+        (
+            0,
+            "value < limit",
+        ),
+        (
+            1,
+            "value <= limit",
+        ),
+    )
+    limit_high_type = models.PositiveSmallIntegerField(
+        default=0, choices=limit_high_type_choices
+    )
     hysteresis_high = models.FloatField(default=0)
     active = models.BooleanField(default=False)
     complex_event_level = models.ForeignKey(ComplexEventLevel, on_delete=models.CASCADE)
@@ -2584,29 +3490,30 @@ class ComplexEventInput(models.Model):
             if self.variable.query_prev_value(time_min=0):
                 item_value = self.variable.prev_value
                 item_date = self.variable.timestamp_old
-            item_type = 'variable'
+            item_type = "variable"
             item_name = self.variable.name
         elif self.variable_property is not None:
             item_value = self.variable_property.value()
             item_date = self.variable_property.last_modified
             if type(item_value) != int and type(item_value) != float:
                 item_value = None
-            item_type = 'variable_property'
+            item_type = "variable_property"
             item_name = self.variable_property.name
 
-        var_info = {'value': item_value,
-                    'datetime': item_date,
-                    'type': item_type,
-                    'name': item_name,
-                    'limit_low_type': self.limit_low_type_choices[self.limit_low_type][0],
-                    'limit_low_value': limit_low,
-                    'hysteresis_low': self.hysteresis_low,
-                    'limit_high_type': self.limit_high_type_choices[self.limit_high_type][0],
-                    'limit_high_value': limit_high,
-                    'hysteresis_high': self.hysteresis_high,
-                    'label': item_dict_label,
-                    'in_limit': None,
-                    }
+        var_info = {
+            "value": item_value,
+            "datetime": item_date,
+            "type": item_type,
+            "name": item_name,
+            "limit_low_type": self.limit_low_type_choices[self.limit_low_type][0],
+            "limit_low_value": limit_low,
+            "hysteresis_low": self.hysteresis_low,
+            "limit_high_type": self.limit_high_type_choices[self.limit_high_type][0],
+            "limit_high_value": limit_high,
+            "hysteresis_high": self.hysteresis_high,
+            "label": item_dict_label,
+            "in_limit": None,
+        }
 
         if item_value is not None:
             if self.variable_limit_low is not None:
@@ -2625,32 +3532,53 @@ class ComplexEventInput(models.Model):
                 limit_high = self.fixed_limit_high
             if limit_low is None and limit_high is None:
                 return None, var_info
-            var_info['limit_low_value'] = limit_low
-            var_info['limit_high_value'] = limit_high
+            var_info["limit_low_value"] = limit_low
+            var_info["limit_high_value"] = limit_high
             if self.variable is not None and self.variable.dictionary is not None:
-                var_info['label'] = self.variable.dictionary.get_label(item_value)
-            elif self.variable_property is not None and self.variable_property.dictionary is not None:
-                var_info['label'] = self.variable_property.dictionary.get_label(item_value)
+                var_info["label"] = self.variable.dictionary.get_label(item_value)
+            elif (
+                self.variable_property is not None
+                and self.variable_property.dictionary is not None
+            ):
+                var_info["label"] = self.variable_property.dictionary.get_label(
+                    item_value
+                )
 
             actived = self.active
-            if limit_low is not None and self.limit_low_type == 0 and item_value <= \
-                    (limit_low + self.hysteresis_low * np.power(-1, self.active)):
-                var_info['in_limit'] = False
+            if (
+                limit_low is not None
+                and self.limit_low_type == 0
+                and item_value
+                <= (limit_low + self.hysteresis_low * np.power(-1, self.active))
+            ):
+                var_info["in_limit"] = False
                 self.active = False
-            elif limit_low is not None and self.limit_low_type == 1 and item_value < \
-                    (limit_low + self.hysteresis_low * np.power(-1, self.active)):
-                var_info['in_limit'] = False
+            elif (
+                limit_low is not None
+                and self.limit_low_type == 1
+                and item_value
+                < (limit_low + self.hysteresis_low * np.power(-1, self.active))
+            ):
+                var_info["in_limit"] = False
                 self.active = False
-            elif limit_high is not None and self.limit_high_type == 0 and \
-                    (limit_high - self.hysteresis_high * np.power(-1, self.active)) <= item_value:
-                var_info['in_limit'] = False
+            elif (
+                limit_high is not None
+                and self.limit_high_type == 0
+                and (limit_high - self.hysteresis_high * np.power(-1, self.active))
+                <= item_value
+            ):
+                var_info["in_limit"] = False
                 self.active = False
-            elif limit_high is not None and self.limit_high_type == 1 and \
-                    (limit_high - self.hysteresis_high * np.power(-1, self.active)) < item_value:
-                var_info['in_limit'] = False
+            elif (
+                limit_high is not None
+                and self.limit_high_type == 1
+                and (limit_high - self.hysteresis_high * np.power(-1, self.active))
+                < item_value
+            ):
+                var_info["in_limit"] = False
                 self.active = False
             else:
-                var_info['in_limit'] = True
+                var_info["in_limit"] = True
                 self.active = True
             if actived != self.active:
                 self.save()
@@ -2665,47 +3593,65 @@ class ComplexEventInput(models.Model):
 
     def get_type(self):
         if self.variable is not None:
-            return 'variable'
+            return "variable"
         elif self.variable_property is not None:
-            return 'variable_property'
+            return "variable_property"
 
 
 class Event(models.Model):
     id = models.AutoField(primary_key=True)
-    label = models.CharField(max_length=400, default='')
+    label = models.CharField(max_length=400, default="")
     variable = models.ForeignKey(Variable, null=True, on_delete=models.CASCADE)
     level_choices = (
-        (0, 'informative'),
-        (1, 'ok'),
-        (2, 'warning'),
-        (3, 'alert'),
+        (0, "informative"),
+        (1, "ok"),
+        (2, "warning"),
+        (3, "alert"),
     )
     level = models.PositiveSmallIntegerField(default=0, choices=level_choices)
     fixed_limit = models.FloatField(default=0, blank=True, null=True)
-    variable_limit = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
-                                       related_name="variable_limit",
-                                       help_text='''you can choose either an fixed limit or an variable limit that is
+    variable_limit = models.ForeignKey(
+        Variable,
+        blank=True,
+        null=True,
+        default=None,
+        on_delete=models.SET_NULL,
+        related_name="variable_limit",
+        help_text="""you can choose either an fixed limit or an variable limit that is
                                         dependent on the current value of an variable, if you choose a value other than
-                                        none for variable limit the fixed limit would be ignored''')
+                                        none for variable limit the fixed limit would be ignored""",
+    )
     limit_type_choices = (
-        (0, 'value < limit',),
-        (1, 'value <= limit',),
-        (2, 'limit < value'),
-        (3, 'limit <= value'),
-        (4, 'value == limit'),
+        (
+            0,
+            "value < limit",
+        ),
+        (
+            1,
+            "value <= limit",
+        ),
+        (2, "limit < value"),
+        (3, "limit <= value"),
+        (4, "value == limit"),
     )
     limit_type = models.PositiveSmallIntegerField(default=0, choices=limit_type_choices)
     hysteresis = models.FloatField(default=0)
     action_choices = (
-        (0, 'just record'),
-        (1, 'record and send mail only when event occurs'),
-        (2, 'record and send mail'),
-        (3, 'record, send mail and change variable'),
+        (0, "just record"),
+        (1, "record and send mail only when event occurs"),
+        (2, "record and send mail"),
+        (3, "record, send mail and change variable"),
     )
     action = models.PositiveSmallIntegerField(default=0, choices=action_choices)
     mail_recipients = models.ManyToManyField(User)
-    variable_to_change = models.ForeignKey(Variable, blank=True, null=True, default=None, on_delete=models.SET_NULL,
-                                           related_name="variable_to_change")
+    variable_to_change = models.ForeignKey(
+        Variable,
+        blank=True,
+        null=True,
+        default=None,
+        on_delete=models.SET_NULL,
+        related_name="variable_to_change",
+    )
     new_value = models.FloatField(default=0, blank=True, null=True)
 
     def __str__(self):
@@ -2723,10 +3669,10 @@ class Event(models.Model):
         """
 
         def compose_mail(active):
-            if hasattr(settings, 'EMAIL_PREFIX'):
+            if hasattr(settings, "EMAIL_PREFIX"):
                 subject_str = settings.EMAIL_PREFIX
             else:
-                subject_str = ''
+                subject_str = ""
 
             if active:
                 if self.level == 0:  # infomation
@@ -2742,8 +3688,17 @@ class Event(models.Model):
                 subject_str += " Information "
                 subject_str += self.variable.name + " is back in limit"
             message_str = "The Event " + self.label + " has been triggered\n"
-            message_str += "Value of " + self.variable.name + " is " + actual_value.__str__() + " " + self.variable.unit.unit
-            message_str += " Limit is " + limit_value.__str__() + " " + self.variable.unit.unit
+            message_str += (
+                "Value of "
+                + self.variable.name
+                + " is "
+                + actual_value.__str__()
+                + " "
+                + self.variable.unit.unit
+            )
+            message_str += (
+                " Limit is " + limit_value.__str__() + " " + self.variable.unit.unit
+            )
             return subject_str, message_str
 
         #
@@ -2765,7 +3720,9 @@ class Event(models.Model):
             # item has a variable limit
             # get the limit value
             # limit_value = RecordedDataCache.objects.filter(variable=self.variable_limit) # TODO change to RecordedData
-            limit_value = RecordedData.objects.last_element(variable=self.variable_limit)
+            limit_value = RecordedData.objects.last_element(
+                variable=self.variable_limit
+            )
             if not limit_value:
                 return False
             if timestamp < limit_value.last().time_value():
@@ -2787,7 +3744,11 @@ class Event(models.Model):
             else:
                 limit_check = actual_value <= (limit_value - self.hysteresis)
         elif self.limit_type == 4:
-            limit_check = limit_value + self.hysteresis >= actual_value >= limit_value - self.hysteresis
+            limit_check = (
+                limit_value + self.hysteresis
+                >= actual_value
+                >= limit_value - self.hysteresis
+            )
         elif self.limit_type == 3:
             if prev_value:
                 limit_check = actual_value >= (limit_value - self.hysteresis)
@@ -2805,19 +3766,30 @@ class Event(models.Model):
         if limit_check:  # value is outside of the limit
             if not prev_event:
                 # if there is no previus event record the Event
-                prev_event = RecordedEvent(event=self, time_begin=timestamp, active=True)
+                prev_event = RecordedEvent(
+                    event=self, time_begin=timestamp, active=True
+                )
                 prev_event.save()
 
                 if self.action >= 1:
                     # compose and send mail
-                    (subject, message,) = compose_mail(True)
-                    for recipient in self.mail_recipients.exclude(email=''):
-                        Mail(None, subject, message, None, recipient.email, time.time()).save()
+                    (
+                        subject,
+                        message,
+                    ) = compose_mail(True)
+                    for recipient in self.mail_recipients.exclude(email=""):
+                        Mail(
+                            None, subject, message, None, recipient.email, time.time()
+                        ).save()
 
                 if self.action >= 3:
                     # do action
                     if self.variable_to_change:
-                        DeviceWriteTask(variable=self.variable_to_change, value=self.new_value, start=timestamp)
+                        DeviceWriteTask(
+                            variable=self.variable_to_change,
+                            value=self.new_value,
+                            start=timestamp,
+                        )
         else:  # back inside of limit
             if prev_event:  #
                 prev_event = prev_event.last()
@@ -2827,9 +3799,14 @@ class Event(models.Model):
 
                 if self.action >= 2:
                     # compose and send mail
-                    (subject, message,) = compose_mail(False)
-                    for recipient in self.mail_recipients.exclude(email=''):
-                        Mail(None, subject, message, None, recipient.email, time.time()).save()
+                    (
+                        subject,
+                        message,
+                    ) = compose_mail(False)
+                    for recipient in self.mail_recipients.exclude(email=""):
+                        Mail(
+                            None, subject, message, None, recipient.email, time.time()
+                        ).save()
 
 
 class RecordedEvent(models.Model):
@@ -2849,8 +3826,8 @@ class RecordedEvent(models.Model):
 
 class Mail(models.Model):
     id = models.AutoField(primary_key=True)
-    subject = models.TextField(default='', blank=True)
-    message = models.TextField(default='', blank=True)
+    subject = models.TextField(default="", blank=True)
+    message = models.TextField(default="", blank=True)
     html_message = models.TextField(null=True, blank=True)
     to_email = models.EmailField(max_length=254)
     timestamp = models.FloatField(default=0)  # TODO DateTimeField
@@ -2870,8 +3847,14 @@ class Mail(models.Model):
             return False
         # send the mail
         try:
-            if send_mail(self.subject, self.message, settings.DEFAULT_FROM_EMAIL, [self.to_email], fail_silently=False,
-                         html_message=self.html_message):
+            if send_mail(
+                self.subject,
+                self.message,
+                settings.DEFAULT_FROM_EMAIL,
+                [self.to_email],
+                fail_silently=False,
+                html_message=self.html_message,
+            ):
                 self.done = True
                 self.timestamp = time.time()
                 self.save()

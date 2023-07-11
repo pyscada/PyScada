@@ -6,15 +6,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('export', '0012_exporttask_backgroundprocess'),
+        ("export", "0012_exporttask_backgroundprocess"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='exporttask',
-            old_name='datetime_fineshed',
-            new_name='datetime_finished',
+            model_name="exporttask",
+            old_name="datetime_fineshed",
+            new_name="datetime_finished",
         ),
     ]

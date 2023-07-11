@@ -5,112 +5,155 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0056_auto_20190625_1823'),
+        ("pyscada", "0056_auto_20190625_1823"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='backgroundprocess',
-            name='done',
+            model_name="backgroundprocess",
+            name="done",
             field=models.BooleanField(blank=True, default=False),
         ),
         migrations.AlterField(
-            model_name='backgroundprocess',
-            name='enabled',
+            model_name="backgroundprocess",
+            name="enabled",
             field=models.BooleanField(blank=True, default=False),
         ),
         migrations.AlterField(
-            model_name='backgroundprocess',
-            name='failed',
+            model_name="backgroundprocess",
+            name="failed",
             field=models.BooleanField(blank=True, default=False),
         ),
         migrations.AlterField(
-            model_name='device',
-            name='protocol',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.DeviceProtocol'),
+            model_name="device",
+            name="protocol",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.DeviceProtocol",
+            ),
         ),
         migrations.AlterField(
-            model_name='devicewritetask',
-            name='done',
+            model_name="devicewritetask",
+            name="done",
             field=models.BooleanField(blank=True, default=False),
         ),
         migrations.AlterField(
-            model_name='devicewritetask',
-            name='failed',
+            model_name="devicewritetask",
+            name="failed",
             field=models.BooleanField(blank=True, default=False),
         ),
         migrations.AlterField(
-            model_name='devicewritetask',
-            name='variable',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.Variable'),
+            model_name="devicewritetask",
+            name="variable",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.Variable",
+            ),
         ),
         migrations.AlterField(
-            model_name='devicewritetask',
-            name='variable_property',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.VariableProperty'),
+            model_name="devicewritetask",
+            name="variable_property",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.VariableProperty",
+            ),
         ),
         migrations.AlterField(
-            model_name='event',
-            name='variable',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.Variable'),
+            model_name="event",
+            name="variable",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.Variable",
+            ),
         ),
         migrations.AlterField(
-            model_name='mail',
-            name='done',
+            model_name="mail",
+            name="done",
             field=models.BooleanField(blank=True, default=False),
         ),
-        migrations.RenameModel('RecordedData', 'RecordedDataNew'),
+        migrations.RenameModel("RecordedData", "RecordedDataNew"),
         migrations.AlterField(
-            model_name='recordeddatanew',
-            name='value_boolean',
-            field=models.BooleanField(blank=True, default=False),
-        ),
-        migrations.AlterField(
-            model_name='recordeddatanew',
-            name='variable',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.Variable'),
-        ),
-        migrations.RenameModel('RecordedDataNew', 'RecordedData'),
-        migrations.AlterField(
-            model_name='recordeddataold',
-            name='value_boolean',
-            field=models.BooleanField(blank=True, default=False),
-        ),
-        migrations.AlterField(
-            model_name='recordeddataold',
-            name='variable',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.Variable'),
-        ),
-        migrations.AlterField(
-            model_name='recordedevent',
-            name='active',
+            model_name="recordeddatanew",
+            name="value_boolean",
             field=models.BooleanField(blank=True, default=False),
         ),
         migrations.AlterField(
-            model_name='recordedevent',
-            name='event',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.Event'),
+            model_name="recordeddatanew",
+            name="variable",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.Variable",
+            ),
         ),
+        migrations.RenameModel("RecordedDataNew", "RecordedData"),
         migrations.AlterField(
-            model_name='variable',
-            name='chart_line_color',
-            field=models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.Color'),
-        ),
-        migrations.AlterField(
-            model_name='variable',
-            name='device',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.Device'),
-        ),
-        migrations.AlterField(
-            model_name='variableproperty',
-            name='value_boolean',
+            model_name="recordeddataold",
+            name="value_boolean",
             field=models.BooleanField(blank=True, default=False),
         ),
         migrations.AlterField(
-            model_name='variableproperty',
-            name='variable',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.Variable'),
+            model_name="recordeddataold",
+            name="variable",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.Variable",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="recordedevent",
+            name="active",
+            field=models.BooleanField(blank=True, default=False),
+        ),
+        migrations.AlterField(
+            model_name="recordedevent",
+            name="event",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.Event",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="variable",
+            name="chart_line_color",
+            field=models.ForeignKey(
+                blank=True,
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.Color",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="variable",
+            name="device",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.Device",
+            ),
+        ),
+        migrations.AlterField(
+            model_name="variableproperty",
+            name="value_boolean",
+            field=models.BooleanField(blank=True, default=False),
+        ),
+        migrations.AlterField(
+            model_name="variableproperty",
+            name="variable",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.Variable",
+            ),
         ),
     ]

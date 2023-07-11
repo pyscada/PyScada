@@ -5,32 +5,44 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0030_auto_20200918_0842'),
+        ("hmi", "0030_auto_20200918_0842"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='processflowdiagramitem',
-            name='label',
+            model_name="processflowdiagramitem",
+            name="label",
         ),
         migrations.RemoveField(
-            model_name='processflowdiagramitem',
-            name='type',
+            model_name="processflowdiagramitem",
+            name="type",
         ),
         migrations.RemoveField(
-            model_name='processflowdiagramitem',
-            name='variable',
+            model_name="processflowdiagramitem",
+            name="variable",
         ),
         migrations.AddField(
-            model_name='processflowdiagramitem',
-            name='control_item',
-            field=models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='hmi.ControlItem'),
+            model_name="processflowdiagramitem",
+            name="control_item",
+            field=models.ForeignKey(
+                blank=True,
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="hmi.ControlItem",
+            ),
         ),
         migrations.AlterField(
-            model_name='displayvalueoption',
-            name='color_1',
-            field=models.ForeignKey(blank=True, default='', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='color_1', to='pyscada.Color'),
+            model_name="displayvalueoption",
+            name="color_1",
+            field=models.ForeignKey(
+                blank=True,
+                default="",
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="color_1",
+                to="pyscada.Color",
+            ),
         ),
     ]

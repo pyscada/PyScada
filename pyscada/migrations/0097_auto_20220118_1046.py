@@ -4,15 +4,47 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0096_auto_20211210_0924'),
+        ("pyscada", "0096_auto_20211210_0924"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='variable',
-            name='value_class',
-            field=models.CharField(choices=[('FLOAT32', 'REAL (FLOAT32)'), ('FLOAT32', 'SINGLE (FLOAT32)'), ('FLOAT32', 'FLOAT32'), ('UNIXTIMEF32', 'UNIXTIMEF32'), ('FLOAT64', 'LREAL (FLOAT64)'), ('FLOAT64', 'FLOAT  (FLOAT64)'), ('FLOAT64', 'DOUBLE (FLOAT64)'), ('FLOAT64', 'FLOAT64'), ('UNIXTIMEF64', 'UNIXTIMEF64'), ('FLOAT48', 'FLOAT48'), ('INT64', 'INT64'), ('UINT64', 'UINT64'), ('UNIXTIMEI64', 'UNIXTIMEI64'), ('INT48', 'INT48'), ('UNIXTIMEI32', 'UNIXTIMEI32'), ('INT32', 'INT32'), ('UINT32', 'DWORD (UINT32)'), ('UINT32', 'UINT32'), ('INT16', 'INT (INT16)'), ('INT16', 'INT16'), ('UINT16', 'WORD (UINT16)'), ('UINT16', 'UINT (UINT16)'), ('UINT16', 'UINT16'), ('INT8', 'INT8'), ('UINT8', 'UINT8'), ('BOOLEAN', 'BOOL (BOOLEAN)'), ('BOOLEAN', 'BOOLEAN')], default='FLOAT64', max_length=15, verbose_name='value_class'),
+            model_name="variable",
+            name="value_class",
+            field=models.CharField(
+                choices=[
+                    ("FLOAT32", "REAL (FLOAT32)"),
+                    ("FLOAT32", "SINGLE (FLOAT32)"),
+                    ("FLOAT32", "FLOAT32"),
+                    ("UNIXTIMEF32", "UNIXTIMEF32"),
+                    ("FLOAT64", "LREAL (FLOAT64)"),
+                    ("FLOAT64", "FLOAT  (FLOAT64)"),
+                    ("FLOAT64", "DOUBLE (FLOAT64)"),
+                    ("FLOAT64", "FLOAT64"),
+                    ("UNIXTIMEF64", "UNIXTIMEF64"),
+                    ("FLOAT48", "FLOAT48"),
+                    ("INT64", "INT64"),
+                    ("UINT64", "UINT64"),
+                    ("UNIXTIMEI64", "UNIXTIMEI64"),
+                    ("INT48", "INT48"),
+                    ("UNIXTIMEI32", "UNIXTIMEI32"),
+                    ("INT32", "INT32"),
+                    ("UINT32", "DWORD (UINT32)"),
+                    ("UINT32", "UINT32"),
+                    ("INT16", "INT (INT16)"),
+                    ("INT16", "INT16"),
+                    ("UINT16", "WORD (UINT16)"),
+                    ("UINT16", "UINT (UINT16)"),
+                    ("UINT16", "UINT16"),
+                    ("INT8", "INT8"),
+                    ("UINT8", "UINT8"),
+                    ("BOOLEAN", "BOOL (BOOLEAN)"),
+                    ("BOOLEAN", "BOOLEAN"),
+                ],
+                default="FLOAT64",
+                max_length=15,
+                verbose_name="value_class",
+            ),
         ),
     ]

@@ -12,7 +12,11 @@ from pyscada.hmi.models import SlidingPanelMenu
 from pyscada.hmi.models import Page
 from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import ControlPanel
-from pyscada.hmi.models import DisplayValueOption, ControlElementOption, DisplayValueColorOption
+from pyscada.hmi.models import (
+    DisplayValueOption,
+    ControlElementOption,
+    DisplayValueColorOption,
+)
 from pyscada.hmi.models import CustomHTMLPanel
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import View
@@ -36,10 +40,10 @@ logger = logging.getLogger(__name__)
 class FormListFilter(admin.SimpleListFilter):
     # Human-readable title which will be displayed in the
     # right admin sidebar just above the filter options.
-    title = _('form filter')
+    title = _("form filter")
 
     # Parameter for the filter that will be used in the URL query.
-    parameter_name = 'form'
+    parameter_name = "form"
 
     def lookups(self, request, model_admin):
         """
@@ -51,7 +55,9 @@ class FormListFilter(admin.SimpleListFilter):
         """
         result = list()
         for form in Form.objects.all():
-            result.append((form.pk, form.title),)
+            result.append(
+                (form.pk, form.title),
+            )
         return result
 
     def queryset(self, request, queryset):
@@ -70,16 +76,18 @@ class ChartForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ChartForm, self).__init__(*args, **kwargs)
         wtf = Variable.objects.all()
-        w = self.fields['variables'].widget
+        w = self.fields["variables"].widget
         choices = []
         for choice in wtf:
-            choices.append((choice.id, choice.name + '( ' + choice.unit.description + ' )'))
+            choices.append(
+                (choice.id, choice.name + "( " + choice.unit.description + " )")
+            )
         w.choices = choices
 
 
 class ChartAxisInline(admin.TabularInline):
     model = ChartAxis
-    filter_vertical = ['variables']
+    filter_vertical = ["variables"]
 
     def get_extra(self, request, obj=None, **kwargs):
         return 0 if obj else 1
@@ -88,11 +96,18 @@ class ChartAxisInline(admin.TabularInline):
 class ChartAdmin(admin.ModelAdmin):
     list_per_page = 100
     # ordering = ['position',]
-    search_fields = ['title', ]
-    List_display_link = ('title',)
-    list_display = ('id', 'title', 'x_axis_label', 'x_axis_linlog',)
-    #list_filter = ('widget__page__title', 'widget__title',)
-    #form = ChartForm
+    search_fields = [
+        "title",
+    ]
+    List_display_link = ("title",)
+    list_display = (
+        "id",
+        "title",
+        "x_axis_label",
+        "x_axis_linlog",
+    )
+    # list_filter = ('widget__page__title', 'widget__title',)
+    # form = ChartForm
     save_as = True
     save_as_continue = True
     inlines = [ChartAxisInline]
@@ -101,29 +116,35 @@ class ChartAdmin(admin.ModelAdmin):
         return instance.variables.name
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == 'x_axis_var':
-            kwargs['empty_label'] = "Time series"
-        return super(ChartAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+        if db_field.name == "x_axis_var":
+            kwargs["empty_label"] = "Time series"
+        return super(ChartAdmin, self).formfield_for_foreignkey(
+            db_field, request, **kwargs
+        )
 
 
 class PieForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(PieForm, self).__init__(*args, **kwargs)
         wtf = Variable.objects.all()
-        w = self.fields['variables'].widget
+        w = self.fields["variables"].widget
         choices = []
         for choice in wtf:
-            choices.append((choice.id, choice.name + '( ' + choice.unit.description + ' )'))
+            choices.append(
+                (choice.id, choice.name + "( " + choice.unit.description + " )")
+            )
         w.choices = choices
 
 
 class PieAdmin(admin.ModelAdmin):
     list_per_page = 100
     # ordering = ['position',]
-    search_fields = ['name', ]
-    filter_horizontal = ('variables', 'variable_properties')
-    List_display_link = ('title',)
-    list_display = ('id', 'title')
+    search_fields = [
+        "name",
+    ]
+    filter_horizontal = ("variables", "variable_properties")
+    List_display_link = ("title",)
+    list_display = ("id", "title")
     form = PieForm
     save_as = True
     save_as_continue = True
@@ -133,8 +154,11 @@ class PieAdmin(admin.ModelAdmin):
 
 
 class FormAdmin(admin.ModelAdmin):
-    filter_horizontal = ('control_items', 'hidden_control_items_to_true',)
-    list_filter = ('controlpanel',)
+    filter_horizontal = (
+        "control_items",
+        "hidden_control_items_to_true",
+    )
+    list_filter = ("controlpanel",)
     save_as = True
     save_as_continue = True
 
@@ -143,46 +167,92 @@ class DisplayValueOptionAdminFrom(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(DisplayValueOptionAdminFrom, self).__init__(*args, **kwargs)
         wtf = Color.objects.all()
-        w = self.fields['color'].widget
+        w = self.fields["color"].widget
         color_choices = [(None, None)]
         for choice in wtf:
             color_choices.append((choice.id, choice.color_code()))
         w.choices = color_choices
 
-        def create_option_color(self, name, value, label, selected, index, subindex=None, attrs=None):
+        def create_option_color(
+            self, name, value, label, selected, index, subindex=None, attrs=None
+        ):
             if label is None:
-                return self._create_option(name, value, label, selected, index, subindex, attrs=None)
-            font_color = hex(int('ffffff', 16) - int(label[1::], 16))[2::]
+                return self._create_option(
+                    name, value, label, selected, index, subindex, attrs=None
+                )
+            font_color = hex(int("ffffff", 16) - int(label[1::], 16))[2::]
             # attrs = self.build_attrs(attrs,{'style':'background: %s; color: #%s'%(label,font_color)})
             self.option_inherits_attrs = True
-            return self._create_option(name, value, label, selected, index, subindex,
-                                       attrs={'style': 'background: %s; color: #%s' % (label, font_color)})
+            return self._create_option(
+                name,
+                value,
+                label,
+                selected,
+                index,
+                subindex,
+                attrs={"style": "background: %s; color: #%s" % (label, font_color)},
+            )
 
         import types
+
         # from django.forms.widgets import Select
         w.widget._create_option = w.widget.create_option  # copy old method
-        w.widget.create_option = types.MethodType(create_option_color, w.widget)  # replace old with new
-        w.widget.attrs = {'onchange': 'this.style.backgroundColor=this.options[this.selectedIndex].style.'
-                                       'backgroundColor;this.style.color=this.options[this.selectedIndex].style.color'}
+        w.widget.create_option = types.MethodType(
+            create_option_color, w.widget
+        )  # replace old with new
+        w.widget.attrs = {
+            "onchange": "this.style.backgroundColor=this.options[this.selectedIndex].style."
+            "backgroundColor;this.style.color=this.options[this.selectedIndex].style.color"
+        }
 
     def clean(self):
         super().clean()
         color_options = set()
 
-        if self.data.get('gradient', False) == 'on':
+        if self.data.get("gradient", False) == "on":
             for d in self.data:
-                if 'displayvaluecoloroption_set-' in d and d[len('displayvaluecoloroption_set-'):len('displayvaluecoloroption_set-') + 1].isdigit() and 'displayvaluecoloroption_set-' + d[len('displayvaluecoloroption_set-'):len('displayvaluecoloroption_set-') + 1] + '-DELETE' not in self.data:
-                    color_options.update(d[len('displayvaluecoloroption_set-'):len('displayvaluecoloroption_set-') + 1])
+                if (
+                    "displayvaluecoloroption_set-" in d
+                    and d[
+                        len("displayvaluecoloroption_set-") : len(
+                            "displayvaluecoloroption_set-"
+                        )
+                        + 1
+                    ].isdigit()
+                    and "displayvaluecoloroption_set-"
+                    + d[
+                        len("displayvaluecoloroption_set-") : len(
+                            "displayvaluecoloroption_set-"
+                        )
+                        + 1
+                    ]
+                    + "-DELETE"
+                    not in self.data
+                ):
+                    color_options.update(
+                        d[
+                            len("displayvaluecoloroption_set-") : len(
+                                "displayvaluecoloroption_set-"
+                            )
+                            + 1
+                        ]
+                    )
                 if len(color_options) > 1:
-                    raise ValidationError('1 color option needed for gradient.')
-            if 'displayvaluecoloroption_set-0-color_level' in self.data and float(self.data['gradient_higher_level']) <= float(self.data.get('displayvaluecoloroption_set-0-color_level')):
-                raise ValidationError('gradient higher level must be strictly higher than the color option level.')
+                    raise ValidationError("1 color option needed for gradient.")
+            if "displayvaluecoloroption_set-0-color_level" in self.data and float(
+                self.data["gradient_higher_level"]
+            ) <= float(self.data.get("displayvaluecoloroption_set-0-color_level")):
+                raise ValidationError(
+                    "gradient higher level must be strictly higher than the color option level."
+                )
             if not len(color_options) == 1:
-                raise ValidationError('1 color option needed for gradient.')
-            if self.data.get('displayvaluecoloroption_set-0-color') == "":
-                raise ValidationError('Color for Display value color options cannot be null for gradient.')
-            if self.data['color'] == "":
-                raise ValidationError('Color cannot be null for gradient.')
+                raise ValidationError("1 color option needed for gradient.")
+            if self.data.get("displayvaluecoloroption_set-0-color") == "":
+                raise ValidationError(
+                    "Color for Display value color options cannot be null for gradient."
+                )
+            if self.data["color"] == "":
+                raise ValidationError("Color cannot be null for gradient.")
 
     class Meta:
         widgets = {
@@ -196,36 +266,50 @@ class DisplayValueOptionAdminFrom(forms.ModelForm):
         }
 
     class Media:
-        js = (
-            'pyscada/js/admin/hideshow.js',
-        )
+        js = ("pyscada/js/admin/hideshow.js",)
 
 
 class DisplayValueColorOptionAdminFrom(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(DisplayValueColorOptionAdminFrom, self).__init__(*args, **kwargs)
         wtf = Color.objects.all()
-        w = self.fields['color'].widget
+        w = self.fields["color"].widget
         color_choices = [(None, None)]
         for choice in wtf:
             color_choices.append((choice.id, choice.color_code()))
         w.choices = color_choices
 
-        def create_option_color(self, name, value, label, selected, index, subindex=None, attrs=None):
+        def create_option_color(
+            self, name, value, label, selected, index, subindex=None, attrs=None
+        ):
             if label is None:
-                return self._create_option(name, value, label, selected, index, subindex, attrs=None)
-            font_color = hex(int('ffffff', 16) - int(label[1::], 16))[2::]
+                return self._create_option(
+                    name, value, label, selected, index, subindex, attrs=None
+                )
+            font_color = hex(int("ffffff", 16) - int(label[1::], 16))[2::]
             # attrs = self.build_attrs(attrs,{'style':'background: %s; color: #%s'%(label,font_color)})
             self.option_inherits_attrs = True
-            return self._create_option(name, value, label, selected, index, subindex,
-                                       attrs={'style': 'background: %s; color: #%s' % (label, font_color)})
+            return self._create_option(
+                name,
+                value,
+                label,
+                selected,
+                index,
+                subindex,
+                attrs={"style": "background: %s; color: #%s" % (label, font_color)},
+            )
 
         import types
+
         # from django.forms.widgets import Select
         w.widget._create_option = w.widget.create_option  # copy old method
-        w.widget.create_option = types.MethodType(create_option_color, w.widget)  # replace old with new
-        w.widget.attrs = {'onchange': 'this.style.backgroundColor=this.options[this.selectedIndex].style.'
-                                       'backgroundColor;this.style.color=this.options[this.selectedIndex].style.color'}
+        w.widget.create_option = types.MethodType(
+            create_option_color, w.widget
+        )  # replace old with new
+        w.widget.attrs = {
+            "onchange": "this.style.backgroundColor=this.options[this.selectedIndex].style."
+            "backgroundColor;this.style.color=this.options[this.selectedIndex].style.color"
+        }
 
 
 class DisplayValueColorOptionInline(admin.TabularInline):
@@ -236,12 +320,27 @@ class DisplayValueColorOptionInline(admin.TabularInline):
 
 class DisplayValueOptionAdmin(admin.ModelAdmin):
     fieldsets = (
-        (None, {
-            'fields': ('name', 'type', 'timestamp_conversion',),
-        }),
-        ('Color', {
-            'fields': ('color', 'color_only', 'gradient', 'gradient_higher_level',),
-        }),
+        (
+            None,
+            {
+                "fields": (
+                    "name",
+                    "type",
+                    "timestamp_conversion",
+                ),
+            },
+        ),
+        (
+            "Color",
+            {
+                "fields": (
+                    "color",
+                    "color_only",
+                    "gradient",
+                    "gradient_higher_level",
+                ),
+            },
+        ),
     )
     form = DisplayValueOptionAdminFrom
     save_as = True
@@ -261,12 +360,31 @@ class ControlElementOptionAdmin(admin.ModelAdmin):
 
 
 class ControlItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'position', 'label', 'type', 'variable', 'variable_property', 'display_value_options',
-                    'control_element_options')
-    list_filter = ('controlpanel', FormListFilter, 'type',)
-    list_editable = ('position', 'label', 'type', 'variable', 'variable_property', 'display_value_options',
-                     'control_element_options')
-    raw_id_fields = ('variable',)
+    list_display = (
+        "id",
+        "position",
+        "label",
+        "type",
+        "variable",
+        "variable_property",
+        "display_value_options",
+        "control_element_options",
+    )
+    list_filter = (
+        "controlpanel",
+        FormListFilter,
+        "type",
+    )
+    list_editable = (
+        "position",
+        "label",
+        "type",
+        "variable",
+        "variable_property",
+        "display_value_options",
+        "control_element_options",
+    )
+    raw_id_fields = ("variable",)
     save_as = True
     save_as_continue = True
 
@@ -275,11 +393,20 @@ class SlidingPanelMenuForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(SlidingPanelMenuForm, self).__init__(*args, **kwargs)
         wtf = ControlItem.objects.all()
-        w = self.fields['items'].widget
+        w = self.fields["items"].widget
         choices = []
         for choice in wtf:
-            choices.append((choice.id,
-                            choice.label + " (" + choice.variable.name + ', ' + choice.get_type_display() + ")"))
+            choices.append(
+                (
+                    choice.id,
+                    choice.label
+                    + " ("
+                    + choice.variable.name
+                    + ", "
+                    + choice.get_type_display()
+                    + ")",
+                )
+            )
         w.choices = choices
 
 
@@ -287,16 +414,35 @@ class SlidingPanelMenuAdmin(admin.ModelAdmin):
     # search_fields = ['name',]
     # filter_horizontal = ('items',)
     # form = SlidingPanelMenuForm
-    list_display = ('id', 'title', 'position', 'visible')
+    list_display = ("id", "title", "position", "visible")
     save_as = True
     save_as_continue = True
 
 
 class WidgetAdmin(admin.ModelAdmin):
-    list_display_links = ('id',)
-    list_display = ('id', 'title', 'page', 'row', 'col', 'size', 'content', 'visible', 'extra_css_class', )
-    list_editable = ('title', 'page', 'row', 'col', 'size', 'content', 'visible', 'extra_css_class', )
-    list_filter = ('page',)
+    list_display_links = ("id",)
+    list_display = (
+        "id",
+        "title",
+        "page",
+        "row",
+        "col",
+        "size",
+        "content",
+        "visible",
+        "extra_css_class",
+    )
+    list_editable = (
+        "title",
+        "page",
+        "row",
+        "col",
+        "size",
+        "content",
+        "visible",
+        "extra_css_class",
+    )
+    list_filter = ("page",)
     save_as = True
     save_as_continue = True
 
@@ -304,9 +450,11 @@ class WidgetAdmin(admin.ModelAdmin):
 class GroupDisplayPermissionForm(forms.ModelForm):
     def clean(self):
         super().clean()
-        hmi_group = self.cleaned_data['hmi_group']
+        hmi_group = self.cleaned_data["hmi_group"]
         id = self.instance.pk
-        if len(GroupDisplayPermission.objects.filter(hmi_group=hmi_group).exclude(id=id)):
+        if len(
+            GroupDisplayPermission.objects.filter(hmi_group=hmi_group).exclude(id=id)
+        ):
             raise ValidationError("This group display permission already exist.")
 
 
@@ -318,7 +466,11 @@ class GroupDisplayPermissionAdmin(admin.ModelAdmin):
 
     def get_inlines(self, request, obj=None):
         # Add inlines for any model with OneToOne relation with Device
-        items = [field for field in GroupDisplayPermission._meta.get_fields() if issubclass(type(field), OneToOneRel)]
+        items = [
+            field
+            for field in GroupDisplayPermission._meta.get_fields()
+            if issubclass(type(field), OneToOneRel)
+        ]
         inlines = []
         for d in items:
             filter_horizontal_inline = ()
@@ -328,8 +480,12 @@ class GroupDisplayPermissionAdmin(admin.ModelAdmin):
             if hasattr(obj, d.name):
                 collapse = None
             else:
-                collapse = ['collapse']
-            device_dict = dict(model=d.related_model, filter_horizontal=filter_horizontal_inline, classes=collapse)
+                collapse = ["collapse"]
+            device_dict = dict(
+                model=d.related_model,
+                filter_horizontal=filter_horizontal_inline,
+                classes=collapse,
+            )
             cl = type(d.name, (admin.TabularInline,), device_dict)
             inlines.append(cl)
         return inlines
@@ -341,44 +497,82 @@ class GroupDisplayPermissionAdmin(admin.ModelAdmin):
 
 
 class ControlPanelAdmin(admin.ModelAdmin):
-    filter_horizontal = ('items', 'forms',)
+    filter_horizontal = (
+        "items",
+        "forms",
+    )
     save_as = True
     save_as_continue = True
 
 
 class ViewAdmin(admin.ModelAdmin):
-    filter_horizontal = ('pages', 'sliding_panel_menus')
+    filter_horizontal = ("pages", "sliding_panel_menus")
     save_as = True
     save_as_continue = True
 
 
 class CustomHTMLPanelAdmin(admin.ModelAdmin):
-    filter_horizontal = ('variables', 'variable_properties')
+    filter_horizontal = ("variables", "variable_properties")
     save_as = True
     save_as_continue = True
 
 
 class PageAdmin(admin.ModelAdmin):
-    list_display_links = ('id',)
-    list_display = ('id', 'title', 'link_title', 'position',)
-    list_editable = ('title', 'link_title', 'position',)
-    list_filter = ('view__title',)
+    list_display_links = ("id",)
+    list_display = (
+        "id",
+        "title",
+        "link_title",
+        "position",
+    )
+    list_editable = (
+        "title",
+        "link_title",
+        "position",
+    )
+    list_filter = ("view__title",)
     save_as = True
     save_as_continue = True
 
 
 class ProcessFlowDiagramItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'control_item', 'top', 'left', 'width', 'height', 'visible', 'font_size',)
-    list_editable = ('control_item', 'top', 'left', 'width', 'height', 'visible', 'font_size',)
+    list_display = (
+        "id",
+        "control_item",
+        "top",
+        "left",
+        "width",
+        "height",
+        "visible",
+        "font_size",
+    )
+    list_editable = (
+        "control_item",
+        "top",
+        "left",
+        "width",
+        "height",
+        "visible",
+        "font_size",
+    )
     # raw_id_fields = ('variable',)
     save_as = True
     save_as_continue = True
 
 
 class ProcessFlowDiagramAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'type', 'background_image',)
-    list_editable = ('title', 'type', 'background_image',)
-    filter_horizontal = ('process_flow_diagram_items',)
+    list_display = (
+        "id",
+        "title",
+        "type",
+        "background_image",
+    )
+    list_editable = (
+        "title",
+        "type",
+        "background_image",
+    )
+    filter_horizontal = ("process_flow_diagram_items",)
     save_as = True
     save_as_continue = True
 

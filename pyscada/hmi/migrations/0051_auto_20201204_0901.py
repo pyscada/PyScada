@@ -21,7 +21,9 @@ def move_dropdown_in_control_panel(apps, schema_editor):
     timeout = time() + 60 * 5
     for item in control_panel_model_set:
         for dd in item.dropdowns.all():
-            item.items.add(control_item_model.objects.get(id=control_element_dict[dd.id]))
+            item.items.add(
+                control_item_model.objects.get(id=control_element_dict[dd.id])
+            )
 
             if time() > timeout:
                 break
@@ -30,14 +32,16 @@ def move_dropdown_in_control_panel(apps, schema_editor):
 
     for item in form_model_set:
         for dd in item.dropdowns.all():
-            item.control_items.add(control_item_model.objects.get(id=control_element_dict[dd.id]))
+            item.control_items.add(
+                control_item_model.objects.get(id=control_element_dict[dd.id])
+            )
 
             if time() > timeout:
                 break
 
             count += 1
 
-    logger.info('move %d dropdown in total\n' % count)
+    logger.info("move %d dropdown in total\n" % count)
 
 
 def move_dropdown(apps, schema_editor):
@@ -48,14 +52,17 @@ def move_dropdown(apps, schema_editor):
     count = 0
     timeout = time() + 60 * 5
     for item in dropdown_set:
-        control_item = control_item_model(label=item.label,
-                                          position=0,
-                                          type=0,
-                                          variable=item.variable,
-                                          variable_property=item.variable_property,
-                                          display_value_options=None,
-                                          control_element_options=control_element_option_model.objects.get(id=dd_dict[item.id]),
-                                          )
+        control_item = control_item_model(
+            label=item.label,
+            position=0,
+            type=0,
+            variable=item.variable,
+            variable_property=item.variable_property,
+            display_value_options=None,
+            control_element_options=control_element_option_model.objects.get(
+                id=dd_dict[item.id]
+            ),
+        )
         control_item.save()
         control_element_dict[item.id] = control_item.id
 
@@ -64,7 +71,7 @@ def move_dropdown(apps, schema_editor):
 
         count += 1
 
-    logger.info('move %d dropdown in total\n' % count)
+    logger.info("move %d dropdown in total\n" % count)
 
 
 def create_control_element_option(apps, schema_editor):
@@ -74,11 +81,12 @@ def create_control_element_option(apps, schema_editor):
     count = 0
     timeout = time() + 60 * 5
     for item in dropdown_set:
-        control_element_option = control_element_option_model(name=item.label,
-                                                              placeholder=item.empty_value,
-                                                              dictionary=item.dictionary,
-                                                              empty_dictionary=item.empty,
-                                                              )
+        control_element_option = control_element_option_model(
+            name=item.label,
+            placeholder=item.empty_value,
+            dictionary=item.dictionary,
+            empty_dictionary=item.empty,
+        )
         control_element_option.save()
         dd_dict[item.id] = control_element_option.id
 
@@ -87,17 +95,20 @@ def create_control_element_option(apps, schema_editor):
 
         count += 1
 
-    logger.info('create %d control element option in total\n' % count)
+    logger.info("create %d control element option in total\n" % count)
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0050_auto_20201203_2101'),
+        ("hmi", "0050_auto_20201203_2101"),
     ]
 
     operations = [
-        migrations.RunPython(create_control_element_option, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(
+            create_control_element_option, reverse_code=migrations.RunPython.noop
+        ),
         migrations.RunPython(move_dropdown, reverse_code=migrations.RunPython.noop),
-        migrations.RunPython(move_dropdown_in_control_panel, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(
+            move_dropdown_in_control_panel, reverse_code=migrations.RunPython.noop
+        ),
     ]

@@ -36,7 +36,21 @@ from __future__ import unicode_literals
 
 import atexit
 import errno
-from os import linesep, umask, access, W_OK, kill, remove, setsid, path, fork, F_OK, WNOHANG, getpid, waitpid
+from os import (
+    linesep,
+    umask,
+    access,
+    W_OK,
+    kill,
+    remove,
+    setsid,
+    path,
+    fork,
+    F_OK,
+    WNOHANG,
+    getpid,
+    waitpid,
+)
 import signal
 import sys
 import traceback
@@ -52,7 +66,14 @@ from django.db.transaction import TransactionManagementError
 from django.db.models import Q
 from django.db.utils import IntegrityError
 
-from pyscada.models import BackgroundProcess, DeviceWriteTask, Device, RecordedData, DeviceReadTask, VariableProperty
+from pyscada.models import (
+    BackgroundProcess,
+    DeviceWriteTask,
+    Device,
+    RecordedData,
+    DeviceReadTask,
+    VariableProperty,
+)
 from pyscada.utils import set_bit
 from django.utils.timezone import now
 import logging
@@ -66,6 +87,7 @@ try:
     from asgiref.sync import async_to_sync
     from asyncio import wait_for
     from aioredis.errors import ConnectionClosedError
+
     try:
         from asyncio.exceptions import TimeoutError as asyncioTimeoutError
         from asyncio.exceptions import CancelledError as asyncioCancelledError
@@ -77,8 +99,12 @@ try:
         logger.warning("Django Channels is not working. Missing config in settings ?")
         raise ConnectionRefusedError
     else:
+
         async def channels_test():
-            await wait_for(channels.layers.get_channel_layer().receive('test'), timeout=0.1)
+            await wait_for(
+                channels.layers.get_channel_layer().receive("test"), timeout=0.1
+            )
+
         async_to_sync(channels_test)()
         channels_driver = True
 except (ImportError, ModuleNotFoundError):
@@ -101,7 +127,7 @@ def check_db_connection():
         # destroy the default mysql connection
         # after this line, when you use ORM methods
         # django will reconnect to the default mysql
-        logger.debug('deleted default connection')
+        logger.debug("deleted default connection")
         del connections._connections.default
 
 
@@ -115,20 +141,25 @@ class Scheduler(object):
     """
     Manages and monitor all the sub processes.
     """
+
     PROCESSES = {}
     SIG_QUEUE = []
     SIGNALS = [signal.SIGTERM, signal.SIGUSR1, signal.SIGHUP, signal.SIGUSR2]
-    if hasattr(settings, 'PID_FILE_NAME'):
+    if hasattr(settings, "PID_FILE_NAME"):
         pid_file_name = str(settings.PID_FILE_NAME)
     else:
-        pid_file_name = '/tmp/pyscada_daemon.pid'
+        pid_file_name = "/tmp/pyscada_daemon.pid"
 
-    def __init__(self, daemon_name='pyscada.utils.scheduler.Scheduler',
-                 run_as_daemon=True, stdout=sys.stdout, stdin=sys.stdin, stderr=sys.stderr,
-                 pid_file_name=pid_file_name):
-        """
-
-        """
+    def __init__(
+        self,
+        daemon_name="pyscada.utils.scheduler.Scheduler",
+        run_as_daemon=True,
+        stdout=sys.stdout,
+        stdin=sys.stdin,
+        stderr=sys.stderr,
+        pid_file_name=pid_file_name,
+    ):
+        """ """
         self.pid_file_name = pid_file_name
         self.run_as_daemon = run_as_daemon
 
@@ -141,16 +172,18 @@ class Scheduler(object):
         if not access(path.dirname(self.pid_file_name), W_OK) and self.run_as_daemon:
             self.stdout.write("pidfile path is not writeable\n")
             sys.exit(0)
-        if access(self.pid_file_name, F_OK) and not access(self.pid_file_name, W_OK) and self.run_as_daemon:
+        if (
+            access(self.pid_file_name, F_OK)
+            and not access(self.pid_file_name, W_OK)
+            and self.run_as_daemon
+        ):
             self.stdout.write("pidfile file is not writeable\n")
             sys.exit(0)
 
         self.label = daemon_name
 
     def init_db(self, sig=0):
-        """
-
-        """
+        """ """
         for process in BackgroundProcess.objects.filter(done=False, pid__gt=0):
             try:
                 kill(process.pid, sig)
@@ -158,34 +191,39 @@ class Scheduler(object):
                 return False
             except OSError as e:
                 if e.errno == errno.ESRCH:  # no such process
-                    process.message = 'stopped'
+                    process.message = "stopped"
                     process.pid = 0
                     process.last_update = now()
                     process.save()
                 elif e.errno == errno.EPERM:  # Operation not permitted
-                    self.stderr.write("can't stop process %d: %s with pid %d, 'Operation not permitted'\n" % (
-                        process.pk, process.label, process.pid))
+                    self.stderr.write(
+                        "can't stop process %d: %s with pid %d, 'Operation not permitted'\n"
+                        % (process.pk, process.label, process.pid)
+                    )
 
         BackgroundProcess.objects.all().delete()
         # add the Scheduler Process
-        parent_process = BackgroundProcess(pk=1, label='pyscada.utils.scheduler.Scheduler',
-                                           enabled=True,
-                                           process_class='pyscada.utils.scheduler.Process')
+        parent_process = BackgroundProcess(
+            pk=1,
+            label="pyscada.utils.scheduler.Scheduler",
+            enabled=True,
+            process_class="pyscada.utils.scheduler.Process",
+        )
         parent_process.save()
         # check for processes to add in init block of each app
-        if 'pyscada.core' not in settings.INSTALLED_APPS:
+        if "pyscada.core" not in settings.INSTALLED_APPS:
             # append core to initialize pyscada.event and pyscada.mail
-            settings.INSTALLED_APPS.append('pyscada.core')
+            settings.INSTALLED_APPS.append("pyscada.core")
         for app in settings.INSTALLED_APPS:
-            m = __import__(app, fromlist=[str('a')])
+            m = __import__(app, fromlist=[str("a")])
             self.stderr.write("app %s\n" % app)
-            if hasattr(m, 'parent_process_list'):
+            if hasattr(m, "parent_process_list"):
                 for process in m.parent_process_list:
-                    self.stderr.write("--> add %s\n" % process['label'])
-                    if 'enabled' not in process:
-                        process['enabled'] = True
-                    if 'parent_process' not in process:
-                        process['parent_process'] = parent_process
+                    self.stderr.write("--> add %s\n" % process["label"])
+                    if "enabled" not in process:
+                        process["enabled"] = True
+                    if "parent_process" not in process:
+                        process["parent_process"] = parent_process
                     bp = BackgroundProcess(**process)
                     bp.save()
 
@@ -210,7 +248,10 @@ class Scheduler(object):
                     # process is dead
                     self.delete_pid(force_del=True)
                 else:
-                    self.stderr.write("demonize failed, something went wrong: %d (%s)\n" % (e.errno, e.strerror))
+                    self.stderr.write(
+                        "demonize failed, something went wrong: %d (%s)\n"
+                        % (e.errno, e.strerror)
+                    )
                     return False
 
         try:
@@ -226,7 +267,9 @@ class Scheduler(object):
                 self.stderr.write("pid is %d\n" % self.read_pid())
                 sys.exit(0)
         except OSError as e:
-            self.stderr.write("demonize failed in 1. Fork: %d (%s)\n" % (e.errno, e.strerror))
+            self.stderr.write(
+                "demonize failed in 1. Fork: %d (%s)\n" % (e.errno, e.strerror)
+            )
             sys.exit(1)
 
         # Decouple from parent environment
@@ -241,7 +284,9 @@ class Scheduler(object):
                 # Exit from the second parent
                 sys.exit(0)
         except OSError as e:
-            self.stderr.write("demonize failed in 2. Fork: %d (%s)\n" % (e.errno, e.strerror))
+            self.stderr.write(
+                "demonize failed in 2. Fork: %d (%s)\n" % (e.errno, e.strerror)
+            )
             sys.exit(1)
 
         # Redirect standard file descriptors
@@ -255,16 +300,16 @@ class Scheduler(object):
         # os.dup2(se.fileno(), sys.stderr.fileno())
 
         # Write the PID file
-        #atexit.register(self.delete_pid)
+        # atexit.register(self.delete_pid)
         self.write_pid()
         return True
 
     def write_pid(self, pid=None):
         if pid is None:
             pid = getpid()
-        with open(self.pid_file_name, 'w+') as f:
-            f.write('%d\n' % pid)
-        logger.info('created pid %d' % pid)
+        with open(self.pid_file_name, "w+") as f:
+            f.write("%d\n" % pid)
+        logger.info("created pid %d" % pid)
 
     def read_pid(self):
         if not access(self.pid_file_name, F_OK):
@@ -273,7 +318,7 @@ class Scheduler(object):
         # try reading the pid during 5 seconds
         for i in range(1, 6):
             try:
-                with open(self.pid_file_name, 'r') as f:
+                with open(self.pid_file_name, "r") as f:
                     pid = int(f.read().strip())
                 return pid
             except ValueError:
@@ -286,13 +331,13 @@ class Scheduler(object):
         """
         pid = self.read_pid()
         if pid != getpid() or force_del:
-            logger.debug('process %d tried to delete pid' % getpid())
+            logger.debug("process %d tried to delete pid" % getpid())
             return False
 
         if access(self.pid_file_name, F_OK):
             try:
                 remove(self.pid_file_name)  # remove the old pid file
-                logger.debug('delete pid (%d)' % getpid())
+                logger.debug("delete pid (%d)" % getpid())
             except:
                 logger.debug("can't delete pid file")
 
@@ -309,17 +354,17 @@ class Scheduler(object):
         close_db_connection()
 
         try:
-            master_process = BackgroundProcess.objects.filter(parent_process__isnull=True,
-                                                              label=self.label,
-                                                              enabled=True).first()
+            master_process = BackgroundProcess.objects.filter(
+                parent_process__isnull=True, label=self.label, enabled=True
+            ).first()
         except OperationalError as e:
             logger.error("Cant't connect to the DB", exc_info=True)
-            #self.delete_pid(force_del=True)
+            # self.delete_pid(force_del=True)
             sys.exit(0)
         self.pid = getpid()
         if not master_process:
             self.delete_pid(force_del=True)
-            logger.debug('no such process in BackgroundProcesses\n')
+            logger.debug("no such process in BackgroundProcesses\n")
             sys.exit(0)
 
         # kill all the sub processes
@@ -330,7 +375,7 @@ class Scheduler(object):
                 pass
         # Init the DB
         if not self.init_db():
-            logger.debug('Init DB failed\n')
+            logger.debug("Init DB failed\n")
             sys.exit(0)
 
         self.process_id = master_process.pk
@@ -339,26 +384,34 @@ class Scheduler(object):
         master_process.running_since = now()
         master_process.done = False
         master_process.failed = False
-        master_process.message = 'init master process'
+        master_process.message = "init master process"
         master_process.save()
-        BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False).update(message='stopped')
-        for parent_process in BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False):
-            for process in BackgroundProcess.objects.filter(parent_process__pk=parent_process.pk, done=False):
+        BackgroundProcess.objects.filter(
+            parent_process__pk=self.process_id, done=False
+        ).update(message="stopped")
+        for parent_process in BackgroundProcess.objects.filter(
+            parent_process__pk=self.process_id, done=False
+        ):
+            for process in BackgroundProcess.objects.filter(
+                parent_process__pk=parent_process.pk, done=False
+            ):
                 try:
                     kill(process.pid, 0)
                 except OSError as e:
                     if e.errno == errno.ESRCH:
                         process.delete()
                         continue
-                logger.debug('process %d is alive' % process.pk)
+                logger.debug("process %d is alive" % process.pk)
                 process.stop()
 
             # clean up
-            BackgroundProcess.objects.filter(parent_process__pk=parent_process.pk, done=False).delete()
+            BackgroundProcess.objects.filter(
+                parent_process__pk=parent_process.pk, done=False
+            ).delete()
 
         # register signals
         [signal.signal(s, self.signal) for s in self.SIGNALS]
-        #signal.signal(signal.SIGCHLD, self.handle_chld)
+        # signal.signal(signal.SIGCHLD, self.handle_chld)
         # start the main loop
         self.run()
         self.delete_pid()
@@ -369,10 +422,12 @@ class Scheduler(object):
         the main loop
         """
         try:
-            master_process = BackgroundProcess.objects.filter(pk=self.process_id).first()
+            master_process = BackgroundProcess.objects.filter(
+                pk=self.process_id
+            ).first()
             if master_process:
                 master_process.last_update = now()
-                master_process.message = 'init child processes'
+                master_process.message = "init child processes"
                 master_process.save()
             else:
                 self.delete_pid(force_del=True)
@@ -389,22 +444,25 @@ class Scheduler(object):
 
                 # update the Process
                 BackgroundProcess.objects.filter(pk=self.process_id).update(
-                    last_update=now(),
-                    message='running..')
+                    last_update=now(), message="running.."
+                )
                 if sig is None:
                     self.manage_processes()
                 elif sig not in self.SIGNALS:
-                    logger.error(f'{self.label}, unhandled signal {sig}', exc_info=True)
+                    logger.error(f"{self.label}, unhandled signal {sig}", exc_info=True)
                     continue
                 elif sig == signal.SIGTERM:
-                    logger.debug('%s, termination signal' % self.label)
+                    logger.debug("%s, termination signal" % self.label)
                     raise StopIteration
                 elif sig == signal.SIGHUP:
                     # todo handle sighup
                     pass
                 elif sig == signal.SIGUSR1:
                     # restart all child processes
-                    logger.debug('PID %d, LABEL %s, processed SIGUSR1 (%d) signal' % (self.pid, self.label, sig))
+                    logger.debug(
+                        "PID %d, LABEL %s, processed SIGUSR1 (%d) signal"
+                        % (self.pid, self.label, sig)
+                    )
                     self.restart()
                 elif sig == signal.SIGUSR2:
                     # write the process status to stdout
@@ -419,26 +477,32 @@ class Scheduler(object):
         except SystemExit:
             raise
         except OperationalError:
-            logger.debug('%s, DB connection lost in run' % self.label)
+            logger.debug("%s, DB connection lost in run" % self.label)
             self.stop()
             self.delete_pid()
             sys.exit(0)
         except:
-            logger.error(f'{self.label}({getpid()}), unhandled exception', exc_info=True)
+            logger.error(
+                f"{self.label}({getpid()}), unhandled exception", exc_info=True
+            )
 
     def manage_processes(self):
-        """
-
-        """
+        """ """
         # check for new processes to spawn
         process_list = []
-        for process in BackgroundProcess.objects.filter(parent_process__pk=self.process_id):
+        for process in BackgroundProcess.objects.filter(
+            parent_process__pk=self.process_id
+        ):
             process_list.append(process)
             process_list += list(process.backgroundprocess_set.filter())
 
         for process in process_list:
             #
-            if not process.enabled or not process.parent_process.enabled or process.done:
+            if (
+                not process.enabled
+                or not process.parent_process.enabled
+                or process.done
+            ):
                 if process.pk in self.PROCESSES:
                     timeout = time() + 60  # wait max 60 seconds
                     while True:
@@ -456,16 +520,19 @@ class Scheduler(object):
             if process.pk in self.PROCESSES:
                 continue
 
-            if process.parent_process.pk not in self.PROCESSES and process.parent_process.pk != self.process_id:
+            if (
+                process.parent_process.pk not in self.PROCESSES
+                and process.parent_process.pk != self.process_id
+            ):
                 continue
 
             # spawn new process
             process_inst = process.get_process_instance()
             if process_inst is not None:
                 self.spawn_process(process_inst)
-                logger.debug('process %s started' % process.label)
+                logger.debug("process %s started" % process.label)
             else:
-                logger.debug('process %s returned None' % process.label)
+                logger.debug("process %s returned None" % process.label)
 
         # check all running processes
         process_list = list(self.PROCESSES.values())
@@ -475,7 +542,7 @@ class Scheduler(object):
                 waitpid(process.pid, WNOHANG)
             except OSError as e:
                 if e.errno == errno.ESRCH:
-                    logger.debug('process %d is dead' % process.process_id)
+                    logger.debug("process %d is dead" % process.process_id)
 
                     try:
                         self.PROCESSES.pop(process.process_id)
@@ -483,7 +550,9 @@ class Scheduler(object):
                         pass
                     # process is dead, delete process
                     if process.parent_process_id == self.process_id:
-                        p = BackgroundProcess.objects.filter(pk=process.process_id).first()
+                        p = BackgroundProcess.objects.filter(
+                            pk=process.process_id
+                        ).first()
                         if p:
                             p.pid = 0
                             p.last_update = now()
@@ -514,15 +583,15 @@ class Scheduler(object):
         restart all child processes
         """
         BackgroundProcess.objects.filter(pk=self.process_id).update(
-            last_update=now(),
-            message='restarting..')
+            last_update=now(), message="restarting.."
+        )
         timeout = time() + 60  # wait max 60 seconds
         self.kill_processes(signal.SIGTERM)
         while self.PROCESSES and time() < timeout:
             sleep(0.1)
         self.kill_processes(signal.SIGKILL)
         self.manage_processes()
-        logger.debug('BD %d: restarted' % self.process_id)
+        logger.debug("BD %d: restarted" % self.process_id)
 
     def stop(self, sig=signal.SIGTERM):
         """
@@ -546,7 +615,7 @@ class Scheduler(object):
             return False
         if self.pid != getpid():
             # calling from outside the daemon instance
-            logger.debug('send sigterm to daemon')
+            logger.debug("send sigterm to daemon")
             try:
                 kill(self.pid, sig)
                 return True
@@ -556,10 +625,10 @@ class Scheduler(object):
                 else:
                     return False
 
-        logger.debug('start termination of the daemon')
+        logger.debug("start termination of the daemon")
         BackgroundProcess.objects.filter(pk=self.process_id).update(
-            last_update=now(),
-            message='stopping..')
+            last_update=now(), message="stopping.."
+        )
 
         timeout = time() + 60  # wait max 60 seconds
         self.kill_processes(signal.SIGTERM)
@@ -568,24 +637,24 @@ class Scheduler(object):
             sleep(1)
         self.kill_processes(signal.SIGKILL)
         BackgroundProcess.objects.filter(pk=self.process_id).update(
-            last_update=now(),
-            message='stopped')
-        logger.debug('termination of the daemon done')
+            last_update=now(), message="stopped"
+        )
+        logger.debug("termination of the daemon done")
         return True
 
     def kill_process(self, process_id, sig=signal.SIGTERM):
-        """
-
-        """
+        """ """
         p = self.PROCESSES[process_id]
         try:
             kill(p.pid, sig)
-            logger.debug('try to terminate process id %d - label %s' % (p.pid, p.label))
+            logger.debug("try to terminate process id %d - label %s" % (p.pid, p.label))
         except OSError as e:
             if e.errno == errno.ESRCH:
                 try:
                     self.PROCESSES.pop(process_id)
-                    logger.debug('%s: process id %d is terminated' % (self.label, p.pid))
+                    logger.debug(
+                        "%s: process id %d is terminated" % (self.label, p.pid)
+                    )
                     return True
                 except:
                     return False
@@ -600,9 +669,7 @@ class Scheduler(object):
         return False
 
     def kill_processes(self, sig=signal.SIGTERM):
-        """
-
-        """
+        """ """
         process_ids = list(self.PROCESSES.keys())
         for process_id in process_ids:
             self.kill_process(process_id, sig)
@@ -642,7 +709,10 @@ class Scheduler(object):
             if sp:
                 self.pid = sp.pid
         if self.pid is None or self.pid == 0:
-            self.stderr.write("%s: can't determine process id exiting.\n" % datetime.now().isoformat(' '))
+            self.stderr.write(
+                "%s: can't determine process id exiting.\n"
+                % datetime.now().isoformat(" ")
+            )
             return False
         if self.pid != getpid():
             # calling from outside the daemon instance
@@ -656,18 +726,24 @@ class Scheduler(object):
                     return False
 
         process_list = []
-        for process in BackgroundProcess.objects.filter(parent_process__pk=self.process_id):
+        for process in BackgroundProcess.objects.filter(
+            parent_process__pk=self.process_id
+        ):
             process_list.append(process)
             process_list += list(process.backgroundprocess_set.filter())
         for process in process_list:
-            logger.debug('%s, parrent process_id %d' % (self.label, process.parent_process.pid))
-            logger.debug('%s, process_id %d' % (process.label, process.pid))
+            logger.debug(
+                "%s, parrent process_id %d" % (self.label, process.parent_process.pid)
+            )
+            logger.debug("%s, process_id %d" % (process.label, process.pid))
 
     def signal(self, signum=None, frame=None):
         """
         handle signals
         """
-        logger.debug('PID %d, LABEL %s, received signal: %d' % (self.pid, self.label, signum))
+        logger.debug(
+            "PID %d, LABEL %s, received signal: %d" % (self.pid, self.label, signum)
+        )
         if signum not in self.SIG_QUEUE:
             self.SIG_QUEUE.append(signum)
 
@@ -678,7 +754,7 @@ class Process(object):
         self.dt_set = dt
         self.process_id = 0
         self.parent_process_id = 0
-        self.label = ''
+        self.label = ""
         self.dwt_received = False
         self.drt_received = False
         # register signals
@@ -707,7 +783,7 @@ class Process(object):
             running_since=now(),
             done=False,
             failed=False,
-            message='init process..',
+            message="init process..",
         )
 
         [signal.signal(s, signal.SIG_DFL) for s in self.SIGNALS]  # reset
@@ -720,7 +796,9 @@ class Process(object):
         return True
 
     def run(self):
-        BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=now(), message='running..')
+        BackgroundProcess.objects.filter(pk=self.process_id).update(
+            last_update=now(), message="running.."
+        )
         exec_loop = True
         try:
             while True:
@@ -732,7 +810,9 @@ class Process(object):
                 check_db_connection()
 
                 # update progress
-                BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=now())
+                BackgroundProcess.objects.filter(pk=self.process_id).update(
+                    last_update=now()
+                )
                 if sig is None and exec_loop:
                     # run loop action
                     status, data = self.loop()
@@ -746,36 +826,45 @@ class Process(object):
                             try:
                                 RecordedData.objects.bulk_create(item, batch_size=1000)
                             except IntegrityError:
-                                logger.debug(f'RecordedData objects already exists, retrying ignoring conflicts for : {", ".join(str(i.id) + " " + str(i.variable.id) for i in item)}')
-                                RecordedData.objects.bulk_create(item, batch_size=1000, ignore_conflicts=True)
+                                logger.debug(
+                                    f'RecordedData objects already exists, retrying ignoring conflicts for : {", ".join(str(i.id) + " " + str(i.variable.id) for i in item)}'
+                                )
+                                RecordedData.objects.bulk_create(
+                                    item, batch_size=1000, ignore_conflicts=True
+                                )
                     if status == 1:  # Process OK
                         pass
                     elif status == -1:
                         # some thing went wrong
                         # todo handle
                         # raise StopIteration
-                        BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=now(),
-                                                                                    failed=True, message='failed')
+                        BackgroundProcess.objects.filter(pk=self.process_id).update(
+                            last_update=now(), failed=True, message="failed"
+                        )
                         exec_loop = False
                     elif status == 0:
                         # loop is done exit
-                        BackgroundProcess.objects.filter(pk=self.process_id).update(last_update=now(),
-                                                                                    done=True, message='done')
-                        #raise StopIteration
+                        BackgroundProcess.objects.filter(pk=self.process_id).update(
+                            last_update=now(), done=True, message="done"
+                        )
+                        # raise StopIteration
                         exec_loop = False
                     else:
                         pass
                 elif sig is None:
                     continue
                 elif sig not in self.SIGNALS:
-                    logger.debug('%s, unhandled signal %d' % (self.label, sig))
+                    logger.debug("%s, unhandled signal %d" % (self.label, sig))
                     continue
                 elif sig == signal.SIGTERM:
                     raise StopIteration
                 elif sig == signal.SIGHUP:
                     raise StopIteration
                 elif sig == signal.SIGUSR1:
-                    logger.debug('PID %d, LABEL %s, process SIGUSR1 (%d) signal' % (self.pid, self.label, sig))
+                    logger.debug(
+                        "PID %d, LABEL %s, process SIGUSR1 (%d) signal"
+                        % (self.pid, self.label, sig)
+                    )
                     if not self.restart():
                         logger.debug("restart failed")
                         raise StopIteration
@@ -788,16 +877,36 @@ class Process(object):
                 dt = self.dt_set - (time() - t_start)
                 if dt > 0:
                     try:
-                        if hasattr(self, "device_ids") and not hasattr(self, "device_id") and len(self.device_ids) > 0:
+                        if (
+                            hasattr(self, "device_ids")
+                            and not hasattr(self, "device_id")
+                            and len(self.device_ids) > 0
+                        ):
                             self.device_id = self.device_ids[0]
-                        if channels_driver and hasattr(self, "device_id") and self.device_id is not None:
-                            message = str(self.scheduler_pid) + '_DeviceAction_for_' + str(self.device_id)
+                        if (
+                            channels_driver
+                            and hasattr(self, "device_id")
+                            and self.device_id is not None
+                        ):
+                            message = (
+                                str(self.scheduler_pid)
+                                + "_DeviceAction_for_"
+                                + str(self.device_id)
+                            )
                             async_to_sync(self.waiting_action_receiver)(dt, message)
-                        elif channels_driver and hasattr(self, "process_id") and self.process_id != 0:
-                            message = str(self.scheduler_pid) + '_ProcessAction_for_' + str(self.process_id)
+                        elif (
+                            channels_driver
+                            and hasattr(self, "process_id")
+                            and self.process_id != 0
+                        ):
+                            message = (
+                                str(self.scheduler_pid)
+                                + "_ProcessAction_for_"
+                                + str(self.process_id)
+                            )
                             async_to_sync(self.waiting_action_receiver)(dt, message)
                         else:
-                            #logger.debug("sleep for %s - %s" % (self.process_id, dt))
+                            # logger.debug("sleep for %s - %s" % (self.process_id, dt))
                             raise ConnectionResetError
                     except ConnectionResetError:
                         sleep(dt)
@@ -811,22 +920,22 @@ class Process(object):
             self.stop()
             sys.exit(0)
         except OperationalError as e:
-            logger.error(f'{self.label}, DB connection lost', exc_info=True)
+            logger.error(f"{self.label}, DB connection lost", exc_info=True)
             self.stop()
             sys.exit(0)
         except:
-            logger.error(f'{self.label}, unhandled exception', exc_info=True)
+            logger.error(f"{self.label}, unhandled exception", exc_info=True)
             self.stop()
             sys.exit(0)
 
     async def waiting_action_receiver(self, dt, message):
-        if not hasattr(self, 'channel_layer'):
+        if not hasattr(self, "channel_layer"):
             try:
                 self.channel_layer = channels.layers.get_channel_layer()
                 if self.channel_layer is not None:
                     self.channel_layer.capacity = 1
             except (ConnectionRefusedError, InvalidChannelLayerError):
-                #logger.debug("sleep for %s - %s" % (self.process_id, dt))
+                # logger.debug("sleep for %s - %s" % (self.process_id, dt))
                 sleep(dt)
                 return None
 
@@ -839,12 +948,15 @@ class Process(object):
                 logger.debug("Channels or Redis error:" + str(e))
                 sleep(dt)
             else:
-                if 'DeviceReadTask' in a:
+                if "DeviceReadTask" in a:
                     self.drt_received = True
-                if 'DeviceWriteTask' in a:
+                if "DeviceWriteTask" in a:
                     self.dwt_received = True
-                if 'ProcessSignal' in a:
-                    logger.debug("Received ProcessSignal %s on channel_layer for %s" % (a['ProcessSignal'], self.label))
+                if "ProcessSignal" in a:
+                    logger.debug(
+                        "Received ProcessSignal %s on channel_layer for %s"
+                        % (a["ProcessSignal"], self.label)
+                    )
 
                 # BUG : need to empty the channel_layer, if not the channel layer keep the message for each run loop
                 try:
@@ -852,7 +964,7 @@ class Process(object):
                 except asyncioTimeoutError:
                     pass
         else:
-            #logger.debug("sleep for %s - %s" % (self.process_id, dt))
+            # logger.debug("sleep for %s - %s" % (self.process_id, dt))
             sleep(dt)
 
     def loop(self):
@@ -871,11 +983,13 @@ class Process(object):
         """
         receive signals
         """
-        logger.debug('PID %d, LABEL %s, received signal: %d' % (self.pid, self.label, signum))
+        logger.debug(
+            "PID %d, LABEL %s, received signal: %d" % (self.pid, self.label, signum)
+        )
         if signum not in self.SIG_QUEUE:
             self.SIG_QUEUE.append(signum)
         if channels_driver:
-            if not hasattr(self, 'channel_layer'):
+            if not hasattr(self, "channel_layer"):
                 try:
                     self.channel_layer = channels.layers.get_channel_layer()
                     if self.channel_layer is not None:
@@ -885,17 +999,36 @@ class Process(object):
 
             if self.channel_layer is not None:
                 message = None
-                if hasattr(self, "device_ids") and not hasattr(self, "device_id") and len(self.device_ids) > 0:
+                if (
+                    hasattr(self, "device_ids")
+                    and not hasattr(self, "device_id")
+                    and len(self.device_ids) > 0
+                ):
                     self.device_id = self.device_ids[0]
                 if hasattr(self, "device_id") and self.device_id is not None:
-                    message = str(self.scheduler_pid) + '_DeviceAction_for_' + str(self.device_id)
+                    message = (
+                        str(self.scheduler_pid)
+                        + "_DeviceAction_for_"
+                        + str(self.device_id)
+                    )
                 elif hasattr(self, "process_id") and self.process_id != 0:
-                    message = str(self.scheduler_pid) + '_ProcessAction_for_' + str(self.process_id)
+                    message = (
+                        str(self.scheduler_pid)
+                        + "_ProcessAction_for_"
+                        + str(self.process_id)
+                    )
                 try:
                     if message is not None:
-                        async_to_sync(self.channel_layer.send)(message, {'ProcessSignal': str(signum)})
+                        async_to_sync(self.channel_layer.send)(
+                            message, {"ProcessSignal": str(signum)}
+                        )
                 except (ChannelFull, ConnectionRefusedError):
-                    logger.info("Channel full : " + str(self.scheduler_pid) + '_ProcessAction_for_' + str(self.process_id))
+                    logger.info(
+                        "Channel full : "
+                        + str(self.scheduler_pid)
+                        + "_ProcessAction_for_"
+                        + str(self.process_id)
+                    )
                     pass
                 except (RuntimeWarning, RuntimeError):
                     pass
@@ -905,20 +1038,23 @@ class Process(object):
         handel's a termination signal
         """
         try:
-            BackgroundProcess.objects.filter(pk=self.process_id
-                                             ).update(pid=0, last_update=now(), message='stopping..')
+            BackgroundProcess.objects.filter(pk=self.process_id).update(
+                pid=0, last_update=now(), message="stopping.."
+            )
             # run the cleanup
             self.cleanup()
-            BackgroundProcess.objects.filter(pk=self.process_id).update(pid=0,
-                                                                        last_update=now(),
-                                                                        message='stopped')
-            logger.debug('Process %s(%s) is stopped' % (self.label, self.pid))
+            BackgroundProcess.objects.filter(pk=self.process_id).update(
+                pid=0, last_update=now(), message="stopped"
+            )
+            logger.debug("Process %s(%s) is stopped" % (self.label, self.pid))
         except OperationalError:
-            logger.debug('%s, DB connection lost in stop function' % self.label)
+            logger.debug("%s, DB connection lost in stop function" % self.label)
             try:
                 self.cleanup()
             except TransactionManagementError:
-                logger.debug('%s, TransactionManagementError in cleanup function' % self.label)
+                logger.debug(
+                    "%s, TransactionManagementError in cleanup function" % self.label
+                )
 
     def restart(self):
         """
@@ -930,36 +1066,38 @@ class Process(object):
 class SingleDeviceDAQProcessWorker(Process):
     processes = []
     device_filter = dict(daqdevice__isnull=False)
-    process_class = 'pyscada.utils.scheduler.SingleDeviceDAQProcess'
-    bp_label = 'pyscada.device_class-%s'
+    process_class = "pyscada.utils.scheduler.SingleDeviceDAQProcess"
+    bp_label = "pyscada.device_class-%s"
 
     def __init__(self, dt=5, **kwargs):
         super(Process, self).__init__(dt=dt, **kwargs)
 
     def create_bp(self, item):
-        bp = BackgroundProcess(label=self.bp_label % item.pk,
-                               message='waiting..',
-                               enabled=True,
-                               parent_process_id=self.process_id,
-                               process_class=self.process_class,
-                               process_class_kwargs=json.dumps(
-                                   {'device_id': item.pk}))
+        bp = BackgroundProcess(
+            label=self.bp_label % item.pk,
+            message="waiting..",
+            enabled=True,
+            parent_process_id=self.process_id,
+            process_class=self.process_class,
+            process_class_kwargs=json.dumps({"device_id": item.pk}),
+        )
         bp.save()
-        self.processes.append({'id': bp.id,
-                               'key': item.pk,
-                               'device_id': item.pk,
-                               'failed': 0})
+        self.processes.append(
+            {"id": bp.id, "key": item.pk, "device_id": item.pk, "failed": 0}
+        )
 
     def init_process(self):
         self.processes = []
-        for process in BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False):
+        for process in BackgroundProcess.objects.filter(
+            parent_process__pk=self.process_id, done=False
+        ):
             try:
                 kill(process.pid, 0)
             except OSError as e:
                 if e.errno == errno.ESRCH:
                     process.delete()
                     continue
-            logger.debug('process %d is alive' % process.pk)
+            logger.debug("process %d is alive" % process.pk)
             process.stop(cleanup=True)
 
         # clean up
@@ -970,14 +1108,12 @@ class SingleDeviceDAQProcessWorker(Process):
             self.create_bp(item)
 
     def loop(self):
-        """
-
-        """
+        """ """
         # Add missing devices
         for item in Device.objects.filter(active=True, **self.device_filter):
             item_found = False
             for process in self.processes:
-                if process['device_id'] == item.id:
+                if process["device_id"] == item.id:
                     item_found = True
             if not item_found:
                 self.create_bp(item)
@@ -985,34 +1121,49 @@ class SingleDeviceDAQProcessWorker(Process):
         # check if all processes are running
         for process in self.processes:
             try:
-                if Device.objects.filter(pk=process['device_id']).count() < 1:
+                if Device.objects.filter(pk=process["device_id"]).count() < 1:
                     self.processes.remove(process)
-                    logger.debug("Device %s not found for process %s. Process removed." % (process['device_id'], process['id']))
+                    logger.debug(
+                        "Device %s not found for process %s. Process removed."
+                        % (process["device_id"], process["id"])
+                    )
                     continue
-                if Device.objects.filter(pk=process['device_id'], active=1).count() < 1:
+                if Device.objects.filter(pk=process["device_id"], active=1).count() < 1:
                     self.processes.remove(process)
-                    logger.debug("Device %s not active. Process removed." % process['device_id'])
+                    logger.debug(
+                        "Device %s not active. Process removed." % process["device_id"]
+                    )
                     continue
-                if BackgroundProcess.objects.filter(pk=process['id']).count() != 1:
+                if BackgroundProcess.objects.filter(pk=process["id"]).count() != 1:
                     # Process is dead, spawn new instance
-                    if process['failed'] < 3:
-                        bp = BackgroundProcess(label=self.bp_label % process['key'],
-                                               message='waiting..',
-                                               enabled=True,
-                                               parent_process_id=self.process_id,
-                                               process_class=self.process_class,
-                                               process_class_kwargs=json.dumps(
-                                                   {'device_id': process['device_id']}))
+                    if process["failed"] < 3:
+                        bp = BackgroundProcess(
+                            label=self.bp_label % process["key"],
+                            message="waiting..",
+                            enabled=True,
+                            parent_process_id=self.process_id,
+                            process_class=self.process_class,
+                            process_class_kwargs=json.dumps(
+                                {"device_id": process["device_id"]}
+                            ),
+                        )
                         bp.save()
-                        process['id'] = bp.id
-                    elif process['failed'] == 3:
+                        process["id"] = bp.id
+                    elif process["failed"] == 3:
                         # todo : raise exception
-                        logger.error(f"process {self.bp_label % process['key']} failed 3 times", exc_info=True)
+                        logger.error(
+                            f"process {self.bp_label % process['key']} failed 3 times",
+                            exc_info=True,
+                        )
                     else:
-                        logger.warning(f"process {self.bp_label % process['key']} failed more than 3 times")
-                    process['failed'] += 1
+                        logger.warning(
+                            f"process {self.bp_label % process['key']} failed more than 3 times"
+                        )
+                    process["failed"] += 1
             except:
-                logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
+                logger.debug(
+                    "%s, unhandled exception\n%s" % (self.label, traceback.format_exc())
+                )
 
         return 1, None
 
@@ -1023,14 +1174,16 @@ class SingleDeviceDAQProcessWorker(Process):
     def restart(self):
         for process in self.processes:
             try:
-                bp = BackgroundProcess.objects.get(pk=process['id'])
+                bp = BackgroundProcess.objects.get(pk=process["id"])
                 if bp.stop(cleanup=True):
-                    process['failed'] -= 1
+                    process["failed"] -= 1
                     self.processes.remove(process)
             except BackgroundProcess.DoesNotExist:
                 pass
             except:
-                logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
+                logger.debug(
+                    "%s, unhandled exception\n%s" % (self.label, traceback.format_exc())
+                )
         self.init_process()
         return True
 
@@ -1038,40 +1191,44 @@ class SingleDeviceDAQProcessWorker(Process):
 class MultiDeviceDAQProcessWorker(Process):
     processes = []
     device_filter = dict(daqdevice__isnull=False)
-    process_class = 'pyscada.utils.scheduler.MultiDeviceDAQProcess'
-    bp_label = 'pyscada.device_class-%s'
+    process_class = "pyscada.utils.scheduler.MultiDeviceDAQProcess"
+    bp_label = "pyscada.device_class-%s"
 
     def __init__(self, dt=5, **kwargs):
         super(Process, self).__init__(dt=dt, **kwargs)
 
     def create_bp(self, key, values):
-        bp = BackgroundProcess(label=self.bp_label % key,
-                               message='waiting..',
-                               enabled=True,
-                               parent_process_id=self.process_id,
-                               process_class=self.process_class,
-                               process_class_kwargs=json.dumps(
-                                   {'device_ids': [i.pk for i in values]}))
+        bp = BackgroundProcess(
+            label=self.bp_label % key,
+            message="waiting..",
+            enabled=True,
+            parent_process_id=self.process_id,
+            process_class=self.process_class,
+            process_class_kwargs=json.dumps({"device_ids": [i.pk for i in values]}),
+        )
         bp.save()
-        self.processes.append({'id': bp.id,
-                               'key': key,
-                               'device_ids': [i.pk for i in values],
-                               'failed': 0})
+        self.processes.append(
+            {"id": bp.id, "key": key, "device_ids": [i.pk for i in values], "failed": 0}
+        )
 
     def init_process(self):
         self.processes = []
-        for process in BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False):
+        for process in BackgroundProcess.objects.filter(
+            parent_process__pk=self.process_id, done=False
+        ):
             try:
                 kill(process.pid, 0)
             except OSError as e:
                 if e.errno == errno.ESRCH:
                     process.delete()
                     continue
-            logger.debug('process %d is alive' % process.pk)
+            logger.debug("process %d is alive" % process.pk)
             process.stop()
 
         # clean up
-        BackgroundProcess.objects.filter(parent_process__pk=self.process_id, done=False).delete()
+        BackgroundProcess.objects.filter(
+            parent_process__pk=self.process_id, done=False
+        ).delete()
 
         self.grouped_ids = {}
         for item in Device.objects.filter(active=True, **self.device_filter):
@@ -1083,21 +1240,21 @@ class MultiDeviceDAQProcessWorker(Process):
             self.create_bp(key, values)
 
     def loop(self):
-        """
-
-        """
+        """ """
 
         # check if a device was deleted, then stop the BackgroundProcess and delete in process list
         for process in self.processes:
             process_has_changed = False
-            for device_id in process['device_ids']:
+            for device_id in process["device_ids"]:
                 if not Device.objects.filter(active=True, pk=device_id).count():
                     # device removed or not active
                     process_has_changed = True
             if process_has_changed:
-                bp = BackgroundProcess.objects.filter(pk=process['id'])
+                bp = BackgroundProcess.objects.filter(pk=process["id"])
                 if bp.count():
-                    logger.debug('Stop BP %s and remove process %s' % (bp.first(), process))
+                    logger.debug(
+                        "Stop BP %s and remove process %s" % (bp.first(), process)
+                    )
                     bp.first().stop(cleanup=True)
                     self.processes.remove(process)
 
@@ -1110,7 +1267,7 @@ class MultiDeviceDAQProcessWorker(Process):
             item_found = False
             for process in self.processes:
                 for item in values:
-                    if item.id in process['device_ids']:
+                    if item.id in process["device_ids"]:
                         item_found = True
             if not item_found:
                 self.create_bp(key, values)
@@ -1118,26 +1275,36 @@ class MultiDeviceDAQProcessWorker(Process):
         # check if all processes are running
         for process in self.processes:
             try:
-                if BackgroundProcess.objects.filter(pk=process['id']).count() != 1:
+                if BackgroundProcess.objects.filter(pk=process["id"]).count() != 1:
                     # Process is dead, spawn new instance
-                    if process['failed'] < 3:
-                        bp = BackgroundProcess(label=self.bp_label % process['key'],
-                                               message='waiting..',
-                                               enabled=True,
-                                               parent_process_id=self.process_id,
-                                               process_class=self.process_class,
-                                               process_class_kwargs=json.dumps(
-                                                   {'device_ids': process['device_ids']}))
+                    if process["failed"] < 3:
+                        bp = BackgroundProcess(
+                            label=self.bp_label % process["key"],
+                            message="waiting..",
+                            enabled=True,
+                            parent_process_id=self.process_id,
+                            process_class=self.process_class,
+                            process_class_kwargs=json.dumps(
+                                {"device_ids": process["device_ids"]}
+                            ),
+                        )
                         bp.save()
-                        process['id'] = bp.id
-                    elif process['failed'] == 3:
+                        process["id"] = bp.id
+                    elif process["failed"] == 3:
                         # todo : raise exception
-                        logger.error(f"process {self.bp_label % process['key']} failed 3 times", exc_info=True)
+                        logger.error(
+                            f"process {self.bp_label % process['key']} failed 3 times",
+                            exc_info=True,
+                        )
                     else:
-                        logger.warning(f"process {self.bp_label % process['key']} failed more than 3 times")
-                    process['failed'] += 1
+                        logger.warning(
+                            f"process {self.bp_label % process['key']} failed more than 3 times"
+                        )
+                    process["failed"] += 1
             except:
-                logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
+                logger.debug(
+                    "%s, unhandled exception\n%s" % (self.label, traceback.format_exc())
+                )
 
         return 1, None
 
@@ -1148,14 +1315,16 @@ class MultiDeviceDAQProcessWorker(Process):
     def restart(self):
         for process in self.processes:
             try:
-                bp = BackgroundProcess.objects.get(pk=process['id'])
+                bp = BackgroundProcess.objects.get(pk=process["id"])
                 if bp.stop(cleanup=True):
-                    process['failed'] -= 1
+                    process["failed"] -= 1
                     self.processes.remove(process)
             except BackgroundProcess.DoesNotExist:
                 pass
             except:
-                logger.debug('%s, unhandled exception\n%s' % (self.label, traceback.format_exc()))
+                logger.debug(
+                    "%s, unhandled exception\n%s" % (self.label, traceback.format_exc())
+                )
         self.init_process()
         return True
 
@@ -1163,7 +1332,7 @@ class MultiDeviceDAQProcessWorker(Process):
         """
         override this
         """
-        return '%d' % (item.pk)
+        return "%d" % (item.pk)
 
 
 class SingleDeviceDAQProcess(Process):
@@ -1178,13 +1347,19 @@ class SingleDeviceDAQProcess(Process):
         """
         init a standard daq process for a single device
         """
-        self.device = Device.objects.filter(protocol__daq_daemon=1, id=self.device_id).first()
+        self.device = Device.objects.filter(
+            protocol__daq_daemon=1, id=self.device_id
+        ).first()
         if not self.device:
-            logger.warning(f"Cannot initialize process for {self.device_id}. Device not found.")
+            logger.warning(
+                f"Cannot initialize process for {self.device_id}. Device not found."
+            )
             self.device = None
             return False
         if not self.device.active:
-            logger.info("Device %s is not active. Process not initialized." % self.device_id)
+            logger.info(
+                "Device %s is not active. Process not initialized." % self.device_id
+            )
             self.device = None
             return False
         self.dt_set = min(self.dt_set, self.device.polling_interval)
@@ -1192,7 +1367,10 @@ class SingleDeviceDAQProcess(Process):
         try:
             self.device = self.device.get_device_instance()
         except:
-            logger.error(f"Exception while initialisation of DAQ Process for Device {self.device_id}", exc_info=True)
+            logger.error(
+                f"Exception while initialisation of DAQ Process for Device {self.device_id}",
+                exc_info=True,
+            )
             self.device = None
             return False
 
@@ -1205,30 +1383,44 @@ class SingleDeviceDAQProcess(Process):
 
         variable_as_decimal = {}
         # iterate on VPs write tasks
-        for task in DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False, variable_property__variable__device_id=self.device_id).order_by('start'):
+        for task in DeviceWriteTask.objects.filter(
+            done=False,
+            start__lte=time(),
+            failed=False,
+            variable_property__variable__device_id=self.device_id,
+        ).order_by("start"):
             # scale if needed
             if task.variable_property.variable.scaling is not None:
-                task.value = task.variable_property.variable.scaling.scale_output_value(task.value)
+                task.value = task.variable_property.variable.scaling.scale_output_value(
+                    task.value
+                )
             # process bit proterty to change variable bit value
-            if len(task.variable_property.name.split("bit")) == 2 and \
-              task.variable_property.name.split("bit")[0] == "" and \
-              task.variable_property.name.split("bit")[1].isdigit() and \
-              int(task.variable_property.name.split("bit")[1]) < task.variable_property.variable.get_bits_by_class():
+            if (
+                len(task.variable_property.name.split("bit")) == 2
+                and task.variable_property.name.split("bit")[0] == ""
+                and task.variable_property.name.split("bit")[1].isdigit()
+                and int(task.variable_property.name.split("bit")[1])
+                < task.variable_property.variable.get_bits_by_class()
+            ):
                 if task.variable_property.variable not in variable_as_decimal:
                     variable_as_decimal[task.variable_property.variable] = {}
-                variable_as_decimal[task.variable_property.variable][task.variable_property.name.split("bit")[1]] = task.value
+                variable_as_decimal[task.variable_property.variable][
+                    task.variable_property.name.split("bit")[1]
+                ] = task.value
             # Save the VP value
-            vp = VariableProperty.objects.update_property(variable_property=task.variable_property, value=task.value)
+            vp = VariableProperty.objects.update_property(
+                variable_property=task.variable_property, value=task.value
+            )
             if vp:
                 # Set the VP task as done
                 task.done = True
                 task.finished = time()
-                task.save(update_fields=['done', 'finished'])
+                task.save(update_fields=["done", "finished"])
             else:
-                logger.debug('VP not found for device write task %d' % task.pk)
+                logger.debug("VP not found for device write task %d" % task.pk)
                 task.failed = True
                 task.finished = time()
-                task.save(update_fields=['done', 'finished'])
+                task.save(update_fields=["done", "finished"])
 
         # Get and change the variable value which has bit VP
         for var, item in variable_as_decimal.items():
@@ -1243,14 +1435,26 @@ class SingleDeviceDAQProcess(Process):
             dwt.save()
 
         # Do all the variable write task for this device starting with the oldest
-        dwts = DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False, variable__device_id=self.device_id).order_by('start')
-        if hasattr(self, 'dwt_received') and self.dwt_received and dwts.count() == 0:
+        dwts = DeviceWriteTask.objects.filter(
+            done=False,
+            start__lte=time(),
+            failed=False,
+            variable__device_id=self.device_id,
+        ).order_by("start")
+        if hasattr(self, "dwt_received") and self.dwt_received and dwts.count() == 0:
             sleep(0.5)
             logger.info("DeviceWriteTask bulk_created but not found, wait 0.5s")
-            dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                                  (Q(variable__device_id=self.device_id) |
-                                                   Q(variable_property__variable__device_id=self.device_id)))\
-                .order_by('start')
+            dwts = DeviceWriteTask.objects.filter(
+                Q(
+                    done=False,
+                    start__lte=time(),
+                    failed=False,
+                )
+                & (
+                    Q(variable__device_id=self.device_id)
+                    | Q(variable_property__variable__device_id=self.device_id)
+                )
+            ).order_by("start")
             if dwts.count() == 0:
                 logger.info("DeviceWriteTask still not found")
         self.dwt_received = False
@@ -1267,26 +1471,44 @@ class SingleDeviceDAQProcess(Process):
                     if len(tmp_data) > 0:
                         task.done = True
                         task.finished = time()
-                        task.save(update_fields=['done', 'finished'])
+                        task.save(update_fields=["done", "finished"])
                         data.append(tmp_data)
                     else:
                         task.failed = True
                         task.finished = time()
-                        task.save(update_fields=['failed', 'finished'])
+                        task.save(update_fields=["failed", "finished"])
                 else:
                     task.failed = True
                     task.finished = time()
-                    task.save(update_fields=['failed', 'finished'])
+                    task.save(update_fields=["failed", "finished"])
 
-        drts = DeviceReadTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                             (Q(device_id=self.device_id) | Q(variable__device_id=self.device_id) |
-                                              Q(variable_property__variable__device_id=self.device_id)))
-        if hasattr(self, 'drt_received') and self.drt_received and drts.count() == 0:
+        drts = DeviceReadTask.objects.filter(
+            Q(
+                done=False,
+                start__lte=time(),
+                failed=False,
+            )
+            & (
+                Q(device_id=self.device_id)
+                | Q(variable__device_id=self.device_id)
+                | Q(variable_property__variable__device_id=self.device_id)
+            )
+        )
+        if hasattr(self, "drt_received") and self.drt_received and drts.count() == 0:
             sleep(0.5)
             logger.info("DeviceReadTask bulk_created but not found, wait 0.5s")
-            drts = DeviceReadTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                                 (Q(device_id=self.device_id) | Q(variable__device_id=self.device_id) |
-                                                  Q(variable_property__variable__device_id=self.device_id)))
+            drts = DeviceReadTask.objects.filter(
+                Q(
+                    done=False,
+                    start__lte=time(),
+                    failed=False,
+                )
+                & (
+                    Q(device_id=self.device_id)
+                    | Q(variable__device_id=self.device_id)
+                    | Q(variable_property__variable__device_id=self.device_id)
+                )
+            )
             if drts.count() == 0:
                 logger.info("DeviceReadTask still not found")
         self.drt_received = False
@@ -1313,12 +1535,19 @@ class SingleDeviceDAQProcess(Process):
                     for d in l:
                         if d.variable is not None:
                             for vp in d.variable.variableproperty_set.all():
-                                if len(vp.name.split("bit")) == 2 and \
-                                vp.name.split("bit")[0] == "" and \
-                                vp.name.split("bit")[1].isdigit() and \
-                                int(vp.name.split("bit")[1]) < vp.variable.get_bits_by_class():
-                                    bit = (int(d.value()) >> int(vp.name.split("bit")[1])) & 1
-                                    VariableProperty.objects.update_property(vp, value=bit)
+                                if (
+                                    len(vp.name.split("bit")) == 2
+                                    and vp.name.split("bit")[0] == ""
+                                    and vp.name.split("bit")[1].isdigit()
+                                    and int(vp.name.split("bit")[1])
+                                    < vp.variable.get_bits_by_class()
+                                ):
+                                    bit = (
+                                        int(d.value()) >> int(vp.name.split("bit")[1])
+                                    ) & 1
+                                    VariableProperty.objects.update_property(
+                                        vp, value=bit
+                                    )
                 return 1, data
         return 1, None
 
@@ -1332,7 +1561,7 @@ class SingleDeviceDAQProcess(Process):
         """
         just re-init
         """
-        #self.stop()
+        # self.stop()
         # Reset last query to resfresh all variables values
         self.last_query = 0
         return self.init_process()
@@ -1353,13 +1582,20 @@ class MultiDeviceDAQProcess(Process):
         self.devices = {}
         # Reset dt_query_data to allow an increasing change of the polling interval from the admin
         self.dt_query_data = 3600.0
-        for item in Device.objects.filter(protocol__daq_daemon=1, id__in=self.device_ids):
+        for item in Device.objects.filter(
+            protocol__daq_daemon=1, id__in=self.device_ids
+        ):
             try:
                 if not item:
-                    logger.warning(f"Cannot add device {item.id} to process {self.process_id}. Device not found.")
+                    logger.warning(
+                        f"Cannot add device {item.id} to process {self.process_id}. Device not found."
+                    )
                     continue
                 if not item.active:
-                    logger.info("Device %s is not active. Not added to process %s." % (item.id, self.process_id))
+                    logger.info(
+                        "Device %s is not active. Not added to process %s."
+                        % (item.id, self.process_id)
+                    )
                     continue
                 tmp_device = item.get_device_instance()
                 if tmp_device is not None:
@@ -1368,7 +1604,10 @@ class MultiDeviceDAQProcess(Process):
                     self.dt_query_data = min(self.dt_query_data, item.polling_interval)
             except:
                 var = traceback.format_exc()
-                logger.error(f"Exception while initialisation of DAQ Process for Device {item.pk}", exc_info=True)
+                logger.error(
+                    f"Exception while initialisation of DAQ Process for Device {item.pk}",
+                    exc_info=True,
+                )
         if len(self.devices.items()) == 0:
             return False
         return True
@@ -1380,30 +1619,46 @@ class MultiDeviceDAQProcess(Process):
 
             variable_as_decimal = {}
             # iterate on VPs write tasks
-            for task in DeviceWriteTask.objects.filter(done=False, start__lte=time(), failed=False, variable_property__variable__device_id=device_id).order_by('start'):
+            for task in DeviceWriteTask.objects.filter(
+                done=False,
+                start__lte=time(),
+                failed=False,
+                variable_property__variable__device_id=device_id,
+            ).order_by("start"):
                 # scale if needed
                 if task.variable_property.variable.scaling is not None:
-                    task.value = task.variable_property.variable.scaling.scale_output_value(task.value)
+                    task.value = (
+                        task.variable_property.variable.scaling.scale_output_value(
+                            task.value
+                        )
+                    )
                 # process bit proterty to change variable bit value
-                if len(task.variable_property.name.split("bit")) == 2 and \
-                task.variable_property.name.split("bit")[0] == "" and \
-                task.variable_property.name.split("bit")[1].isdigit() and \
-                int(task.variable_property.name.split("bit")[1]) <= task.variable_property.variable.get_bits_by_class():
+                if (
+                    len(task.variable_property.name.split("bit")) == 2
+                    and task.variable_property.name.split("bit")[0] == ""
+                    and task.variable_property.name.split("bit")[1].isdigit()
+                    and int(task.variable_property.name.split("bit")[1])
+                    <= task.variable_property.variable.get_bits_by_class()
+                ):
                     if task.variable_property.variable not in variable_as_decimal:
                         variable_as_decimal[task.variable_property.variable] = {}
-                    variable_as_decimal[task.variable_property.variable][task.variable_property.name.split("bit")[1]] = task.value
+                    variable_as_decimal[task.variable_property.variable][
+                        task.variable_property.name.split("bit")[1]
+                    ] = task.value
                 # Save the VP value
-                vp = VariableProperty.objects.update_property(variable_property=task.variable_property, value=task.value)
+                vp = VariableProperty.objects.update_property(
+                    variable_property=task.variable_property, value=task.value
+                )
                 if vp:
                     # Set the VP task as done
                     task.done = True
                     task.finished = time()
-                    task.save(update_fields=['done', 'finished'])
+                    task.save(update_fields=["done", "finished"])
                 else:
-                    logger.debug('VP not found for device write task %d' % task.pk)
+                    logger.debug("VP not found for device write task %d" % task.pk)
                     task.failed = True
                     task.finished = time()
-                    task.save(update_fields=['done', 'finished'])
+                    task.save(update_fields=["done", "finished"])
 
             # Get and change the variable value which has bit VP
             for var, item in variable_as_decimal.items():
@@ -1417,17 +1672,35 @@ class MultiDeviceDAQProcess(Process):
                 dwt = DeviceWriteTask(variable=var, value=prev_value)
                 dwt.save()
 
-            dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                                  (Q(variable__device_id=device_id) |
-                                                   Q(variable_property__variable__device_id=device_id)))\
-                .order_by('start')
-            if hasattr(self, 'dwt_received') and self.dwt_received and dwts.count() == 0:
+            dwts = DeviceWriteTask.objects.filter(
+                Q(
+                    done=False,
+                    start__lte=time(),
+                    failed=False,
+                )
+                & (
+                    Q(variable__device_id=device_id)
+                    | Q(variable_property__variable__device_id=device_id)
+                )
+            ).order_by("start")
+            if (
+                hasattr(self, "dwt_received")
+                and self.dwt_received
+                and dwts.count() == 0
+            ):
                 sleep(0.5)
                 logger.info("DeviceWriteTask bulk_created but not found, wait 0.5s")
-                dwts = DeviceWriteTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                                      (Q(variable__device_id=device_id) |
-                                                       Q(variable_property__variable__device_id=device_id)))\
-                    .order_by('start')
+                dwts = DeviceWriteTask.objects.filter(
+                    Q(
+                        done=False,
+                        start__lte=time(),
+                        failed=False,
+                    )
+                    & (
+                        Q(variable__device_id=device_id)
+                        | Q(variable_property__variable__device_id=device_id)
+                    )
+                ).order_by("start")
                 if dwts.count() == 0:
                     logger.info("DeviceWriteTask still not found")
             for task in dwts:
@@ -1442,29 +1715,45 @@ class MultiDeviceDAQProcess(Process):
                     if len(tmp_data) > 0:
                         task.done = True
                         task.finished = time()
-                        task.save(update_fields=['done', 'finished'])
+                        task.save(update_fields=["done", "finished"])
                         data.append(tmp_data)
                     else:
                         task.failed = True
                         task.finished = time()
-                        task.save(update_fields=['failed', 'finished'])
+                        task.save(update_fields=["failed", "finished"])
                 else:
                     task.failed = True
                     task.finished = time()
-                    task.save(update_fields=['failed', 'finished'])
+                    task.save(update_fields=["failed", "finished"])
         self.dwt_received = False
 
-        drts = DeviceReadTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                             (Q(device_id__in=self.device_ids) |
-                                              Q(variable__device_id__in=self.device_ids) |
-                                              Q(variable_property__variable__device_id__in=self.device_ids)))
-        if hasattr(self, 'drt_received') and self.drt_received and drts.count() == 0:
+        drts = DeviceReadTask.objects.filter(
+            Q(
+                done=False,
+                start__lte=time(),
+                failed=False,
+            )
+            & (
+                Q(device_id__in=self.device_ids)
+                | Q(variable__device_id__in=self.device_ids)
+                | Q(variable_property__variable__device_id__in=self.device_ids)
+            )
+        )
+        if hasattr(self, "drt_received") and self.drt_received and drts.count() == 0:
             sleep(0.5)
             logger.info("DeviceReadTask bulk_created but not found, wait 0.5s")
-            drts = DeviceReadTask.objects.filter(Q(done=False, start__lte=time(), failed=False,) &
-                                                 (Q(device_id__in=self.device_ids) |
-                                                  Q(variable__device_id__in=self.device_ids) |
-                                                  Q(variable_property__variable__device_id__in=self.device_ids)))
+            drts = DeviceReadTask.objects.filter(
+                Q(
+                    done=False,
+                    start__lte=time(),
+                    failed=False,
+                )
+                & (
+                    Q(device_id__in=self.device_ids)
+                    | Q(variable__device_id__in=self.device_ids)
+                    | Q(variable_property__variable__device_id__in=self.device_ids)
+                )
+            )
             if drts.count() == 0:
                 logger.info("DeviceReadTask still not found")
         self.drt_received = False
@@ -1475,7 +1764,9 @@ class MultiDeviceDAQProcess(Process):
                 tmp_data = device.request_data()
                 if isinstance(tmp_data, list):
                     if len(tmp_data) > 0:
-                        drts.filter(device_id=device_id).update(done=True, finished=time())
+                        drts.filter(device_id=device_id).update(
+                            done=True, finished=time()
+                        )
                         if len(data[-1]) + len(tmp_data) < 998:
                             # add to the last write job
                             data[-1] += tmp_data
@@ -1483,9 +1774,13 @@ class MultiDeviceDAQProcess(Process):
                             # add to next write job
                             data.append(tmp_data)
                     else:
-                        drts.filter(device_id=device_id).update(failed=True, finished=time())
+                        drts.filter(device_id=device_id).update(
+                            failed=True, finished=time()
+                        )
                 else:
-                    drts.filter(device_id=device_id).update(failed=True, finished=time())
+                    drts.filter(device_id=device_id).update(
+                        failed=True, finished=time()
+                    )
 
         if isinstance(data, list):
             if len(data) > 0:
@@ -1494,12 +1789,19 @@ class MultiDeviceDAQProcess(Process):
                     for d in l:
                         if d.variable is not None:
                             for vp in d.variable.variableproperty_set.all():
-                                if len(vp.name.split("bit")) == 2 and \
-                                vp.name.split("bit")[0] == "" and \
-                                vp.name.split("bit")[1].isdigit() and \
-                                int(vp.name.split("bit")[1]) < vp.variable.get_bits_by_class():
-                                    bit = (d.value() >> int(vp.name.split("bit")[1])) & 1
-                                    VariableProperty.objects.update_property(vp, value=bit)
+                                if (
+                                    len(vp.name.split("bit")) == 2
+                                    and vp.name.split("bit")[0] == ""
+                                    and vp.name.split("bit")[1].isdigit()
+                                    and int(vp.name.split("bit")[1])
+                                    < vp.variable.get_bits_by_class()
+                                ):
+                                    bit = (
+                                        d.value() >> int(vp.name.split("bit")[1])
+                                    ) & 1
+                                    VariableProperty.objects.update_property(
+                                        vp, value=bit
+                                    )
                 return 1, data
         return 1, None
 
@@ -1513,7 +1815,7 @@ class MultiDeviceDAQProcess(Process):
         """
         just re-init
         """
-        #self.stop()
+        # self.stop()
         # Reset last query to resfresh all variables values
         self.last_query = 0
         return self.init_process()

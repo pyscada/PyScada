@@ -4,30 +4,31 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('export', '0015_remove_exporttask_backgroundtask'),
+        ("export", "0015_remove_exporttask_backgroundtask"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='exporttask',
-            name='busy',
+            model_name="exporttask",
+            name="busy",
             field=models.BooleanField(blank=True, default=False),
         ),
         migrations.AlterField(
-            model_name='exporttask',
-            name='done',
+            model_name="exporttask",
+            name="done",
             field=models.BooleanField(blank=True, default=False),
         ),
         migrations.AlterField(
-            model_name='exporttask',
-            name='failed',
+            model_name="exporttask",
+            name="failed",
             field=models.BooleanField(blank=True, default=False),
         ),
         migrations.AlterField(
-            model_name='scheduledexporttask',
-            name='active',
-            field=models.BooleanField(blank=True, default=False, help_text='to activate scheduled export'),
+            model_name="scheduledexporttask",
+            name="active",
+            field=models.BooleanField(
+                blank=True, default=False, help_text="to activate scheduled export"
+            ),
         ),
     ]

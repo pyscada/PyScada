@@ -4,15 +4,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0053_auto_20211118_1438'),
+        ("hmi", "0053_auto_20211118_1438"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='displayvalueoption',
-            name='type',
-            field=models.PositiveSmallIntegerField(choices=[(0, 'Classic (Div)'), (1, 'Horizontal gauge'), (2, 'Vertical gauge'), (3, 'Circular gauge')], default=0),
+            model_name="displayvalueoption",
+            name="type",
+            field=models.PositiveSmallIntegerField(
+                choices=[
+                    (0, "Classic (Div)"),
+                    (1, "Horizontal gauge"),
+                    (2, "Vertical gauge"),
+                    (3, "Circular gauge"),
+                ],
+                default=0,
+            ),
         ),
     ]

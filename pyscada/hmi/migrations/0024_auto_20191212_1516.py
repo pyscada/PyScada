@@ -5,20 +5,29 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0023_dropdownitem_value'),
+        ("hmi", "0023_dropdownitem_value"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='controlitem',
-            name='variable',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='pyscada.Variable'),
+            model_name="controlitem",
+            name="variable",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="pyscada.Variable",
+            ),
         ),
         migrations.AlterField(
-            model_name='controlitem',
-            name='variable_property',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='pyscada.VariableProperty'),
+            model_name="controlitem",
+            name="variable_property",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="pyscada.VariableProperty",
+            ),
         ),
     ]

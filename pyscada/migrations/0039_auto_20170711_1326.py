@@ -6,15 +6,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0038_auto_20170707_1209'),
+        ("pyscada", "0038_auto_20170707_1209"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='devicewritetask',
-            old_name='fineshed',
-            new_name='finished',
+            model_name="devicewritetask",
+            old_name="fineshed",
+            new_name="finished",
         ),
     ]

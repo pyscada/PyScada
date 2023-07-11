@@ -6,9 +6,9 @@ from django.utils.translation import gettext_lazy as _
 
 
 class PyScadaHMIConfig(AppConfig):
-    name = 'pyscada.hmi'
+    name = "pyscada.hmi"
     verbose_name = _("PyScada HMI")
-    default_auto_field = 'django.db.models.AutoField'
+    default_auto_field = "django.db.models.AutoField"
 
     def ready(self):
         import pyscada.hmi.signals

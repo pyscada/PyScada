@@ -24,23 +24,38 @@ from django.utils.timezone import now
 
 class ScheduledExportTask(models.Model):
     id = models.AutoField(primary_key=True)
-    label = models.CharField(max_length=400, default='')
+    label = models.CharField(max_length=400, default="")
     variables = models.ManyToManyField(Variable)
-    day_time_choices = [(x, '%d:00' % x) for x in range(0, 24)]
-    day_time = models.PositiveSmallIntegerField(default=0, choices=day_time_choices,
-                                                help_text='day time wenn the job will be started in UTC')
-    mean_value_period = models.PositiveSmallIntegerField(default=0, help_text='in Seconds (0 = no mean value)')
-    active = models.BooleanField(default=False, blank=True, help_text='to activate scheduled export')
-    file_format_choices = (('hdf5', 'Hierarchical Data Format Version 5'),
-                           ('mat', 'Matlab® mat v7.3 compatible file'),
-                           ('CSV_EXCEL', 'Microsoft® Excel® compatible csv file'))
-    file_format = models.CharField(max_length=400, default='hdf5', choices=file_format_choices)
-    export_period_choices = ((1, '1 Day'),
-                             (2, '2 Days (on every even Day of the year)'),
-                             (7, '7 Days (on Mondays)'),
-                             (14, '14 Days'),
-                             (30, '30 Days'))
-    export_period = models.PositiveSmallIntegerField(default=0, choices=export_period_choices, help_text='')
+    day_time_choices = [(x, "%d:00" % x) for x in range(0, 24)]
+    day_time = models.PositiveSmallIntegerField(
+        default=0,
+        choices=day_time_choices,
+        help_text="day time wenn the job will be started in UTC",
+    )
+    mean_value_period = models.PositiveSmallIntegerField(
+        default=0, help_text="in Seconds (0 = no mean value)"
+    )
+    active = models.BooleanField(
+        default=False, blank=True, help_text="to activate scheduled export"
+    )
+    file_format_choices = (
+        ("hdf5", "Hierarchical Data Format Version 5"),
+        ("mat", "Matlab® mat v7.3 compatible file"),
+        ("CSV_EXCEL", "Microsoft® Excel® compatible csv file"),
+    )
+    file_format = models.CharField(
+        max_length=400, default="hdf5", choices=file_format_choices
+    )
+    export_period_choices = (
+        (1, "1 Day"),
+        (2, "2 Days (on every even Day of the year)"),
+        (7, "7 Days (on Mondays)"),
+        (14, "14 Days"),
+        (30, "30 Days"),
+    )
+    export_period = models.PositiveSmallIntegerField(
+        default=0, choices=export_period_choices, help_text=""
+    )
 
     def __str__(self):
         return self.label
@@ -48,21 +63,32 @@ class ScheduledExportTask(models.Model):
 
 class ExportTask(models.Model):
     id = models.AutoField(primary_key=True)
-    label = models.CharField(max_length=400, default='None', blank=True)
-    backgroundprocess = models.ForeignKey(BackgroundProcess, null=True, blank=True, on_delete=models.SET_NULL)
+    label = models.CharField(max_length=400, default="None", blank=True)
+    backgroundprocess = models.ForeignKey(
+        BackgroundProcess, null=True, blank=True, on_delete=models.SET_NULL
+    )
     variables = models.ManyToManyField(Variable)
-    mean_value_period = models.PositiveSmallIntegerField(default=0, help_text='in Seconds (0 = no mean value)')
-    file_format_choices = (('hdf5', 'Hierarchical Data Format Version 5'), ('mat', 'Matlab® mat v7.3 compatible file'),
-                           ('CSV_EXCEL', 'Microsoft® Excel® compatible csv file'))
-    file_format = models.CharField(max_length=400, default='hdf5', choices=file_format_choices)
-    filename_suffix = models.CharField(max_length=400, default='', blank=True)
+    mean_value_period = models.PositiveSmallIntegerField(
+        default=0, help_text="in Seconds (0 = no mean value)"
+    )
+    file_format_choices = (
+        ("hdf5", "Hierarchical Data Format Version 5"),
+        ("mat", "Matlab® mat v7.3 compatible file"),
+        ("CSV_EXCEL", "Microsoft® Excel® compatible csv file"),
+    )
+    file_format = models.CharField(
+        max_length=400, default="hdf5", choices=file_format_choices
+    )
+    filename_suffix = models.CharField(max_length=400, default="", blank=True)
     datetime_min = models.DateTimeField(default=None, null=True)
     datetime_max = models.DateTimeField(default=None, null=True)
     user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
     datetime_start = models.DateTimeField(default=now)
     datetime_finished = models.DateTimeField(null=True, blank=True)
     done = models.BooleanField(default=False, blank=True)  # label task has been done
-    busy = models.BooleanField(default=False, blank=True)  # label task is in operation done
+    busy = models.BooleanField(
+        default=False, blank=True
+    )  # label task is in operation done
     failed = models.BooleanField(default=False, blank=True)  # label task has failed
     filename = models.CharField(blank=True, null=True, max_length=1000)
 
@@ -83,10 +109,17 @@ class ExportTask(models.Model):
 
     def downloadlink(self):
         if not self.done:
-            return 'busy...'
-        backup_file_path = os.path.expanduser('~/measurement_data_dumps')
-        if hasattr(settings, 'PYSCADA_EXPORT'):
-            if 'output_folder' in settings.PYSCADA_EXPORT:
-                backup_file_path = os.path.expanduser(settings.PYSCADA_EXPORT['output_folder'])
-        return mark_safe('<a href="%s">%s</a>' % (self.filename.replace(backup_file_path, '/measurement'),
-                                                  self.filename.replace(backup_file_path, '/measurement')))
+            return "busy..."
+        backup_file_path = os.path.expanduser("~/measurement_data_dumps")
+        if hasattr(settings, "PYSCADA_EXPORT"):
+            if "output_folder" in settings.PYSCADA_EXPORT:
+                backup_file_path = os.path.expanduser(
+                    settings.PYSCADA_EXPORT["output_folder"]
+                )
+        return mark_safe(
+            '<a href="%s">%s</a>'
+            % (
+                self.filename.replace(backup_file_path, "/measurement"),
+                self.filename.replace(backup_file_path, "/measurement"),
+            )
+        )

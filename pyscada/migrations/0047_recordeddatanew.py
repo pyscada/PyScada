@@ -7,23 +7,31 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0046_remove_devicewritetask_property_name'),
+        ("pyscada", "0046_remove_devicewritetask_property_name"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='RecordedDataNew',
+            name="RecordedDataNew",
             fields=[
-                ('id', models.BigIntegerField(primary_key=True, serialize=False)),
-                ('date_saved', models.DateTimeField(blank=True, db_index=True, null=True)),
-                ('value_boolean', models.BooleanField(default=False)),
-                ('value_int16', models.SmallIntegerField(blank=True, null=True)),
-                ('value_int32', models.IntegerField(blank=True, null=True)),
-                ('value_int64', models.BigIntegerField(blank=True, null=True)),
-                ('value_float64', models.FloatField(blank=True, null=True)),
-                ('variable', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='pyscada.Variable')),
+                ("id", models.BigIntegerField(primary_key=True, serialize=False)),
+                (
+                    "date_saved",
+                    models.DateTimeField(blank=True, db_index=True, null=True),
+                ),
+                ("value_boolean", models.BooleanField(default=False)),
+                ("value_int16", models.SmallIntegerField(blank=True, null=True)),
+                ("value_int32", models.IntegerField(blank=True, null=True)),
+                ("value_int64", models.BigIntegerField(blank=True, null=True)),
+                ("value_float64", models.FloatField(blank=True, null=True)),
+                (
+                    "variable",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="pyscada.Variable",
+                    ),
+                ),
             ],
         ),
     ]

@@ -4,20 +4,27 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0036_auto_20200923_0850'),
+        ("hmi", "0036_auto_20200923_0850"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='chart',
-            name='show_plot_lines',
-            field=models.PositiveSmallIntegerField(choices=[(0, 'No'), (1, 'Yes'), (2, 'Yes as steps')], default=2, help_text='Show the plot lines'),
+            model_name="chart",
+            name="show_plot_lines",
+            field=models.PositiveSmallIntegerField(
+                choices=[(0, "No"), (1, "Yes"), (2, "Yes as steps")],
+                default=2,
+                help_text="Show the plot lines",
+            ),
         ),
         migrations.AlterField(
-            model_name='xychart',
-            name='show_plot_lines',
-            field=models.PositiveSmallIntegerField(choices=[(0, 'No'), (1, 'Yes'), (2, 'Yes as steps')], default=1, help_text='Show the plot lines'),
+            model_name="xychart",
+            name="show_plot_lines",
+            field=models.PositiveSmallIntegerField(
+                choices=[(0, "No"), (1, "Yes"), (2, "Yes as steps")],
+                default=1,
+                help_text="Show the plot lines",
+            ),
         ),
     ]

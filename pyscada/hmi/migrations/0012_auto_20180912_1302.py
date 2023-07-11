@@ -7,38 +7,50 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0011_auto_20180710_1549'),
+        ("hmi", "0011_auto_20180710_1549"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='WidgetContent',
+            name="WidgetContent",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('content_model', models.CharField(max_length=400)),
-                ('content_pk', models.PositiveIntegerField()),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("content_model", models.CharField(max_length=400)),
+                ("content_pk", models.PositiveIntegerField()),
             ],
         ),
         migrations.RenameField(
-            model_name='slidingpanelmenu',
-            old_name='visable',
-            new_name='visible',
+            model_name="slidingpanelmenu",
+            old_name="visable",
+            new_name="visible",
         ),
         migrations.RenameField(
-            model_name='view',
-            old_name='visable',
-            new_name='visible',
+            model_name="view",
+            old_name="visable",
+            new_name="visible",
         ),
         migrations.RenameField(
-            model_name='widget',
-            old_name='visable',
-            new_name='visible',
+            model_name="widget",
+            old_name="visable",
+            new_name="visible",
         ),
         migrations.AddField(
-            model_name='widget',
-            name='content',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.CASCADE, to='hmi.WidgetContent'),
+            model_name="widget",
+            name="content",
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="hmi.WidgetContent",
+            ),
         ),
     ]

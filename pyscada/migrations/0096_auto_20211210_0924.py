@@ -5,20 +5,30 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0095_auto_20211203_1949'),
+        ("pyscada", "0095_auto_20211203_1949"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='variableproperty',
-            name='dictionary',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.Dictionary'),
+            model_name="variableproperty",
+            name="dictionary",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.Dictionary",
+            ),
         ),
         migrations.AlterField(
-            model_name='periodicfield',
-            name='property',
-            field=models.CharField(blank=True, default='', help_text='Min: superior or equal this value, ex: 53.5 (use >53.5 for strictly superior)<br>Max: lower or equal this value, ex: 53.5 (use <53.5 for strictly lower)<br>Count value : enter the value to count', max_length=255, null=True),
+            model_name="periodicfield",
+            name="property",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Min: superior or equal this value, ex: 53.5 (use >53.5 for strictly superior)<br>Max: lower or equal this value, ex: 53.5 (use <53.5 for strictly lower)<br>Count value : enter the value to count",
+                max_length=255,
+                null=True,
+            ),
         ),
     ]

@@ -16,44 +16,67 @@ def forwards_func(apps, schema_editor):
     WidgetContent = apps.get_model("hmi", "WidgetContent")
 
     for c in Chart.objects.using(schema_editor.connection.alias).all():
-        wc = WidgetContent(content_pk=c.pk,
-                           content_model='pyscada.hmi.models.Chart')
+        wc = WidgetContent(content_pk=c.pk, content_model="pyscada.hmi.models.Chart")
         wc.save()
 
     for c in ProcessFlowDiagram.objects.using(schema_editor.connection.alias).all():
-        wc = WidgetContent(content_pk=c.pk,
-                           content_model='pyscada.hmi.models.ProcessFlowDiagram')
+        wc = WidgetContent(
+            content_pk=c.pk, content_model="pyscada.hmi.models.ProcessFlowDiagram"
+        )
         wc.save()
 
     for c in CustomHTMLPanel.objects.using(schema_editor.connection.alias).all():
-        wc = WidgetContent(content_pk=c.pk,
-                           content_model='pyscada.hmi.models.CustomHTMLPanel')
+        wc = WidgetContent(
+            content_pk=c.pk, content_model="pyscada.hmi.models.CustomHTMLPanel"
+        )
         wc.save()
 
     for c in ControlPanel.objects.using(schema_editor.connection.alias).all():
-        wc = WidgetContent(content_pk=c.pk,
-                           content_model='pyscada.hmi.models.ControlPanel')
+        wc = WidgetContent(
+            content_pk=c.pk, content_model="pyscada.hmi.models.ControlPanel"
+        )
         wc.save()
 
     for w in Widget.objects.using(schema_editor.connection.alias).all():
         if w.chart is not None:
-            content = WidgetContent.objects.using(schema_editor.connection.alias).filter(content_pk=w.chart.pk,
-                                                   content_model='pyscada.hmi.models.Chart').first()
+            content = (
+                WidgetContent.objects.using(schema_editor.connection.alias)
+                .filter(content_pk=w.chart.pk, content_model="pyscada.hmi.models.Chart")
+                .first()
+            )
             if content is None:
                 continue
         elif w.control_panel is not None:
-            content = WidgetContent.objects.using(schema_editor.connection.alias).filter(content_pk=w.control_panel.pk,
-                                                   content_model='pyscada.hmi.models.ControlPanel').first()
+            content = (
+                WidgetContent.objects.using(schema_editor.connection.alias)
+                .filter(
+                    content_pk=w.control_panel.pk,
+                    content_model="pyscada.hmi.models.ControlPanel",
+                )
+                .first()
+            )
             if content is None:
                 continue
         elif w.custom_html_panel is not None:
-            content = WidgetContent.objects.using(schema_editor.connection.alias).filter(content_pk=w.custom_html_panel.pk,
-                                                   content_model='pyscada.hmi.models.CustomHTMLPanel').first()
+            content = (
+                WidgetContent.objects.using(schema_editor.connection.alias)
+                .filter(
+                    content_pk=w.custom_html_panel.pk,
+                    content_model="pyscada.hmi.models.CustomHTMLPanel",
+                )
+                .first()
+            )
             if content is None:
                 continue
         elif w.process_flow_diagram is not None:
-            content = WidgetContent.objects.using(schema_editor.connection.alias).filter(content_pk=w.process_flow_diagram.pk,
-                                                   content_model='pyscada.hmi.models.ProcessFlowDiagram').first()
+            content = (
+                WidgetContent.objects.using(schema_editor.connection.alias)
+                .filter(
+                    content_pk=w.process_flow_diagram.pk,
+                    content_model="pyscada.hmi.models.ProcessFlowDiagram",
+                )
+                .first()
+            )
             if content is None:
                 continue
         else:
@@ -61,12 +84,12 @@ def forwards_func(apps, schema_editor):
         w.content = content
         w.save()
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
-        ('hmi', '0012_auto_20180912_1302'),
+        ("hmi", "0012_auto_20180912_1302"),
     ]
 
     operations = [
         migrations.RunPython(forwards_func, reverse_code=migrations.RunPython.noop),
-            ]
+    ]

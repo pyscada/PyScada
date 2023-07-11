@@ -5,15 +5,17 @@ import pyscada.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0091_auto_20211118_1019'),
+        ("pyscada", "0091_auto_20211118_1019"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='periodicfield',
-            name='start_from',
-            field=models.DateTimeField(default=pyscada.models.start_from_default, help_text='Calculate from this DateTime and then each period_factor*period'),
+            model_name="periodicfield",
+            name="start_from",
+            field=models.DateTimeField(
+                default=pyscada.models.start_from_default,
+                help_text="Calculate from this DateTime and then each period_factor*period",
+            ),
         ),
     ]

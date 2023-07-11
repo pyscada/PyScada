@@ -10,15 +10,19 @@ def forwards_func(apps, schema_editor):
     # if we directly import it, it'll be the wrong version
     DeviceProtocol = apps.get_model("pyscada", "DeviceProtocol")
     db_alias = schema_editor.connection.alias
-    DeviceProtocol.objects.using(db_alias).bulk_create([
-        DeviceProtocol(pk=1,
-                       protocol='generic',
-                       description='no Protocol',
-                       app_name='pyscada',
-                       device_class='None',
-                       daq_daemon=False,
-                       single_thread=False),
-    ])
+    DeviceProtocol.objects.using(db_alias).bulk_create(
+        [
+            DeviceProtocol(
+                pk=1,
+                protocol="generic",
+                description="no Protocol",
+                app_name="pyscada",
+                device_class="None",
+                daq_daemon=False,
+                single_thread=False,
+            ),
+        ]
+    )
 
 
 def reverse_func(apps, schema_editor):
@@ -31,7 +35,7 @@ def reverse_func(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('pyscada', '0035_auto_20170224_1215'),
+        ("pyscada", "0035_auto_20170224_1215"),
     ]
 
     operations = [

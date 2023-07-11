@@ -5,19 +5,23 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0037_auto_20200923_0852'),
+        ("hmi", "0037_auto_20200923_0852"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='dropdown',
-            name='items',
+            model_name="dropdown",
+            name="items",
         ),
         migrations.AddField(
-            model_name='dropdownitem',
-            name='dropdown',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='hmi.DropDown'),
+            model_name="dropdownitem",
+            name="dropdown",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="hmi.DropDown",
+            ),
         ),
     ]

@@ -4,15 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0033_auto_20200918_1439'),
+        ("hmi", "0033_auto_20200918_1439"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='form',
-            name='hidden_control_items_to_true',
-            field=models.ManyToManyField(blank=True, limit_choices_to={'type': '1'}, related_name='hidden_control_items_form', to='hmi.ControlItem'),
+            model_name="form",
+            name="hidden_control_items_to_true",
+            field=models.ManyToManyField(
+                blank=True,
+                limit_choices_to={"type": "1"},
+                related_name="hidden_control_items_form",
+                to="hmi.ControlItem",
+            ),
         ),
     ]

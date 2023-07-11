@@ -6,28 +6,31 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('pyscada', '0065_auto_20201005_1454'),
+        ("pyscada", "0065_auto_20201005_1454"),
     ]
 
     operations = [
         migrations.RenameModel(
-            old_name='ComplexEventItem',
-            new_name='ComplexEvent2',
+            old_name="ComplexEventItem",
+            new_name="ComplexEvent2",
         ),
         migrations.RenameModel(
-            old_name='ComplexEvent',
-            new_name='ComplexEventGroup',
+            old_name="ComplexEvent",
+            new_name="ComplexEventGroup",
         ),
         migrations.RenameModel(
-            old_name='ComplexEventItemVariable',
-            new_name='ComplexEventItem2',
+            old_name="ComplexEventItemVariable",
+            new_name="ComplexEventItem2",
         ),
         migrations.AddField(
-            model_name='recordedevent',
-            name='complex_event_group',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='pyscada.ComplexEventGroup'),
+            model_name="recordedevent",
+            name="complex_event_group",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="pyscada.ComplexEventGroup",
+            ),
         ),
     ]

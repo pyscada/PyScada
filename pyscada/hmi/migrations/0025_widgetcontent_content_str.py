@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0024_auto_20191212_1516'),
+        ("hmi", "0024_auto_20191212_1516"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='widgetcontent',
-            name='content_str',
-            field=models.CharField(default='', max_length=400),
+            model_name="widgetcontent",
+            name="content_str",
+            field=models.CharField(default="", max_length=400),
         ),
     ]

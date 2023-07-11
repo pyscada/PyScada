@@ -8,22 +8,23 @@ from pytz import UTC
 from datetime import datetime
 
 
-def convert_unixtime_float_to_datetime(apps,schema_editor):
-    ExportTask = apps.get_model("export","ExportTask")
+def convert_unixtime_float_to_datetime(apps, schema_editor):
+    ExportTask = apps.get_model("export", "ExportTask")
     for item in ExportTask.objects.using(schema_editor.connection.alias).all():
-        item.datetime_fineshed = datetime.fromtimestamp(item.fineshed,UTC)
-        item.datetime_start = datetime.fromtimestamp(item.start,UTC)
-        item.datetime_max = datetime.fromtimestamp(item.time_max,UTC)
-        item.datetime_min = datetime.fromtimestamp(item.time_min,UTC)
+        item.datetime_fineshed = datetime.fromtimestamp(item.fineshed, UTC)
+        item.datetime_start = datetime.fromtimestamp(item.start, UTC)
+        item.datetime_max = datetime.fromtimestamp(item.time_max, UTC)
+        item.datetime_min = datetime.fromtimestamp(item.time_min, UTC)
         item.save()
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('export', '0007_auto_20161124_1002'),
+        ("export", "0007_auto_20161124_1002"),
     ]
 
     operations = [
-        migrations.RunPython(convert_unixtime_float_to_datetime, reverse_code=migrations.RunPython.noop)
+        migrations.RunPython(
+            convert_unixtime_float_to_datetime, reverse_code=migrations.RunPython.noop
+        )
     ]

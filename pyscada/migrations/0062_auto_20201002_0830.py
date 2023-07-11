@@ -4,15 +4,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0061_devicereadtask'),
+        ("pyscada", "0061_devicereadtask"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='event',
-            name='limit_type',
-            field=models.PositiveSmallIntegerField(choices=[(0, 'value < limit'), (1, 'value <= limit'), (2, 'limit < value'), (3, 'limit <= value'), (4, 'value == limit')], default=0),
+            model_name="event",
+            name="limit_type",
+            field=models.PositiveSmallIntegerField(
+                choices=[
+                    (0, "value < limit"),
+                    (1, "value <= limit"),
+                    (2, "limit < value"),
+                    (3, "limit <= value"),
+                    (4, "value == limit"),
+                ],
+                default=0,
+            ),
         ),
     ]

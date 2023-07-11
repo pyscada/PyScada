@@ -7,30 +7,44 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0037_auto_20170418_0931'),
+        ("pyscada", "0037_auto_20170418_0931"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='backgroundprocess',
-            name='parent_process',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.BackgroundProcess'),
+            model_name="backgroundprocess",
+            name="parent_process",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.BackgroundProcess",
+            ),
         ),
         migrations.AlterField(
-            model_name='backgroundprocess',
-            name='pid',
+            model_name="backgroundprocess",
+            name="pid",
             field=models.IntegerField(blank=True, default=0),
         ),
         migrations.AlterField(
-            model_name='backgroundprocess',
-            name='process_class',
-            field=models.CharField(blank=True, default='pyscada.utils.scheduler.Process', help_text='from pyscada.utils.scheduler import Process', max_length=400),
+            model_name="backgroundprocess",
+            name="process_class",
+            field=models.CharField(
+                blank=True,
+                default="pyscada.utils.scheduler.Process",
+                help_text="from pyscada.utils.scheduler import Process",
+                max_length=400,
+            ),
         ),
         migrations.AlterField(
-            model_name='backgroundprocess',
-            name='process_class_kwargs',
-            field=models.CharField(blank=True, default='{}', help_text='arguments in json format will be passed as kwargs while the init of the process instance, example: {"keywordA":"value1", "keywordB":7}', max_length=400),
+            model_name="backgroundprocess",
+            name="process_class_kwargs",
+            field=models.CharField(
+                blank=True,
+                default="{}",
+                help_text='arguments in json format will be passed as kwargs while the init of the process instance, example: {"keywordA":"value1", "keywordB":7}',
+                max_length=400,
+            ),
         ),
     ]

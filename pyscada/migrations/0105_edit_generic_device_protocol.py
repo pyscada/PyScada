@@ -10,9 +10,9 @@ def forwards_func(apps, schema_editor):
     # if we directly import it, it'll be the wrong version
     DeviceProtocol = apps.get_model("pyscada", "DeviceProtocol")
     db_alias = schema_editor.connection.alias
-    DeviceProtocol.objects.filter(pk=1).update(device_class='pyscada.generic.device',
-                                              daq_daemon=True,
-                                              single_thread=True)
+    DeviceProtocol.objects.filter(pk=1).update(
+        device_class="pyscada.generic.device", daq_daemon=True, single_thread=True
+    )
 
 
 def reverse_func(apps, schema_editor):
@@ -20,14 +20,14 @@ def reverse_func(apps, schema_editor):
     # so reverse_func() should delete them.
     DeviceProtocol = apps.get_model("pyscada", "DeviceProtocol")
     db_alias = schema_editor.connection.alias
-    DeviceProtocol.objects.filter(pk=1).update(device_class='None',
-                                              daq_daemon=False,
-                                              single_thread=False)
+    DeviceProtocol.objects.filter(pk=1).update(
+        device_class="None", daq_daemon=False, single_thread=False
+    )
 
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('pyscada', '0104_rename_complexeventitem_complexeventinput_and_more'),
+        ("pyscada", "0104_rename_complexeventitem_complexeventinput_and_more"),
     ]
 
     operations = [

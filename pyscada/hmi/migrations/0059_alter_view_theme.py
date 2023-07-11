@@ -5,15 +5,20 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0058_auto_20220523_1639'),
+        ("hmi", "0058_auto_20220523_1639"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='view',
-            name='theme',
-            field=models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='hmi.theme'),
+            model_name="view",
+            name="theme",
+            field=models.ForeignKey(
+                blank=True,
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="hmi.theme",
+            ),
         ),
     ]

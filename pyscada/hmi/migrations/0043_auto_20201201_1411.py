@@ -25,8 +25,12 @@ def add_vars_move_wc(apps, schema_editor):
         try:
             ChartModel.objects.get(id=c.id).create_widget_content_entry()
 
-            wcxy = WidgetContent.objects.get(content_pk=item.id, content_model__contains=".XYChart")
-            wc = WidgetContent.objects.get(content_pk=c.id, content_model__contains=".Chart")
+            wcxy = WidgetContent.objects.get(
+                content_pk=item.id, content_model__contains=".XYChart"
+            )
+            wc = WidgetContent.objects.get(
+                content_pk=c.id, content_model__contains=".Chart"
+            )
             Widget.objects.filter(content=wcxy).update(content=wc)
             if wcxy is not None:
                 wcxy.delete()
@@ -46,15 +50,16 @@ def move_xy_chart(apps, schema_editor):
         variables_list = []
         for v in item.variables.all():
             variables_list.append(Variable.objects.get(id=v.id))
-        c = Chart(title=item.title,
-                  x_axis_label=item.x_axis_label,
-                  x_axis_var=Variable.objects.get(id=item.x_axis_var.id),
-                  x_axis_linlog=item.x_axis_linlog,
-                  y_axis_label=item.y_axis_label,
-                  show_plot_points=item.show_plot_points,
-                  show_plot_lines=item.show_plot_lines,
-                  y_axis_uniquescale=item.y_axis_uniquescale,
-                  )
+        c = Chart(
+            title=item.title,
+            x_axis_label=item.x_axis_label,
+            x_axis_var=Variable.objects.get(id=item.x_axis_var.id),
+            x_axis_linlog=item.x_axis_linlog,
+            y_axis_label=item.y_axis_label,
+            show_plot_points=item.show_plot_points,
+            show_plot_lines=item.show_plot_lines,
+            y_axis_uniquescale=item.y_axis_uniquescale,
+        )
         c.save()
         charts_dict[item.id] = c.id
 
@@ -63,24 +68,23 @@ def move_xy_chart(apps, schema_editor):
 
         count += 1
 
-    logger.info('wrote %d lines in total\n' % count)
+    logger.info("wrote %d lines in total\n" % count)
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0078_auto_20201123_1906'),
-        ('hmi', '0042_auto_20201201_1335'),
+        ("pyscada", "0078_auto_20201123_1906"),
+        ("hmi", "0042_auto_20201201_1335"),
     ]
 
     operations = [
         migrations.RunPython(move_xy_chart, reverse_code=migrations.RunPython.noop),
         migrations.RunPython(add_vars_move_wc, reverse_code=migrations.RunPython.noop),
         migrations.RemoveField(
-            model_name='groupdisplaypermission',
-            name='xy_charts',
+            model_name="groupdisplaypermission",
+            name="xy_charts",
         ),
         migrations.DeleteModel(
-            name='XYChart',
+            name="XYChart",
         ),
     ]

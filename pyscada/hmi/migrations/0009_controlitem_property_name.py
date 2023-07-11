@@ -6,15 +6,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0008_auto_20180620_0716'),
+        ("hmi", "0008_auto_20180620_0716"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='controlitem',
-            name='property_name',
-            field=models.CharField(blank=True, default='', max_length=255),
+            model_name="controlitem",
+            name="property_name",
+            field=models.CharField(blank=True, default="", max_length=255),
         ),
     ]

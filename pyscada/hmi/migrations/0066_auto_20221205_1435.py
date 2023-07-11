@@ -5,23 +5,28 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0065_auto_20220620_0854'),
+        ("hmi", "0065_auto_20220620_0854"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='CssClass',
+            name="CssClass",
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('title', models.CharField(default='', max_length=400)),
-                ('css_class', models.SlugField(default='', max_length=80)),
+                ("id", models.AutoField(primary_key=True, serialize=False)),
+                ("title", models.CharField(default="", max_length=400)),
+                ("css_class", models.SlugField(default="", max_length=80)),
             ],
         ),
         migrations.AddField(
-            model_name='widget',
-            name='extra_css_class',
-            field=models.ForeignKey(blank=True, default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='hmi.cssclass'),
+            model_name="widget",
+            name="extra_css_class",
+            field=models.ForeignKey(
+                blank=True,
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="hmi.cssclass",
+            ),
         ),
     ]

@@ -9,6 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 class PyScadaExportConfig(AppConfig):
-    name = 'pyscada.export'
+    name = "pyscada.export"
     verbose_name = _("PyScada Export")
-    default_auto_field = 'django.db.models.AutoField'
+    default_auto_field = "django.db.models.AutoField"

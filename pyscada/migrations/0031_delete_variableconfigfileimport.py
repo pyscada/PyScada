@@ -6,13 +6,12 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0030_device_polling_interval'),
+        ("pyscada", "0030_device_polling_interval"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='VariableConfigFileImport',
+            name="VariableConfigFileImport",
         ),
     ]

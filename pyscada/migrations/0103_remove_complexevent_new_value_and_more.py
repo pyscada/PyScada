@@ -4,22 +4,21 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0102_move_complex_event_variables'),
+        ("pyscada", "0102_move_complex_event_variables"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='complexevent',
-            name='new_value',
+            model_name="complexevent",
+            name="new_value",
         ),
         migrations.RemoveField(
-            model_name='complexeventgroup',
-            name='default_value',
+            model_name="complexeventgroup",
+            name="default_value",
         ),
         migrations.RemoveField(
-            model_name='complexeventgroup',
-            name='variable_to_change',
+            model_name="complexeventgroup",
+            name="variable_to_change",
         ),
     ]

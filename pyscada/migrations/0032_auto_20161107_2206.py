@@ -7,31 +7,70 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0031_delete_variableconfigfileimport'),
+        ("pyscada", "0031_delete_variableconfigfileimport"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='VariableProperty',
+            name="VariableProperty",
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('property_class', models.CharField(blank=True, choices=[(None, 'other or no Class specified'), ('device', 'Device Property'), ('data_record', 'Recorded Data'), ('daemon', 'Daemon Property')], default=None, max_length=255, null=True)),
-                ('name', models.CharField(blank=True, default=b'', max_length=255)),
-                ('value_boolean', models.BooleanField(default=False)),
-                ('value_int16', models.SmallIntegerField(blank=True, null=True)),
-                ('value_int32', models.IntegerField(blank=True, null=True)),
-                ('value_int64', models.BigIntegerField(blank=True, null=True)),
-                ('value_float64', models.FloatField(blank=True, null=True)),
-                ('value_string', models.CharField(blank=True, default=b'', max_length=255)),
-                ('timestamp', models.DateTimeField(blank=True, null=True)),
-                ('variable', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='pyscada.Variable')),
+                ("id", models.AutoField(primary_key=True, serialize=False)),
+                (
+                    "property_class",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            (None, "other or no Class specified"),
+                            ("device", "Device Property"),
+                            ("data_record", "Recorded Data"),
+                            ("daemon", "Daemon Property"),
+                        ],
+                        default=None,
+                        max_length=255,
+                        null=True,
+                    ),
+                ),
+                ("name", models.CharField(blank=True, default=b"", max_length=255)),
+                ("value_boolean", models.BooleanField(default=False)),
+                ("value_int16", models.SmallIntegerField(blank=True, null=True)),
+                ("value_int32", models.IntegerField(blank=True, null=True)),
+                ("value_int64", models.BigIntegerField(blank=True, null=True)),
+                ("value_float64", models.FloatField(blank=True, null=True)),
+                (
+                    "value_string",
+                    models.CharField(blank=True, default=b"", max_length=255),
+                ),
+                ("timestamp", models.DateTimeField(blank=True, null=True)),
+                (
+                    "variable",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="pyscada.Variable",
+                    ),
+                ),
             ],
         ),
         migrations.AlterField(
-            model_name='device',
-            name='polling_interval',
-            field=models.FloatField(choices=[(1.0, '1 Second'), (5.0, '5 Seconds'), (10.0, '10 Seconds'), (15.0, '15 Seconds'), (30.0, '30 Seconds'), (60.0, '1 Minute'), (150.0, '2.5 Mintues'), (300.0, '5 Minutes'), (360.0, '6 Minutes (10 times per Hour)'), (600.0, '10 Minutes'), (900.0, '15 Minutes'), (1800.0, '30 Minutes'), (3600.0, '1 Hour')], default=5),
+            model_name="device",
+            name="polling_interval",
+            field=models.FloatField(
+                choices=[
+                    (1.0, "1 Second"),
+                    (5.0, "5 Seconds"),
+                    (10.0, "10 Seconds"),
+                    (15.0, "15 Seconds"),
+                    (30.0, "30 Seconds"),
+                    (60.0, "1 Minute"),
+                    (150.0, "2.5 Mintues"),
+                    (300.0, "5 Minutes"),
+                    (360.0, "6 Minutes (10 times per Hour)"),
+                    (600.0, "10 Minutes"),
+                    (900.0, "15 Minutes"),
+                    (1800.0, "30 Minutes"),
+                    (3600.0, "1 Hour"),
+                ],
+                default=5,
+            ),
         ),
     ]

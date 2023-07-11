@@ -17,5 +17,5 @@ from django.urls import path, include
 from django.contrib import admin
 
 urlpatterns = [
-    path('', include('pyscada.hmi.urls')),
+    path("", include("pyscada.hmi.urls")),
 ]

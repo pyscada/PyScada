@@ -6,20 +6,28 @@ from django.utils.timezone import utc
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0085_calculatedvariableselector_active'),
+        ("pyscada", "0085_calculatedvariableselector_active"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='periodicfield',
-            name='property',
-            field=models.CharField(blank=True, default='', help_text='For count value : enter the value to count', max_length=255, null=True),
+            model_name="periodicfield",
+            name="property",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="For count value : enter the value to count",
+                max_length=255,
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='periodicfield',
-            name='start_from',
-            field=models.DateTimeField(default=datetime.datetime(2021, 11, 15, 0, 0, tzinfo=utc), help_text='Calculate from this DateTime and then each period_factor*period'),
+            model_name="periodicfield",
+            name="start_from",
+            field=models.DateTimeField(
+                default=datetime.datetime(2021, 11, 15, 0, 0, tzinfo=utc),
+                help_text="Calculate from this DateTime and then each period_factor*period",
+            ),
         ),
     ]

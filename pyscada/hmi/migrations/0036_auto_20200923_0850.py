@@ -4,35 +4,40 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0035_auto_20200918_1517'),
+        ("hmi", "0035_auto_20200918_1517"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='xychart',
-            old_name='y_axis_plotpoints',
-            new_name='show_plot_points',
+            model_name="xychart",
+            old_name="y_axis_plotpoints",
+            new_name="show_plot_points",
         ),
         migrations.AddField(
-            model_name='chart',
-            name='show_plot_lines',
-            field=models.PositiveSmallIntegerField(default=2, help_text='Show the plot lines'),
+            model_name="chart",
+            name="show_plot_lines",
+            field=models.PositiveSmallIntegerField(
+                default=2, help_text="Show the plot lines"
+            ),
         ),
         migrations.AddField(
-            model_name='chart',
-            name='show_plot_points',
-            field=models.BooleanField(default=False, help_text='Show the plots points'),
+            model_name="chart",
+            name="show_plot_points",
+            field=models.BooleanField(default=False, help_text="Show the plots points"),
         ),
         migrations.AddField(
-            model_name='chart',
-            name='y_axis_uniquescale',
-            field=models.BooleanField(default=True, help_text='To have a unique scale for all the y axis'),
+            model_name="chart",
+            name="y_axis_uniquescale",
+            field=models.BooleanField(
+                default=True, help_text="To have a unique scale for all the y axis"
+            ),
         ),
         migrations.AddField(
-            model_name='xychart',
-            name='show_plot_lines',
-            field=models.PositiveSmallIntegerField(default=1, help_text='Show the plot lines'),
+            model_name="xychart",
+            name="show_plot_lines",
+            field=models.PositiveSmallIntegerField(
+                default=1, help_text="Show the plot lines"
+            ),
         ),
     ]

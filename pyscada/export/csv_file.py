@@ -20,7 +20,7 @@ class ExcelCompatibleCSV:
         self.header = {}
         self.data_rows = 0
         self.header_is_writen = False
-        self.dialect = 'excel'  # default is excel
+        self.dialect = "excel"  # default is excel
 
     def write_data(self, name, data, **kwargs):
         if name in self.data:
@@ -47,7 +47,7 @@ class ExcelCompatibleCSV:
         keys = self.data.keys()
         output = zip(*self.data.values())
         # truncate file on first write, otherwise append
-        write_mode = 'a' if self.header_is_writen else 'w'
+        write_mode = "a" if self.header_is_writen else "w"
         with open(self.filename, write_mode) as f:
             writer = csv.writer(f, dialect=self.dialect)
             if not self.header_is_writen:
