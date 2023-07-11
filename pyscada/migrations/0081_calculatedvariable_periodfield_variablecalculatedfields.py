@@ -6,38 +6,139 @@ import pyscada.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0080_variableproperty_last_modified'),
+        ("pyscada", "0080_variableproperty_last_modified"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='PeriodField',
+            name="PeriodField",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('type', models.SmallIntegerField(choices=[(0, 'min'), (1, 'max'), (2, 'total'), (3, 'difference'), (4, 'difference percent'), (5, 'delta'), (6, 'mean'), (7, 'first'), (8, 'last'), (9, 'count'), (10, 'count value'), (11, 'range'), (12, 'step'), (13, 'change count'), (14, 'distinct count')])),
-                ('property', models.CharField(default='', help_text='used for count value for exemple', max_length=255)),
-                ('offset_second', models.IntegerField(default=0, help_text='Offset in second. Of set to 30 and length is minute will calculate between 1min30 and 2min30 etc.')),
-                ('period', models.SmallIntegerField(choices=[(0, 'second'), (1, 'minute'), (2, 'hour'), (3, 'day'), (4, 'week'), (5, 'month'), (6, 'year')])),
-                ('period_factor', models.PositiveSmallIntegerField(default=1, help_text='Example: set to 2 and choose minute to have a 2 minutes period', validators=[pyscada.models.validate_nonzero])),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "type",
+                    models.SmallIntegerField(
+                        choices=[
+                            (0, "min"),
+                            (1, "max"),
+                            (2, "total"),
+                            (3, "difference"),
+                            (4, "difference percent"),
+                            (5, "delta"),
+                            (6, "mean"),
+                            (7, "first"),
+                            (8, "last"),
+                            (9, "count"),
+                            (10, "count value"),
+                            (11, "range"),
+                            (12, "step"),
+                            (13, "change count"),
+                            (14, "distinct count"),
+                        ]
+                    ),
+                ),
+                (
+                    "property",
+                    models.CharField(
+                        default="",
+                        help_text="used for count value for exemple",
+                        max_length=255,
+                    ),
+                ),
+                (
+                    "offset_second",
+                    models.IntegerField(
+                        default=0,
+                        help_text="Offset in second. Of set to 30 and length is minute will calculate between 1min30 and 2min30 etc.",
+                    ),
+                ),
+                (
+                    "period",
+                    models.SmallIntegerField(
+                        choices=[
+                            (0, "second"),
+                            (1, "minute"),
+                            (2, "hour"),
+                            (3, "day"),
+                            (4, "week"),
+                            (5, "month"),
+                            (6, "year"),
+                        ]
+                    ),
+                ),
+                (
+                    "period_factor",
+                    models.PositiveSmallIntegerField(
+                        default=1,
+                        help_text="Example: set to 2 and choose minute to have a 2 minutes period",
+                        validators=[pyscada.models.validate_nonzero],
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='VariableCalculatedFields',
+            name="VariableCalculatedFields",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('main_variable', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='pyscada.Variable')),
-                ('period_fields', models.ManyToManyField(to='pyscada.PeriodField')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "main_variable",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="pyscada.Variable",
+                    ),
+                ),
+                ("period_fields", models.ManyToManyField(to="pyscada.PeriodField")),
             ],
         ),
         migrations.CreateModel(
-            name='CalculatedVariable',
+            name="CalculatedVariable",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('period', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='pyscada.PeriodField')),
-                ('store_variable', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='pyscada.Variable')),
-                ('variable_calculated_fields', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='pyscada.VariableCalculatedFields')),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "period",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="pyscada.PeriodField",
+                    ),
+                ),
+                (
+                    "store_variable",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="pyscada.Variable",
+                    ),
+                ),
+                (
+                    "variable_calculated_fields",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="pyscada.VariableCalculatedFields",
+                    ),
+                ),
             ],
         ),
     ]

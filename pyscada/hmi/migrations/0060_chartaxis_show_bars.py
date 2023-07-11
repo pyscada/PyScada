@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0059_alter_view_theme'),
+        ("hmi", "0059_alter_view_theme"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='chartaxis',
-            name='show_bars',
-            field=models.BooleanField(default=False, help_text='Show bars'),
+            model_name="chartaxis",
+            name="show_bars",
+            field=models.BooleanField(default=False, help_text="Show bars"),
         ),
     ]

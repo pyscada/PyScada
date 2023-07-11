@@ -7,21 +7,30 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0050_merge_20181130_1143'),
-        ('hmi', '0018_auto_20181205_0937'),
+        ("pyscada", "0050_merge_20181130_1143"),
+        ("hmi", "0018_auto_20181205_0937"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='dropdown',
-            name='variable',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='pyscada.Variable'),
+            model_name="dropdown",
+            name="variable",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="pyscada.Variable",
+            ),
         ),
         migrations.AddField(
-            model_name='dropdown',
-            name='variable_property',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='pyscada.VariableProperty'),
+            model_name="dropdown",
+            name="variable_property",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="pyscada.VariableProperty",
+            ),
         ),
     ]

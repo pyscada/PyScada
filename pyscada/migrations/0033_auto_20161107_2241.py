@@ -6,15 +6,25 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0032_auto_20161107_2206'),
+        ("pyscada", "0032_auto_20161107_2206"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='device',
-            name='device_type',
-            field=models.CharField(choices=[('generic', 'no Protocol'), ('systemstat', 'Local System Monitoring'), ('modbus', 'Modbus Device'), ('smbus', 'SMBus/I2C Device'), ('phant', 'Phant Device'), ('visa', 'VISA Device')], default='generic', max_length=400),
+            model_name="device",
+            name="device_type",
+            field=models.CharField(
+                choices=[
+                    ("generic", "no Protocol"),
+                    ("systemstat", "Local System Monitoring"),
+                    ("modbus", "Modbus Device"),
+                    ("smbus", "SMBus/I2C Device"),
+                    ("phant", "Phant Device"),
+                    ("visa", "VISA Device"),
+                ],
+                default="generic",
+                max_length=400,
+            ),
         ),
     ]

@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0066_auto_20221205_1435'),
+        ("hmi", "0066_auto_20221205_1435"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='cssclass',
-            options={'verbose_name_plural': 'Css Classes'},
+            name="cssclass",
+            options={"verbose_name_plural": "Css Classes"},
         ),
     ]

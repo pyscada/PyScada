@@ -5,55 +5,97 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0021_auto_20190528_0924'),
+        ("hmi", "0021_auto_20190528_0924"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='controlitem',
-            name='variable',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.Variable'),
+            model_name="controlitem",
+            name="variable",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.Variable",
+            ),
         ),
         migrations.AlterField(
-            model_name='controlitem',
-            name='variable_property',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.VariableProperty'),
+            model_name="controlitem",
+            name="variable_property",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.VariableProperty",
+            ),
         ),
         migrations.AlterField(
-            model_name='dropdown',
-            name='variable',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.Variable'),
+            model_name="dropdown",
+            name="variable",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.Variable",
+            ),
         ),
         migrations.AlterField(
-            model_name='dropdown',
-            name='variable_property',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.VariableProperty'),
+            model_name="dropdown",
+            name="variable_property",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.VariableProperty",
+            ),
         ),
         migrations.AlterField(
-            model_name='form',
-            name='control_items',
-            field=models.ManyToManyField(blank=True, limit_choices_to={'type': '5'}, related_name='control_items_form', to='hmi.ControlItem'),
+            model_name="form",
+            name="control_items",
+            field=models.ManyToManyField(
+                blank=True,
+                limit_choices_to={"type": "5"},
+                related_name="control_items_form",
+                to="hmi.ControlItem",
+            ),
         ),
         migrations.AlterField(
-            model_name='form',
-            name='hidden_control_items_to_true',
-            field=models.ManyToManyField(blank=True, limit_choices_to={'type': '5'}, related_name='hidden_control_items_form', to='hmi.ControlItem'),
+            model_name="form",
+            name="hidden_control_items_to_true",
+            field=models.ManyToManyField(
+                blank=True,
+                limit_choices_to={"type": "5"},
+                related_name="hidden_control_items_form",
+                to="hmi.ControlItem",
+            ),
         ),
         migrations.AlterField(
-            model_name='groupdisplaypermission',
-            name='hmi_group',
-            field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.SET_NULL, to='auth.Group'),
+            model_name="groupdisplaypermission",
+            name="hmi_group",
+            field=models.OneToOneField(
+                null=True, on_delete=django.db.models.deletion.SET_NULL, to="auth.Group"
+            ),
         ),
         migrations.AlterField(
-            model_name='widget',
-            name='content',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='hmi.WidgetContent'),
+            model_name="widget",
+            name="content",
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="hmi.WidgetContent",
+            ),
         ),
         migrations.AlterField(
-            model_name='xychart',
-            name='x_axis_var',
-            field=models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='x_axis_var', to='pyscada.Variable'),
+            model_name="xychart",
+            name="x_axis_var",
+            field=models.ForeignKey(
+                default=None,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="x_axis_var",
+                to="pyscada.Variable",
+            ),
         ),
     ]

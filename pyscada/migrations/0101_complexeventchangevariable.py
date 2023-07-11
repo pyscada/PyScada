@@ -5,20 +5,45 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0100_device_instrument_handler'),
+        ("pyscada", "0100_device_instrument_handler"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ComplexEventChangeVariable',
+            name="ComplexEventChangeVariable",
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('value', models.CharField(max_length=400)),
-                ('complex_event', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='pyscada.complexevent')),
-                ('complex_event_group', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='pyscada.complexeventgroup')),
-                ('variable', models.ForeignKey(blank=True, default=None, help_text='Variable to change on event changes', null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.variable')),
+                ("id", models.AutoField(primary_key=True, serialize=False)),
+                ("value", models.CharField(max_length=400)),
+                (
+                    "complex_event",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="pyscada.complexevent",
+                    ),
+                ),
+                (
+                    "complex_event_group",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="pyscada.complexeventgroup",
+                    ),
+                ),
+                (
+                    "variable",
+                    models.ForeignKey(
+                        blank=True,
+                        default=None,
+                        help_text="Variable to change on event changes",
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="pyscada.variable",
+                    ),
+                ),
             ],
         ),
     ]

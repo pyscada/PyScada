@@ -5,20 +5,27 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0076_mail_html_message'),
+        ("pyscada", "0076_mail_html_message"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='recordeddata',
-            name='variable',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.Variable'),
+            model_name="recordeddata",
+            name="variable",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.Variable",
+            ),
         ),
         migrations.AlterField(
-            model_name='recordeddataold',
-            name='variable',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.Variable'),
+            model_name="recordeddataold",
+            name="variable",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="pyscada.Variable",
+            ),
         ),
     ]

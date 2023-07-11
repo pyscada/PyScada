@@ -4,23 +4,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0083_auto_20211115_0812'),
+        ("pyscada", "0083_auto_20211115_0812"),
     ]
 
     operations = [
         migrations.RenameModel(
-            old_name='VariableCalculatedFields',
-            new_name='CalculatedVariableSelector',
+            old_name="VariableCalculatedFields",
+            new_name="CalculatedVariableSelector",
         ),
         migrations.RenameModel(
-            old_name='PeriodField',
-            new_name='PeriodicField',
+            old_name="PeriodField",
+            new_name="PeriodicField",
         ),
         migrations.AddField(
-            model_name='calculatedvariable',
-            name='last_check',
+            model_name="calculatedvariable",
+            name="last_check",
             field=models.DateTimeField(blank=True, null=True),
         ),
     ]

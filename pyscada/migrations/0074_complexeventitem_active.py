@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0073_auto_20201007_0858'),
+        ("pyscada", "0073_auto_20201007_0858"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='complexeventitem',
-            name='active',
+            model_name="complexeventitem",
+            name="active",
             field=models.BooleanField(default=False),
         ),
     ]

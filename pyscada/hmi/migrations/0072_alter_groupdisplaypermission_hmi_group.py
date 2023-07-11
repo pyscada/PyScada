@@ -13,12 +13,16 @@ def create_empty_group_display_permission(apps, schema_editor):
     gdp = apps.get_model("hmi", "GroupDisplayPermission")
 
     g = gdp.objects.get_or_create(hmi_group=None)
-    items = [field for field in gdp._meta.get_fields() if issubclass(type(field), OneToOneRel)]
+    items = [
+        field
+        for field in gdp._meta.get_fields()
+        if issubclass(type(field), OneToOneRel)
+    ]
     for item in items:
         item.related_model.objects.get_or_create(group_display_permission=g[0], type=1)
 
     if g[1]:
-        logger.info('Empty GroupDisplayPermission Created\n')
+        logger.info("Empty GroupDisplayPermission Created\n")
 
 
 def delete_empty_group_display_permission(apps, schema_editor):
@@ -27,21 +31,27 @@ def delete_empty_group_display_permission(apps, schema_editor):
     g = gdp.objects.filter(hmi_group=None).delete()
 
     if g[1]:
-        logger.info('Empty GroupDisplayPermission Deleted\n')
+        logger.info("Empty GroupDisplayPermission Deleted\n")
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('auth', '0012_alter_user_first_name_max_length'),
-        ('hmi', '0071_remove_displayvalueoption_color_1_and_more'),
+        ("auth", "0012_alter_user_first_name_max_length"),
+        ("hmi", "0071_remove_displayvalueoption_color_1_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='groupdisplaypermission',
-            name='hmi_group',
-            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='auth.group'),
+            model_name="groupdisplaypermission",
+            name="hmi_group",
+            field=models.OneToOneField(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="auth.group",
+            ),
         ),
-        migrations.RunPython(create_empty_group_display_permission, delete_empty_group_display_permission),
+        migrations.RunPython(
+            create_empty_group_display_permission, delete_empty_group_display_permission
+        ),
     ]

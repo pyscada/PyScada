@@ -7,12 +7,11 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0048_datamigration_20181025_0918'),
+        ("pyscada", "0048_datamigration_20181025_0918"),
     ]
 
     operations = [
-        migrations.RenameModel('RecordedData', 'RecordedDataOld'),
-        migrations.RenameModel('RecordedDataNew', 'RecordedData'),
+        migrations.RenameModel("RecordedData", "RecordedDataOld"),
+        migrations.RenameModel("RecordedDataNew", "RecordedData"),
     ]

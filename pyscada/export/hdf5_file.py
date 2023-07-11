@@ -26,34 +26,31 @@ def dtype_to_matlab_class(dtype):
     """
     convert dtype to matlab class string
     """
-    if dtype.str in ['<f8']:
-        return 'double'
-    elif dtype.str in ['<f4']:
-        return 'single'
-    elif dtype.str in ['<i8']:
-        return 'int64'
-    elif dtype.str in ['<u8']:
-        return 'uint64'
-    elif dtype.str in ['<i4']:
-        return 'int32'
-    elif dtype.str in ['<u4']:
-        return 'uint32'
-    elif dtype.str in ['<i2']:
-        return 'int16'
-    elif dtype.str in ['<u2']:
-        return 'uint16'
-    elif dtype.str in ['|i1']:
-        return 'int8'
-    elif dtype.str in ['|u1']:
-        return 'uint8'
+    if dtype.str in ["<f8"]:
+        return "double"
+    elif dtype.str in ["<f4"]:
+        return "single"
+    elif dtype.str in ["<i8"]:
+        return "int64"
+    elif dtype.str in ["<u8"]:
+        return "uint64"
+    elif dtype.str in ["<i4"]:
+        return "int32"
+    elif dtype.str in ["<u4"]:
+        return "uint32"
+    elif dtype.str in ["<i2"]:
+        return "int16"
+    elif dtype.str in ["<u2"]:
+        return "uint16"
+    elif dtype.str in ["|i1"]:
+        return "int8"
+    elif dtype.str in ["|u1"]:
+        return "uint8"
 
 
 class MatCompatibleH5:
     def __init__(self, filename, **kwargs):
-        """
-
-
-        """
+        """ """
         self.filename = os.path.expanduser(filename)
         self.filepath = []
         self.CHUNCK = 4320  # 12V/Min * 60 Min/Hour * 6 Hours (1/4 Day)
@@ -67,22 +64,24 @@ class MatCompatibleH5:
             if isinstance(value, bytes):
                 self._f.attrs[key] = value
             elif isinstance(value, str):
-                self._f.attrs[key] = value.encode('utf-8').__str__()
+                self._f.attrs[key] = value.encode("utf-8").__str__()
             else:
                 self._f.attrs[key] = value.__str__()
         self.reopen()
 
     def create_file(self):
-        self._f = h5py.File(self.filename, 'a', userblock_size=512)
+        self._f = h5py.File(self.filename, "a", userblock_size=512)
         self._f.close()
-        userblock_data = 'MATLAB 7.3 MAT-file, Platform: PCWIN64, Created on: %s HDF5 schema 1.00 .' % time.strftime(
-            '%a %b %d %H:%M:%S %Y')
+        userblock_data = (
+            "MATLAB 7.3 MAT-file, Platform: PCWIN64, Created on: %s HDF5 schema 1.00 ."
+            % time.strftime("%a %b %d %H:%M:%S %Y")
+        )
         while len(userblock_data) < 116:
-            userblock_data += ' '
+            userblock_data += " "
         userblock_data += chr(0) * 9
-        userblock_data += 'IM'
-        with io.open(self.filename, 'rb+') as f:
-            f.write(userblock_data.encode('utf-8'))
+        userblock_data += "IM"
+        with io.open(self.filename, "rb+") as f:
+            f.write(userblock_data.encode("utf-8"))
         self.reopen()
 
     def close_file(self):
@@ -94,7 +93,7 @@ class MatCompatibleH5:
         self.open_file()
 
     def open_file(self):
-        self._f = h5py.File(self.filename, 'r+')
+        self._f = h5py.File(self.filename, "r+")
         self._d = {}
         self._cd = {}
         for d in self._f.values():
@@ -109,10 +108,16 @@ class MatCompatibleH5:
     def create_dataset(self, name, dtype):
         if name in self._d:
             return False
-        self._d[name] = self._f.create_dataset(name,
-                                               shape=(0,), dtype=dtype, maxshape=(None,), chunks=(self.CHUNCK,),
-                                               compression='gzip', compression_opts=self.GZIP_LEVEL)
-        self._d[name].attrs['MATLAB_class'] = dtype_to_matlab_class(dtype)
+        self._d[name] = self._f.create_dataset(
+            name,
+            shape=(0,),
+            dtype=dtype,
+            maxshape=(None,),
+            chunks=(self.CHUNCK,),
+            compression="gzip",
+            compression_opts=self.GZIP_LEVEL,
+        )
+        self._d[name].attrs["MATLAB_class"] = dtype_to_matlab_class(dtype)
         return self._d[name]
 
     def create_group(self, name):
@@ -122,18 +127,27 @@ class MatCompatibleH5:
         if gname in self._d:
             return False
         self.create_group(gname)
-        self._cd[gname + "/values"] = self._d[gname].create_dataset("values",
-                                                                    shape=(0,), dtype=dtype, maxshape=(None,),
-                                                                    chunks=(self.CHUNCK,),
-                                                                    compression='gzip',
-                                                                    compression_opts=self.GZIP_LEVEL)
+        self._cd[gname + "/values"] = self._d[gname].create_dataset(
+            "values",
+            shape=(0,),
+            dtype=dtype,
+            maxshape=(None,),
+            chunks=(self.CHUNCK,),
+            compression="gzip",
+            compression_opts=self.GZIP_LEVEL,
+        )
 
-        self._cd[gname + "/time"] = self._d[gname].create_dataset("time",
-                                                                  shape=(0,), dtype="f8", maxshape=(None,),
-                                                                  chunks=(self.CHUNCK,),
-                                                                  compression='gzip', compression_opts=self.GZIP_LEVEL)
-        self._cd[gname + "/time"].attrs['MATLAB_class'] = 'double'
-        self._cd[gname + "/values"].attrs['MATLAB_class'] = dtype_to_matlab_class(dtype)
+        self._cd[gname + "/time"] = self._d[gname].create_dataset(
+            "time",
+            shape=(0,),
+            dtype="f8",
+            maxshape=(None,),
+            chunks=(self.CHUNCK,),
+            compression="gzip",
+            compression_opts=self.GZIP_LEVEL,
+        )
+        self._cd[gname + "/time"].attrs["MATLAB_class"] = "double"
+        self._cd[gname + "/values"].attrs["MATLAB_class"] = dtype_to_matlab_class(dtype)
         return True
 
     def write_data(self, name, data, **kwargs):
@@ -142,7 +156,7 @@ class MatCompatibleH5:
                 if isinstance(value, bytes):
                     self._d[name].attrs[key] = value
                 elif isinstance(value, str):
-                    self._f.attrs[key] = value.encode('utf-8').__str__()
+                    self._f.attrs[key] = value.encode("utf-8").__str__()
                 else:
                     self._d[name].attrs[key] = value.__str__()
 

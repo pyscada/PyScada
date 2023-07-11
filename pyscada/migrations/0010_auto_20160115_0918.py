@@ -7,24 +7,23 @@ from django.conf import settings
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('pyscada', '0009_auto_20160111_1802'),
+        ("pyscada", "0009_auto_20160111_1802"),
     ]
 
     operations = [
         migrations.RenameModel(
-            old_name='Client',
-            new_name='Device',
+            old_name="Client",
+            new_name="Device",
         ),
         migrations.RenameModel(
-            old_name='ClientWriteTask',
-            new_name='DeviceWriteTask',
+            old_name="ClientWriteTask",
+            new_name="DeviceWriteTask",
         ),
         migrations.RenameField(
-            model_name='variable',
-            old_name='client',
-            new_name='device',
-        )
+            model_name="variable",
+            old_name="client",
+            new_name="device",
+        ),
     ]

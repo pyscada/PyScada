@@ -7,20 +7,23 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0045_auto_20180705_1341'),
-        ('hmi', '0009_controlitem_property_name'),
+        ("pyscada", "0045_auto_20180705_1341"),
+        ("hmi", "0009_controlitem_property_name"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='controlitem',
-            name='property_name',
+            model_name="controlitem",
+            name="property_name",
         ),
         migrations.AddField(
-            model_name='controlitem',
-            name='variable_property',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='pyscada.VariableProperty'),
+            model_name="controlitem",
+            name="variable_property",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="pyscada.VariableProperty",
+            ),
         ),
     ]

@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0079_devicehandler'),
+        ("pyscada", "0079_devicehandler"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='variableproperty',
-            name='last_modified',
+            model_name="variableproperty",
+            name="last_modified",
             field=models.DateTimeField(auto_now=True),
         ),
     ]

@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0089_calculatedvariable_state'),
+        ("pyscada", "0089_calculatedvariable_state"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='calculatedvariable',
-            name='state',
-            field=models.CharField(default='', max_length=100),
+            model_name="calculatedvariable",
+            name="state",
+            field=models.CharField(default="", max_length=100),
         ),
     ]

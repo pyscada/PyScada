@@ -6,15 +6,33 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0041_update_protocol_id'),
+        ("pyscada", "0041_update_protocol_id"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='device',
-            name='polling_interval',
-            field=models.FloatField(choices=[(0.1, '100 Milliseconds'), (0.5, '500 Milliseconds'), (1.0, '1 Second'), (5.0, '5 Seconds'), (10.0, '10 Seconds'), (15.0, '15 Seconds'), (30.0, '30 Seconds'), (60.0, '1 Minute'), (150.0, '2.5 Mintues'), (300.0, '5 Minutes'), (360.0, '6 Minutes (10 times per Hour)'), (600.0, '10 Minutes'), (900.0, '15 Minutes'), (1800.0, '30 Minutes'), (3600.0, '1 Hour')], default=5),
+            model_name="device",
+            name="polling_interval",
+            field=models.FloatField(
+                choices=[
+                    (0.1, "100 Milliseconds"),
+                    (0.5, "500 Milliseconds"),
+                    (1.0, "1 Second"),
+                    (5.0, "5 Seconds"),
+                    (10.0, "10 Seconds"),
+                    (15.0, "15 Seconds"),
+                    (30.0, "30 Seconds"),
+                    (60.0, "1 Minute"),
+                    (150.0, "2.5 Mintues"),
+                    (300.0, "5 Minutes"),
+                    (360.0, "6 Minutes (10 times per Hour)"),
+                    (600.0, "10 Minutes"),
+                    (900.0, "15 Minutes"),
+                    (1800.0, "30 Minutes"),
+                    (3600.0, "1 Hour"),
+                ],
+                default=5,
+            ),
         ),
     ]

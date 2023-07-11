@@ -34,7 +34,9 @@ def script(self):
 
     cvs = CalculatedVariable.objects.all()
     for cv in cvs:
-        if cv.variable_calculated_fields.active \
-                and cv.period in cv.variable_calculated_fields.period_fields.all() \
-                and cv.store_variable.active:
+        if (
+            cv.variable_calculated_fields.active
+            and cv.period in cv.variable_calculated_fields.period_fields.all()
+            and cv.store_variable.active
+        ):
             cv.check_to_now()

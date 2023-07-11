@@ -4,15 +4,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0029_auto_20200916_0720'),
+        ("hmi", "0029_auto_20200916_0720"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='displayvalueoption',
-            name='display_value_transformation',
-            field=models.PositiveSmallIntegerField(choices=[(0, 'None'), (1, 'Timestamp to local date'), (2, 'Timestamp to local time'), (3, 'Timestamp to local date and time'), (4, 'Dictionary')], default=0),
+            model_name="displayvalueoption",
+            name="display_value_transformation",
+            field=models.PositiveSmallIntegerField(
+                choices=[
+                    (0, "None"),
+                    (1, "Timestamp to local date"),
+                    (2, "Timestamp to local time"),
+                    (3, "Timestamp to local date and time"),
+                    (4, "Dictionary"),
+                ],
+                default=0,
+            ),
         ),
     ]

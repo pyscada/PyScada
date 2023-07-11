@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0047_auto_20201202_1445'),
+        ("hmi", "0047_auto_20201202_1445"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='chartaxis',
-            name='fill',
-            field=models.BooleanField(default=False, help_text='Fill all variables of this axis'),
+            model_name="chartaxis",
+            name="fill",
+            field=models.BooleanField(
+                default=False, help_text="Fill all variables of this axis"
+            ),
         ),
     ]

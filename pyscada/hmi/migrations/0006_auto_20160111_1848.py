@@ -5,20 +5,31 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0005_auto_20160111_1822'),
+        ("hmi", "0005_auto_20160111_1822"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='hmivariable',
-            name='chart_line_color',
-            field=models.ForeignKey(default=None, blank=True, to='hmi.Color', null=True, on_delete=models.SET_NULL),
+            model_name="hmivariable",
+            name="chart_line_color",
+            field=models.ForeignKey(
+                default=None,
+                blank=True,
+                to="hmi.Color",
+                null=True,
+                on_delete=models.SET_NULL,
+            ),
         ),
         migrations.AlterField(
-            model_name='widget',
-            name='page',
-            field=models.ForeignKey(default=None, blank=True, to='hmi.Page', null=True, on_delete=models.SET_NULL),
+            model_name="widget",
+            name="page",
+            field=models.ForeignKey(
+                default=None,
+                blank=True,
+                to="hmi.Page",
+                null=True,
+                on_delete=models.SET_NULL,
+            ),
         ),
     ]

@@ -14,10 +14,10 @@ def move_time_values(apps, schema_editor):
             item.time_end_new = item.time_end.timestamp
         item.save()
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
-        ('pyscada', '0018_auto_20160228_1623'),
+        ("pyscada", "0018_auto_20160228_1623"),
     ]
 
     operations = [

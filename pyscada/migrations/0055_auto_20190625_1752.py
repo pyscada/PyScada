@@ -6,23 +6,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0054_auto_20190411_0749'),
+        ("pyscada", "0054_auto_20190411_0749"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='backgroundprocess',
-            options={'verbose_name_plural': 'Background Processes'},
+            name="backgroundprocess",
+            options={"verbose_name_plural": "Background Processes"},
         ),
         migrations.AlterModelOptions(
-            name='variableproperty',
-            options={'verbose_name_plural': 'variable properties'},
+            name="variableproperty",
+            options={"verbose_name_plural": "variable properties"},
         ),
         migrations.AlterField(
-            model_name='variable',
-            name='cov_increment',
-            field=models.FloatField(default=0, verbose_name='COV'),
+            model_name="variable",
+            name="cov_increment",
+            field=models.FloatField(default=0, verbose_name="COV"),
         ),
     ]

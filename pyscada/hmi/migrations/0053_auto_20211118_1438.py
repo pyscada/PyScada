@@ -20,36 +20,47 @@ def radius_auto(apps, schema_editor):
             item.save()
             count += 1
 
-    logger.info('changed %d Pies\n' % count)
+    logger.info("changed %d Pies\n" % count)
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0091_auto_20211118_1019'),
-        ('hmi', '0052_auto_20201204_0949'),
+        ("pyscada", "0091_auto_20211118_1019"),
+        ("hmi", "0052_auto_20201204_0949"),
     ]
 
     operations = [
         migrations.RunPython(radius_auto, reverse_code=migrations.RunPython.noop),
         migrations.AddField(
-            model_name='pie',
-            name='variable_properties',
-            field=models.ManyToManyField(blank=True, to='pyscada.VariableProperty'),
+            model_name="pie",
+            name="variable_properties",
+            field=models.ManyToManyField(blank=True, to="pyscada.VariableProperty"),
         ),
         migrations.AlterField(
-            model_name='pie',
-            name='innerRadius',
-            field=models.PositiveSmallIntegerField(default=0, validators=[django.core.validators.MaxValueValidator(100), django.core.validators.MinValueValidator(0)]),
+            model_name="pie",
+            name="innerRadius",
+            field=models.PositiveSmallIntegerField(
+                default=0,
+                validators=[
+                    django.core.validators.MaxValueValidator(100),
+                    django.core.validators.MinValueValidator(0),
+                ],
+            ),
         ),
         migrations.AlterField(
-            model_name='pie',
-            name='radius',
-            field=models.PositiveSmallIntegerField(default=100, validators=[django.core.validators.MaxValueValidator(100), django.core.validators.MinValueValidator(1)]),
+            model_name="pie",
+            name="radius",
+            field=models.PositiveSmallIntegerField(
+                default=100,
+                validators=[
+                    django.core.validators.MaxValueValidator(100),
+                    django.core.validators.MinValueValidator(1),
+                ],
+            ),
         ),
         migrations.AlterField(
-            model_name='pie',
-            name='variables',
-            field=models.ManyToManyField(blank=True, to='pyscada.Variable'),
+            model_name="pie",
+            name="variables",
+            field=models.ManyToManyField(blank=True, to="pyscada.Variable"),
         ),
     ]

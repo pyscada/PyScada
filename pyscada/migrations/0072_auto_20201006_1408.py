@@ -4,19 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0071_recordedevent_level'),
+        ("pyscada", "0071_recordedevent_level"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='recordedevent',
-            name='level',
+            model_name="recordedevent",
+            name="level",
         ),
         migrations.AddField(
-            model_name='complexeventgroup',
-            name='last_level',
+            model_name="complexeventgroup",
+            name="last_level",
             field=models.SmallIntegerField(default=-1),
         ),
     ]

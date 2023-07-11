@@ -7,27 +7,47 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0036_auto_20170224_1245'),
+        ("pyscada", "0036_auto_20170224_1245"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='BackgroundProcess',
+            name="BackgroundProcess",
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('pid', models.IntegerField(default=0)),
-                ('label', models.CharField(default=b'', max_length=400)),
-                ('message', models.CharField(default=b'', max_length=400)),
-                ('enabled', models.BooleanField(default=False)),
-                ('done', models.BooleanField(default=False)),
-                ('failed', models.BooleanField(default=False)),
-                ('process_class', models.CharField(default='pyscada.utils.scheduler.Process', help_text='from pyscada.utils.scheduler import Process', max_length=400)),
-                ('process_class_kwargs', models.CharField(default='{}', help_text='arguments in json format will be passed as kwargs while the init of the process instance, example: {"keywordA":"value1", "keywordB":7}', max_length=400)),
-                ('last_update', models.DateTimeField(blank=True, null=True)),
-                ('running_since', models.DateTimeField(blank=True, null=True)),
-                ('parent_process', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='pyscada.BackgroundProcess')),
+                ("id", models.AutoField(primary_key=True, serialize=False)),
+                ("pid", models.IntegerField(default=0)),
+                ("label", models.CharField(default=b"", max_length=400)),
+                ("message", models.CharField(default=b"", max_length=400)),
+                ("enabled", models.BooleanField(default=False)),
+                ("done", models.BooleanField(default=False)),
+                ("failed", models.BooleanField(default=False)),
+                (
+                    "process_class",
+                    models.CharField(
+                        default="pyscada.utils.scheduler.Process",
+                        help_text="from pyscada.utils.scheduler import Process",
+                        max_length=400,
+                    ),
+                ),
+                (
+                    "process_class_kwargs",
+                    models.CharField(
+                        default="{}",
+                        help_text='arguments in json format will be passed as kwargs while the init of the process instance, example: {"keywordA":"value1", "keywordB":7}',
+                        max_length=400,
+                    ),
+                ),
+                ("last_update", models.DateTimeField(blank=True, null=True)),
+                ("running_since", models.DateTimeField(blank=True, null=True)),
+                (
+                    "parent_process",
+                    models.ForeignKey(
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="pyscada.BackgroundProcess",
+                    ),
+                ),
             ],
         )
     ]

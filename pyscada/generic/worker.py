@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class Process(SingleDeviceDAQProcessWorker):
     device_filter = dict(protocol_id=PROTOCOL_ID)
-    bp_label = 'pyscada.' + __app_name__.lower() + '-%s'
+    bp_label = "pyscada." + __app_name__.lower() + "-%s"
 
     def __init__(self, dt=5, **kwargs):
         super(SingleDeviceDAQProcessWorker, self).__init__(dt=dt, **kwargs)

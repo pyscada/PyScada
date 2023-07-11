@@ -6,24 +6,35 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0054_auto_20190411_0749'),
-        ('hmi', '0019_auto_20181205_1058'),
+        ("pyscada", "0054_auto_20190411_0749"),
+        ("hmi", "0019_auto_20181205_1058"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Pie',
+            name="Pie",
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('title', models.CharField(default='', max_length=400)),
-                ('radius', models.CharField(default='auto', help_text='auto or between 0 and 1 or value in pixel', max_length=10)),
-                ('innerRadius', models.PositiveSmallIntegerField(default=0, help_text='between 0 and 1 or value in pixel')),
-                ('variables', models.ManyToManyField(to='pyscada.Variable')),
+                ("id", models.AutoField(primary_key=True, serialize=False)),
+                ("title", models.CharField(default="", max_length=400)),
+                (
+                    "radius",
+                    models.CharField(
+                        default="auto",
+                        help_text="auto or between 0 and 1 or value in pixel",
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "innerRadius",
+                    models.PositiveSmallIntegerField(
+                        default=0, help_text="between 0 and 1 or value in pixel"
+                    ),
+                ),
+                ("variables", models.ManyToManyField(to="pyscada.Variable")),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
     ]

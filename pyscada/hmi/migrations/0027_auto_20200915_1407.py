@@ -4,20 +4,19 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0026_auto_20200915_1333'),
+        ("hmi", "0026_auto_20200915_1333"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='controlitem',
-            old_name='display_value_color',
-            new_name='display_value_color_type',
+            model_name="controlitem",
+            old_name="display_value_color",
+            new_name="display_value_color_type",
         ),
         migrations.RenameField(
-            model_name='controlitem',
-            old_name='display_type_color',
-            new_name='display_value_mode',
+            model_name="controlitem",
+            old_name="display_type_color",
+            new_name="display_value_mode",
         ),
     ]

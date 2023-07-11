@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0059_auto_20200211_1049'),
+        ("pyscada", "0059_auto_20200211_1049"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='variableproperty',
-            name='value_string',
-            field=models.CharField(blank=True, default='', max_length=1000),
+            model_name="variableproperty",
+            name="value_string",
+            field=models.CharField(blank=True, default="", max_length=1000),
         ),
     ]

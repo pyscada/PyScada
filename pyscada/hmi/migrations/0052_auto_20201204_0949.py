@@ -4,25 +4,24 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0051_auto_20201204_0901'),
+        ("hmi", "0051_auto_20201204_0901"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='controlpanel',
-            name='dropdowns',
+            model_name="controlpanel",
+            name="dropdowns",
         ),
         migrations.RemoveField(
-            model_name='form',
-            name='dropdowns',
+            model_name="form",
+            name="dropdowns",
         ),
         migrations.RemoveField(
-            model_name='groupdisplaypermission',
-            name='dropdowns',
+            model_name="groupdisplaypermission",
+            name="dropdowns",
         ),
         migrations.DeleteModel(
-            name='DropDown',
+            name="DropDown",
         ),
     ]

@@ -26,116 +26,118 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = ''
+SECRET_KEY = ""
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'pyscada',
-    'pyscada.core',
-    'pyscada.hmi',
-    'pyscada.export',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "pyscada",
+    "pyscada.core",
+    "pyscada.hmi",
+    "pyscada.export",
 ]
 
 installed_packages = pkg_resources.working_set
 for i in installed_packages:
-    if 'pyscada-' in str(i):
+    if "pyscada-" in str(i):
         lib = str(i).split(" ")[0].split("-")[1]
-        if importlib.util.find_spec('pyscada.' + str(lib)) is not None:
+        if importlib.util.find_spec("pyscada." + str(lib)) is not None:
             INSTALLED_APPS += [
-                'pyscada.' + str(lib),
+                "pyscada." + str(lib),
             ]
 
-if importlib.util.find_spec('channels') is not None:
+if importlib.util.find_spec("channels") is not None:
     INSTALLED_APPS += [
-        'channels',
+        "channels",
     ]
 
     CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels_redis.core.RedisChannelLayer',
-            'CONFIG': {
-                "hosts": [('127.0.0.1', 6379)],
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [("127.0.0.1", 6379)],
             },
         },
     }
 
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = "/"
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
-if importlib.util.find_spec('django_cas_ng') is not None:
+if importlib.util.find_spec("django_cas_ng") is not None:
     INSTALLED_APPS += [
-        'django_cas_ng',
+        "django_cas_ng",
     ]
     AUTHENTICATION_BACKENDS += [
-        'django_cas_ng.backends.CASBackend',
+        "django_cas_ng.backends.CASBackend",
     ]
-    CAS_SERVER_URL = 'https://sso.univ-pau.fr/cas/'
-    CAS_VERSION = '2'
-    CAS_EXTRA_LOGIN_KWARGS = {'proxies': {'https': 'http://cache.iutbayonne.univ-pau.fr:3128'}, 'timeout': 5}
+    CAS_SERVER_URL = "https://sso.univ-pau.fr/cas/"
+    CAS_VERSION = "2"
+    CAS_EXTRA_LOGIN_KWARGS = {
+        "proxies": {"https": "http://cache.iutbayonne.univ-pau.fr:3128"},
+        "timeout": 5,
+    }
 
-    UNAUTHENTICATED_REDIRECT = '/accounts/choose_login/'
+    UNAUTHENTICATED_REDIRECT = "/accounts/choose_login/"
 
-ROOT_URLCONF = 'PyScadaServer.urls'
+ROOT_URLCONF = "PyScadaServer.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
-            'libraries': {
-                'staticfiles': 'django.templatetags.static',
+            "libraries": {
+                "staticfiles": "django.templatetags.static",
             },
         },
     },
 ]
 
-WSGI_APPLICATION = 'PyScadaServer.wsgi.application'
+WSGI_APPLICATION = "PyScadaServer.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE':   'django.db.backends.mysql',
-        'NAME':     'PyScada_db',
-        'USER':     'PyScada-user',
-        'PASSWORD': 'PyScada-user-password',
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "PyScada_db",
+        "USER": "PyScada-user",
+        "PASSWORD": "PyScada-user-password",
+        "OPTIONS": {
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
         }
-
         # 'ENGINE': 'django.db.backends.sqlite3',
         # 'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
@@ -146,25 +148,25 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -176,97 +178,97 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = "/static/"
 
-STATIC_ROOT = '/var/www/pyscada/http/static/'
+STATIC_ROOT = "/var/www/pyscada/http/static/"
 
-MEDIA_URL = '/media/'
+MEDIA_URL = "/media/"
 
-MEDIA_ROOT = '/var/www/pyscada/http/media/'
+MEDIA_ROOT = "/var/www/pyscada/http/media/"
 
 # PyScada settings
 # https://github.com/trombastic/PyScada
 
 # email settings
-DEFAULT_FROM_EMAIL = ''
-EMAIL_HOST = ''
+DEFAULT_FROM_EMAIL = ""
+EMAIL_HOST = ""
 EMAIL_PORT = 465
-EMAIL_HOST_USER = 'r'
+EMAIL_HOST_USER = "r"
 EMAIL_USE_TLS = False
 EMAIL_USE_SSL = True
-EMAIL_HOST_PASSWORD = ''
-EMAIL_PREFIX = 'PREFIX'  # Mail subject will be "PREFIX subjecttext"
+EMAIL_HOST_PASSWORD = ""
+EMAIL_PREFIX = "PREFIX"  # Mail subject will be "PREFIX subjecttext"
 
 # meta information's about the plant site
 PYSCADA_META = {
-    'name': 'A SHORT NAME',
-    'description': 'A SHORT DESCRIPTION',
+    "name": "A SHORT NAME",
+    "description": "A SHORT DESCRIPTION",
 }
 
 # export properties
 PYSCADA_EXPORT = {
-    'file_prefix': 'PREFIX_',
-    'output_folder': '~/measurement_data_dumps',
+    "file_prefix": "PREFIX_",
+    "output_folder": "~/measurement_data_dumps",
 }
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'standard': {
-            'format': "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
-            'datefmt': "%d/%b/%Y %H:%M:%S"
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {
+            "format": "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            "datefmt": "%d/%b/%Y %H:%M:%S",
         },
     },
-    'handlers': {
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': '/var/log/pyscada_debug.log',
-            'formatter': 'standard',
+    "handlers": {
+        "file": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": "/var/log/pyscada_debug.log",
+            "formatter": "standard",
         },
     },
-    'loggers': {
-        '': {
-            'handlers': ['file'],
-            'level': 'ERROR',
-            'propagate': True,
+    "loggers": {
+        "": {
+            "handlers": ["file"],
+            "level": "ERROR",
+            "propagate": True,
         },
-        'django': {
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': False,
+        "django": {
+            "handlers": ["file"],
+            "level": "INFO",
+            "propagate": False,
         },
-        'pyscada': {
-            'handlers': ['file'],
-            'level': 'DEBUG',
-            'propagate': False,
+        "pyscada": {
+            "handlers": ["file"],
+            "level": "DEBUG",
+            "propagate": False,
         },
-        'gunicorn': {
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': False,
+        "gunicorn": {
+            "handlers": ["file"],
+            "level": "INFO",
+            "propagate": False,
         },
     },
 }
 
 VISA_DEVICE_SETTINGS = {
-    'USB0': {
-        'open_timeout': 5000,
-        'timeout': 15000,
+    "USB0": {
+        "open_timeout": 5000,
+        "timeout": 15000,
     },
-    'GPIB0': {
-        'open_timeout': 5000,
-        'timeout': 15000,
+    "GPIB0": {
+        "open_timeout": 5000,
+        "timeout": 15000,
     },
-    'ASRL/dev/ttyAMA0': {
-        'baud_rate': 9600,
-        'data_bits': 8,
-        'parity': pyvisa.constants.Parity.none,
-        'stop_bits': pyvisa.constants.StopBits.one,
-        'write_termination': '',
+    "ASRL/dev/ttyAMA0": {
+        "baud_rate": 9600,
+        "data_bits": 8,
+        "parity": pyvisa.constants.Parity.none,
+        "stop_bits": pyvisa.constants.StopBits.one,
+        "write_termination": "",
     },
-    'ASRL/dev/ttyUSB0': {
-        'open_timeout': 5000,
+    "ASRL/dev/ttyUSB0": {
+        "open_timeout": 5000,
     },
 }

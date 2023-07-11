@@ -7,51 +7,84 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0047_variableproperty_unit'),
-        ('hmi', '0014_auto_20180912_1340'),
+        ("pyscada", "0047_variableproperty_unit"),
+        ("hmi", "0014_auto_20180912_1340"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Form',
+            name="Form",
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('title', models.CharField(default='', max_length=400)),
-                ('button', models.CharField(default='Ok', max_length=50)),
-                ('control_items', models.ManyToManyField(related_name='control_items_form', to='hmi.ControlItem')),
-                ('hidden_control_items_to_true', models.ManyToManyField(related_name='hidden_control_items_form', to='hmi.ControlItem')),
+                ("id", models.AutoField(primary_key=True, serialize=False)),
+                ("title", models.CharField(default="", max_length=400)),
+                ("button", models.CharField(default="Ok", max_length=50)),
+                (
+                    "control_items",
+                    models.ManyToManyField(
+                        related_name="control_items_form", to="hmi.ControlItem"
+                    ),
+                ),
+                (
+                    "hidden_control_items_to_true",
+                    models.ManyToManyField(
+                        related_name="hidden_control_items_form", to="hmi.ControlItem"
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='XYChart',
+            name="XYChart",
             fields=[
-                ('id', models.AutoField(primary_key=True, serialize=False)),
-                ('title', models.CharField(default='', max_length=400)),
-                ('x_axis_label', models.CharField(blank=True, default='', max_length=400)),
-                ('x_axis_linlog', models.BooleanField(default=False, help_text='False->Lin / True->Log')),
-                ('y_axis_label', models.CharField(blank=True, default='', max_length=400)),
-                ('variables', models.ManyToManyField(related_name='variables_xy_chart', to='pyscada.Variable')),
-                ('x_axis_var', models.ForeignKey(default=None, on_delete=django.db.models.deletion.CASCADE, related_name='x_axis_var', to='pyscada.Variable')),
+                ("id", models.AutoField(primary_key=True, serialize=False)),
+                ("title", models.CharField(default="", max_length=400)),
+                (
+                    "x_axis_label",
+                    models.CharField(blank=True, default="", max_length=400),
+                ),
+                (
+                    "x_axis_linlog",
+                    models.BooleanField(
+                        default=False, help_text="False->Lin / True->Log"
+                    ),
+                ),
+                (
+                    "y_axis_label",
+                    models.CharField(blank=True, default="", max_length=400),
+                ),
+                (
+                    "variables",
+                    models.ManyToManyField(
+                        related_name="variables_xy_chart", to="pyscada.Variable"
+                    ),
+                ),
+                (
+                    "x_axis_var",
+                    models.ForeignKey(
+                        default=None,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="x_axis_var",
+                        to="pyscada.Variable",
+                    ),
+                ),
             ],
             options={
-                'abstract': False,
+                "abstract": False,
             },
         ),
         migrations.AddField(
-            model_name='view',
-            name='show_timeline',
+            model_name="view",
+            name="show_timeline",
             field=models.BooleanField(default=True),
         ),
         migrations.AddField(
-            model_name='controlpanel',
-            name='forms',
-            field=models.ManyToManyField(blank=True, to='hmi.Form'),
+            model_name="controlpanel",
+            name="forms",
+            field=models.ManyToManyField(blank=True, to="hmi.Form"),
         ),
         migrations.AddField(
-            model_name='groupdisplaypermission',
-            name='xy_charts',
-            field=models.ManyToManyField(blank=True, to='hmi.XYChart'),
+            model_name="groupdisplaypermission",
+            name="xy_charts",
+            field=models.ManyToManyField(blank=True, to="hmi.XYChart"),
         ),
     ]

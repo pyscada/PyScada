@@ -4,43 +4,48 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0094_move_dictionaries'),
-        ('hmi', '0054_displayvalueoption_type'),
+        ("pyscada", "0094_move_dictionaries"),
+        ("hmi", "0054_displayvalueoption_type"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='dictionaryitem',
-            name='dictionary',
+            model_name="dictionaryitem",
+            name="dictionary",
         ),
         migrations.RemoveField(
-            model_name='controlelementoption',
-            name='dictionary',
+            model_name="controlelementoption",
+            name="dictionary",
         ),
         migrations.RemoveField(
-            model_name='controlelementoption',
-            name='empty_dictionary',
+            model_name="controlelementoption",
+            name="empty_dictionary",
         ),
         migrations.RemoveField(
-            model_name='displayvalueoption',
-            name='dictionary',
+            model_name="displayvalueoption",
+            name="dictionary",
         ),
         migrations.AddField(
-            model_name='controlelementoption',
-            name='dropdown',
-            field=models.BooleanField(default=False, help_text='Show control item as dropdown. The variable must have a dictionary'),
+            model_name="controlelementoption",
+            name="dropdown",
+            field=models.BooleanField(
+                default=False,
+                help_text="Show control item as dropdown. The variable must have a dictionary",
+            ),
         ),
         migrations.AddField(
-            model_name='controlelementoption',
-            name='empty_dropdown_value',
-            field=models.BooleanField(default=False, help_text='If true, show placeholder as default unelectable text'),
+            model_name="controlelementoption",
+            name="empty_dropdown_value",
+            field=models.BooleanField(
+                default=False,
+                help_text="If true, show placeholder as default unelectable text",
+            ),
         ),
         migrations.DeleteModel(
-            name='Dictionary',
+            name="Dictionary",
         ),
         migrations.DeleteModel(
-            name='DictionaryItem',
+            name="DictionaryItem",
         ),
     ]

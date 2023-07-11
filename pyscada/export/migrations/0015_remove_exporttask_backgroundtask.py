@@ -6,14 +6,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('export', '0014_auto_20170711_1326'),
+        ("export", "0014_auto_20170711_1326"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='exporttask',
-            name='backgroundtask',
+            model_name="exporttask",
+            name="backgroundtask",
         ),
     ]

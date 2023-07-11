@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0068_auto_20201006_0826'),
+        ("pyscada", "0068_auto_20201006_0826"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='complexeventgroup',
-            name='current_level',
+            model_name="complexeventgroup",
+            name="current_level",
             field=models.PositiveSmallIntegerField(default=0),
         ),
     ]

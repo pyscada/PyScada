@@ -4,46 +4,45 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0070_move_displayvalueoptions'),
+        ("hmi", "0070_move_displayvalueoptions"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='displayvalueoption',
-            name='color_1',
+            model_name="displayvalueoption",
+            name="color_1",
         ),
         migrations.RemoveField(
-            model_name='displayvalueoption',
-            name='color_2',
+            model_name="displayvalueoption",
+            name="color_2",
         ),
         migrations.RemoveField(
-            model_name='displayvalueoption',
-            name='color_3',
+            model_name="displayvalueoption",
+            name="color_3",
         ),
         migrations.RemoveField(
-            model_name='displayvalueoption',
-            name='color_level_1',
+            model_name="displayvalueoption",
+            name="color_level_1",
         ),
         migrations.RemoveField(
-            model_name='displayvalueoption',
-            name='color_level_1_type',
+            model_name="displayvalueoption",
+            name="color_level_1_type",
         ),
         migrations.RemoveField(
-            model_name='displayvalueoption',
-            name='color_level_2',
+            model_name="displayvalueoption",
+            name="color_level_2",
         ),
         migrations.RemoveField(
-            model_name='displayvalueoption',
-            name='color_level_2_type',
+            model_name="displayvalueoption",
+            name="color_level_2_type",
         ),
         migrations.RemoveField(
-            model_name='displayvalueoption',
-            name='color_type',
+            model_name="displayvalueoption",
+            name="color_type",
         ),
         migrations.RemoveField(
-            model_name='displayvalueoption',
-            name='mode',
+            model_name="displayvalueoption",
+            name="mode",
         ),
     ]

@@ -27,15 +27,25 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, active_vars=None, file_extension=None,
-                                append_to_file=False, no_mean_value=False, mean_value_period=5.0,
-                                backgroundprocess_id=None, export_task_id=None, **kwargs):
+def export_recordeddata_to_file(
+    time_min=None,
+    time_max=None,
+    filename=None,
+    active_vars=None,
+    file_extension=None,
+    append_to_file=False,
+    no_mean_value=False,
+    mean_value_period=5.0,
+    backgroundprocess_id=None,
+    export_task_id=None,
+    **kwargs
+):
     """
     read all data
     """
     if backgroundprocess_id is not None:
         tp = BackgroundProcess.objects.get(id=backgroundprocess_id)
-        tp.message = 'init'
+        tp.message = "init"
         tp.last_update = now()
         tp.save()
     else:
@@ -56,43 +66,47 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
 
     # add default extension if no extension is given
     if file_extension is None and filename is None:
-        file_extension = '.h5'
+        file_extension = ".h5"
     elif filename is not None:
-        file_extension = '.' + filename.split('.')[-1]
-        filename = filename[:len(filename) - len(filename.split('.')[-1]) - 1]
+        file_extension = "." + filename.split(".")[-1]
+        filename = filename[: len(filename) - len(filename.split(".")[-1]) - 1]
     # validate file type
-    if file_extension not in ['.h5', '.mat', '.csv']:
+    if file_extension not in [".h5", ".mat", ".csv"]:
         if tp is not None:
             tp.last_update = now()
-            tp.message = 'failed wrong file type'
+            tp.message = "failed wrong file type"
             tp.failed = 1
             tp.save()
         return
 
     #
-    if hasattr(settings, 'PYSCADA_EXPORT'):
-        if 'output_folder' in settings.PYSCADA_EXPORT:
-            backup_file_path = os.path.expanduser(settings.PYSCADA_EXPORT['output_folder'])
+    if hasattr(settings, "PYSCADA_EXPORT"):
+        if "output_folder" in settings.PYSCADA_EXPORT:
+            backup_file_path = os.path.expanduser(
+                settings.PYSCADA_EXPORT["output_folder"]
+            )
         else:
-            backup_file_path = os.path.expanduser('~/measurement_data_dumps')
+            backup_file_path = os.path.expanduser("~/measurement_data_dumps")
     else:
-        backup_file_path = os.path.expanduser('~/measurement_data_dumps')
+        backup_file_path = os.path.expanduser("~/measurement_data_dumps")
 
     # add filename prefix
-    backup_file_name = 'measurement_data'
-    if hasattr(settings, 'PYSCADA_EXPORT'):
-        if 'file_prefix' in settings.PYSCADA_EXPORT:
-            backup_file_name = settings.PYSCADA_EXPORT['file_prefix'] + backup_file_name
+    backup_file_name = "measurement_data"
+    if hasattr(settings, "PYSCADA_EXPORT"):
+        if "file_prefix" in settings.PYSCADA_EXPORT:
+            backup_file_name = settings.PYSCADA_EXPORT["file_prefix"] + backup_file_name
     # create output dir if not existing
     if not os.path.exists(backup_file_path):
         os.mkdir(backup_file_path)
 
     # validate time values
-    db_time_min = RecordedData.objects.filter(variable__isnull=False).first()  # todo add RecordedDataOld
+    db_time_min = RecordedData.objects.filter(
+        variable__isnull=False
+    ).first()  # todo add RecordedDataOld
     if not db_time_min:
         if tp is not None:
             tp.last_update = now()
-            tp.message = 'no data to export'
+            tp.message = "no data to export"
             tp.failed = 1
             tp.save()
         return
@@ -102,7 +116,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
     if not db_time_max:
         if tp is not None:
             tp.last_update = now()
-            tp.message = 'no data to export'
+            tp.message = "no data to export"
             tp.failed = 1
             tp.save()
         return
@@ -113,12 +127,21 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
     cdstr_to = datetime.fromtimestamp(time_max).strftime("%Y_%m_%d_%H%M")
 
     if filename is None:
-        if 'filename_suffix' in kwargs:
-            filename = os.path.join(backup_file_path,
-                                    backup_file_name + '_' + cdstr_from + '_' + cdstr_to + '_' + kwargs[
-                                        'filename_suffix'])
+        if "filename_suffix" in kwargs:
+            filename = os.path.join(
+                backup_file_path,
+                backup_file_name
+                + "_"
+                + cdstr_from
+                + "_"
+                + cdstr_to
+                + "_"
+                + kwargs["filename_suffix"],
+            )
         else:
-            filename = os.path.join(backup_file_path, backup_file_name + '_' + cdstr_from + '_' + cdstr_to)
+            filename = os.path.join(
+                backup_file_path, backup_file_name + "_" + cdstr_from + "_" + cdstr_to
+            )
     else:
         filename = os.path.join(backup_file_path, filename)
 
@@ -127,7 +150,7 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
         count = 0
         filename_old = filename
         while os.path.exists(filename + file_extension):
-            filename = filename_old + '_%03.0f' % count
+            filename = filename_old + "_%03.0f" % count
             count += 1
 
     # append the extension
@@ -145,12 +168,14 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
         active_vars = Variable.objects.filter(active=1, device__active=1)
     else:
         if type(active_vars) is str:
-            if active_vars == 'all':
+            if active_vars == "all":
                 active_vars = Variable.objects.all()
             else:
                 active_vars = Variable.objects.filter(active=1, device__active=1)
         else:
-            active_vars = Variable.objects.filter(pk__in=active_vars, active=1, device__active=1)
+            active_vars = Variable.objects.filter(
+                pk__in=active_vars, active=1, device__active=1
+            )
 
     if mean_value_period == 0:
         no_mean_value = True
@@ -158,86 +183,111 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
 
     # calculate time vector
 
-    timevalues = arange(math.ceil(time_min / mean_value_period) * mean_value_period,
-                        math.floor(time_max / mean_value_period) * mean_value_period, mean_value_period)
+    timevalues = arange(
+        math.ceil(time_min / mean_value_period) * mean_value_period,
+        math.floor(time_max / mean_value_period) * mean_value_period,
+        mean_value_period,
+    )
 
     # get Meta from Settings
-    if hasattr(settings, 'PYSCADA_META'):
-        if 'description' in settings.PYSCADA_META:
-            description = settings.PYSCADA_META['description']
+    if hasattr(settings, "PYSCADA_META"):
+        if "description" in settings.PYSCADA_META:
+            description = settings.PYSCADA_META["description"]
         else:
-            description = 'None'
-        if 'name' in settings.PYSCADA_META:
-            name = settings.PYSCADA_META['name']
+            description = "None"
+        if "name" in settings.PYSCADA_META:
+            name = settings.PYSCADA_META["name"]
         else:
-            name = 'None'
+            name = "None"
     else:
-        description = 'None'
-        name = 'None'
+        description = "None"
+        name = "None"
 
-    if file_extension in ['.h5', '.mat']:
-        bf = MatCompatibleH5(filename, version='1.1', description=description, name=name,
-                             creation_date=strftime('%d-%b-%Y %H:%M:%S'))
-        out_timevalues = [unix_time_stamp_to_matlab_datenum(element) for element in timevalues]
-    elif file_extension in ['.csv']:
-        bf = ExcelCompatibleCSV(filename, version='1.1', description=description, name=name,
-                                creation_date=strftime('%d-%b-%Y %H:%M:%S'))
-        out_timevalues = [unix_time_stamp_to_excel_datenum(element) for element in timevalues]
+    if file_extension in [".h5", ".mat"]:
+        bf = MatCompatibleH5(
+            filename,
+            version="1.1",
+            description=description,
+            name=name,
+            creation_date=strftime("%d-%b-%Y %H:%M:%S"),
+        )
+        out_timevalues = [
+            unix_time_stamp_to_matlab_datenum(element) for element in timevalues
+        ]
+    elif file_extension in [".csv"]:
+        bf = ExcelCompatibleCSV(
+            filename,
+            version="1.1",
+            description=description,
+            name=name,
+            creation_date=strftime("%d-%b-%Y %H:%M:%S"),
+        )
+        out_timevalues = [
+            unix_time_stamp_to_excel_datenum(element) for element in timevalues
+        ]
     else:
         return
 
     # less than 24
     # read everything
-    bf.write_data('time', float64(out_timevalues),
-                  id=0,
-                  description="global time vector",
-                  value_class=validate_value_class('FLOAT64'),
-                  unit="Days since 0000-1-1 00:00:00",
-                  color='#000000',
-                  short_name='time',
-                  chart_line_thickness=3
-                  )
+    bf.write_data(
+        "time",
+        float64(out_timevalues),
+        id=0,
+        description="global time vector",
+        value_class=validate_value_class("FLOAT64"),
+        unit="Days since 0000-1-1 00:00:00",
+        color="#000000",
+        short_name="time",
+        chart_line_thickness=3,
+    )
 
     for var_idx in range(0, active_vars.count(), 10):
         if tp is not None:
             tp.last_update = now()
-            tp.message = 'reading values from database (%d)' % var_idx
+            tp.message = "reading values from database (%d)" % var_idx
             tp.save()
         # query data
-        var_slice = active_vars[var_idx:var_idx + 10]
+        var_slice = active_vars[var_idx : var_idx + 10]
         data = RecordedData.objects.get_values_in_time_range(
-            variable_id__in=list(var_slice.values_list('pk', flat=True)),
+            variable_id__in=list(var_slice.values_list("pk", flat=True)),
             time_min=time_min,
             time_max=time_max,
-            query_first_value=True)
+            query_first_value=True,
+        )
 
         for var in var_slice:
             # write background task info
             if tp is not None:
                 tp.last_update = now()
-                tp.message = 'writing values for %s (%d) to file' % (var.name, var.pk)
+                tp.message = "writing values for %s (%d) to file" % (var.name, var.pk)
                 tp.save()
             # check if variable is scalled
-            if var.scaling is None or var.value_class.upper() in ['BOOL', 'BOOLEAN']:
+            if var.scaling is None or var.value_class.upper() in ["BOOL", "BOOLEAN"]:
                 value_class = var.value_class
             else:
-                value_class = 'FLOAT64'
+                value_class = "FLOAT64"
             # read unit
-            if hasattr(var.unit, 'udunit'):
+            if hasattr(var.unit, "udunit"):
                 udunit = var.unit.udunit
             else:
-                udunit = 'None'
+                udunit = "None"
 
             if var.pk not in data:
                 # write dummy data
-                bf.write_data(var.name, _cast_value([0] * len(timevalues), validate_value_class(value_class)),
-                              id=var.pk,
-                              description=var.description,
-                              value_class=validate_value_class(value_class),
-                              unit=udunit,
-                              color=var.chart_line_color_code(),
-                              short_name=var.short_name,
-                              chart_line_thickness=var.chart_line_thickness)
+                bf.write_data(
+                    var.name,
+                    _cast_value(
+                        [0] * len(timevalues), validate_value_class(value_class)
+                    ),
+                    id=var.pk,
+                    description=var.description,
+                    value_class=validate_value_class(value_class),
+                    unit=udunit,
+                    color=var.chart_line_color_code(),
+                    short_name=var.short_name,
+                    chart_line_thickness=var.chart_line_thickness,
+                )
                 continue
 
             out_data = np.zeros(len(timevalues))
@@ -247,7 +297,6 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
             last_value = None
             max_ii = len(data[var.pk]) - 1
             for i in range(len(timevalues)):  # iter over time values
-
                 if ii >= max_ii + 1:
                     # if not more data in data source break
                     if last_value is not None:
@@ -268,9 +317,18 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
                         out_data[i] = last_value
                         continue
                 # calc mean value
-                if timevalues[i] <= data[var.pk][ii][0] < timevalues[i] + mean_value_period:
+                if (
+                    timevalues[i]
+                    <= data[var.pk][ii][0]
+                    < timevalues[i] + mean_value_period
+                ):
                     # there is data in time range
-                    while timevalues[i] <= data[var.pk][ii][0] < timevalues[i] + mean_value_period and ii < max_ii:
+                    while (
+                        timevalues[i]
+                        <= data[var.pk][ii][0]
+                        < timevalues[i] + mean_value_period
+                        and ii < max_ii
+                    ):
                         # calculate mean value
                         if no_mean_value:
                             tmp = data[var.pk][ii][1]
@@ -293,19 +351,22 @@ def export_recordeddata_to_file(time_min=None, time_max=None, filename=None, act
                         out_data[i] = last_value
 
             # write data
-            bf.write_data(var.name, _cast_value(out_data, validate_value_class(value_class)),
-                          id=var.pk,
-                          description=var.description,
-                          value_class=validate_value_class(value_class),
-                          unit=udunit,
-                          color=var.chart_line_color_code(),
-                          short_name=var.short_name,
-                          chart_line_thickness=var.chart_line_thickness)
+            bf.write_data(
+                var.name,
+                _cast_value(out_data, validate_value_class(value_class)),
+                id=var.pk,
+                description=var.description,
+                value_class=validate_value_class(value_class),
+                unit=udunit,
+                color=var.chart_line_color_code(),
+                short_name=var.short_name,
+                chart_line_thickness=var.chart_line_thickness,
+            )
 
     bf.close_file()
     if tp is not None:
         tp.last_update = now()
-        tp.message = 'done'
+        tp.message = "done"
         tp.done = True
         tp.save()
 
@@ -314,17 +375,17 @@ def _cast_value(value, _type):
     """
     cast value to _type
     """
-    if _type.upper() == 'FLOAT64':
+    if _type.upper() == "FLOAT64":
         return float64(value)
-    elif _type.upper() == 'FLOAT32':
+    elif _type.upper() == "FLOAT32":
         return float32(value)
-    elif _type.upper() == 'INT32':
+    elif _type.upper() == "INT32":
         return int32(value)
-    elif _type.upper() == 'UINT16':
+    elif _type.upper() == "UINT16":
         return uint16(value)
-    elif _type.upper() == 'INT16':
+    elif _type.upper() == "INT16":
         return int16(value)
-    elif _type.upper() == 'BOOLEAN':
+    elif _type.upper() == "BOOLEAN":
         return uint8(value)
     else:
         return float64(value)

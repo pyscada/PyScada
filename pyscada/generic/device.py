@@ -24,4 +24,4 @@ class Device(GenericDevice):
         if self.driver_ok and self.driver_handler_ok:
             self._h.connect()
         else:
-            logger.warning(f'Cannot import handler for {self.device}')
+            logger.warning(f"Cannot import handler for {self.device}")

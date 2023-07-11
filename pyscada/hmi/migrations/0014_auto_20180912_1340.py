@@ -6,26 +6,25 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0013_widget_update_20180912_1315'),
+        ("hmi", "0013_widget_update_20180912_1315"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='widget',
-            name='chart',
+            model_name="widget",
+            name="chart",
         ),
         migrations.RemoveField(
-            model_name='widget',
-            name='control_panel',
+            model_name="widget",
+            name="control_panel",
         ),
         migrations.RemoveField(
-            model_name='widget',
-            name='custom_html_panel',
+            model_name="widget",
+            name="custom_html_panel",
         ),
         migrations.RemoveField(
-            model_name='widget',
-            name='process_flow_diagram',
+            model_name="widget",
+            name="process_flow_diagram",
         ),
     ]

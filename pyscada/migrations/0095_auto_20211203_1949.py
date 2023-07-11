@@ -5,15 +5,16 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0094_move_dictionaries'),
+        ("pyscada", "0094_move_dictionaries"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='calculatedvariableselector',
-            name='main_variable',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='pyscada.Variable'),
+            model_name="calculatedvariableselector",
+            name="main_variable",
+            field=models.OneToOneField(
+                on_delete=django.db.models.deletion.CASCADE, to="pyscada.Variable"
+            ),
         ),
     ]

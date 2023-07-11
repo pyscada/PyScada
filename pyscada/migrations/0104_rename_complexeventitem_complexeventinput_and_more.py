@@ -5,51 +5,50 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0103_remove_complexevent_new_value_and_more'),
+        ("pyscada", "0103_remove_complexevent_new_value_and_more"),
     ]
 
     operations = [
         migrations.RenameModel(
-            old_name='ComplexEventItem',
-            new_name='ComplexEventInput',
+            old_name="ComplexEventItem",
+            new_name="ComplexEventInput",
         ),
         migrations.RenameModel(
-            old_name='ComplexEvent',
-            new_name='ComplexEventLevel',
+            old_name="ComplexEvent",
+            new_name="ComplexEventLevel",
         ),
         migrations.RenameModel(
-            old_name='ComplexEventChangeVariable',
-            new_name='ComplexEventOutput',
+            old_name="ComplexEventChangeVariable",
+            new_name="ComplexEventOutput",
         ),
         migrations.RenameField(
-            model_name='complexeventinput',
-            old_name='complex_event',
-            new_name='complex_event_level',
+            model_name="complexeventinput",
+            old_name="complex_event",
+            new_name="complex_event_level",
         ),
         migrations.RenameField(
-            model_name='complexeventlevel',
-            old_name='complex_event_group',
-            new_name='complex_event',
+            model_name="complexeventlevel",
+            old_name="complex_event_group",
+            new_name="complex_event",
         ),
         migrations.RenameField(
-            model_name='recordedevent',
-            old_name='complex_event_group',
-            new_name='complex_event',
+            model_name="recordedevent",
+            old_name="complex_event_group",
+            new_name="complex_event",
         ),
         migrations.RenameField(
-            model_name='complexeventoutput',
-            old_name='complex_event',
-            new_name='complex_event_level',
+            model_name="complexeventoutput",
+            old_name="complex_event",
+            new_name="complex_event_level",
         ),
         migrations.RenameField(
-            model_name='complexeventoutput',
-            old_name='complex_event_group',
-            new_name='complex_event',
+            model_name="complexeventoutput",
+            old_name="complex_event_group",
+            new_name="complex_event",
         ),
         migrations.RenameModel(
-            old_name='ComplexEventGroup',
-            new_name='ComplexEvent',
+            old_name="ComplexEventGroup",
+            new_name="ComplexEvent",
         ),
     ]

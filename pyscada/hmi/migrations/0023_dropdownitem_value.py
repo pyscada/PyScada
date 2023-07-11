@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0022_auto_20191004_0912'),
+        ("hmi", "0022_auto_20191004_0912"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='dropdownitem',
-            name='value',
-            field=models.CharField(default='', max_length=400),
+            model_name="dropdownitem",
+            name="value",
+            field=models.CharField(default="", max_length=400),
         ),
     ]

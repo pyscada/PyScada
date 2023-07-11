@@ -6,11 +6,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0047_variableproperty_unit'),
-        ('pyscada', '0049_auto_20181025_1049'),
+        ("pyscada", "0047_variableproperty_unit"),
+        ("pyscada", "0049_auto_20181025_1049"),
     ]
 
-    operations = [
-    ]
+    operations = []

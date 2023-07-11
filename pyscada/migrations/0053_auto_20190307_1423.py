@@ -6,30 +6,37 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0052_auto_20181207_1019'),
+        ("pyscada", "0052_auto_20181207_1019"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='variable',
-            name='max_type',
-            field=models.CharField(choices=[('gte', '>='), ('gt', '>')], default='gte', max_length=4),
+            model_name="variable",
+            name="max_type",
+            field=models.CharField(
+                choices=[("gte", ">="), ("gt", ">")], default="gte", max_length=4
+            ),
         ),
         migrations.AlterField(
-            model_name='variable',
-            name='min_type',
-            field=models.CharField(choices=[('lte', '<='), ('lt', '<')], default='lte', max_length=4),
+            model_name="variable",
+            name="min_type",
+            field=models.CharField(
+                choices=[("lte", "<="), ("lt", "<")], default="lte", max_length=4
+            ),
         ),
         migrations.AlterField(
-            model_name='variableproperty',
-            name='max_type',
-            field=models.CharField(choices=[('gte', '>='), ('gt', '>')], default='gte', max_length=4),
+            model_name="variableproperty",
+            name="max_type",
+            field=models.CharField(
+                choices=[("gte", ">="), ("gt", ">")], default="gte", max_length=4
+            ),
         ),
         migrations.AlterField(
-            model_name='variableproperty',
-            name='min_type',
-            field=models.CharField(choices=[('lte', '<='), ('lt', '<')], default='lte', max_length=4),
+            model_name="variableproperty",
+            name="min_type",
+            field=models.CharField(
+                choices=[("lte", "<="), ("lt", "<")], default="lte", max_length=4
+            ),
         ),
     ]

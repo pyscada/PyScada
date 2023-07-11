@@ -6,15 +6,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0016_auto_20181004_0831'),
+        ("hmi", "0016_auto_20181004_0831"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='groupdisplaypermission',
-            name='forms',
-            field=models.ManyToManyField(blank=True, to='hmi.Form'),
+            model_name="groupdisplaypermission",
+            name="forms",
+            field=models.ManyToManyField(blank=True, to="hmi.Form"),
         ),
     ]

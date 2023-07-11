@@ -6,30 +6,37 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0015_auto_20180913_1608'),
+        ("hmi", "0015_auto_20180913_1608"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='xychart',
-            name='y_axis_plotpoints',
-            field=models.BooleanField(default=False, help_text='Show the plots points'),
+            model_name="xychart",
+            name="y_axis_plotpoints",
+            field=models.BooleanField(default=False, help_text="Show the plots points"),
         ),
         migrations.AddField(
-            model_name='xychart',
-            name='y_axis_uniquescale',
-            field=models.BooleanField(default=True, help_text='To have a unique scale for all the y axis'),
+            model_name="xychart",
+            name="y_axis_uniquescale",
+            field=models.BooleanField(
+                default=True, help_text="To have a unique scale for all the y axis"
+            ),
         ),
         migrations.AlterField(
-            model_name='form',
-            name='control_items',
-            field=models.ManyToManyField(blank=True, related_name='control_items_form', to='hmi.ControlItem'),
+            model_name="form",
+            name="control_items",
+            field=models.ManyToManyField(
+                blank=True, related_name="control_items_form", to="hmi.ControlItem"
+            ),
         ),
         migrations.AlterField(
-            model_name='form',
-            name='hidden_control_items_to_true',
-            field=models.ManyToManyField(blank=True, related_name='hidden_control_items_form', to='hmi.ControlItem'),
+            model_name="form",
+            name="hidden_control_items_to_true",
+            field=models.ManyToManyField(
+                blank=True,
+                related_name="hidden_control_items_form",
+                to="hmi.ControlItem",
+            ),
         ),
     ]

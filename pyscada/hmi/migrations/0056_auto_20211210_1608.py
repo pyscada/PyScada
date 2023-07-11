@@ -14,8 +14,8 @@ def add_height_width(apps, schema_editor):
     ProcessFlowDiagram = apps.get_model("hmi", "ProcessFlowDiagram")
     count = 0
     for item in ProcessFlowDiagram.objects.using(schema_editor.connection.alias).all():
-        if str(item.url_height) == '100' and str(item.url_width) == '100':
-            if hasattr(settings, 'MEDIA_ROOT'):
+        if str(item.url_height) == "100" and str(item.url_width) == "100":
+            if hasattr(settings, "MEDIA_ROOT"):
                 file_path = str(settings.MEDIA_ROOT) + str(item.background_image.name)
                 try:
                     img = Image.open(file_path)
@@ -26,30 +26,35 @@ def add_height_width(apps, schema_editor):
                 except:
                     pass
 
-    logger.info('changed %d ProcessFlowDiagram\n' % count)
+    logger.info("changed %d ProcessFlowDiagram\n" % count)
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0055_auto_20211125_1405'),
+        ("hmi", "0055_auto_20211125_1405"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='processflowdiagram',
-            name='url_height',
-            field=models.PositiveIntegerField(default='100', editable=False),
+            model_name="processflowdiagram",
+            name="url_height",
+            field=models.PositiveIntegerField(default="100", editable=False),
         ),
         migrations.AddField(
-            model_name='processflowdiagram',
-            name='url_width',
-            field=models.PositiveIntegerField(default='100', editable=False),
+            model_name="processflowdiagram",
+            name="url_width",
+            field=models.PositiveIntegerField(default="100", editable=False),
         ),
         migrations.AlterField(
-            model_name='processflowdiagram',
-            name='background_image',
-            field=models.ImageField(blank=True, height_field='url_height', upload_to='img/', verbose_name='background image', width_field='url_width'),
+            model_name="processflowdiagram",
+            name="background_image",
+            field=models.ImageField(
+                blank=True,
+                height_field="url_height",
+                upload_to="img/",
+                verbose_name="background image",
+                width_field="url_width",
+            ),
         ),
         migrations.RunPython(add_height_width, reverse_code=migrations.RunPython.noop),
     ]

@@ -5,20 +5,29 @@ import pyscada.hmi.models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0060_chartaxis_show_bars'),
+        ("hmi", "0060_chartaxis_show_bars"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='theme',
-            name='base_filename',
-            field=models.CharField(default='base', help_text="Enter the filename without '.html'", max_length=400, validators=[pyscada.hmi.models.validate_tempalte]),
+            model_name="theme",
+            name="base_filename",
+            field=models.CharField(
+                default="base",
+                help_text="Enter the filename without '.html'",
+                max_length=400,
+                validators=[pyscada.hmi.models.validate_tempalte],
+            ),
         ),
         migrations.AlterField(
-            model_name='theme',
-            name='view_filename',
-            field=models.CharField(default='view', help_text="Enter the filename without '.html'", max_length=400, validators=[pyscada.hmi.models.validate_tempalte]),
+            model_name="theme",
+            name="view_filename",
+            field=models.CharField(
+                default="view",
+                help_text="Enter the filename without '.html'",
+                max_length=400,
+                validators=[pyscada.hmi.models.validate_tempalte],
+            ),
         ),
     ]

@@ -4,15 +4,25 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0067_alter_cssclass_options'),
+        ("hmi", "0067_alter_cssclass_options"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='displayvalueoption',
-            name='timestamp_conversion',
-            field=models.PositiveSmallIntegerField(choices=[(0, 'None'), (1, 'Timestamp in milliseconds to local date'), (2, 'Timestamp in milliseconds to local time'), (3, 'Timestamp in milliseconds to local date and time'), (4, 'Timestamp in seconds to local date'), (5, 'Timestamp in seconds to local time'), (6, 'Timestamp in seconds to local date and time')], default=0),
+            model_name="displayvalueoption",
+            name="timestamp_conversion",
+            field=models.PositiveSmallIntegerField(
+                choices=[
+                    (0, "None"),
+                    (1, "Timestamp in milliseconds to local date"),
+                    (2, "Timestamp in milliseconds to local time"),
+                    (3, "Timestamp in milliseconds to local date and time"),
+                    (4, "Timestamp in seconds to local date"),
+                    (5, "Timestamp in seconds to local time"),
+                    (6, "Timestamp in seconds to local date and time"),
+                ],
+                default=0,
+            ),
         ),
     ]

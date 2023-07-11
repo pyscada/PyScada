@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0098_alter_device_polling_interval'),
+        ("pyscada", "0098_alter_device_polling_interval"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='dictionaryitem',
-            name='label',
-            field=models.CharField(blank=True, default='', max_length=400),
+            model_name="dictionaryitem",
+            name="label",
+            field=models.CharField(blank=True, default="", max_length=400),
         ),
     ]

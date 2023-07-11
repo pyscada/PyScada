@@ -10,7 +10,9 @@ logger = logging.getLogger(__name__)
 def move_changed_variables(apps, schema_editor):
     ComplexEventGroups = apps.get_model("pyscada", "ComplexEventGroup")
     ComplexEvents = apps.get_model("pyscada", "ComplexEvent")
-    ComplexEventChangeVariables = apps.get_model("pyscada", "ComplexEventChangeVariable")
+    ComplexEventChangeVariables = apps.get_model(
+        "pyscada", "ComplexEventChangeVariable"
+    )
 
     db_alias = schema_editor.connection.alias
 
@@ -22,31 +24,32 @@ def move_changed_variables(apps, schema_editor):
         if item.variable_to_change is not None:
             if item.default_value is not None:
                 d = ComplexEventChangeVariables(
-                                variable=item.variable_to_change,
-                                value=item.default_value,
-                                complex_event_group=item,
-                                )
+                    variable=item.variable_to_change,
+                    value=item.default_value,
+                    complex_event_group=item,
+                )
                 dict.append(d)
                 count += 1
             for item2 in ComplexEvents_set.filter(complex_event_group=item):
                 if item2.new_value is not None:
                     d = ComplexEventChangeVariables(
-                                    variable=item.variable_to_change,
-                                    value=item2.new_value,
-                                    complex_event=item2,
-                                    )
+                        variable=item.variable_to_change,
+                        value=item2.new_value,
+                        complex_event=item2,
+                    )
                     dict.append(d)
                     count += 1
-    logger.info('created %d ComplexEventChangeVariables\n' % count)
+    logger.info("created %d ComplexEventChangeVariables\n" % count)
     ComplexEventChangeVariables.objects.using(db_alias).bulk_create(dict)
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('pyscada', '0101_complexeventchangevariable'),
+        ("pyscada", "0101_complexeventchangevariable"),
     ]
 
     operations = [
-        migrations.RunPython(move_changed_variables, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(
+            move_changed_variables, reverse_code=migrations.RunPython.noop
+        ),
     ]

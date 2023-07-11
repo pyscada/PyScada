@@ -6,30 +6,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('hmi', '0007_auto_20160518_0848'),
+        ("hmi", "0007_auto_20160518_0848"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='processflowdiagramitem',
-            name='height',
+            model_name="processflowdiagramitem",
+            name="height",
             field=models.PositiveIntegerField(blank=True, default=0),
         ),
         migrations.AlterField(
-            model_name='processflowdiagramitem',
-            name='left',
+            model_name="processflowdiagramitem",
+            name="left",
             field=models.PositiveIntegerField(blank=True, default=0),
         ),
         migrations.AlterField(
-            model_name='processflowdiagramitem',
-            name='top',
+            model_name="processflowdiagramitem",
+            name="top",
             field=models.PositiveIntegerField(blank=True, default=0),
         ),
         migrations.AlterField(
-            model_name='processflowdiagramitem',
-            name='width',
+            model_name="processflowdiagramitem",
+            name="width",
             field=models.PositiveIntegerField(blank=True, default=0),
         ),
     ]
