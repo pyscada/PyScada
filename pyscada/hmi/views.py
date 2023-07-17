@@ -160,6 +160,7 @@ def view(request, link_title):
     pages_html = ""
     object_config_list = dict()
     custom_fields_list = dict()
+    exclude_fields_list = dict()
     javascript_files_list = list()
     css_files_list = list()
     show_daterangepicker = False
@@ -273,6 +274,15 @@ def view(request, link_title):
                     custom_fields_list[str(model).lower()] = opts["custom_fields_list"][
                         model
                     ]
+            if (
+                type(opts) == dict
+                and "exclude_fields_list" in opts
+                and type(opts["exclude_fields_list"] == list)
+            ):
+                for model in opts["exclude_fields_list"]:
+                    exclude_fields_list[str(model).lower()] = opts[
+                        "exclude_fields_list"
+                    ][model]
 
         widget_rows_html += widget_row_template.render(
             {
@@ -412,7 +422,11 @@ def view(request, link_title):
     for model, val in sorted(object_config_list.items(), key=lambda ele: ele[0]):
         pages_html += '<div class="hidden ' + str(model) + 'Config2">'
         for obj in val:
-            pages_html += gen_hiddenConfigHtml(obj, custom_fields_list.get(model, None))
+            pages_html += gen_hiddenConfigHtml(
+                obj,
+                custom_fields_list.get(model, None),
+                exclude_fields_list.get(model, None),
+            )
         pages_html += "</div>"
     pages_html += "</div>"
 
