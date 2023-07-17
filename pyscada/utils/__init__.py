@@ -127,7 +127,7 @@ def get_group_display_permission_list(items, groups):
     return result
 
 
-def gen_hiddenConfigHtml(obj, custom_fields=None):
+def gen_hiddenConfigHtml(obj, custom_fields=None, exclude_fields_list=None):
     """
     Get an object and return an html with a hidden div containing the object
     config
@@ -168,6 +168,13 @@ def gen_hiddenConfigHtml(obj, custom_fields=None):
                         value=field["value"],
                     )
                 )
+
+    if type(exclude_fields_list) == list:
+        for field in exclude_fields_list:
+            for key in range(len(fields)):
+                if field == fields[key]["name"]:
+                    fields.pop(key)
+                    break
 
     return get_template("modelProperties.html").render(
         dict(
