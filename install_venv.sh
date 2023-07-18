@@ -245,6 +245,7 @@ function install_dependences(){
     python3-dev
     python3-mysqldb
     python3-pip
+    python3-venv
     zlib1g-dev
     pkg-config
   "
@@ -395,7 +396,8 @@ function template_setup(){
   # add db informations to django template
   rm -r ./tests/project_template_tmp/
   cp -r ./tests/project_template ./tests/project_template_tmp/
-  python3 << EOF
+  chmod a+w ./tests/project_template_tmp/project_name/settings.py-tpl
+  sudo -u pyscada -E env PATH=${PATH} python3 << EOF
 import django
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -429,7 +431,7 @@ with open("./tests/project_template_tmp/project_name/settings.py-tpl", "r+") as 
 EOF
 
   sudo -u pyscada mkdir -p $SERVER_ROOT
-  sudo -u pyscada django-admin startproject PyScadaServer $SERVER_ROOT --template ./tests/project_template_tmp
+  sudo -u pyscada -E env PATH=${PATH} django-admin startproject PyScadaServer $SERVER_ROOT --template ./tests/project_template_tmp
   rm -rf ./tests/project_template_tmp
 
   debug "template_setup end"
@@ -466,7 +468,7 @@ function user_setup(){
 # stop pyscada and show some python3 packages installed
 function stop_pyscada(){
   debug "stop_pyscada"
-  
+
   echo "Stopping PyScada"
   systemctl stop pyscada gunicorn gunicorn.socket
   sleep 1 # Give systemd time to shutdown
