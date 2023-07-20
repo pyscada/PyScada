@@ -3076,7 +3076,19 @@ function setAggregatedPeriodList(widget_id, var_id) {
      }
  }
 
+/**
+ * fix the anchor point for page links
+ * @returns void 
+ */
+ function fix_page_anchor() {
+	// fix the page anchor position
+	var navbar_hight = $("#navbar-top").height() + 20;
+	$.each($('.sub-page'),function(key,val){
+		$(val).attr("style","padding-top: " + navbar_hight + "px; margin-top: " + -navbar_hight + "px;");
+    });
+}
 
+ 
  // PROGRESS BAR :
  /**
   * Set the window progress bar
@@ -4019,6 +4031,7 @@ function setAggregatedPeriodList(widget_id, var_id) {
 
      set_loading_state(1, loading_states[1] + 10);
 
+	fix_page_anchor();
 
      // Activate tooltips
      $('[data-toggle*="tooltip"]').tooltip();
@@ -4219,6 +4232,7 @@ function setAggregatedPeriodList(widget_id, var_id) {
              };
              $.browserQueue.add(doBind, this);
        });
+       fix_page_anchor(); // also adjust the anchor points for page refs if nessesary
      });
      set_loading_state(1, loading_states[1] + 10);
 
