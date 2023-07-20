@@ -3082,17 +3082,18 @@ function setAggregatedPeriodList(widget_id, var_id) {
 
 /**
  * fix the anchor point for page links
- * @returns void 
+ * @returns void
  */
- function fix_page_anchor() {
-	// fix the page anchor position
-	var navbar_hight = $("#navbar-top").height() + 20;
-	$.each($('.sub-page'),function(key,val){
-		$(val).attr("style","padding-top: " + navbar_hight + "px; margin-top: " + -navbar_hight + "px;");
-    });
+function fix_page_anchor() {
+  // fix the page anchor position
+  var navbar_hight = document.querySelector("#navbar-top").offsetHeight + 20;
+  document.querySelectorAll('.sub-page').forEach(function(e){
+    e.style.paddingTop = navbar_hight + "px";
+    e.style.marginTop = -navbar_hight + "px";
+  });
 }
 
- 
+
  // PROGRESS BAR :
  /**
   * Set the window progress bar
