@@ -41,8 +41,8 @@
                     </div>
                    <div class="{% if request.path == '/accounts/login/' %} navbar-inverse-hidden {% else %} navbar-collapse collapse {% endif %}">
                         <ul class="nav navbar-left navbar-nav">
-                            {% block top_menu_left %}{% endblock %}
-                            <!-- {% block top_menu_left_collapsed %}{% endblock %} -->
+                            <!-- {% block top_menu_left %}{% endblock %} -->
+                            {% block top_menu_left_collapsed %}{% endblock %}
                         </ul>
                         <ul class="nav navbar-right navbar-nav">
                             {% block top_menu_right %}{% endblock %}
@@ -60,7 +60,7 @@
                                     <li class="divider"></li>
                                     <li role="presentation" class="refresh-rate-li hidden">
                                         <div style="padding: 3px 20px;">
-                                            <span>Data refresh rate: </span>
+                                            <span>Période de rafraîssisement: </span>
                                             <span class="refresh-rate-output"></span>
                                             <span> ms</span>
                                             <input class="refresh-rate-input" type="range" min="100" max="5000" step="100" value="2500">

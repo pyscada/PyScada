@@ -32,6 +32,7 @@
 	/* FONT SIZE */
 	--main-title-font-size: 30px;
 	--main-subtitle-font-size: 18px;
+	--main-font-size: 14px;
 
 	/* FONT WEIGHT */
 	--main-title-font-weight: 700;
@@ -75,7 +76,9 @@ html {
 	font-family: robotoregular, sans-serif;
 }
 body {
-	font-family: var(--main-title-font-family)
+	font-family: var(--main-title-font-family);
+	font-size: var(--main-font-size);
+	color: var(--main-title-color);
 }
 html,body {
 	height:100%;
@@ -657,7 +660,8 @@ table.tablesorter thead tr .header.sorter-false {
 
 
 .widget {
-
+	display: flex;
+	flex-direction: column;
 }
 
 .widget-body {
