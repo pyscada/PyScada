@@ -5,16 +5,18 @@
 
 
 {% if form.errors %}
-<p>Your username and password didn't match. Please try again.</p>
+<p>Identifiant ou mot de passe incorrect. Veuillez réessayez.</p>
 {% endif %}
 
 <form class="form-signin" method="post" action="{% url 'login_view' %}">
 {% csrf_token %}
-<h2 class="form-signin-heading">Please sign in</h2>
-<input type="text" class="form-control" placeholder="{{ form.username.label }}" name="username" required="" autofocus="" id="{{ form.username.id_for_label }}">
-<input type="password" class="form-control" placeholder="{{ form.password.label }}" name="password" required="" id="{{ form.password.id_for_label }}">
-<button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
-<input type="hidden" name="next" value="{{ next }}" />
+<div id="container-form-signin">
+    <h2 class="form-signin-heading">Bienvenue</h2>
+    <input type="text" class="form-control" placeholder="{{ form.username.label }}" name="username" required="" autofocus="" id="{{ form.username.id_for_label }}">
+    <input type="password" class="form-control" placeholder="{{ form.password.label }}" name="password" required="" id="{{ form.password.id_for_label }}">
+    <button class="btn btn-lg btn-primary btn-block" type="submit">Connexion</button>
+    <input type="hidden" name="next" value="{{ next }}" />
+</div>
 </form>
 </div>
 </div>

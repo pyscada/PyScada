@@ -28,7 +28,7 @@
     <li><meter id='page-load-state' value="0" min="0" max="100" style="margin-top: 11px;height: 2em;">0</meter></li>
     {% for panel in control_list %}
         {% if panel.visible %}
-            <li class="dropdown"><!-- {{ panel.title|upper }} -->
+            <li class="dropdown">
                 <a class="dropdown-toggle" href="#" data-toggle="dropdown"><span class="glyphicon glyphicon-wrench"></span> {{ panel.title }}<strong class="caret"></strong></a>
                 <div class="dropdown-menu" style="padding: 15px; width:715px;">
                     <div class="control-panel">
@@ -47,14 +47,14 @@
             </li>
         {% endif %}
     {% endfor %}
-        <li class="dropdown"><!-- Date range picker -->
+        <!-- <li class="dropdown">
             <a class="daterangepicker_parent hidden" id="daterange" style="padding-top: 15px; cursor: pointer; width: 100%">
                 <i class="glyphicon glyphicon-calendar"></i>&nbsp;
                 <span>Date range picker is loading. Please wait...</span> <strong class="caret"></strong>
             </a>
         </li>
 
-        <li class="dropdown"><!-- Charts timeline -->
+        <li class="dropdown">
             <a class="dropdown-toggle timeline hidden" id="timeline_slider" href="#" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><span class="glyphicon glyphicon-resize-horizontal"></span> Timeline slider <strong class="caret"></strong></a>
             <div class="dropdown-menu" style="padding: 15px; width: 50vw;">
                 <div class='col-md-12 col-sm-12' data-toggle="tooltip" data-placement="top" title="" data-original-title="Display data filter">
@@ -68,7 +68,7 @@
                     </div>
                 </div>
             </div>
-        </li>
+        </li> -->
 {% endblock %}
 
 {% block content %}

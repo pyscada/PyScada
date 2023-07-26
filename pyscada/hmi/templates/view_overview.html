@@ -1,30 +1,44 @@
 {% extends "base.html" %}
 {% load i18n static %}
-
 {% block content %}
 <div class="row">
-    {% for view in view_list %}
-        {% if view.visible %}
-        <div class="col-sm-3">
-        <div class="panel panel-default">
-                <div class="panel-heading">
-                    <h3 class="panel-title"><a href="{% url 'main-view' view.link_title %}" target="{{ link_target }}" >{{ view.title }}</a></h3>
-                </div>
-                <div class="panel-body">
-                {% if view.logo %}
-                <a href="{% url 'main-view' view.link_title %}" class="thumbnail" target="{{ link_target }}" ><img src="{{ view.logo.url }}" alt="{{ view.description }}"  width="100%" ></a>
-                {% else %}
-                <a href="{% url 'main-view' view.link_title %}" class="thumbnail" target="{{ link_target }}" ><p style="min-height: 120px;">{{ view.description }}</p></a>
-                {% endif %}
+    <div class="col-md-9">
+        <h1 class="title">Tabeau de bord</h1>
+        <div class="row">
+            <div class="col-md-12">
+                <h2 class="subtitle">Mes bâtiments</h2>
             </div>
-           </div>
-        </div>
-        {% endif %}
-        {% if forloop.counter|divisibleby:4 %}
-    </div><div class="row">
-        {% endif %}
-    {% endfor %}
+            {% for view in view_list %}
+                {% if view.visible %}
+                <div class="col-sm-4">
+                <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title"><a href="{% url 'main-view' view.link_title %}" >{{ view.title }}</a></h3>
+                        </div>
+                        <div class="panel-body">
+                        {% if view.logo %}
+                        <a href="{% url 'main-view' view.link_title %}" class="thumbnail" ><img src="{{ view.logo.url }}" alt="{{ view.description }}"  width="100%" ></a>
+                        {% else %}
+                        <a href="{% url 'main-view' view.link_title %}" class="thumbnail" ><p style="min-height: 120px;">{{ view.description }}</p></a>
+                        {% endif %}
+                    </div>
+                </div>
+                </div>
+                {% endif %}
+                {% if forloop.counter|divisibleby:4 %}
+            </div>
+            <div class="row">
+                {% endif %}
+            {% endfor %}
+            </div>
     </div>
+    <div class="col-md-3 flux-actus">
+        <h2 class="subtitle actus-title">Activités récentes</h2>
+        <div class="actus">
+            <span>blablabla</span>
+        </div>
+    </div>
+</div>
 {% endblock %}
 {% block script_bottom %}
         $( document ).ready(function() {
