@@ -11,6 +11,7 @@ from django.template.loader import get_template
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from django.db.models.query import QuerySet
 
 from six import text_type
 import traceback
@@ -79,6 +80,7 @@ class WidgetContentModel(models.Model):
 
         :return: main panel html and sidebar html as
         """
+        logger.info(f"gen_html function of {self} model needs to be overwritten")
         return "", "", ""
 
     def _get_objects_for_html(
@@ -138,6 +140,16 @@ class WidgetContentModel(models.Model):
                     WidgetContent.objects.filter(
                         content_pk=i.content_pk, content_model=i.content_model
                     )[j].delete()
+
+    def check_visible_object(self, visible_models_lists):
+        visible_model_list_str = f"visible_{self._meta.object_name.lower()}_list"
+        if visible_model_list_str in visible_models_lists:
+            visible_list = visible_models_lists[visible_model_list_str]
+        else:
+            return True
+        if type(visible_list) == QuerySet and self.pk in visible_list:
+            return True
+        return False
 
     class Meta:
         abstract = True
@@ -508,20 +520,25 @@ class Chart(WidgetContentModel):
         )
         main_template = get_template("chart.html")
         sidebar_template = get_template("chart_legend.html")
-        main_content = main_template.render(
-            dict(
-                chart=self,
-                widget_pk=widget_pk,
-                widget_extra_css_class=widget_extra_css_class,
+        main_content = None
+        sidebar_content = None
+        if "visible_objects_lists" in kwargs and self.check_visible_object(
+            kwargs["visible_objects_lists"]
+        ):
+            main_content = main_template.render(
+                dict(
+                    chart=self,
+                    widget_pk=widget_pk,
+                    widget_extra_css_class=widget_extra_css_class,
+                )
             )
-        )
-        sidebar_content = sidebar_template.render(
-            dict(
-                chart=self,
-                widget_pk=widget_pk,
-                widget_extra_css_class=widget_extra_css_class,
+            sidebar_content = sidebar_template.render(
+                dict(
+                    chart=self,
+                    widget_pk=widget_pk,
+                    widget_extra_css_class=widget_extra_css_class,
+                )
             )
-        )
         opts = dict()
         opts["show_daterangepicker"] = True
         opts["show_timeline"] = True
@@ -613,21 +630,26 @@ class Pie(WidgetContentModel):
         )
         main_template = get_template("pie.html")
         sidebar_template = get_template("chart_legend.html")
-        main_content = main_template.render(
-            dict(
-                pie=self,
-                widget_pk=widget_pk,
-                widget_extra_css_class=widget_extra_css_class,
+        main_content = None
+        sidebar_content = None
+        if "visible_objects_lists" in kwargs and self.check_visible_object(
+            kwargs["visible_objects_lists"]
+        ):
+            main_content = main_template.render(
+                dict(
+                    pie=self,
+                    widget_pk=widget_pk,
+                    widget_extra_css_class=widget_extra_css_class,
+                )
             )
-        )
-        sidebar_content = sidebar_template.render(
-            dict(
-                chart=self,
-                pie=1,
-                widget_pk=widget_pk,
-                widget_extra_css_class=widget_extra_css_class,
+            sidebar_content = sidebar_template.render(
+                dict(
+                    chart=self,
+                    pie=1,
+                    widget_pk=widget_pk,
+                    widget_extra_css_class=widget_extra_css_class,
+                )
             )
-        )
         opts = dict()
         opts["flot"] = True
         opts["topbar"] = True
@@ -700,25 +722,31 @@ class ControlPanel(WidgetContentModel):
             if "widget_extra_css_class" in kwargs
             else ""
         )
-        visible_element_list = (
-            kwargs["visible_control_element_list"]
-            if "visible_control_element_list" in kwargs
-            else []
-        )
-        visible_form_list = (
-            kwargs["visible_form_list"] if "visible_form_list" in kwargs else []
-        )
         main_template = get_template("control_panel.html")
-        main_content = main_template.render(
-            dict(
-                control_panel=self,
-                visible_control_element_list=visible_element_list,
-                visible_form_list=visible_form_list,
-                uuid=uuid4().hex,
-                widget_pk=widget_pk,
-                widget_extra_css_class=widget_extra_css_class,
+        main_content = None
+        if "visible_objects_lists" in kwargs and self.check_visible_object(
+            kwargs["visible_objects_lists"]
+        ):
+            visible_element_list = (
+                kwargs["visible_objects_lists"]["visible_controlitem_list"]
+                if "visible_controlitem_list" in kwargs["visible_objects_lists"]
+                else []
             )
-        )
+            visible_form_list = (
+                kwargs["visible_objects_lists"]["visible_form_list"]
+                if "visible_form_list" in kwargs["visible_objects_lists"]
+                else []
+            )
+            main_content = main_template.render(
+                dict(
+                    control_panel=self,
+                    visible_control_element_list=visible_element_list,
+                    visible_form_list=visible_form_list,
+                    uuid=uuid4().hex,
+                    widget_pk=widget_pk,
+                    widget_extra_css_class=widget_extra_css_class,
+                )
+            )
         sidebar_content = None
         opts = dict()
         opts["flot"] = False
@@ -772,13 +800,17 @@ class CustomHTMLPanel(WidgetContentModel):
             else ""
         )
         main_template = get_template("custom_html_panel.html")
-        main_content = main_template.render(
-            dict(
-                custom_html_panel=self,
-                widget_pk=widget_pk,
-                widget_extra_css_class=widget_extra_css_class,
+        main_content = None
+        if "visible_objects_lists" in kwargs and self.check_visible_object(
+            kwargs["visible_objects_lists"]
+        ):
+            main_content = main_template.render(
+                dict(
+                    custom_html_panel=self,
+                    widget_pk=widget_pk,
+                    widget_extra_css_class=widget_extra_css_class,
+                )
             )
-        )
         sidebar_content = None
         opts = dict()
         opts["object_config_list"] = set()
@@ -853,22 +885,25 @@ class ProcessFlowDiagram(WidgetContentModel):
                 if "widget_extra_css_class" in kwargs
                 else ""
             )
-            main_content = main_template.render(
-                dict(
-                    process_flow_diagram=self,
-                    height_width_ratio=100
-                    * float(self.url_height)
-                    / float(self.url_width),
-                    uuid=uuid4().hex,
-                    widget_pk=widget_pk,
-                    widget_extra_css_class=widget_extra_css_class,
+            main_content = None
+            if "visible_objects_lists" in kwargs and self.check_visible_object(
+                kwargs["visible_objects_lists"]
+            ):
+                main_content = main_template.render(
+                    dict(
+                        process_flow_diagram=self,
+                        height_width_ratio=100
+                        * float(self.url_height)
+                        / float(self.url_width),
+                        uuid=uuid4().hex,
+                        widget_pk=widget_pk,
+                        widget_extra_css_class=widget_extra_css_class,
+                    )
                 )
-            )
         except ValueError:
             logger.info(
                 "ProcessFlowDiagram (%s) has no background image defined" % self
             )
-            main_content = None
         sidebar_content = None
         opts = dict()
         opts["object_config_list"] = set()
@@ -905,6 +940,9 @@ class WidgetContent(models.Model):
             if content_model is not None:
                 return content_model.gen_html(**kwargs)
             else:
+                logger.info(
+                    f"WidgetContent content_model of {self.content_str} is None"
+                )
                 return "", "", ""
         except:
             logger.error(f"{content_model} unhandled exception", exc_info=True)
@@ -1085,6 +1123,7 @@ class PieGroupDisplayPermission(models.Model):
     pies = models.ManyToManyField(
         Pie, blank=True, related_name="groupdisplaypermission"
     )
+    m2m_related_model = Pie
 
     def __str__(self):
         return str(self.group_display_permission)
@@ -1103,6 +1142,7 @@ class PageGroupDisplayPermission(models.Model):
     pages = models.ManyToManyField(
         Page, blank=True, related_name="groupdisplaypermission"
     )
+    m2m_related_model = Page
 
     def __str__(self):
         return str(self.group_display_permission)
@@ -1121,6 +1161,7 @@ class SlidingPanelMenuGroupDisplayPermission(models.Model):
     sliding_panel_menus = models.ManyToManyField(
         SlidingPanelMenu, blank=True, related_name="groupdisplaypermission"
     )
+    m2m_related_model = SlidingPanelMenu
 
     def __str__(self):
         return str(self.group_display_permission)
@@ -1139,6 +1180,7 @@ class ChartGroupDisplayPermission(models.Model):
     charts = models.ManyToManyField(
         Chart, blank=True, related_name="groupdisplaypermission"
     )
+    m2m_related_model = Chart
 
     def __str__(self):
         return str(self.group_display_permission)
@@ -1157,6 +1199,7 @@ class ControlItemGroupDisplayPermission(models.Model):
     control_items = models.ManyToManyField(
         ControlItem, blank=True, related_name="groupdisplaypermission"
     )
+    m2m_related_model = ControlItem
 
     def __str__(self):
         return str(self.group_display_permission)
@@ -1175,6 +1218,7 @@ class FormGroupDisplayPermission(models.Model):
     forms = models.ManyToManyField(
         Form, blank=True, related_name="groupdisplaypermission"
     )
+    m2m_related_model = Form
 
     def __str__(self):
         return str(self.group_display_permission)
@@ -1193,6 +1237,7 @@ class WidgetGroupDisplayPermission(models.Model):
     widgets = models.ManyToManyField(
         Widget, blank=True, related_name="groupdisplaypermission"
     )
+    m2m_related_model = Widget
 
     def __str__(self):
         return str(self.group_display_permission)
@@ -1211,6 +1256,7 @@ class CustomHTMLPanelGroupDisplayPermission(models.Model):
     custom_html_panels = models.ManyToManyField(
         CustomHTMLPanel, blank=True, related_name="groupdisplaypermission"
     )
+    m2m_related_model = CustomHTMLPanel
 
     def __str__(self):
         return str(self.group_display_permission)
@@ -1229,6 +1275,7 @@ class ViewGroupDisplayPermission(models.Model):
     views = models.ManyToManyField(
         View, blank=True, related_name="groupdisplaypermission"
     )
+    m2m_related_model = View
 
     def __str__(self):
         return str(self.group_display_permission)
@@ -1247,6 +1294,7 @@ class ProcessFlowDiagramGroupDisplayPermission(models.Model):
     process_flow_diagram = models.ManyToManyField(
         ProcessFlowDiagram, blank=True, related_name="groupdisplaypermission"
     )
+    m2m_related_model = ProcessFlowDiagram
 
     def __str__(self):
         return str(self.group_display_permission)

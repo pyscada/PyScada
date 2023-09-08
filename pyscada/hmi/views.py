@@ -16,6 +16,9 @@ from pyscada.hmi.models import CustomHTMLPanel
 from pyscada.hmi.models import Chart
 from pyscada.hmi.models import View
 from pyscada.hmi.models import ProcessFlowDiagram
+from pyscada.hmi.models import Pie
+from pyscada.hmi.models import Page
+from pyscada.hmi.models import SlidingPanelMenu
 from pyscada.utils import gen_hiddenConfigHtml, get_group_display_permission_list
 
 from django.http import HttpResponse
@@ -26,6 +29,7 @@ from django.contrib.auth import logout
 from django.views.decorators.csrf import requires_csrf_token
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
+from django.db.models.fields.related import OneToOneRel
 
 import time
 import json
@@ -103,59 +107,59 @@ def view(request, link_title):
         base_template = str(v.theme.base_filename) + ".html"
         view_template = str(v.theme.view_filename) + ".html"
 
+    visible_objects_lists = {}
+    items = [
+        field
+        for field in GroupDisplayPermission._meta.get_fields()
+        if issubclass(type(field), OneToOneRel)
+    ]
     if GroupDisplayPermission.objects.count() == 0:
         # no groups
-        page_list = v.pages.all()
-        sliding_panel_list = v.sliding_panel_menus.all()
-        visible_widget_list = Widget.objects.filter(
-            page__in=page_list.iterator()
-        ).values_list("pk", flat=True)
-        visible_custom_html_panel_list = CustomHTMLPanel.objects.all().values_list(
+        for item in items:
+            item_str = item.related_model.m2m_related_model._meta.object_name.lower()
+            visible_objects_lists[
+                f"visible_{item_str}_list"
+            ] = item.related_model.m2m_related_model.objects.all().values_list(
+                "pk", flat=True
+            )
+        visible_objects_lists["visible_page_list"] = v.pages.all().values_list(
             "pk", flat=True
         )
-        visible_chart_list = Chart.objects.all().values_list("pk", flat=True)
-        visible_control_element_list = ControlItem.objects.all().values_list(
-            "pk", flat=True
-        )
-        visible_form_list = Form.objects.all().values_list("pk", flat=True)
-        visible_process_flow_diagram_list = (
-            ProcessFlowDiagram.objects.all().values_list("pk", flat=True)
-        )
+        visible_objects_lists[
+            "visible_slidingpanelmenu_list"
+        ] = v.sliding_panel_menus.all().values_list("pk", flat=True)
     else:
-        page_list = get_group_display_permission_list(
+        for item in items:
+            item_str = item.related_model.m2m_related_model._meta.object_name.lower()
+            visible_objects_lists[
+                f"visible_{item_str}_list"
+            ] = get_group_display_permission_list(
+                item.related_model.m2m_related_model.objects, request.user.groups.all()
+            ).values_list(
+                "pk", flat=True
+            )
+        visible_objects_lists["visible_page_list"] = get_group_display_permission_list(
             v.pages, request.user.groups.all()
-        )
-        sliding_panel_list = get_group_display_permission_list(
+        ).values_list("pk", flat=True)
+        visible_objects_lists[
+            "visible_slidingpanelmenu_list"
+        ] = get_group_display_permission_list(
             v.sliding_panel_menus, request.user.groups.all()
+        ).values_list(
+            "pk", flat=True
         )
-        visible_widget_list = (
-            get_group_display_permission_list(Widget.objects, request.user.groups.all())
-            .filter(page__in=page_list.iterator())
-            .values_list("pk", flat=True)
-        )
-        visible_custom_html_panel_list = get_group_display_permission_list(
-            CustomHTMLPanel.objects, request.user.groups.all()
-        ).values_list("pk", flat=True)
-        visible_chart_list = get_group_display_permission_list(
-            Chart.objects, request.user.groups.all()
-        ).values_list("pk", flat=True)
-        visible_control_element_list = get_group_display_permission_list(
-            ControlItem.objects, request.user.groups.all()
-        ).values_list("pk", flat=True)
-        visible_form_list = get_group_display_permission_list(
-            Form.objects, request.user.groups.all()
-        ).values_list("pk", flat=True)
-        visible_process_flow_diagram_list = get_group_display_permission_list(
-            ProcessFlowDiagram.objects, request.user.groups.all()
-        ).values_list("pk", flat=True)
 
-    panel_list = sliding_panel_list.filter(
+    panel_list = SlidingPanelMenu.objects.filter(
+        id__in=visible_objects_lists["visible_slidingpanelmenu_list"]
+    ).filter(
         position__in=(
             1,
             2,
         )
     )
-    control_list = sliding_panel_list.filter(position=0)
+    control_list = SlidingPanelMenu.objects.filter(
+        id__in=visible_objects_lists["visible_slidingpanelmenu_list"]
+    ).filter(position=0)
 
     pages_html = ""
     object_config_list = dict()
@@ -167,8 +171,9 @@ def view(request, link_title):
     has_flot_chart = False
     add_context = {}
 
-    for page in page_list:
+    for page_pk in visible_objects_lists["visible_page_list"]:
         # process content row by row
+        page = Page.objects.get(id=page_pk)
         current_row = 0
         widget_rows_html = ""
         main_content = list()
@@ -196,16 +201,12 @@ def view(request, link_title):
                 main_content = list()
                 sidebar_content = list()
                 topbar = False
-            if widget.pk not in visible_widget_list:
+            if widget.pk not in visible_objects_lists["visible_widget_list"]:
                 continue
             if not widget.visible:
                 continue
             if widget.content is None:
                 continue
-            kwargs = {
-                "visible_control_element_list": visible_control_element_list,
-                "visible_form_list": visible_form_list,
-            }
             widget_extra_css_class = (
                 widget.extra_css_class.css_class
                 if widget.extra_css_class is not None
@@ -215,12 +216,16 @@ def view(request, link_title):
                 widget_pk=widget.pk,
                 widget_extra_css_class=widget_extra_css_class,
                 user=request.user,
-                **kwargs,
+                visible_objects_lists=visible_objects_lists,
             )
-            if mc is not None and mc != "":
-                main_content.append(dict(html=mc, widget=widget, topbar=sbc))
+            if mc is None:
+                logger.info(
+                    f"User {request.user} not allowed to see the content of widget {widget}"
+                )
+            elif mc == "":
+                logger.info(f"Content of widget {widget} is empty")
             else:
-                logger.info("main_content of widget : %s is %s !" % (widget, mc))
+                main_content.append(dict(html=mc, widget=widget, topbar=sbc))
             if sbc is not None:
                 sidebar_content.append(dict(html=sbc, widget=widget))
             if type(opts) == dict and "topbar" in opts and opts["topbar"] == True:
@@ -274,6 +279,7 @@ def view(request, link_title):
                     custom_fields_list[str(model).lower()] = opts["custom_fields_list"][
                         model
                     ]
+
             if (
                 type(opts) == dict
                 and "exclude_fields_list" in opts
@@ -410,7 +416,8 @@ def view(request, link_title):
     )
 
     # Adding SlidingPanelMenu to hidden config
-    for s in sliding_panel_list:
+    for s_pk in visible_objects_lists["visible_slidingpanelmenu_list"]:
+        s = SlidingPanelMenu.objects.get(id=s_pk)
         if s.control_panel is not None:
             for obj in s.control_panel._get_objects_for_html(obj=s):
                 if obj._meta.model_name not in object_config_list:
@@ -433,13 +440,17 @@ def view(request, link_title):
     context = {
         "base_html": base_template,
         "include": [],
-        "page_list": page_list,
+        "page_list": Page.objects.filter(
+            id__in=visible_objects_lists["visible_page_list"]
+        ),
         "pages_html": pages_html,
         "panel_list": panel_list,
         "control_list": control_list,
         "user": request.user,
-        "visible_control_element_list": visible_control_element_list,
-        "visible_form_list": visible_form_list,
+        "visible_control_element_list": visible_objects_lists[
+            "visible_controlitem_list"
+        ],
+        "visible_form_list": visible_objects_lists["visible_form_list"],
         "view_title": v.title,
         "view_show_timeline": v.show_timeline,
         "version_string": core_version,
