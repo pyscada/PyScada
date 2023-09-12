@@ -366,30 +366,6 @@ html,body {
 	margin: 1px;
 }
 
-table.tablesorter thead tr .header {
-	background-image: url(/static/pyscada/img/unsorted.gif);
-	background-repeat: no-repeat;
-	background-position: top right;
-	cursor:pointer;
-}
-
-.legend-sidebar table.tablesorter thead tr .header {
-	background-position: top center;
-}
-
-table.tablesorter thead tr .headerSortUp {
-	background-image: url(/static/pyscada/img/asc.gif);
-
-}
-
-table.tablesorter thead tr .headerSortDown {
-	background-image: url(/static/pyscada/img/desc.gif);
-}
-
-table.tablesorter thead tr .header.sorter-false {
-	background-image: none;
-}
-
 .legendSeries {
 	border: 1px solid #ddd;
 	padding:1px;
