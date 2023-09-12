@@ -2802,7 +2802,7 @@ function createOffset(date) {
                      "November",
                      "December"
                  ],
-                 "firstDay": 1
+                 "firstDay": 0
              },
              "alwaysShowCalendars": true,
              "linkedCalendars": false,
