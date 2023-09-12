@@ -33,13 +33,13 @@ After activating the virtual environment :
 
 .. code-block:: shell
 
-    sudo -E env PATH=${PATH} pip3 install -e ./PyScada
+    sudo -u pyscada -E env PATH=${PATH} pip3 install -e ./PyScada
 
 For a plugin like PyScada-Modbus :
 
 .. code-block:: shell
 
-    sudo -E env PATH=${PATH} pip3 install -e ./PyScada-Modbus
+    sudo -u pyscada -E env PATH=${PATH} pip3 install -e ./PyScada-Modbus
 
 
 Restarting the application
