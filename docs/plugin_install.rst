@@ -32,7 +32,7 @@ PyScada plugin installation
       # activate the PyScada virtual environment
       source /home/pyscada/.venv/bin/activate
       # install the plugin
-      sudo -E env PATH=${PATH} pip install .
+      sudo -u pyscada -E env PATH=${PATH} pip3 install .
       # run migrations
       python /var/www/pyscada/PyScadaServer/manage.py migrate
       # copy static files
@@ -48,4 +48,4 @@ List PyScada plugin installed
 
     # activate the PyScada virtual environment
     source /home/pyscada/.venv/bin/activate
-    pip list | grep cada
+    pip3 list | grep cada
