@@ -789,7 +789,7 @@ var store_temp_ajax_data = null;
                     }
                     // Set the text value
                     document.querySelector("#" + control_item_id).innerHTML = r_val + " " + unit;
-                }else if(typeof(val)==="boolean"){
+                }else if(typeof(val)==="boolean" && e.querySelector('.boolean-value') != null){
                     // Set the text value
                     e.querySelector('.boolean-value').innerHTML = ci_label + " : " + dictionary(var_id, val, type.replace('-', '')) + " " + unit;
                 }
