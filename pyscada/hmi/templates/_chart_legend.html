@@ -8,14 +8,19 @@
               <div class="hidden variable-config" data-name="{{var.name}}" data-device-id={{var.device_id}} data-key="{{var.pk}}" data-color="{{ var.chart_line_color_code }}" data-init-type="1" data-type="variable" data-axis-id="{{ axe.pk }}" data-device-polling_interval="{{ var.device.polling_interval }}"></div>
           </td>
           <td class="legendColorBox">
-              <div style="border:1px solid #ccc;padding:1px">
+              <div style="border:1px solid #ccc;padding:1px; width: 14px;">
                   <div style="width:4px;height:0;border:5px solid {{ var.chart_line_color_code }};overflow:hidden">
                   </div>
               </div>
           </td>
-          <td class="legendLabel dropdown" data-key="{{var.pk}}" style="word-wrap: break-word">
+          <td class="legendLabel" data-key="{{var.pk}}" style="word-wrap: break-word; position: inherit;">
               <span class="legendLabel-text">{{ var.hmi_name }}</span>
-                  <span id="chart-legend-options-span-{{widget_pk}}-{{chart.pk}}-{{ var.pk }}"></span>
+              <span id="chart-legend-options-span-{{widget_pk}}-{{chart.pk}}-{{ var.pk }}"></span>
+          </td>
+          <td class="legendValue type-numeric chart-legend-value-{{widget_pk}}-{{chart.pk}} var-{{ var.pk }}" id="chart-legend-value-{{widget_pk}}-{{chart.pk}}-{{var.pk}}" style="text-align:right; word-wrap: break-word;"></td>
+          <td class="legendUnit" data-key="{{var.pk}}">{{ var.unit.unit }}</td>
+          <td>
+              <div class="dropdown">
                   <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="chart-legend-options-{{widget_pk}}-{{chart.pk}}-{{ var.pk }}">
                       <span class="chart-legend-options-text"></span>
                       <span class="glyphicon glyphicon-cog" data-toggle="tooltip" data-placement="top" title="" data-original-title="Chart options" style="font-size:8px;vertical-align:text-top;"></span>
@@ -35,10 +40,9 @@
                             <option value=null>None</option>
                           </select>
                       </li>
-                </ul>
+                  </ul>
+              </div>
           </td>
-          <td class="legendValue type-numeric chart-legend-value-{{widget_pk}}-{{chart.pk}} var-{{ var.pk }}" id="chart-legend-value-{{widget_pk}}-{{chart.pk}}-{{var.pk}}" style="text-align:right"></td>
-          <td class="legendUnit" data-key="{{var.pk}}">{{ var.unit.unit }}</td>
       </tr>
       {% endif %}
   {% endfor %}

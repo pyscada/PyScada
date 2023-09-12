@@ -316,6 +316,10 @@ def view(request, link_title):
         javascript_files_list.append(
             {"src": STATIC_URL + "pyscada/js/jquery/jquery.tablesorter.min.js"}
         )
+        # tablesorter parser for checkbox
+        javascript_files_list.append(
+            {"src": STATIC_URL + "pyscada/js/jquery/parser-input-select.js"}
+        )
         javascript_files_list.append(
             {"src": STATIC_URL + "pyscada/js/flot/lib/jquery.mousewheel.js"}
         )
