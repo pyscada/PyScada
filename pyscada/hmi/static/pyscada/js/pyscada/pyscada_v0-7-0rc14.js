@@ -3001,7 +3001,7 @@ function setAggregatedLists() {
         b=filter_aggregation_type_for_period_list(a);
         for (v in b) {
           c[cc].add(new Option(b[v], v));
-          if (!document.querySelectorAll('#aggregation-type-all-select-' + widget_id + ' option[value="' + v + '"]').length) {
+          if (document.querySelector('#aggregation-type-all-select-' + widget_id) != null && !document.querySelectorAll('#aggregation-type-all-select-' + widget_id + ' option[value="' + v + '"]').length) {
             document.querySelector('#aggregation-type-all-select-' + widget_id).add(new Option(b[v], v));
           }
         }
