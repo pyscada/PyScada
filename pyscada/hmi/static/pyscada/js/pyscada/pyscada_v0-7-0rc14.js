@@ -2780,13 +2780,13 @@ function createOffset(date) {
                  "customRangeLabel": "Custom",
                  "weekLabel": "W",
                  "daysOfWeek": [
+                     "Su",
                      "Mo",
                      "Tu",
                      "We",
                      "Th",
                      "Fr",
                      "Sa",
-                     "Su",
                  ],
                  "monthNames": [
                      "January",
@@ -2802,7 +2802,7 @@ function createOffset(date) {
                      "November",
                      "December"
                  ],
-                 "firstDay": 0
+                 "firstDay": 1
              },
              "alwaysShowCalendars": true,
              "linkedCalendars": false,
