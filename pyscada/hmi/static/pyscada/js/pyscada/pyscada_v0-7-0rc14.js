@@ -789,7 +789,7 @@ var store_temp_ajax_data = null;
                     }
                     // Set the text value
                     document.querySelector("#" + control_item_id).innerHTML = r_val + " " + unit;
-                }else if(typeof(val)==="boolean"){
+                }else if(typeof(val)==="boolean" && e.querySelector('.boolean-value') != null){
                     // Set the text value
                     e.querySelector('.boolean-value').innerHTML = ci_label + " : " + dictionary(var_id, val, type.replace('-', '')) + " " + unit;
                 }
@@ -2780,13 +2780,13 @@ function createOffset(date) {
                  "customRangeLabel": "Custom",
                  "weekLabel": "W",
                  "daysOfWeek": [
+                     "Su",
                      "Mo",
                      "Tu",
                      "We",
                      "Th",
                      "Fr",
                      "Sa",
-                     "Su",
                  ],
                  "monthNames": [
                      "January",
@@ -3001,7 +3001,7 @@ function setAggregatedLists() {
         b=filter_aggregation_type_for_period_list(a);
         for (v in b) {
           c[cc].add(new Option(b[v], v));
-          if (!document.querySelectorAll('#aggregation-type-all-select-' + widget_id + ' option[value="' + v + '"]').length) {
+          if (document.querySelector('#aggregation-type-all-select-' + widget_id) != null && !document.querySelectorAll('#aggregation-type-all-select-' + widget_id + ' option[value="' + v + '"]').length) {
             document.querySelector('#aggregation-type-all-select-' + widget_id).add(new Option(b[v], v));
           }
         }
