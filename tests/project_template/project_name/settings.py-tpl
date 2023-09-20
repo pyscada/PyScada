@@ -208,7 +208,7 @@ PYSCADA_META = {
 # file_prefix           prefix of the output files (PREFIXmeasurement_data_Y_m_d_HM.[h5,csv])
 
 PYSCADA_EXPORT = {
-    'output_folder': '{{ project_root }}/http/measurement_data_dumps',
+    'output_folder': '{{ pyscada_home }}/measurement_data_dumps',
     'file_prefix': PYSCADA_META['name'] + '_'
 }
 
