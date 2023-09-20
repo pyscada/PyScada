@@ -27,7 +27,8 @@ fi
 INSTALL_ROOT=/var/www/pyscada # files will be installed here
 log_file_dir="/var/log/pyscada/" # log files will be here
 SERVER_ROOT=$INSTALL_ROOT/PyScadaServer # django project root
-pyscada_venv=/home/pyscada/.venv
+pyscada_home=/home/pyscada
+pyscada_venv=$pyscada_home/.venv
 
 # VAR
 answer_date=""            # Is the date correct
@@ -419,6 +420,7 @@ with open("./tests/project_template_tmp/project_name/settings.py-tpl", "r+") as 
                 "db_user": "${answer_db_user}",
                 "db_password": "${answer_db_password}",
                 "project_root": "${INSTALL_ROOT}",
+                "pyscada_home": "${pyscada_home}",
                 "log_file_dir": "${log_file_dir}",
                 "project_admins": "${project_admins}",
                 "auto_add_apps": "${answer_auto_add_apps}",
@@ -444,14 +446,12 @@ function user_setup(){
   # Create pyscada user
   echo "Creating system user pyscada..."
   useradd -r pyscada
-  mkdir -p /home/pyscada
-  chown -R pyscada:pyscada /home/pyscada
-  mkdir -p $INSTALL_ROOT/http/measurement_data_dumps
-  chown -R pyscada:pyscada $INSTALL_ROOT
+  mkdir -p $pyscada_home
+  chown -R pyscada:pyscada $pyscada_home
   mkdir -p $INSTALL_ROOT
   chown -R pyscada:pyscada $INSTALL_ROOT
-  mkdir -p $INSTALL_ROOT/http/measurement_data_dumps
-  chown -R pyscada:pyscada $INSTALL_ROOT/http/measurement_data_dumps
+  mkdir -p $pyscada_home/measurement_data_dumps
+  chown -R pyscada:pyscada $pyscada_home/measurement_data_dumps
 
   mkdir ${log_file_dir}
   chown pyscada:pyscada ${log_file_dir}
