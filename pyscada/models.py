@@ -1190,9 +1190,9 @@ class VariableProperty(models.Model):
             max_value = 0
             for di in self.dictionary.dictionaryitem_set.all():
                 max_value = max(float(max_value), float(di.value))
-            DictionaryItem(
+            DictionaryItem.objects.get_or_create(
                 label=str(value), value=int(max_value) + 1, dictionary=self.dictionary
-            ).save()
+            )
             # logger.debug('new value : %s' % (int(max_value) + 1))
             return int(max_value) + 1
         elif len(self.dictionary.dictionaryitem_set.filter(label=str(value))) == 1:
@@ -1760,11 +1760,11 @@ class Variable(models.Model):
                 max_value = 0
                 for di in self.dictionary.dictionaryitem_set.all():
                     max_value = max(float(max_value), float(di.value))
-                DictionaryItem(
+                DictionaryItem.objects.get_or_create(
                     label=str(value),
                     value=int(max_value) + 1,
                     dictionary=self.dictionary,
-                ).save()
+                )
                 # logger.debug('new value : %s' % (int(max_value) + 1))
                 return int(max_value) + 1
             elif len(self.dictionary.dictionaryitem_set.filter(label=str(value))) == 1:
