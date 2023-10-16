@@ -169,6 +169,10 @@ Licensed under the AGPL.
   */
  var DATERANGEPICKER_SET = false;
 
+/**
+* Ask before leaving the page
+*/
+var ONBEFORERELOAD_ASK = true;
 
  //                             -----------------------------------------------------------
  //                                                      Objects
@@ -4020,7 +4024,11 @@ function fix_page_anchor() {
 
      // prevent reloading by existent
      window.onbeforeunload = function() {
-         return "you realy wan't to reload/leave the page?";
+         if (ONBEFORERELOAD_ASK) {
+             return "you realy wan't to reload/leave the page?";
+         }else {
+             return null;
+         };
      };
      $(window).on('hashchange', function() {
          // nav menu click event
