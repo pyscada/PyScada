@@ -598,25 +598,27 @@ class RecordedDataValueManager(models.Manager):
             for pk in variable_ids:
                 if pk not in values:
                     values[pk] = []
+                time_max_last_value = time.time()
                 if pk in times:
-                    last_element = self.last_element(
-                        use_date_saved=True,
-                        time_min=0,
-                        time_max=times[pk]["time_min"],
-                        variable_id=pk,
+                    time_max_last_value = times[pk]["time_min"]
+                last_element = self.last_element(
+                    use_date_saved=True,
+                    time_min=0,
+                    time_max=time_max_last_value,
+                    variable_id=pk,
+                )
+                if last_element is not None:
+                    values[pk].insert(
+                        0,
+                        [
+                            (
+                                float(last_element.pk - last_element.variable_id)
+                                / (2097152.0 * 1000)
+                            )
+                            * f_time_scale,
+                            last_element.value(),
+                        ],
                     )
-                    if last_element is not None:
-                        values[pk].insert(
-                            0,
-                            [
-                                (
-                                    float(last_element.pk - last_element.variable_id)
-                                    / (2097152.0 * 1000)
-                                )
-                                * f_time_scale,
-                                last_element.value(),
-                            ],
-                        )
 
         values["timestamp"] = max(tmp_time_max, time_min) * f_time_scale
         values["date_saved_max"] = date_saved_max * f_time_scale
