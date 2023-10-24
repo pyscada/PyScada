@@ -806,9 +806,8 @@ var store_temp_ajax_data = null;
                    e.style.backgroundColor = update_data_colors(control_item_id,val);
                  }
                  // create event to announce color change for a control item
-                 elem = document.querySelector("div.hidden.controlitem-config2[data-id='" + control_item_id.split('-')[1] + "']");
                  var event = new CustomEvent("changePyScadaControlItemColor_" + control_item_id.split('-')[1], { detail: update_data_colors(control_item_id,val) });
-                 elem.dispatchEvent(event);
+                 window.dispatchEvent(event);
              }
          })
 
