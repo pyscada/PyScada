@@ -3971,6 +3971,26 @@ function fix_page_anchor() {
      $(".ReadAllTask").parent().parent().show();
      $(".AutoUpdateButtonParent").show();
 
+     set_loading_state(1, 20);
+
+     // load hidden config2
+     fetch('/getHiddenConfig2/' + document.querySelector("body").dataset["viewTitle"] + "/", {
+       method: "POST",
+       headers: {
+         "X-CSRFToken": CSRFTOKEN,
+         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+       },
+       body: "",
+     }).then((response) => {
+       if (!response.ok) {
+         throw new Error(`HTTP error, status = ${response.status}`);
+       }
+       return response.text();
+     }).then((text) => {
+       document.querySelector("body #wrap #content .hidden.globalConfig2").innerHTML = text;
+       console.log("hidden config2 loaded");
+     }).catch((err) => console.log(err));
+
      // init loading states
      set_loading_state(1, 40);
 

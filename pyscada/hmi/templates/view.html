@@ -9,7 +9,7 @@
 {% endfor %}
 {% endblock %}
 
-{% block body_confic_data %} data-data-file="json/cache_data/" {% endblock %}
+{% block body_confic_data %} data-data-file="json/cache_data/" data-view-title="{{ view_link_title }}" {% endblock %}
 
 {% block top_menu_left %}
     {% for page in page_list %}
