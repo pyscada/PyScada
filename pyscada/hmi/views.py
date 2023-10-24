@@ -76,6 +76,155 @@ def index(request):
 
 
 @unauthenticated_redirect
+def get_hidden_config2(request, link_title):
+    try:
+        v = (
+            get_group_display_permission_list(View.objects, request.user.groups.all())
+            .filter(link_title=link_title)
+            .first()
+        )
+        if v is None:
+            raise View.DoesNotExist
+        # v = View.objects.get(link_title=link_title)
+    except View.DoesNotExist as e:
+        logger.warning(f"{request.user} has no permission for view {link_title}")
+        raise PermissionDenied("You don't have access to this view.")
+    except View.MultipleObjectsReturned as e:
+        logger.error(f"{e} for view link_title", exc_info=True)
+        raise PermissionDenied(f"Multiples views with this link : {link_title}")
+        # return HttpResponse(status=404)
+
+    object_config_list = dict()
+    custom_fields_list = dict()
+    exclude_fields_list = dict()
+    visible_objects_lists = dict()
+
+    items = [
+        field
+        for field in GroupDisplayPermission._meta.get_fields()
+        if issubclass(type(field), OneToOneRel)
+    ]
+    if GroupDisplayPermission.objects.count() == 0:
+        # no groups
+        for item in items:
+            item_str = item.related_model.m2m_related_model._meta.object_name.lower()
+            visible_objects_lists[
+                f"visible_{item_str}_list"
+            ] = item.related_model.m2m_related_model.objects.all().values_list(
+                "pk", flat=True
+            )
+        visible_objects_lists["visible_page_list"] = v.pages.all().values_list(
+            "pk", flat=True
+        )
+        visible_objects_lists[
+            "visible_slidingpanelmenu_list"
+        ] = v.sliding_panel_menus.all().values_list("pk", flat=True)
+    else:
+        for item in items:
+            item_str = item.related_model.m2m_related_model._meta.object_name.lower()
+            visible_objects_lists[
+                f"visible_{item_str}_list"
+            ] = get_group_display_permission_list(
+                item.related_model.m2m_related_model.objects, request.user.groups.all()
+            ).values_list(
+                "pk", flat=True
+            )
+        visible_objects_lists["visible_page_list"] = get_group_display_permission_list(
+            v.pages, request.user.groups.all()
+        ).values_list("pk", flat=True)
+        visible_objects_lists[
+            "visible_slidingpanelmenu_list"
+        ] = get_group_display_permission_list(
+            v.sliding_panel_menus, request.user.groups.all()
+        ).values_list(
+            "pk", flat=True
+        )
+
+    panel_list = SlidingPanelMenu.objects.filter(
+        id__in=visible_objects_lists["visible_slidingpanelmenu_list"]
+    ).filter(
+        position__in=(
+            1,
+            2,
+        )
+    )
+    control_list = SlidingPanelMenu.objects.filter(
+        id__in=visible_objects_lists["visible_slidingpanelmenu_list"]
+    ).filter(position=0)
+
+    for page_pk in visible_objects_lists["visible_page_list"]:
+        page = Page.objects.get(id=page_pk)
+        for widget in page.widget_set.all():
+            if widget.pk not in visible_objects_lists["visible_widget_list"]:
+                continue
+            if not widget.visible:
+                continue
+            if widget.content is None:
+                continue
+            widget_extra_css_class = (
+                widget.extra_css_class.css_class
+                if widget.extra_css_class is not None
+                else ""
+            )
+            opts = widget.content.get_hidden_config2(
+                visible_objects_lists=visible_objects_lists,
+            )
+            if (
+                type(opts) == dict
+                and "object_config_list" in opts
+                and type(opts["object_config_list"] == list)
+            ):
+                for obj in opts["object_config_list"]:
+                    model_name = str(obj._meta.model_name).lower()
+                    if model_name not in object_config_list:
+                        object_config_list[model_name] = list()
+                    if obj not in object_config_list[model_name]:
+                        object_config_list[model_name].append(obj)
+            if (
+                type(opts) == dict
+                and "custom_fields_list" in opts
+                and type(opts["custom_fields_list"] == list)
+            ):
+                for model in opts["custom_fields_list"]:
+                    custom_fields_list[str(model).lower()] = opts["custom_fields_list"][
+                        model
+                    ]
+
+            if (
+                type(opts) == dict
+                and "exclude_fields_list" in opts
+                and type(opts["exclude_fields_list"] == list)
+            ):
+                for model in opts["exclude_fields_list"]:
+                    exclude_fields_list[str(model).lower()] = opts[
+                        "exclude_fields_list"
+                    ][model]
+
+    # Adding SlidingPanelMenu to hidden config
+    for s_pk in visible_objects_lists["visible_slidingpanelmenu_list"]:
+        s = SlidingPanelMenu.objects.get(id=s_pk)
+        if s.control_panel is not None:
+            for obj in s.control_panel._get_objects_for_html(obj=s):
+                if obj._meta.model_name not in object_config_list:
+                    object_config_list[obj._meta.model_name] = list()
+                if obj not in object_config_list[obj._meta.model_name]:
+                    object_config_list[obj._meta.model_name].append(obj)
+    # Generate html object hidden config
+    hidden_globalConfig_html = ""
+    for model, val in sorted(object_config_list.items(), key=lambda ele: ele[0]):
+        hidden_globalConfig_html += '<div class="hidden ' + str(model) + 'Config2">'
+        for obj in val:
+            hidden_globalConfig_html += gen_hiddenConfigHtml(
+                obj,
+                custom_fields_list.get(model, None),
+                exclude_fields_list.get(model, None),
+            )
+        hidden_globalConfig_html += "</div>"
+
+    return HttpResponse(hidden_globalConfig_html, content_type="text/plain")
+
+
+@unauthenticated_redirect
 @requires_csrf_token
 def view(request, link_title):
     base_template = "base.html"
@@ -456,6 +605,7 @@ def view(request, link_title):
         ],
         "visible_form_list": visible_objects_lists["visible_form_list"],
         "view_title": v.title,
+        "view_link_title": link_title,
         "view_show_timeline": v.show_timeline,
         "version_string": core_version,
         "link_target": settings.LINK_TARGET

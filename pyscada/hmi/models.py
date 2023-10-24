@@ -94,6 +94,12 @@ class WidgetContentModel(models.Model):
             exclude_model_names=exclude_model_names,
         )
 
+    def add_custom_fields_list(self, opts):
+        return opts
+
+    def add_exclude_fields_list(self, opts):
+        return opts
+
     def create_widget_content_entry(self):
         def fullname(o):
             return o.__module__ + "." + o.__class__.__name__
@@ -543,8 +549,8 @@ class Chart(WidgetContentModel):
         opts["show_daterangepicker"] = True
         opts["show_timeline"] = True
         opts["flot"] = True
-        opts["object_config_list"] = set()
-        opts["object_config_list"].update(self._get_objects_for_html())
+        # opts["object_config_list"] = set()
+        # opts["object_config_list"].update(self._get_objects_for_html())
         return main_content, sidebar_content, opts
 
     def _get_objects_for_html(
@@ -763,19 +769,24 @@ class ControlPanel(WidgetContentModel):
                     and item.display_value_options.type == 3
                 ):
                     opts["flot"] = True
-        opts["object_config_list"] = set()
-        opts["object_config_list"].update(self._get_objects_for_html())
-        opts["custom_fields_list"] = {
-            "variable": [
-                {"name": "refresh-requested-timestamp", "value": ""},
-                {"name": "value-timestamp", "value": ""},
-            ],
-            "variableproperty": [
-                {"name": "refresh-requested-timestamp", "value": ""},
-                {"name": "value-timestamp", "value": ""},
-            ],
-        }
+        # opts["object_config_list"] = set()
+        # opts["object_config_list"].update(self._get_objects_for_html())
+        # opts = self.add_custom_fields_list(opts)
         return main_content, sidebar_content, opts
+
+    def add_custom_fields_list(self, opts):
+        if type(opts) == dict:
+            if "custom_fields_list" not in opts:
+                opts["custom_fields_list"] = dict()
+            opts["custom_fields_list"]["variable"] = [
+                {"name": "refresh-requested-timestamp", "value": ""},
+                {"name": "value-timestamp", "value": ""},
+            ]
+            opts["custom_fields_list"]["variableproperty"] = [
+                {"name": "refresh-requested-timestamp", "value": ""},
+                {"name": "value-timestamp", "value": ""},
+            ]
+        return opts
 
 
 class CustomHTMLPanel(WidgetContentModel):
@@ -813,8 +824,8 @@ class CustomHTMLPanel(WidgetContentModel):
             )
         sidebar_content = None
         opts = dict()
-        opts["object_config_list"] = set()
-        opts["object_config_list"].update(self._get_objects_for_html())
+        # opts["object_config_list"] = set()
+        # opts["object_config_list"].update(self._get_objects_for_html())
         return main_content, sidebar_content, opts
 
 
@@ -906,8 +917,8 @@ class ProcessFlowDiagram(WidgetContentModel):
             )
         sidebar_content = None
         opts = dict()
-        opts["object_config_list"] = set()
-        opts["object_config_list"].update(self._get_objects_for_html())
+        # opts["object_config_list"] = set()
+        # opts["object_config_list"].update(self._get_objects_for_html())
 
         return main_content, sidebar_content, opts
 
@@ -948,6 +959,28 @@ class WidgetContent(models.Model):
             logger.error(f"{content_model} unhandled exception", exc_info=True)
             # todo del self
             return "", "", ""
+
+    def get_hidden_config2(self, **kwargs):
+        """
+        return main_content, sidebar_content, optional list
+        """
+        content_model = self._import_content_model()
+        opts = dict()
+        opts["object_config_list"] = set()
+        try:
+            if content_model is not None:
+                opts["object_config_list"].update(content_model._get_objects_for_html())
+                opts = content_model.add_custom_fields_list(opts)
+                opts = content_model.add_exclude_fields_list(opts)
+            else:
+                logger.info(
+                    f"WidgetContent content_model of {self.content_str} is None"
+                )
+        except:
+            logger.error(f"{content_model} unhandled exception", exc_info=True)
+            # todo del self
+
+        return opts
 
     def _import_content_model(self):
         content_class_str = self.content_model
