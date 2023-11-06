@@ -3962,34 +3962,34 @@ function fix_page_anchor() {
      }
  });
 
+ set_loading_state(1, 10);
 
- // fix drop down problem
- $( document ).ready(function() {
+document.body.onload = () => init_pyscada_content();
+
+function init_pyscada_content() {
+  console.log("PyScada HMI : fetching hidden config2")
+  fetch('/getHiddenConfig2/' + document.querySelector("body").dataset["viewTitle"] + "/", {
+   method: "POST",
+   headers: {
+     "X-CSRFToken": CSRFTOKEN,
+     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+   },
+   body: "",
+ }).then((response) => {
+   if (!response.ok) {
+     throw new Error(`HTTP error, status = ${response.status}`);
+   }
+   set_loading_state(1, 20);
+   return response.text();
+ }).then((text) => {
+   document.querySelector("body #wrap #content .hidden.globalConfig2").innerHTML = text;
+   console.log("PyScada HMI : hidden config2 loaded");
+ }).then(() => {
      // show buttons
      $(".loadingAnimation").parent().show();
      $(".AutoUpdateStatus").parent().parent().show();
      $(".ReadAllTask").parent().parent().show();
      $(".AutoUpdateButtonParent").show();
-
-     set_loading_state(1, 20);
-
-     // load hidden config2
-     fetch('/getHiddenConfig2/' + document.querySelector("body").dataset["viewTitle"] + "/", {
-       method: "POST",
-       headers: {
-         "X-CSRFToken": CSRFTOKEN,
-         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-       },
-       body: "",
-     }).then((response) => {
-       if (!response.ok) {
-         throw new Error(`HTTP error, status = ${response.status}`);
-       }
-       return response.text();
-     }).then((text) => {
-       document.querySelector("body #wrap #content .hidden.globalConfig2").innerHTML = text;
-       console.log("hidden config2 loaded");
-     }).catch((err) => console.log(err));
 
      // init loading states
      set_loading_state(1, 40);
@@ -4288,4 +4288,14 @@ function fix_page_anchor() {
 
      // Fill aggregated lists
      setAggregatedLists();
+ }).then(() => {
+   // PyScada Core JS loaded successfully => send the event for plugins
+   var event = new CustomEvent("PyScadaCoreJSLoaded");
+   document.dispatchEvent(event);
+   console.log("PyScada HMI : dispatch PyScadaCoreJSLoaded event");
+ }).catch((err) => {
+   console.log("PyScada HMI : ", err);
+   console.log("Retrying to init PyScada Core JS in 1 sec...");
+   setTimeout(init_pyscada_content, 1000);
  });
+};
