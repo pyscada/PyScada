@@ -341,6 +341,16 @@ var ONBEFORERELOAD_ASK = true;
 
 var store_temp_ajax_data = null;
 
+ /**
+  * store all timeout ids for each functions
+  */
+ var PYSCADA_TIMEOUTS = {};
+
+  /**
+   * store current ajax request
+   */
+  var PYSCADA_XHR = null;
+
  //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -1065,10 +1075,10 @@ function set_config_from_hidden_config(type,filter_data,val,get_data,value){
          // initialisation is active
          //setTimeout(function() {data_handler();}, REFRESH_RATE/2.0);
          if (STATUS_VARIABLE_KEYS.count() + CHART_VARIABLE_KEYS.count() == 0 && LOADING_PAGE_DONE == 0) {LOADING_PAGE_DONE = 1;show_page();hide_loading_state();}
-         setTimeout(function() {data_handler();}, 100);
+         PYSCADA_TIMEOUTS["data_handler"] = setTimeout(function() {data_handler();}, 100);
      }else{
          if (LOADING_PAGE_DONE == 0) {LOADING_PAGE_DONE = 1;show_page();hide_loading_state();loading_states={};}
-         setTimeout(function() {data_handler();}, REFRESH_RATE);
+         PYSCADA_TIMEOUTS["data_handler"] = setTimeout(function() {data_handler();}, REFRESH_RATE);
      }
  }
 
@@ -1088,7 +1098,7 @@ function set_config_from_hidden_config(type,filter_data,val,get_data,value){
      request_data = {timestamp_from:timestamp_from, variables: variable_keys, init: init, variable_properties:variable_property_keys};
      if (typeof(timestamp_to !== 'undefined')){request_data['timestamp_to']=timestamp_to};
      //if (!init){request_data['timestamp_from'] = request_data['timestamp_from'] - REFRESH_RATE;};
-     $.ajax({
+     PYSCADA_XHR = $.ajax({
          url: ROOT_URL+'json/cache_data/',
          dataType: "json",
          timeout: ((init == 1) ? FETCH_DATA_TIMEOUT*5: FETCH_DATA_TIMEOUT),
@@ -3544,7 +3554,7 @@ function fix_page_anchor() {
 
      show_update_status();
 
-     $.ajax({
+     PYSCADA_XHR = $.ajax({
          url: ROOT_URL+'json/log_data/',
          type: 'post',
          dataType: "json",
@@ -3743,7 +3753,7 @@ function fix_page_anchor() {
      refresh_logo(key, type);
      data_type = $(this).data('type');
      $(this)[0].disabled = true;
-     $.ajax({
+     PYSCADA_XHR = $.ajax({
          type: 'post',
          url: ROOT_URL+'form/read_task/',
          data: {key:key, type:data_type},
@@ -3787,7 +3797,7 @@ function fix_page_anchor() {
              $(this).parents(".input-group").removeClass("has-error")
              if (isNaN(value)) {
                  if (item_type == "variable_property" && value_class == 'STRING'){
-                     $.ajax({
+                     PYSCADA_XHR = $.ajax({
                          type: 'post',
                          url: ROOT_URL+'form/write_property2/',
                          data: {variable_property:key, value:value},
@@ -3803,7 +3813,7 @@ function fix_page_anchor() {
                      $(this).parents(".input-group-btn").after('<span id="helpBlock-' + id + '" class="help-block">The value must be a number ! Use dot not coma.</span>');
                  };
              }else {
-                 $.ajax({
+                 PYSCADA_XHR = $.ajax({
                      type: 'post',
                      url: ROOT_URL+'form/write_task/',
                      data: {key:key, value:value, item_type:item_type},
@@ -3835,7 +3845,7 @@ function fix_page_anchor() {
          if ($(tabinputs[i]).hasClass('btn-success')){
              id = $(tabinputs[i]).attr('id');
              //$('#'+id).removeClass('update-able');
-             $.ajax({
+             PYSCADA_XHR = $.ajax({
                  type: 'post',
                  url: ROOT_URL+'form/write_task/',
                  data: {key:key,value:1,item_type:item_type},
@@ -3848,7 +3858,7 @@ function fix_page_anchor() {
          }else if ($(tabinputs[i]).hasClass('btn-default')){
              id = $(tabinputs[i]).attr('id');
              //$('#'+id).removeClass('update-able');
-             $.ajax({
+             PYSCADA_XHR = $.ajax({
                  type: 'post',
                  url: ROOT_URL+'form/write_task/',
                  data: {key:key,value:0,item_type:item_type},
@@ -3859,7 +3869,7 @@ function fix_page_anchor() {
                  }
              });
          }else{
-             $.ajax({
+             PYSCADA_XHR = $.ajax({
                  type: 'post',
                  url: ROOT_URL+'form/write_task/',
                  data: {key:key, value:value, item_type:item_type},
@@ -3880,7 +3890,7 @@ function fix_page_anchor() {
          item_type = $(tabselects[i]).data('type');
          if (isNaN(value)){
              if (item_type == "variable_property"){
-                 $.ajax({
+                 PYSCADA_XHR = $.ajax({
                      type: 'post',
                      url: ROOT_URL+'form/write_property2/',
                      data: {variable_property:var_name, value:value},
@@ -3895,7 +3905,7 @@ function fix_page_anchor() {
                  add_notification("select is " + item_type + " and not a number",3);
              };
          }else {
-             $.ajax({
+             PYSCADA_XHR = $.ajax({
                  type: 'post',
                  url: ROOT_URL+'form/write_task/',
                  data: {key:key, value:value, item_type:item_type},
@@ -3935,7 +3945,7 @@ function fix_page_anchor() {
      $(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "][data-type=" + item_type + "]").attr('data-refresh-requested-timestamp', SERVER_TIME)
      $(".variable-config2[data-refresh-requested-timestamp][data-id=" + key + "]").attr('data-refresh-requested-timestamp', SERVER_TIME)
      if($(this).hasClass('btn-default')){
-         $.ajax({
+         PYSCADA_XHR = $.ajax({
              type: 'post',
              url: ROOT_URL+'form/write_task/',
              data: {key:key,value:1,item_type:item_type},
@@ -3948,7 +3958,7 @@ function fix_page_anchor() {
              }
          });
      }else if ($(this).hasClass('btn-success')){
-         $.ajax({
+         PYSCADA_XHR = $.ajax({
              type: 'post',
              url: ROOT_URL+'form/write_task/',
              data: {key:key,value:0,item_type:item_type},
@@ -4049,6 +4059,14 @@ function init_pyscada_content() {
          }else {
              return null;
          };
+     };
+     // stop all setTimeout and Ajax requests when leaving
+     window.onunload = function() {
+         for (t in PYSCADA_TIMEOUTS) {clearTimeout(PYSCADA_TIMEOUTS[t]);console.log("PyScada HMI : clearing timeout", t);}
+         if(PYSCADA_XHR != null && PYSCADA_XHR.readyState != 4){
+             PYSCADA_XHR.abort();
+             console.log("PyScada HMI : aborting xhr")
+         }
      };
      $(window).on('hashchange', function() {
          // nav menu click event
@@ -4181,7 +4199,7 @@ function init_pyscada_content() {
          set_chart_selection_mode();
      });
 
-     setTimeout(function() {data_handler();}, 5000);
+     PYSCADA_TIMEOUTS["data_handler"] = setTimeout(function() {data_handler();}, 5000);
      set_chart_selection_mode();
 
 
@@ -4207,7 +4225,7 @@ function init_pyscada_content() {
 
      // Send request data to all devices
      $('.ReadAllTask').click(function(e) {
-       $.ajax({
+       PYSCADA_XHR = $.ajax({
            url: ROOT_URL+'form/read_all_task/',
            type: "POST",
            data:{},
