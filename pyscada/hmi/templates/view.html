@@ -90,6 +90,12 @@
             <tbody></tbody>
         </table>
     </div> <!-- end page-log -->
+    {% block loading_page %}
+    <!-- start page-loading -->
+    <div id="page-loading" class="sub-page" style="display: flex; align-items: center; justify-content: center;">
+          {% include "svg_loading_icon.html" %}
+    </div> <!-- end page-loading -->
+    {% endblock loading_page %}
     {% for panel in panel_list %}
         <div class="side-menu  {% if panel.position == 1 %}left{% elif panel.position == 2 %}right{% endif %}">
             <ul class="status-panel">
