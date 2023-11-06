@@ -418,10 +418,10 @@ var store_temp_ajax_data = null;
                              if (typeof(start_id) === "number" ){
                                  DATA[key] = value.slice(0,start_id).concat(DATA[key]);
                              }else{
-                                 console.log(key + ' : dropped data');
+                                 console.log("PyScada HMI : var" , key, ": dropped data, start_id not found.", value, DATA[key][0][0]);
                              }
                          }else{
-                             console.log(key + ' : dropped data');
+                             console.log("PyScada HMI : var" , key, ": dropped data, stop_id not found.", value, DATA[key][DATA[key].length-1][0]);
                          }
                      }
 
@@ -432,7 +432,7 @@ var store_temp_ajax_data = null;
                          if (typeof(stop_id) === "number" ){
                              DATA[key] = value.slice(0,stop_id).concat(DATA[key]);
                          }else{
-                             console.log(key + ' : dropped data');
+                             console.log("PyScada HMI : var" , key, ": dropped data, stop_id not found.", value, DATA[key][0][0]);
                          }
                      } else if (v_t_max > d_t_max && d_t_min < v_t_min){
                          // data and value overlapping, data has older elements than value, append
@@ -440,10 +440,10 @@ var store_temp_ajax_data = null;
                          if (typeof(stop_id) === "number" ){
                              DATA[key] = DATA[key].concat(value.slice(stop_id));
                          }else{
-                             console.log(key + ' : dropped data');
+                             console.log("PyScada HMI : var" , key, ": dropped data, stop_id not found.", value, DATA[key][DATA[key].length-1][0]);
                          }
                      } else{
-                         //console.log(key + ' : no new data');
+                         console.log("PyScada HMI : var" , key, ' : no new data, drop.');
                      }
                  }
 
@@ -563,7 +563,10 @@ var store_temp_ajax_data = null;
      }
 
      function rgbToHex(rgb) {
-         if (typeof rgb != "object" || rgb.constructor != Array || rgb.length != 3) {console.log(typeof rgb, rgb.constructor, rgb.length, rgb);return;}
+         if (typeof rgb != "object" || rgb.constructor != Array || rgb.length != 3) {
+           console.log("PyScada HMI : cannot update data colors, rgb to hex error :", typeof rgb, rgb.constructor, rgb.length, rgb);
+           return;
+         }
          r = rgb[0]
          g = rgb[1]
          b = rgb[2]
@@ -931,7 +934,7 @@ function set_config_from_hidden_config(type,filter_data,val,get_data,value){
          INIT_CHART_VARIABLES_COUNT++;
          vars.push(key);
          dpi = get_config_from_hidden_config('device','id',get_config_from_hidden_config('variable','id',key,'device') ,'polling-interval');
-         if (! isNaN(dpi)) {device_pulling_interval_sum += parseFloat(dpi);var_count_poll++;}else {console.log("ConfigV2 not found for var " + key);};
+         if (! isNaN(dpi)) {device_pulling_interval_sum += parseFloat(dpi);var_count_poll++;}else {console.log("PyScada HMI : ConfigV2 not found for var", key);};
          if (typeof(DATA[key]) == 'object'){
              timestamp = Math.max(timestamp,DATA[key][0][0]);
          }else{
@@ -1464,21 +1467,24 @@ function createOffset(date) {
                     (14, 'distinct count'),
  */
  function get_aggregated_data(key, start, stop, type=6, min_aggregate=3) {
-    if (!Number.isInteger(key) || Number.isNaN(start) || Number.isNaN(stop) || !Number.isInteger(type) || !Number.isInteger(min_aggregate)) {console.log("get_aggregated_data : a param is not a int, number, number, int : ", key, start, stop, type);return key;};
+    if (!Number.isInteger(key) || Number.isNaN(start) || Number.isNaN(stop) || !Number.isInteger(type) || !Number.isInteger(min_aggregate)) {
+      console.log("PyScada HMI : get_aggregated_data : params types are not int, number, number, int : ", key, start, stop, type);
+      return key;
+    };
     key = Number(key);
     start = Number(start);
     stop = Number(stop);
     type = Number(type);
     min_aggregate = parseInt(min_aggregate);
-    if (min_aggregate <= 0) {console.log("min_aggregate should be > 0, it is ", min_aggregate);return key;};
-    if (!key in DATA) {console.log(key, "not in DATA");return key;};
+    if (min_aggregate <= 0) {console.log("PyScada HMI : min_aggregate should be > 0, it is ", min_aggregate);return key;};
+    if (!key in DATA) {console.log("PyScada HMI :", key, "not in DATA");return key;};
     //if (start < 0 || stop < 0) {console.log("start or stop < 0 :", start, stop);};
     if (start < 0) {start = DATA_FROM_TIMESTAMP;};
     if (stop < 0) {stop = DATA_TO_TIMESTAMP;};
     start = start / 1000;
     stop = stop / 1000;
-    if (start >= stop) {console.log("start is not < stop :", start, stop);return key;};
-    if (type < 0 || type > 14) {console.log("type is not 0 between and 14 included :", type)};
+    if (start >= stop) {console.log("PyScada HMI : start is not < stop :", start, stop);return key;};
+    if (type < 0 || type > 14) {console.log("PyScada HMI : type is not 0<= and >=14 :", type)};
 
     periodFields = get_period_fields(key);
     validPeriodFields = filter_period_fields_by_type(periodFields, type);
