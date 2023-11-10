@@ -341,6 +341,16 @@ var ONBEFORERELOAD_ASK = true;
 
 var store_temp_ajax_data = null;
 
+ /**
+  * store all timeout ids for each functions
+  */
+ var PYSCADA_TIMEOUTS = {};
+
+  /**
+   * store current ajax request
+   */
+  var PYSCADA_XHR = null;
+
  //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -412,11 +422,11 @@ var store_temp_ajax_data = null;
                              if (typeof(start_id) === "number" ){
                                  DATA[key] = value.slice(0,start_id).concat(DATA[key]);
                              }else{
-                                 console.log(key + ' : dropped data');
+                                 console.log("PyScada HMI : var" , key, ": dropped data, start_id not found.", value, DATA[key][0][0]);
                              }
                              document.dispatchEvent(event);
                          }else{
-                             console.log(key + ' : dropped data');
+                             console.log("PyScada HMI : var" , key, ": dropped data, stop_id not found.", value, DATA[key][DATA[key].length-1][0]);
                          }
                      }
                      else if (v_t_max > d_t_min && v_t_min < d_t_min){
@@ -426,7 +436,7 @@ var store_temp_ajax_data = null;
                              DATA[key] = value.slice(0,stop_id).concat(DATA[key]);
                              document.dispatchEvent(event);
                          }else{
-                             console.log(key + ' : dropped data');
+                             console.log("PyScada HMI : var" , key, ": dropped data, stop_id not found.", value, DATA[key][0][0]);
                          }
                      } else if (v_t_max > d_t_max && d_t_min < v_t_min){
                          // data and value overlapping, data has older elements than value, append
@@ -435,11 +445,10 @@ var store_temp_ajax_data = null;
                              DATA[key] = DATA[key].concat(value.slice(stop_id));
                              document.dispatchEvent(event);
                          }else{
-                             console.log(key + ' : dropped data');
+                             console.log("PyScada HMI : var" , key, ": dropped data, stop_id not found.", value, DATA[key][DATA[key].length-1][0]);
                          }
                      } else{
-                         // value data should already be in data, pass
-                         //console.log(key + ' : no new data');
+                         console.log("PyScada HMI : var" , key, ' : no new data, drop.');
                      }
                  }
 
@@ -559,7 +568,10 @@ var store_temp_ajax_data = null;
      }
 
      function rgbToHex(rgb) {
-         if (typeof rgb != "object" || rgb.constructor != Array || rgb.length != 3) {console.log(typeof rgb, rgb.constructor, rgb.length, rgb);return;}
+         if (typeof rgb != "object" || rgb.constructor != Array || rgb.length != 3) {
+           console.log("PyScada HMI : cannot update data colors, rgb to hex error :", typeof rgb, rgb.constructor, rgb.length, rgb);
+           return;
+         }
          r = rgb[0]
          g = rgb[1]
          b = rgb[2]
@@ -812,9 +824,8 @@ var store_temp_ajax_data = null;
                    e.style.backgroundColor = update_data_colors(control_item_id,val);
                  }
                  // create event to announce color change for a control item
-                 elem = document.querySelector("div.hidden.controlitem-config2[data-id='" + control_item_id.split('-')[1] + "']");
                  var event = new CustomEvent("changePyScadaControlItemColor_" + control_item_id.split('-')[1], { detail: update_data_colors(control_item_id,val) });
-                 elem.dispatchEvent(event);
+                 window.dispatchEvent(event);
              }
          })
 
@@ -928,7 +939,7 @@ function set_config_from_hidden_config(type,filter_data,val,get_data,value){
          INIT_CHART_VARIABLES_COUNT++;
          vars.push(key);
          dpi = get_config_from_hidden_config('device','id',get_config_from_hidden_config('variable','id',key,'device') ,'polling-interval');
-         if (! isNaN(dpi)) {device_pulling_interval_sum += parseFloat(dpi);var_count_poll++;}else {console.log("ConfigV2 not found for var " + key);};
+         if (! isNaN(dpi)) {device_pulling_interval_sum += parseFloat(dpi);var_count_poll++;}else {console.log("PyScada HMI : ConfigV2 not found for var", key);};
          if (typeof(DATA[key]) == 'object'){
              timestamp = Math.max(timestamp,DATA[key][0][0]);
          }else{
@@ -1071,10 +1082,10 @@ function set_config_from_hidden_config(type,filter_data,val,get_data,value){
          // initialisation is active
          //setTimeout(function() {data_handler();}, REFRESH_RATE/2.0);
          if (STATUS_VARIABLE_KEYS.count() + CHART_VARIABLE_KEYS.count() == 0 && LOADING_PAGE_DONE == 0) {LOADING_PAGE_DONE = 1;show_page();hide_loading_state();}
-         setTimeout(function() {data_handler();}, 100);
+         PYSCADA_TIMEOUTS["data_handler"] = setTimeout(function() {data_handler();}, 100);
      }else{
          if (LOADING_PAGE_DONE == 0) {LOADING_PAGE_DONE = 1;show_page();hide_loading_state();loading_states={};}
-         setTimeout(function() {data_handler();}, REFRESH_RATE);
+         PYSCADA_TIMEOUTS["data_handler"] = setTimeout(function() {data_handler();}, REFRESH_RATE);
      }
  }
 
@@ -1094,7 +1105,7 @@ function set_config_from_hidden_config(type,filter_data,val,get_data,value){
      request_data = {timestamp_from:timestamp_from, variables: variable_keys, init: init, variable_properties:variable_property_keys};
      if (typeof(timestamp_to !== 'undefined')){request_data['timestamp_to']=timestamp_to};
      //if (!init){request_data['timestamp_from'] = request_data['timestamp_from'] - REFRESH_RATE;};
-     $.ajax({
+     PYSCADA_XHR = $.ajax({
          url: ROOT_URL+'json/cache_data/',
          dataType: "json",
          timeout: ((init == 1) ? FETCH_DATA_TIMEOUT*5: FETCH_DATA_TIMEOUT),
@@ -1461,21 +1472,24 @@ function createOffset(date) {
                     (14, 'distinct count'),
  */
  function get_aggregated_data(key, start, stop, type=6, min_aggregate=3) {
-    if (!Number.isInteger(key) || Number.isNaN(start) || Number.isNaN(stop) || !Number.isInteger(type) || !Number.isInteger(min_aggregate)) {console.log("get_aggregated_data : a param is not a int, number, number, int : ", key, start, stop, type);return key;};
+    if (!Number.isInteger(key) || Number.isNaN(start) || Number.isNaN(stop) || !Number.isInteger(type) || !Number.isInteger(min_aggregate)) {
+      console.log("PyScada HMI : get_aggregated_data : params types are not int, number, number, int : ", key, start, stop, type);
+      return key;
+    };
     key = Number(key);
     start = Number(start);
     stop = Number(stop);
     type = Number(type);
     min_aggregate = parseInt(min_aggregate);
-    if (min_aggregate <= 0) {console.log("min_aggregate should be > 0, it is ", min_aggregate);return key;};
-    if (!key in DATA) {console.log(key, "not in DATA");return key;};
+    if (min_aggregate <= 0) {console.log("PyScada HMI : min_aggregate should be > 0, it is ", min_aggregate);return key;};
+    if (!key in DATA) {console.log("PyScada HMI :", key, "not in DATA");return key;};
     //if (start < 0 || stop < 0) {console.log("start or stop < 0 :", start, stop);};
     if (start < 0) {start = DATA_FROM_TIMESTAMP;};
     if (stop < 0) {stop = DATA_TO_TIMESTAMP;};
     start = start / 1000;
     stop = stop / 1000;
-    if (start >= stop) {console.log("start is not < stop :", start, stop);return key;};
-    if (type < 0 || type > 14) {console.log("type is not 0 between and 14 included :", type)};
+    if (start >= stop) {console.log("PyScada HMI : start is not < stop :", start, stop);return key;};
+    if (type < 0 || type > 14) {console.log("PyScada HMI : type is not 0<= and >=14 :", type)};
 
     periodFields = get_period_fields(key);
     validPeriodFields = filter_period_fields_by_type(periodFields, type);
@@ -3550,7 +3564,7 @@ function fix_page_anchor() {
 
      show_update_status();
 
-     $.ajax({
+     PYSCADA_XHR = $.ajax({
          url: ROOT_URL+'json/log_data/',
          type: 'post',
          dataType: "json",
@@ -3749,7 +3763,7 @@ function fix_page_anchor() {
      refresh_logo(key, type);
      data_type = $(this).data('type');
      $(this)[0].disabled = true;
-     $.ajax({
+     PYSCADA_XHR = $.ajax({
          type: 'post',
          url: ROOT_URL+'form/read_task/',
          data: {key:key, type:data_type},
@@ -3793,7 +3807,7 @@ function fix_page_anchor() {
              $(this).parents(".input-group").removeClass("has-error")
              if (isNaN(value)) {
                  if (item_type == "variable_property" && value_class == 'STRING'){
-                     $.ajax({
+                     PYSCADA_XHR = $.ajax({
                          type: 'post',
                          url: ROOT_URL+'form/write_property2/',
                          data: {variable_property:key, value:value},
@@ -3809,7 +3823,7 @@ function fix_page_anchor() {
                      $(this).parents(".input-group-btn").after('<span id="helpBlock-' + id + '" class="help-block">The value must be a number ! Use dot not coma.</span>');
                  };
              }else {
-                 $.ajax({
+                 PYSCADA_XHR = $.ajax({
                      type: 'post',
                      url: ROOT_URL+'form/write_task/',
                      data: {key:key, value:value, item_type:item_type},
@@ -3841,7 +3855,7 @@ function fix_page_anchor() {
          if ($(tabinputs[i]).hasClass('btn-success')){
              id = $(tabinputs[i]).attr('id');
              //$('#'+id).removeClass('update-able');
-             $.ajax({
+             PYSCADA_XHR = $.ajax({
                  type: 'post',
                  url: ROOT_URL+'form/write_task/',
                  data: {key:key,value:1,item_type:item_type},
@@ -3854,7 +3868,7 @@ function fix_page_anchor() {
          }else if ($(tabinputs[i]).hasClass('btn-default')){
              id = $(tabinputs[i]).attr('id');
              //$('#'+id).removeClass('update-able');
-             $.ajax({
+             PYSCADA_XHR = $.ajax({
                  type: 'post',
                  url: ROOT_URL+'form/write_task/',
                  data: {key:key,value:0,item_type:item_type},
@@ -3865,7 +3879,7 @@ function fix_page_anchor() {
                  }
              });
          }else{
-             $.ajax({
+             PYSCADA_XHR = $.ajax({
                  type: 'post',
                  url: ROOT_URL+'form/write_task/',
                  data: {key:key, value:value, item_type:item_type},
@@ -3886,7 +3900,7 @@ function fix_page_anchor() {
          item_type = $(tabselects[i]).data('type');
          if (isNaN(value)){
              if (item_type == "variable_property"){
-                 $.ajax({
+                 PYSCADA_XHR = $.ajax({
                      type: 'post',
                      url: ROOT_URL+'form/write_property2/',
                      data: {variable_property:var_name, value:value},
@@ -3901,7 +3915,7 @@ function fix_page_anchor() {
                  add_notification("select is " + item_type + " and not a number",3);
              };
          }else {
-             $.ajax({
+             PYSCADA_XHR = $.ajax({
                  type: 'post',
                  url: ROOT_URL+'form/write_task/',
                  data: {key:key, value:value, item_type:item_type},
@@ -3941,7 +3955,7 @@ function fix_page_anchor() {
      $(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "][data-type=" + item_type + "]").attr('data-refresh-requested-timestamp', SERVER_TIME)
      $(".variable-config2[data-refresh-requested-timestamp][data-id=" + key + "]").attr('data-refresh-requested-timestamp', SERVER_TIME)
      if($(this).hasClass('btn-default')){
-         $.ajax({
+         PYSCADA_XHR = $.ajax({
              type: 'post',
              url: ROOT_URL+'form/write_task/',
              data: {key:key,value:1,item_type:item_type},
@@ -3954,7 +3968,7 @@ function fix_page_anchor() {
              }
          });
      }else if ($(this).hasClass('btn-success')){
-         $.ajax({
+         PYSCADA_XHR = $.ajax({
              type: 'post',
              url: ROOT_URL+'form/write_task/',
              data: {key:key,value:0,item_type:item_type},
@@ -3969,9 +3983,29 @@ function fix_page_anchor() {
      }
  });
 
+ set_loading_state(1, 10);
 
- // fix drop down problem
- $( document ).ready(function() {
+document.body.onload = () => init_pyscada_content();
+
+function init_pyscada_content() {
+  console.log("PyScada HMI : fetching hidden config2")
+  fetch('/getHiddenConfig2/' + document.querySelector("body").dataset["viewTitle"] + "/", {
+   method: "POST",
+   headers: {
+     "X-CSRFToken": CSRFTOKEN,
+     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+   },
+   body: "",
+ }).then((response) => {
+   if (!response.ok) {
+     throw new Error(`HTTP error, status = ${response.status}`);
+   }
+   set_loading_state(1, 20);
+   return response.text();
+ }).then((text) => {
+   document.querySelector("body #wrap #content .hidden.globalConfig2").innerHTML = text;
+   console.log("PyScada HMI : hidden config2 loaded");
+ }).then(() => {
      // show buttons
      $(".loadingAnimation").parent().show();
      $(".AutoUpdateStatus").parent().parent().show();
@@ -4035,6 +4069,14 @@ function fix_page_anchor() {
          }else {
              return null;
          };
+     };
+     // stop all setTimeout and Ajax requests when leaving
+     window.onunload = function() {
+         for (t in PYSCADA_TIMEOUTS) {clearTimeout(PYSCADA_TIMEOUTS[t]);console.log("PyScada HMI : clearing timeout", t);}
+         if(PYSCADA_XHR != null && PYSCADA_XHR.readyState != 4){
+             PYSCADA_XHR.abort();
+             console.log("PyScada HMI : aborting xhr")
+         }
      };
      $(window).on('hashchange', function() {
          // nav menu click event
@@ -4167,7 +4209,7 @@ function fix_page_anchor() {
          set_chart_selection_mode();
      });
 
-     setTimeout(function() {data_handler();}, 5000);
+     PYSCADA_TIMEOUTS["data_handler"] = setTimeout(function() {data_handler();}, 5000);
      set_chart_selection_mode();
 
 
@@ -4193,7 +4235,7 @@ function fix_page_anchor() {
 
      // Send request data to all devices
      $('.ReadAllTask').click(function(e) {
-       $.ajax({
+       PYSCADA_XHR = $.ajax({
            url: ROOT_URL+'form/read_all_task/',
            type: "POST",
            data:{},
@@ -4275,4 +4317,14 @@ function fix_page_anchor() {
 
      // Fill aggregated lists
      setAggregatedLists();
+ }).then(() => {
+   // PyScada Core JS loaded successfully => send the event for plugins
+   var event = new CustomEvent("PyScadaCoreJSLoaded");
+   document.dispatchEvent(event);
+   console.log("PyScada HMI : dispatch PyScadaCoreJSLoaded event");
+ }).catch((err) => {
+   console.log("PyScada HMI : ", err);
+   console.log("Retrying to init PyScada Core JS in 1 sec...");
+   setTimeout(init_pyscada_content, 1000);
  });
+};
