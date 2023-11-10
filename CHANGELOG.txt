@@ -393,3 +393,98 @@
   - set AdminEmailHandler settings
   - update gitignore for docker
   - fix export when a filename is given
+
+0.8.1
+  - remove docker files created during the installation process
+  - docker install
+    - hide db password input
+    - remove need of django installed in the host system
+    - check if zip is installed
+  - system install
+    - hide db password input
+    - add input informations
+  - Update conf.py :
+    - removed sphinx.ext.autodoc : removed sphinx.ext.autodoc and therefore the dependency of import django this will fix the rtfd build
+    - added author : added Camille Lavayssiere as an author
+    - removed sphinx_js : this will fix the rtfd build
+  - fix license classifier for pypi
+  - fix install log
+  - JS : hide loading state : if the value of the loading state is >= 100 we hide the loading state.
+  - HMI: set navbar as fixed : remove relative position for the top navbar, add body padding for the pages content
+  - add css class to widget content models
+  - cascade control item deletion on process flow diagram item
+  - migration for css class length
+  - allow to delete the process flow diagram background image
+  - fix process flow diagram item str : if related control item label is empty, return the process flow diagram id
+  - remove process flow diagram image padding top
+  - add template variable to replace the site name : default to PyScada
+  - Variable admin site rendering : add hideshow JS to Variable, load protocol variable fk_name, FormSet, fieldsets in the inlines
+  - widget offset : now the column parameter for a widget will be respected, if a widget is in column 1 (from 0 to 3) and there is no other widget on the same page and row the widget will be offsetted this allow respecting the widget positioning with different windows size in comparaison of adding an widget with an empty html content
+  - doc use main branch for install
+  - pyscada installation in venv
+  - add developer and plugin installation documentation
+  - added pyscada-ems to the list of device protocols
+  - changed plugins url handling : the url settings of pyscada plugins will be added to the global urls, config automaticly
+  - Fix device read task str without variable or variable property
+  - add email timeout for error log to admins
+  - add traceback to error logs
+  - dictionary append item function : allow to update the label or the value if exist, else create
+  - add hidden variable-config for process flow diagram items
+  - add h5py import error log
+  - JS : timestamp conversion : if string value is a float, convert to float
+  - allow to use dictionary for timestamp variable : if a value is in the dictionary it will not be converted to a datetime string
+  - remove log for calculated variable
+  - add info to recorded data log if it already exist
+  - fix getting objects for html : fix exclude list for many2many objects
+  - add class to change process flow diagram items color
+  - set bool false control input display value color to grey
+  - add 403 error template displaying the exception message
+  - display message error on view list : on view not found (permission) and multiple views (duplicate link_title views)
+  - add core urls exception : log only if pyscada plugin has an urls.py file
+  - add mysqlclient dependency
+  - fix python venv install : add venv path to PATH
+  - add scipy to requirement for the waveform generic handler
+  - missing python3-venv requirement for venv install
+  - install-venv : missing PATH for django startproject
+  - replace setuptools find_packages by find_namespace_packages
+  - fix doc for ems protocol
+  - add exclude field list for gen_hiddenConfigHtml
+  - fix install in venv (partially broken by black formatting commit) :
+    - add python3-venv dependency
+    - add write right for settings template file to add install context
+    - run django code using pyscada user and venv
+    - add scipy for generic waveform handler
+  - fixed page alignment problem in views : when the user clicked on the page link in a view a second time the page has been moved so that the top of the page is below the navbar, this was not intended, the page should be hirisontaly aligned at the bottom of the navbar.
+  - JS : add event to anounce control item color change :
+    - event is linked to the control item config2 element
+    - event name is : "changePyScadaControlItemColor_" + control_item_id
+    - event.detail is the color formatted as #45bc65
+  - fix page anchor position to include navbar padding and border
+  - group display permisson :
+    - Fix for chart, custom html panel, pie, process flow diagram.
+    - Make the list of objects permissions more generic to allow any WidgetContentModel to be added.
+  - update tablesorter :
+    - to version 2.31.3 : https://github.com/Mottie/tablesorter
+    - fix sorting non working for unit
+    - remove unused logos
+    - create option column
+  - add LOGOUT_REDIRECT_URL : redirect to site home rather than django admin logout page after logout
+  - pip3 install user : use pyscada user to run install with pip
+  - calendar first day : set first calendar day to monday
+  - fix setting text for boolean value : check if the span field with class .boolean-value exist before writting the value for svg process flow diagram item the method is different so the span does not exist, todo : replace value by string for process diagram items
+  - aggregation type : check if '#aggregation-type-all-select-' + widget_id exist before adding new option
+  - Fix day name order and let first day to monday:
+    - The daysOfWeek order for DateTimePicker should start on sunday, if not the days are not well labeled. Then the firstDay select the first day to start weeks in the calendar
+    - The first day is set to monday untill we find how to get the browser locale and use the first week day for that country
+  - fix measurement_data_dumps location : set measurement_data_dumps directory in pyscada home during the venv installation use that folder in default settings.py
+  - replace save method by get_or_create for dictionary items : don't create it if it already exist
+  - add JS variable to for on before reload : if ONBEFORERELOAD_ASK is true, ask the user before reload o leaving the page, else don't ask
+  - fix query first value when no data found in time range : query_first_value in RecordedDataValueManager.db_data find last element from time=now when no data was found for a variable in the time range specified if data was found, time=time of first value
+  - fix the 1st diagram tooltip (was hidden by overflow)
+  - dispatch changePyScadaControlItemColor event on window : simplify the event catching
+  - load hidden config2 after view html load : to load the view quickly load the hidden config2 after the loading the view html code
+  - JS: load config2 before the pyscada hmi init then send event : Load config2, Init the pyscada hmi, send PyScadaCoreJSLoaded for plugins
+  - add loading page with svg icon : can be replaced by the loading_page block, default icon color (000, black) can be change with svg_loading_color, for example: svg_loading_color="00f"
+  - kill setTimeout and xhr request on page unload : store all timeouts in the PYSCADA_TIMEOUTS dictionary, store the current xhr blocking request in PYSCADA_XHR variable
+  - JS: add PyScada HMI at the beginning of each console.log
+  - add an event for a variable when data change to allow plugin do a custom action
