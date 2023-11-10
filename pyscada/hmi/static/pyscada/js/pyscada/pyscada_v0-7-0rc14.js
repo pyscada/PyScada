@@ -373,9 +373,11 @@ var store_temp_ajax_data = null;
      if (typeof(value)==="object"){
          // check if there is values
          if (value.length >0){
+             var event = new CustomEvent("pyscadaVariableDataChange-" + key, {bubbles: false, cancelable: true, composed: false});
              if (typeof(CHART_VARIABLE_KEYS[key]) === 'undefined'){
                  // no history needed
                  DATA[key] = [value.pop()];
+                 document.dispatchEvent(event);
                  if (DATA[key][0] < DATA_FROM_TIMESTAMP){
                      //DATA_FROM_TIMESTAMP = value[0][0];
                      UPDATE_X_AXES_TIME_LINE_STATUS = true;
@@ -384,6 +386,7 @@ var store_temp_ajax_data = null;
                  // if the input data is not stored, we save it
                  if (typeof(DATA[key]) == "undefined"){
                      DATA[key] = value;
+                     document.dispatchEvent(event);
                  } else {
                      // Min and Max of 'value' and DATA
                      var v_t_min = value[0][0];
@@ -397,18 +400,19 @@ var store_temp_ajax_data = null;
                      if (v_t_min > d_t_max){
                          // append, most likely
                          DATA[key] = DATA[key].concat(value);
+                         document.dispatchEvent(event);
                      } else if (v_t_min == d_t_max && value.length > 1){
                          // append, drop first element of value
                          DATA[key] = DATA[key].concat(value.slice(1));
+                         document.dispatchEvent(event);
                      } else if (v_t_max < d_t_min){
                          // prepend,
                          DATA[key] = value.concat(DATA[key]);
+                         document.dispatchEvent(event);
                      } else if (v_t_max == d_t_min){
                          // prepend, drop last element of value
                          DATA[key] = value.slice(0,value.length-1).concat(DATA[key]);
-
-
-                     // data and value overlapping, value has older and newer elements than data, prepend and append
+                         document.dispatchEvent(event);
                      } else if (v_t_max > d_t_max && v_t_min < d_t_min){
                          // data and value overlapping, value has older and newer elements than data, prepend and append
                          start_id = find_index_sub_lte(value,DATA[key][0][0],0);
@@ -420,6 +424,7 @@ var store_temp_ajax_data = null;
                              }else{
                                  console.log("PyScada HMI : var" , key, ": dropped data, start_id not found.", value, DATA[key][0][0]);
                              }
+                             document.dispatchEvent(event);
                          }else{
                              console.log("PyScada HMI : var" , key, ": dropped data, stop_id not found.", value, DATA[key][DATA[key].length-1][0]);
                          }
@@ -431,6 +436,7 @@ var store_temp_ajax_data = null;
                          stop_id = find_index_sub_lte(value,DATA[key][0][0],0);
                          if (typeof(stop_id) === "number" ){
                              DATA[key] = value.slice(0,stop_id).concat(DATA[key]);
+                             document.dispatchEvent(event);
                          }else{
                              console.log("PyScada HMI : var" , key, ": dropped data, stop_id not found.", value, DATA[key][0][0]);
                          }
@@ -439,10 +445,12 @@ var store_temp_ajax_data = null;
                          stop_id = find_index_sub_gte(value,DATA[key][DATA[key].length-1][0],0);
                          if (typeof(stop_id) === "number" ){
                              DATA[key] = DATA[key].concat(value.slice(stop_id));
+                             document.dispatchEvent(event);
                          }else{
                              console.log("PyScada HMI : var" , key, ": dropped data, stop_id not found.", value, DATA[key][DATA[key].length-1][0]);
                          }
                      } else{
+                         // value should already be in data, pass
                          console.log("PyScada HMI : var" , key, ' : no new data, drop.');
                      }
                  }
