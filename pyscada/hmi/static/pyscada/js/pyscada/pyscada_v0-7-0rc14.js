@@ -680,6 +680,27 @@ var store_temp_ajax_data = null;
  //                             -----------------------------------------------------------
 
  /**
+  * Transform data using control item display value option function
+  * @param {number} id Control item id
+  * @param {number} val
+  * @returns {number} Return the transformed value
+  */
+function transform_data(control_item_id, val, key) {
+  var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', control_item_id, 'display-value-options');
+  var transform_data_id = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'transform-data');
+  var transform_data_function_name = get_config_from_hidden_config("transformdata", 'id', transform_data_id, 'js-function-name');
+
+  if (transform_data_function_name != null && transform_data_function_name != "") {
+      if (typeof window[transform_data_function_name] === "function") {
+          var transform_data_function = eval(transform_data_function_name);
+          val = transform_data_function.call(null , key, val, control_item_id, display_value_option_id, transform_data_id);
+      }else {console.log("PyScada HMI : " + transform_data_function_name + " function not found.")}
+  }
+  return val
+}
+
+
+ /**
   * Update variable data values and refresh logo
   * @param {number} key Data id to update
   * @param {*} val The new data
@@ -745,53 +766,6 @@ var store_temp_ajax_data = null;
      // NUMBER and BOOLEAN :
      if (typeof(val)==="number" || typeof(val)==="boolean"){
 
-        if (typeof(val)==="number") {
-            var r_val = Number(val);
-
-            // adjusting r_val
-            if(Math.abs(r_val) == 0 ){
-                r_val = 0;
-            }else if(Math.abs(r_val) < 0.001) {
-                r_val = r_val.toExponential(2);
-            }else if (Math.abs(r_val) < 0.01) {
-                r_val = r_val.toPrecision(1);
-            }else if(Math.abs(r_val) < 0.1) {
-                r_val = r_val.toPrecision(2);
-            }else if(Math.abs(r_val) < 1) {
-                r_val = r_val.toPrecision(3);
-            }else if(r_val > 100) {
-                r_val = r_val.toPrecision(4);
-            }else{
-                r_val = r_val.toPrecision(4);
-            }
-        }else {
-            var r_val = val;
-            // set button colors
-            if (r_val === 0 | r_val == false) {
-                $('button.btn-success.write-task-btn.' + key).addClass("update-able");
-                $('button.update-able.write-task-btn.' + key).addClass("btn-default");
-                $('button.update-able.write-task-btn.' + key).removeClass("btn-success");
-
-                r_val = 0;
-
-                //$(".type-numeric." + key).html(0);
-                if ($('input.'+ key).attr("placeholder") == "") {
-                    $('input.'+ key).attr("placeholder",0);
-                }
-            } else if (typeof(val)==="boolean"){
-                r_val = 1;
-
-                $('button.btn-default.write-task-btn.' + key).addClass("update-able");
-                $('button.update-able.write-task-btn.' + key).removeClass("btn-default");
-                $('button.update-able.write-task-btn.' + key).addClass("btn-success");
-
-                //$(".type-numeric." + key).html(1);
-                if ($('input.'+ key).attr("placeholder") == "") {
-                    $('input.'+ key).attr("placeholder",1);
-                }
-            }
-        }
-
          // timestamp, dictionary and color
          document.querySelectorAll(".control-item.type-numeric." + key).forEach(function(e) {
              var control_item_id = e.id;
@@ -802,35 +776,131 @@ var store_temp_ajax_data = null;
              var var_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], type);
              var dictionary_value = get_config_from_hidden_config(type.replace('-', ''), 'id', var_id, 'dictionary');
              var ci_label = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'label');
+             var temp_val = transform_data(control_item_id.split("-")[1], val, key);
+
+             if (typeof(temp_val)==="number") {
+                 var r_val = Number(temp_val);
+
+                 // adjusting r_val
+                 if(Math.abs(r_val) == 0 ){
+                     r_val = 0;
+                 }else if(Math.abs(r_val) < 0.001) {
+                     r_val = r_val.toExponential(2);
+                 }else if (Math.abs(r_val) < 0.01) {
+                     r_val = r_val.toPrecision(1);
+                 }else if(Math.abs(r_val) < 0.1) {
+                     r_val = r_val.toPrecision(2);
+                 }else if(Math.abs(r_val) < 1) {
+                     r_val = r_val.toPrecision(3);
+                 }else if(r_val > 100) {
+                     r_val = r_val.toPrecision(4);
+                 }else{
+                     r_val = r_val.toPrecision(4);
+                 }
+             }else {
+                 var r_val = val;
+                 // set button colors
+                 if (r_val === 0 | r_val == false) {
+                     $('button.btn-success.write-task-btn.' + key).addClass("update-able");
+                     $('button.update-able.write-task-btn.' + key).addClass("btn-default");
+                     $('button.update-able.write-task-btn.' + key).removeClass("btn-success");
+
+                     r_val = 0;
+
+                     //$(".type-numeric." + key).html(0);
+                     if ($('input.'+ key).attr("placeholder") == "") {
+                         $('input.'+ key).attr("placeholder",0);
+                     }
+                 } else if (typeof(temp_val)==="boolean"){
+                     r_val = 1;
+
+                     $('button.btn-default.write-task-btn.' + key).addClass("update-able");
+                     $('button.update-able.write-task-btn.' + key).removeClass("btn-default");
+                     $('button.update-able.write-task-btn.' + key).addClass("btn-success");
+
+                     //$(".type-numeric." + key).html(1);
+                     if ($('input.'+ key).attr("placeholder") == "") {
+                         $('input.'+ key).attr("placeholder",1);
+                     }
+                 }
+             }
+
              if (display_value_option_id == 'None' || color_only == 'False') {
                 if (typeof(val)==="number") {
                     if (timestamp_conversion_value != null && timestamp_conversion_value != 0 && typeof(timestamp_conversion_value) != "undefined"){
                         // Transform timestamps
-                        r_val=dictionary(var_id, val, type.replace('-', ''));
+                        r_val=dictionary(var_id, temp_val, type.replace('-', ''));
                         r_val=timestamp_conversion(timestamp_conversion_value,r_val);
                     }else {
                         // Transform value in dictionaries
-                        r_val=dictionary(var_id, val, type.replace('-', ''));
+                        r_val=dictionary(var_id, temp_val, type.replace('-', ''));
                     }
                     // Set the text value
                     document.querySelector("#" + control_item_id).innerHTML = r_val + " " + unit;
-                }else if(typeof(val)==="boolean" && e.querySelector('.boolean-value') != null){
+                }else if(typeof(temp_val)==="boolean" && e.querySelector('.boolean-value') != null){
                     // Set the text value
-                    e.querySelector('.boolean-value').innerHTML = ci_label + " : " + dictionary(var_id, val, type.replace('-', '')) + " " + unit;
+                    e.querySelector('.boolean-value').innerHTML = ci_label + " : " + dictionary(var_id, temp_val, type.replace('-', '')) + " " + unit;
                 }
              }
              if (display_value_option_id == 'None' || ci_type == 0){
                  // Change background color
                  if (e.classList.contains("process-flow-diagram-item")) {
-                   e.style.fill = update_data_colors(control_item_id,val);
+                   e.style.fill = update_data_colors(control_item_id,temp_val);
                  }else {
-                   e.style.backgroundColor = update_data_colors(control_item_id,val);
+                   e.style.backgroundColor = update_data_colors(control_item_id,temp_val);
                  }
                  // create event to announce color change for a control item
                  var event = new CustomEvent("changePyScadaControlItemColor_" + control_item_id.split('-')[1], { detail: update_data_colors(control_item_id,val) });
                  window.dispatchEvent(event);
              }
          })
+
+         if (typeof(val)==="number") {
+             var r_val = Number(val);
+
+             // adjusting r_val
+             if(Math.abs(r_val) == 0 ){
+                 r_val = 0;
+             }else if(Math.abs(r_val) < 0.001) {
+                 r_val = r_val.toExponential(2);
+             }else if (Math.abs(r_val) < 0.01) {
+                 r_val = r_val.toPrecision(1);
+             }else if(Math.abs(r_val) < 0.1) {
+                 r_val = r_val.toPrecision(2);
+             }else if(Math.abs(r_val) < 1) {
+                 r_val = r_val.toPrecision(3);
+             }else if(r_val > 100) {
+                 r_val = r_val.toPrecision(4);
+             }else{
+                 r_val = r_val.toPrecision(4);
+             }
+         }else {
+             var r_val = val;
+             // set button colors
+             if (r_val === 0 | r_val == false) {
+                 $('button.btn-success.write-task-btn.' + key).addClass("update-able");
+                 $('button.update-able.write-task-btn.' + key).addClass("btn-default");
+                 $('button.update-able.write-task-btn.' + key).removeClass("btn-success");
+
+                 r_val = 0;
+
+                 //$(".type-numeric." + key).html(0);
+                 if ($('input.'+ key).attr("placeholder") == "") {
+                     $('input.'+ key).attr("placeholder",0);
+                 }
+             } else if (typeof(val)==="boolean"){
+                 r_val = 1;
+
+                 $('button.btn-default.write-task-btn.' + key).addClass("update-able");
+                 $('button.update-able.write-task-btn.' + key).removeClass("btn-default");
+                 $('button.update-able.write-task-btn.' + key).addClass("btn-success");
+
+                 //$(".type-numeric." + key).html(1);
+                 if ($('input.'+ key).attr("placeholder") == "") {
+                     $('input.'+ key).attr("placeholder",1);
+                 }
+             }
+         }
 
          // update chart legend variable value
          if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && time < DATA_DISPLAY_FROM_TIMESTAMP) {
@@ -2340,7 +2410,10 @@ function createOffset(date) {
              for (var key in keys){
                  key = keys[key];
                  if (key in DATA) {
-                     data=[[min_value, DATA[key][DATA[key].length - 1][1]]]
+                     // get the last value using the daterangepicker and the timeline slider values
+                     var value = sliceDATAusingTimestamps(key)[sliceDATAusingTimestamps(key).length - 1][1];
+                     value = transform_data(id.split("-")[1], value, "var-" + key);
+                     data=[[min_value, value]];
                      series.push({"data":data, "label":variables[key].label});
                  }
              }
@@ -3077,6 +3150,33 @@ function setAggregatedPeriodList(widget_id, var_id) {
     document.querySelector("li-aggregation-all-period-select-" + widget_id + "-" + var_id);
 }
 
+/**
+ *  select data in DATA for key using the daterangepicker and timeline slider values
+ */
+function sliceDATAusingTimestamps(key) {
+  if (!(key in DATA)) {
+    console.log("PyScada HMI : " + key + " not in DATA.");
+    return [];
+  }
+  if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
+      start_id = find_index_sub_gte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
+      stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0) + 1;
+  }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
+      start_id = find_index_sub_gte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
+      stop_id = find_index_sub_lte(DATA[key],DATA_TO_TIMESTAMP,0) + 1;
+  }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
+      if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){
+        start_id = stop_id = null;
+      }else {
+        start_id = find_index_sub_gte(DATA[key],DATA_FROM_TIMESTAMP,0);
+        stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0) + 1;
+      }
+  }else {
+      start_id = find_index_sub_gte(DATA[key],DATA_FROM_TIMESTAMP,0);
+      stop_id = find_index_sub_lte(DATA[key],DATA_TO_TIMESTAMP,0) + 1;
+  }
+  return DATA[key].slice(start_id, stop_id);
+}
 
  //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -4200,6 +4300,15 @@ function init_pyscada_content() {
      $.each($('.calculatedvariable-config2'),function(key,val){
          id = parseInt($(val).data('store-variable'));
          CHART_VARIABLE_KEYS[id] = 0;
+     });
+
+     // Add control item variables with transform data (display value option) needing the whole data
+     document.querySelectorAll(".transformdata-config2").forEach(e => {
+       if (e.dataset["needHistoricalData"] == "True") {
+         displayvalueoption_id = get_config_from_hidden_config('displayvalueoption', 'transform-data', e.dataset["id"], 'id')
+         variable_id = get_config_from_hidden_config('controlitem', 'display-value-options', displayvalueoption_id, 'variable')
+         CHART_VARIABLE_KEYS[variable_id] = 0;
+       }
      });
 
      set_loading_state(1, loading_states[1] + 10);

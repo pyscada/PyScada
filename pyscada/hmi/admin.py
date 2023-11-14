@@ -16,6 +16,7 @@ from pyscada.hmi.models import (
     DisplayValueOption,
     ControlElementOption,
     DisplayValueColorOption,
+    DisplayValueOptionTemplate,
 )
 from pyscada.hmi.models import CustomHTMLPanel
 from pyscada.hmi.models import Widget
@@ -25,6 +26,7 @@ from pyscada.hmi.models import ProcessFlowDiagramItem
 from pyscada.hmi.models import Pie
 from pyscada.hmi.models import Theme
 from pyscada.hmi.models import CssClass
+from pyscada.hmi.models import TransformData
 
 from django.utils.translation import gettext_lazy as _
 from django.contrib import admin
@@ -318,15 +320,46 @@ class DisplayValueColorOptionInline(admin.TabularInline):
     extra = 0
 
 
+class TransformDataAdmin(admin.ModelAdmin):
+    # only allow viewing and deleting
+    def has_module_permission(self, request):
+        return False
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return True
+
+
+class DisplayValueOptionTemplateAdmin(admin.ModelAdmin):
+    # only allow viewing and deleting
+    def has_module_permission(self, request):
+        return False
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return True
+
+
 class DisplayValueOptionAdmin(admin.ModelAdmin):
     fieldsets = (
         (
             None,
             {
                 "fields": (
-                    "name",
-                    "type",
+                    "title",
+                    "template",
                     "timestamp_conversion",
+                    "transform_data",
                 ),
             },
         ),
@@ -346,9 +379,30 @@ class DisplayValueOptionAdmin(admin.ModelAdmin):
     save_as = True
     save_as_continue = True
     inlines = [DisplayValueColorOptionInline]
+    # Add inlines for any model with OneToOne relation with Device
+    related_models = [
+        field
+        for field in DisplayValueOption._meta.get_fields()
+        if issubclass(type(field), OneToOneRel)
+    ]
+    for m in related_models:
+        model_dict = dict(model=m.related_model)
+        if hasattr(m.related_model, "FormSet"):
+            model_dict["formset"] = m.related_model.FormSet
+        cl = type(m.name, (admin.StackedInline,), model_dict)  # classes=['collapse']
+        inlines.append(cl)
 
     def has_module_permission(self, request):
         return False
+
+    class Media:
+        js = (
+            # To be sure the jquery files are loaded before our js file
+            "admin/js/vendor/jquery/jquery.min.js",
+            "admin/js/jquery.init.js",
+            # only the inline corresponding to the transform data selected
+            "pyscada/js/admin/display_inline_transform_data_display_value_option.js",
+        )
 
 
 class ControlElementOptionAdmin(admin.ModelAdmin):
@@ -610,3 +664,5 @@ admin_site.register(ProcessFlowDiagram, ProcessFlowDiagramAdmin)
 admin_site.register(ProcessFlowDiagramItem, ProcessFlowDiagramItemAdmin)
 admin_site.register(Theme, ThemeAdmin)
 admin_site.register(CssClass, CssClassAdmin)
+admin_site.register(TransformData, TransformDataAdmin)
+admin_site.register(DisplayValueOptionTemplate, DisplayValueOptionTemplateAdmin)
