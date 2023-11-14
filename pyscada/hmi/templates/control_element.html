@@ -30,7 +30,10 @@
              data-timestamp-conversion="{{ item.display_value_options.timestamp_conversion }}"
          {% endif %}
         ></div>
-    {% if item.type == 0 %}<!-- control element -->
+    <!-- {{ item.display_value_options }} - {{ item.display_value_options.template }} - {{ item.display_value_options.template.template_name }} -->
+    {% if item.display_value_options and item.display_value_options.template and item.display_value_options.template.template_name %}<!-- custom template {{ item.display_value_options.template.template }} -->
+        {% include item.display_value_options.template.get_template_name %}
+    {% elif item.type == 0 %}<!-- control element -->
         {% if item.value_class == 'BOOL' or item.value_class == 'BOOLEAN' %}
             <!-- input button -->
             {% include "button.html" %}
@@ -52,17 +55,11 @@
             {% endif %}
         {% else %}
             <!-- Display options -->
-            {% if item.display_value_options.type == 0 %}
-                <!-- Classic Div -->
-                {% if item.value_class == 'BOOL' or item.value_class == 'BOOLEAN' or item.display_value_options.color_only == 1 %}
-                    <!-- boolean display -->
-                    {% include "button.html" %}
-                {% else %}
-                    {% include "value_field.html" %}
-                {% endif %}
-            {% elif item.display_value_options.type == 3 %}
-                <!-- Gauge -->
-                {% include "gauge.html" with gauge=item %}
+            {% if item.value_class == 'BOOL' or item.value_class == 'BOOLEAN' or item.display_value_options.color_only == 1 %}
+                <!-- boolean display -->
+                {% include "button.html" %}
+            {% else %}
+                {% include "value_field.html" %}
             {% endif %}
         {% endif %}
     {% else %}

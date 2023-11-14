@@ -12,6 +12,8 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.db.models.query import QuerySet
+from django.conf import settings
+from django.forms.models import BaseInlineFormSet
 
 from six import text_type
 import traceback
@@ -66,6 +68,45 @@ def validate_tempalte(value):
         )
     except TemplateSyntaxError:
         pass
+
+
+# raise a ValidationError if value not endswith .html or if template not found
+def validate_html(value):
+    if not value.endswith(".html"):
+        raise ValidationError(
+            _("%(value)s should ends with '.html'"),
+            params={"value": value},
+        )
+    try:
+        get_template(value)
+    except TemplateDoesNotExist:
+        raise ValidationError(
+            _("%(value)s template does not exist."),
+            params={"value": value},
+        )
+
+
+# return a list of files from a coma separated string
+# if :// not in the file name and the filename is not starting with /, add the static url
+def get_js_or_css_set_from_str(self, field):
+    result = list()
+    if not hasattr(self, field):
+        logger.warning(f"{field} not in {self}")
+        return result
+    files = getattr(self, field)
+    for file in files.split(","):
+        if file == "":
+            continue
+        if not file.startswith("/") and "://" not in file:
+            STATIC_URL = (
+                str(settings.STATIC_URL)
+                if hasattr(settings, "STATIC_URL")
+                else "/static/"
+            )
+            result.append(STATIC_URL + file)
+        else:
+            result.append(file)
+    return result
 
 
 class WidgetContentModel(models.Model):
@@ -206,16 +247,97 @@ class ControlElementOption(models.Model):
     def __str__(self):
         return self.name
 
+    def get_js(self):
+        files = list()
+        return files
+
+    def get_css(self):
+        files = list()
+        return files
+
+    def get_daterangepicker(self):
+        return False
+
+    def get_timeline(self):
+        return False
+
+
+class TransformData(models.Model):
+    inline_model_name = models.CharField(max_length=100)
+    short_name = models.CharField(max_length=20)
+    js_function_name = models.CharField(max_length=100)
+    js_files = models.TextField(
+        max_length=100,
+        blank=True,
+        help_text="for a file in static, start without /, like : pyscada/js/pyscada/file.js<br>for a local file not in static, start with /, like : /test/file.js<br>for a remote file, indicate the url<br>you can provide a coma separated list",
+    )
+    css_files = models.TextField(
+        max_length=100,
+        blank=True,
+        help_text="for a file in static, start without /, like : pyscada/js/pyscada/file.js<br>for a local file not in static, start with /, like : /test/file.js<br>for a remote file, indicate the url<br>you can provide a coma separated list",
+    )
+    need_historical_data = models.BooleanField(
+        default=False,
+        help_text="If true, will query the data corresponding of the date range picker.",
+    )
+
+    def __str__(self):
+        return self.short_name
+
+    def get_js(self):
+        return get_js_or_css_set_from_str(self, "js_files")
+
+    def get_css(self):
+        return get_js_or_css_set_from_str(self, "css_files")
+
+
+class DisplayValueOptionTemplate(models.Model):
+    label = models.CharField(max_length=40, unique=True)
+    template_name = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="The template to use for the control item. Must ends with '.html'.",
+        validators=[validate_html],
+    )
+    js_files = models.TextField(
+        max_length=400,
+        blank=True,
+        help_text="for a file in static, start without /, like : pyscada/js/pyscada/file.js<br>for a local file not in static, start with /, like : /test/file.js<br>for a remote file, indicate the url<br>you can provide a coma separated list",
+    )
+    css_files = models.TextField(
+        max_length=100,
+        blank=True,
+        help_text="for a file in static, start without /, like : pyscada/js/pyscada/file.js<br>for a local file not in static, start with /, like : /test/file.js<br>for a remote file, indicate the url<br>you can provide a coma separated list",
+    )
+
+    def __str__(self):
+        return self.label
+
+    def get_js(self):
+        return get_js_or_css_set_from_str(self, "js_files")
+
+    def get_css(self):
+        return get_js_or_css_set_from_str(self, "css_files")
+
+    # return the template name or template_not_found.html if the template is not found
+    def get_template_name(self):
+        try:
+            validate_html(self.template_name)
+            return self.template_name
+        except ValidationError as e:
+            logger.warning(e)
+            return "template_not_found.html"
+
 
 class DisplayValueOption(models.Model):
-    name = models.CharField(max_length=400)
-    type_choices = (
-        (0, "Classic (Div)"),
-        (1, "Horizontal gauge"),
-        (2, "Vertical gauge"),
-        (3, "Circular gauge"),
+    title = models.CharField(max_length=400)
+    template = models.ForeignKey(
+        DisplayValueOptionTemplate,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        help_text="Select a custom template to use for this control item display value option.",
     )
-    type = models.PositiveSmallIntegerField(default=0, choices=type_choices)
 
     color = models.ForeignKey(
         Color,
@@ -248,8 +370,16 @@ class DisplayValueOption(models.Model):
         default=0, choices=timestamp_conversion_choices
     )
 
+    transform_data = models.ForeignKey(
+        TransformData,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        help_text="Select a function to transform and manipulate data before displaying it.",
+    )
+
     def __str__(self):
-        return self.name
+        return self.title
 
     def _get_objects_for_html(
         self, list_to_append=None, obj=None, exclude_model_names=None
@@ -260,6 +390,46 @@ class DisplayValueOption(models.Model):
                 list_to_append, item, ["display_value_option"]
             )
         return list_to_append
+
+    def get_js(self):
+        files = list()
+        if self.transform_data is not None:
+            js_files = self.transform_data.get_js()
+            if type(js_files) == list:
+                files += js_files
+            elif type(js_files) == str:
+                files.append(js_files)
+        if self.template is not None:
+            js_files = self.template.get_js()
+            if type(js_files) == list:
+                files += js_files
+            elif type(js_files) == str:
+                files.append(js_files)
+        return files
+
+    def get_css(self):
+        files = list()
+        if self.transform_data is not None:
+            css_files = self.transform_data.get_css()
+            if type(css_files) == list:
+                files += css_files
+            elif type(css_files) == str:
+                files.append(css_files)
+        if self.template is not None:
+            css_files = self.template.get_css()
+            if type(css_files) == list:
+                files += css_files
+            elif type(css_files) == str:
+                files.append(css_files)
+        return files
+
+    def get_daterangepicker(self):
+        if self.transform_data is not None:
+            return self.transform_data.need_historical_data
+
+    def get_timeline(self):
+        if self.transform_data is not None:
+            return self.transform_data.need_historical_data
 
 
 class DisplayValueColorOption(models.Model):
@@ -290,6 +460,37 @@ class DisplayValueColorOption(models.Model):
             )
         ]
         ordering = ["color_level", "-color_level_type"]
+
+
+class TransformDataCountValue(models.Model):
+    display_value_option = models.OneToOneField(
+        DisplayValueOption, on_delete=models.CASCADE
+    )
+    value = models.FloatField()  # the value to count
+
+    class FormSet(BaseInlineFormSet):
+        def clean(self):
+            super().clean()
+            # get the formset model name, here TransformDataCountValue
+            class_name = self.model.__name__
+            # check if a transform data has been selected in the admin and if a transform data exist with this id
+            if (
+                self.data["transform_data"] != ""
+                and TransformData.objects.get(id=self.data["transform_data"])
+                is not None
+            ):
+                # get the selected transform data inline model name
+                transform_data_name = TransformData.objects.get(
+                    id=self.data["transform_data"]
+                ).inline_model_name
+                # if the selected transform data inline model name is this model, check if the value field has been filled in
+                # otherwhise raise a ValidationError
+                if (
+                    class_name == transform_data_name
+                    and self.data[transform_data_name.lower() + "-0-value"] == ""
+                    and self.data["transform_data"] != ""
+                ):
+                    raise ValidationError("Value is required.")
 
 
 class ControlItem(models.Model):
@@ -481,6 +682,36 @@ class ControlItem(models.Model):
     ):
         list_to_append = get_objects_for_html(list_to_append, self, exclude_model_names)
         return list_to_append
+
+    def get_js(self):
+        files = list()
+        if self.type == 1 and self.display_value_options is not None:
+            files += self.display_value_options.get_js()
+        if self.type == 0 and self.control_element_options is not None:
+            files += self.control_element_options.get_js()
+        return files
+
+    def get_css(self):
+        files = list()
+        if self.type == 1 and self.display_value_options is not None:
+            files += self.display_value_options.get_css()
+        if self.type == 0 and self.control_element_options is not None:
+            files += self.control_element_options.get_css()
+        return files
+
+    def get_daterangepicker(self):
+        if self.type == 0 and self.control_element_options is not None:
+            return self.control_element_options.get_daterangepicker()
+        elif self.type == 1 and self.display_value_options is not None:
+            return self.display_value_options.get_daterangepicker()
+        return False
+
+    def get_timeline(self):
+        if self.type == 0 and self.control_element_options is not None:
+            return self.control_element_options.get_timeline()
+        elif self.type == 1 and self.display_value_options is not None:
+            return self.display_value_options.get_timeline()
+        return False
 
 
 class Chart(WidgetContentModel):
@@ -694,6 +925,22 @@ class Form(models.Model):
     def hidden_control_items_to_true_list(self):
         return [item.pk for item in self.hidden_control_items_to_true]
 
+    def get_js(self):
+        files = list()
+        for item in self.control_items.all():
+            files += item.get_js()
+        for item in self.hidden_control_items_to_true.all():
+            files += item.get_js()
+        return files
+
+    def get_css(self):
+        files = list()
+        for item in self.control_items.all():
+            files += item.get_css()
+        for item in self.hidden_control_items_to_true.all():
+            files += item.get_css()
+        return files
+
 
 class Page(models.Model):
     id = models.AutoField(primary_key=True)
@@ -756,19 +1003,24 @@ class ControlPanel(WidgetContentModel):
         sidebar_content = None
         opts = dict()
         opts["flot"] = False
+        opts["javascript_files_list"] = list()
+        opts["css_files_list"] = list()
+        opts["show_daterangepicker"] = False
+        opts["show_timeline"] = False
         for item in self.items.all():
-            if (
-                item.display_value_options is not None
-                and item.display_value_options.type == 3
-            ):
-                opts["flot"] = True
+            opts["javascript_files_list"] += item.get_js()
+            opts["css_files_list"] += item.get_css()
+            opts["show_daterangepicker"] = (
+                opts["show_daterangepicker"] or item.get_daterangepicker()
+            )
+            opts["show_timeline"] = opts["show_timeline"] or item.get_timeline()
         for form in self.forms.all():
-            for item in form.control_items.all():
-                if (
-                    item.display_value_options is not None
-                    and item.display_value_options.type == 3
-                ):
-                    opts["flot"] = True
+            opts["javascript_files_list"] += form.get_js()
+            opts["css_files_list"] += form.get_css()
+            opts["show_daterangepicker"] = (
+                opts["show_daterangepicker"] or item.get_daterangepicker()
+            )
+            opts["show_timeline"] = opts["show_timeline"] or item.get_timeline()
         # opts["object_config_list"] = set()
         # opts["object_config_list"].update(self._get_objects_for_html())
         # opts = self.add_custom_fields_list(opts)
