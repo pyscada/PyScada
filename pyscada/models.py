@@ -119,7 +119,7 @@ class RecordedDataValueManager(models.Manager):
         if "time_min" in kwargs:
             time_min = kwargs.pop("time_min")
         else:
-            time_min = time.time() - 3660
+            time_min = 0
 
         if "time_max" in kwargs:
             time_max = kwargs.pop("time_max")
