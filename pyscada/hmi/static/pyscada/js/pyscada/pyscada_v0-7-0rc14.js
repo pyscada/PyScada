@@ -1033,6 +1033,7 @@ function set_config_from_hidden_config(type,filter_data,val,get_data,value){
                              //var timestamp = SERVER_TIME;
                              timestamp = DATA_TO_TIMESTAMP;
                          }
+                         timestamp = Math.min(timestamp, DATA_TO_TIMESTAMP)  // prevent loading and showing data after DATA_TO_TIMESTAMP
                          request_duration = timestamp - DATA_FROM_TIMESTAMP
                          // Fetch 1 000 points by var
                          point_quantity_to_fetch_by_var = 1000;
