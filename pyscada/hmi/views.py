@@ -232,7 +232,7 @@ def view(request, link_title):
     page_template = get_template("content_page.html")
     widget_row_template = get_template("widget_row.html")
     STATIC_URL = (
-        str(settings.STATIC_URL) if hasattr(settings, "STATIC_URL") else "static"
+        str(settings.STATIC_URL) if hasattr(settings, "STATIC_URL") else "/static/"
     )
 
     try:
