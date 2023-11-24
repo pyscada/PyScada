@@ -2215,7 +2215,10 @@ class CalculatedVariable(models.Model):
             elif type_str == "difference":
                 res = values[-1] - values[0]
             elif type_str == "difference percent":
-                res = (values[-1] - values[0]) / min(values)
+                if values[0] == 0:
+                    res = None
+                else:
+                    res = (values[-1] - values[0]) / (values[0] * 100)
             elif type_str == "delta":
                 res = 0
                 v = None
