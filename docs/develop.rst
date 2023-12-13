@@ -84,15 +84,15 @@ Override routes
 ----------------
 
 This use case is encountered when you wish to rewrite an existing view (and therefore an existing route).
-The PyScada project's `urls.py` file is used to load the software's routes (see `here <https://docs.djangoproject.com/en/4.2/topics/http/urls/>`_).
+The PyScada project's ``urls.py`` file is used to load the software's routes (see `here <https://docs.djangoproject.com/en/4.2/topics/http/urls/>`_).
 
-* python virtual environment installation: located in `/var/www/pyscada/PyScadaServer/PyScadaServer`
-* Docker installation: located in `/src/pyscada/PyScadaServer/PyScadaServer`
+* python virtual environment installation: located in ``/var/www/pyscada/PyScadaServer/PyScadaServer``
+* Docker installation: located in ``/src/pyscada/PyScadaServer/PyScadaServer``
 
 
-By default, the project's `urls.py` file loads only the `urls.py` file from `pyscada.core`. The `pyscada.core.urls` file loads all the other modules `urls.py` files in random order.
+By default, the project's ``urls.py`` file loads only the ``urls.py`` file from ``pyscada.core``. The ``pyscada.core.urls`` file loads all the other modules ``urls.py`` files in random order.
 
-The route used is the first valid one encountered, so if you want to replace an existing route, you have to load your route before the others, i.e. before loading `pyscada.core.urls` file.
+The route used is the first valid one encountered, so if you want to replace an existing route, you have to load your route before the others, i.e. before loading ``pyscada.core.urls`` file.
 
 To do this, you need to modify your project's urls.py file.
 
