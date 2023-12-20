@@ -51,7 +51,7 @@ List PyScada plugin installed
     pip3 list | grep cada
 
 
-Uninstall plugin
+Uninstall a plugin
 ----------------------
 
 To uninstall a plugin
