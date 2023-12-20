@@ -49,3 +49,13 @@ List PyScada plugin installed
     # activate the PyScada virtual environment
     source /home/pyscada/.venv/bin/activate
     pip3 list | grep cada
+
+
+Uninstall a plugin
+----------------------
+
+To uninstall a plugin
+
+.. code-block:: shell
+    
+    sudo -u pyscada -E env PATH=${PATH} pip uninstall yourPlugin
