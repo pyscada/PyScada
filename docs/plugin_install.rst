@@ -58,4 +58,4 @@ To uninstall a plugin
 
 .. code-block:: shell
     
-    sudo -u pyscada -E env PATH=${PATH} pip uninstall 'yourPlugin'
+    sudo -u pyscada -E env PATH=${PATH} pip uninstall yourPlugin
