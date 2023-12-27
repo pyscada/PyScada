@@ -104,7 +104,6 @@ For a non-docker installation :
     sudo -u pyscada nano /var/www/pyscada/PyScadaServer/PyScadaServer/urls.py
 
 
-
 And include your route before pyscada.core.urls
 
 .. code-block:: shell
