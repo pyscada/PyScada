@@ -2758,6 +2758,7 @@ class RecordedData(models.Model):
                 "SINGLE",
                 "REAL",
                 "FLOAT48",
+                "UINT64",
             ]:
                 kwargs["value_float64"] = float(kwargs.pop("value"))
             elif kwargs["variable"].scaling and not kwargs[
@@ -2794,9 +2795,11 @@ class RecordedData(models.Model):
                 if kwargs["value_int16"].bit_length() > 15:
                     # todo throw exeption or do anything
                     pass
-
             elif kwargs["variable"].value_class.upper() in ["BOOL", "BOOLEAN"]:
                 kwargs["value_boolean"] = bool(kwargs.pop("value"))
+            else:
+                logger.warning(f"The {kwargs['variable'].value_class.upper()} variable value class is not defined in RecordedData __init__ function. Default storing value as float.")
+                kwargs["value_float64"] = float(kwargs.pop("value"))
 
         # call the django model __init__
         super(RecordedData, self).__init__(*args, **kwargs)
