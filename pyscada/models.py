@@ -2843,6 +2843,7 @@ class RecordedData(models.Model):
             "SINGLE",
             "REAL",
             "FLOAT48",
+            "UINT64",
         ]:
             return self.value_float64
         elif self.variable.scaling and not value_class.upper() in ["BOOL", "BOOLEAN"]:
@@ -2856,7 +2857,8 @@ class RecordedData(models.Model):
         elif value_class.upper() in ["BOOL", "BOOLEAN"]:
             return self.value_boolean
         else:
-            return None
+            logger.warning(f"The {value_class.upper()} variable value class is not defined in RecordedData value function. Default reading value as float.")
+            return self.value_float64
 
     def save(self, *args, **kwargs):
         if self.date_saved is None:
