@@ -1,6 +1,6 @@
 <div class="panel-body" >
     <div class="control-panel">
-        <div>{{ control_panel.title|safe }}</div>
+        <div class="panel-title">{{ control_panel.title|safe }}</div>
         {% for item in control_panel.items.all %}
             {% if item.pk in visible_control_element_list %}
                 {% include "control_element.html" %}
