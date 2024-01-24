@@ -5,7 +5,7 @@ import traceback
 
 import pyscada.hmi.models
 from pyscada.core import version as core_version
-from pyscada.models import RecordedData, VariableProperty, Variable, Device
+from pyscada.models import VariableProperty, Variable, Device
 from pyscada.models import Log
 from pyscada.models import DeviceWriteTask, DeviceReadTask
 from pyscada.hmi.models import ControlItem
@@ -881,13 +881,14 @@ def get_cache_data(request):
     # timestamp_to = min(timestamp_from + 30, timestamp_to)
 
     if len(active_variables) > 0:
-        data = RecordedData.objects.db_data(
-            variable_ids=active_variables,
-            time_min=timestamp_from,
-            time_max=timestamp_to,
-            time_in_ms=True,
-            query_first_value=init,
-        )
+        kwargs = {
+            "variable_ids": active_variables,
+            "time_min": timestamp_from,
+            "time_max": timestamp_to,
+            "time_in_ms": True,
+            "query_first_value": init,
+        }
+        data = Variable.objects.read_multiple(**kwargs)
     else:
         data = None
 

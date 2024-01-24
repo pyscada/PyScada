@@ -83,7 +83,26 @@ except (TimeoutError, asyncioTimeoutError):
 #
 # Manager
 #
-class RecordedDataValueManager(models.Manager):
+
+
+class RecordedDataManager(models.Manager):
+    def create_data_element_from_variable(self, variable, value, timestamp, **kwargs):
+        if value is not None:
+            date_saved = (
+                kwargs["date_saved"]
+                if "date_saved" in kwargs
+                else variable.date_saved
+                if hasattr(variable, "date_saved")
+                else now()
+            )
+            return RecordedData(
+                timestamp=timestamp,
+                variable=variable,
+                value=value,
+                date_saved=date_saved,
+            )
+        return None
+
     def filter_time(self, time_min=None, time_max=None, use_date_saved=True, **kwargs):
         if time_min is None:
             time_min = 0
@@ -92,7 +111,7 @@ class RecordedDataValueManager(models.Manager):
             time_max = time.time()
         if use_date_saved:
             return (
-                super(RecordedDataValueManager, self)
+                super()
                 .get_queryset()
                 .filter(
                     date_saved__range=(
@@ -104,7 +123,7 @@ class RecordedDataValueManager(models.Manager):
             )
         else:
             return (
-                super(RecordedDataValueManager, self)
+                super()
                 .get_queryset()
                 .filter(
                     id__range=(
@@ -125,9 +144,24 @@ class RecordedDataValueManager(models.Manager):
             time_max = kwargs.pop("time_max")
         else:
             time_max = time.time()
+
+        timeout = kwargs.pop("timeout", None)
+
+        # if True, remove the tim_min point from the range
+        time_min_offset = 0
+        time_min_excluded = kwargs.pop("time_min_excluded", False)
+        if time_min_excluded:
+            time_min_offset = 2097152
+
+        # if True, remove the tim_max point from the range
+        time_max_offset = 0
+        time_max_excluded = kwargs.pop("time_max_excluded", False)
+        if time_max_excluded:
+            time_max_offset = 2097152
+
         if use_date_saved:
-            return (
-                super(RecordedDataValueManager, self)
+            result = (
+                super()
                 .get_queryset()
                 .filter(
                     date_saved__range=(
@@ -136,16 +170,25 @@ class RecordedDataValueManager(models.Manager):
                     ),
                     **kwargs,
                 )
-                .last()
             )
+            if result is not None and len(result) > 0:
+                if time_min_excluded and result[0].date_saved == timestamp_to_datetime(
+                    time_min
+                ):
+                    result = result[1:]
+                if time_max_excluded and result[
+                    len(result) - 1
+                ].date_saved == timestamp_to_datetime(time_max):
+                    result = result[: len(result) - 1]
+            return result.last()
         else:
             return (
-                super(RecordedDataValueManager, self)
+                super()
                 .get_queryset()
                 .filter(
                     id__range=(
-                        time_min * 2097152 * 1000,
-                        time_max * 2097152 * 1000 + 2097151,
+                        time_min * 2097152 * 1000 + time_min_offset,
+                        time_max * 2097152 * 1000 + 2097151 - time_max_offset,
                     ),
                     **kwargs,
                 )
@@ -172,17 +215,17 @@ class RecordedDataValueManager(models.Manager):
         if time_min is None:
             time_min = 0
         else:
-            db_time_min = RecordedData.objects.first()
-            if use_recorded_data_old:
-                pass  # todo
-            if db_time_min:
-                db_time_min = db_time_min.timestamp
-            else:
+            if kwargs.get("time_min_excluded", False):
+                time_min = time_min + 0.001
+            db_time_min = Variable.objects.get_first_element_timestamp()
+            if db_time_min is None:
                 return None
             time_min = max(db_time_min, time_min)
         if time_max is None:
             time_max = time.time()
         else:
+            if kwargs.get("time_max_excluded", False):
+                time_max = time_max - 0.001
             time_max = min(time_max, time.time())
 
         # logger.debug('%r' % [time_min, time_max])
@@ -229,7 +272,7 @@ class RecordedDataValueManager(models.Manager):
             if use_date_saved:
                 if var_filter:
                     tmp = list(
-                        super(RecordedDataValueManager, self)
+                        super()
                         .get_queryset()
                         .filter(
                             date_saved__range=(
@@ -251,7 +294,7 @@ class RecordedDataValueManager(models.Manager):
                     )
                 else:
                     tmp = list(
-                        super(RecordedDataValueManager, self)
+                        super()
                         .get_queryset()
                         .filter(
                             date_saved__range=(
@@ -273,7 +316,7 @@ class RecordedDataValueManager(models.Manager):
             else:
                 if var_filter:
                     tmp = list(
-                        super(RecordedDataValueManager, self)
+                        super()
                         .get_queryset()
                         .filter(
                             id__range=(
@@ -298,7 +341,7 @@ class RecordedDataValueManager(models.Manager):
                     )
                 else:
                     tmp = list(
-                        super(RecordedDataValueManager, self)
+                        super()
                         .get_queryset()
                         .filter(
                             id__range=(
@@ -374,7 +417,7 @@ class RecordedDataValueManager(models.Manager):
         ):  # TODO add n times the recording interval to the range (3600 + n)
             if use_date_saved:
                 tmp = list(
-                    super(RecordedDataValueManager, self)
+                    super()
                     .get_queryset()
                     .filter(
                         use_date_saved__range=(
@@ -395,7 +438,7 @@ class RecordedDataValueManager(models.Manager):
                 )
             else:
                 tmp = list(
-                    super(RecordedDataValueManager, self)
+                    super()
                     .get_queryset()
                     .filter(
                         id__range=(
@@ -511,28 +554,39 @@ class RecordedDataValueManager(models.Manager):
         return values
 
     def db_data(
-        self, variable_ids, time_min, time_max, time_in_ms=True, query_first_value=False
+        self,
+        variable_ids,
+        time_min,
+        time_max,
+        time_in_ms=True,
+        query_first_value=False,
+        **kwargs,
     ):
         """
 
         :return:
         """
 
+        if kwargs.get("time_min_excluded", False):
+            time_min = time_min + 0.001
+        if kwargs.get("time_max_excluded", False):
+            time_max = time_max - 0.001
+
         variable_ids = [int(pk) for pk in variable_ids]
         tmp = list(
-            super(RecordedDataValueManager, self)
+            super()
             .get_queryset()
             .filter(
                 id__range=(
-                    (time_min - 3660) * 2097152 * 1000,
-                    time_max * 2097152 * 1000,
+                    time_min * 2097152 * 1000,
+                    time_max * 2097152 * 1000 + 2097151,
                 ),
-                date_saved__range=(
-                    timestamp_to_datetime(
-                        time_min - 3660 if query_first_value else time_min
-                    ),
-                    timestamp_to_datetime(time_max),
-                ),
+                # date_saved__range=(
+                #    timestamp_to_datetime(
+                #        time_min - 3660 if query_first_value else time_min
+                #    ),
+                #    timestamp_to_datetime(time_max),
+                # ),
                 variable_id__in=variable_ids,
             )
             .values_list(
@@ -602,7 +656,7 @@ class RecordedDataValueManager(models.Manager):
                 if pk in times:
                     time_max_last_value = times[pk]["time_min"]
                 last_element = self.last_element(
-                    use_date_saved=True,
+                    use_date_saved=False,
                     time_min=0,
                     time_max=time_max_last_value,
                     variable_id=pk,
@@ -624,6 +678,91 @@ class RecordedDataValueManager(models.Manager):
         values["date_saved_max"] = date_saved_max * f_time_scale
 
         return values
+
+
+class VariableManager(models.Manager):
+    """
+    Manager to read and write values from/to multiple variables
+    """
+
+    def _get_variables_by_datasource(self, **kwargs):
+        if "variables" in kwargs:
+            kwargs["items"] = kwargs["variables"]
+        elif "variable" in kwargs:
+            kwargs["items"] = self.filter(id=kwargs["variable"].id)
+        elif "variable_ids" in kwargs:
+            kwargs["items"] = self.filter(id__in=kwargs["variable_ids"])
+        elif "variable_id" in kwargs:
+            kwargs["items"] = self.filter(id=kwargs["variable_id"])
+        items = kwargs["items"] if "items" in kwargs else []
+        datasource_dict = {}
+        for item in items:
+            if item.datasource not in datasource_dict:
+                datasource_dict[item.datasource] = []
+            datasource_dict[item.datasource].append(item)
+        return datasource_dict
+
+    def read_multiple(self, **kwargs):
+        data = {}
+        datasource_dict = self._get_variables_by_datasource(**kwargs)
+        for datasource in datasource_dict:
+            if datasource.get_related_datasource() is not None:
+                # use only the variable ids for this datasource
+                kwargs["variable_ids"] = [v.id for v in datasource_dict[datasource]]
+                data = data | datasource.read_multiple(**kwargs)
+            else:
+                data = data
+                logger.info(
+                    f"Cannot read values for variables using {datasource} datasource. No related data source defined."
+                )
+        return data
+
+    def write_multiple(self, **kwargs):
+        datasource_dict = self._get_variables_by_datasource(**kwargs)
+        for datasource in datasource_dict:
+            if datasource.get_related_datasource() is not None:
+                # use only the variable for this datasource
+                kwargs["items"] = [v for v in datasource_dict[datasource]]
+                datasource.write_multiple(**kwargs)
+            else:
+                logger.info(
+                    f"Cannot write values for variables using {datasource} datasource. No related data source defined."
+                )
+        return True
+
+    def get_first_element_timestamp(self, **kwargs):
+        first_time = None
+        datasource_dict = self._get_variables_by_datasource(**kwargs)
+        for datasource in datasource_dict:
+            if datasource.get_related_datasource() is not None:
+                t = datasource.get_first_element_timestamp(**kwargs)
+                if t is not None:
+                    if first_time is None:
+                        first_time = t
+                    else:
+                        first_time = min(first_time, t)
+            else:
+                logger.info(
+                    f"Cannot get first element timestamp for variables using {datasource} datasource. No related data source defined."
+                )
+        return first_time
+
+    def get_last_element_timestamp(self, **kwargs):
+        last_time = None
+        datasource_dict = self._get_variables_by_datasource(**kwargs)
+        for datasource in datasource_dict:
+            if datasource.get_related_datasource() is not None:
+                t = datasource.get_last_element_timestamp(**kwargs)
+                if t is not None:
+                    if last_time is None:
+                        last_time = t
+                    else:
+                        last_time = max(last_time, t)
+            else:
+                logger.info(
+                    f"Cannot get last element timestamp for variables using {datasource} datasource. No related data source defined."
+                )
+        return last_time
 
 
 class VariablePropertyManager(models.Manager):
@@ -1595,6 +1734,7 @@ class Variable(models.Model):
         help_text="Select a custom data source to read/write data for this variable.",
     )
 
+    objects = VariableManager()
 
     def import_datasource_object(self):
         return self.datasource.get_related_datasource()
@@ -1639,6 +1779,7 @@ class Variable(models.Model):
     store_value = False
     timestamp_old = None
     timestamp = None
+    cached_values_to_write = []
 
     def __str__(self):
         return str(self.id) + " - " + self.name
@@ -1705,26 +1846,35 @@ class Variable(models.Model):
         else:
             return 16
 
-    def query_prev_value(self, time_min=None, use_protocol_variable=True):
+    def query_prev_value(self, **kwargs):
         """
         get the last value and timestamp from the database
         """
-        pv = self.get_protocol_variable()
-        if use_protocol_variable and pv is not None and hasattr(pv, "query_prev_value"):
-            return pv.query_prev_value(time_min)
-
-        time_max = time.time() * 2097152 * 1000 + 2097151
-        if time_min is None:
-            time_min = time_max - (3 * 3660 * 1000 * 2097152)
-        val = self.recordeddata_set.filter(id__range=(time_min, time_max)).last()
+        datasource_object = self.import_datasource_object()
+        kwargs["variable"] = self
+        val = datasource_object.last_value(**kwargs)
+        time_min_excluded = kwargs.get("time_min_excluded", False)
+        time_min = kwargs.get("time_min", None)
+        time_max_excluded = kwargs.get("time_max_excluded", False)
+        time_max = kwargs.get("time_max", None)
         if val:
-            self.prev_value = val.value()
-            self.timestamp_old = val.timestamp
+            if time_min_excluded and time_min is not None and val[0] == time_min:
+                return False
+            if time_max_excluded and time_max is not None and val[0] == time_max:
+                return False
+            self.prev_value = val[1]
+            self.timestamp_old = val[0]
             return True
         else:
             return False
 
     def update_value(self, value=None, timestamp=None):
+        logger.error(
+            f"update_value is depreceated, use update_values instead. Variable {self}."
+        )
+        return self.update_values([value], [timestamp])
+
+    def _update_value(self, value=None, timestamp=None):
         """
         update the value in the instance and detect value state change
         """
@@ -1777,6 +1927,39 @@ class Variable(models.Model):
             self.timestamp_old = self.timestamp
         self.prev_value = self.value
         return self.store_value
+
+    def update_values(self, value_list, timestamp_list, erase_cache=True):
+        if erase_cache:
+            self.cached_values_to_write = []
+        has_value = False
+        if isinstance(value_list.__class__, list):
+            logger.error(
+                f"{self} - Value list must be a list, it is a {type(value_list)}"
+            )
+            return False
+        if isinstance(timestamp_list.__class__, list):
+            logger.error(
+                f"{self} - Timestamp list must be a list, it is a {type(timestamp_list)}"
+            )
+            return False
+        if len(value_list) != len(timestamp_list):
+            logger.error(
+                f"{self} - value and timestamp lists have not the same length ({len(value_list)}, {len(timestamp_list)})"
+            )
+            return False
+
+        update_false_count = 0
+        for i in range(0, len(value_list)):
+            if self._update_value(value_list[i], timestamp_list[i]):
+                self.cached_values_to_write.append((self.value, self.timestamp))
+            else:
+                update_false_count += 1
+            has_value = True
+        if len(value_list):
+            logger.debug(
+                f"{self} updated {len(self.cached_values_to_write)} - {update_false_count} values"
+            )
+        return has_value
 
     def decode_value(self, value):
         #
@@ -2015,32 +2198,6 @@ class Variable(models.Model):
                     unpack(">H", pack("<H", output[1])),
                     unpack(">H", pack("<H", output[0])),
                 ]
-
-    def create_recorded_data_element(self):
-        """
-        create a new element to write to archive table
-        """
-        if self.store_value and self.value is not None:
-            # self._send_cov_notification(self.timestamp, self.value)
-            return RecordedData(
-                timestamp=self.timestamp, variable=self, value=self.value
-            )
-        else:
-            return None
-
-    def _send_cov_notification(self, timestamp, value):
-        """
-        Sends a COV Notification via the Django Signal interface
-        :param value:
-        :return:
-        """
-        try:
-            pass
-        except:
-            logger.error(
-                f"{self.name}, unhandled exception in COV Receiver application",
-                exc_info=True,
-            )
 
     def convert_string_value(self, value):
         try:
@@ -2888,7 +3045,6 @@ class RecordedDataOld(models.Model):
     value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64
     value_float64 = models.FloatField(null=True, blank=True)  # float64
     variable = models.ForeignKey(Variable, null=True, on_delete=models.SET_NULL)
-    objects = RecordedDataValueManager()
 
     def __init__(self, *args, **kwargs):
         if "timestamp" in kwargs:
@@ -3007,8 +3163,6 @@ class RecordedData(models.Model):
     42 bit 111111111111111111111111111111111111111111000000000000000000000
     21 bit 										    1000000000000000000000
     date_saved: datetime when the model instance is saved in the database (will be set in the save method)
-
-
     """
 
     id = models.BigIntegerField(primary_key=True)
@@ -3021,9 +3175,8 @@ class RecordedData(models.Model):
     value_int64 = models.BigIntegerField(null=True, blank=True)  # uint32, int64, int48
     value_float64 = models.FloatField(null=True, blank=True)  # float64, float48
     variable = models.ForeignKey(Variable, null=True, on_delete=models.SET_NULL)
-    objects = RecordedDataValueManager()
 
-    #
+    objects = RecordedDataManager()
 
     def __init__(self, *args, **kwargs):
         if "timestamp" in kwargs:
@@ -3786,7 +3939,7 @@ class ComplexEventInput(models.Model):
         limit_high = None
 
         if self.variable is not None and self.variable.active:
-            if self.variable.query_prev_value(time_min=0):
+            if self.variable.query_prev_value():
                 item_value = self.variable.prev_value
                 item_date = self.variable.timestamp_old
             item_type = "variable"
@@ -3816,14 +3969,14 @@ class ComplexEventInput(models.Model):
 
         if item_value is not None:
             if self.variable_limit_low is not None:
-                if self.variable_limit_low.query_prev_value(time_min=0):
+                if self.variable_limit_low.query_prev_value():
                     limit_low = self.variable_limit_low.prev_value
                 else:
                     limit_low = None
             else:
                 limit_low = self.fixed_limit_low
             if self.variable_limit_high is not None:
-                if self.variable_limit_high.query_prev_value(time_min=0):
+                if self.variable_limit_high.query_prev_value():
                     limit_high = self.variable_limit_high.prev_value
                 else:
                     limit_high = None
@@ -4009,25 +4162,21 @@ class Event(models.Model):
             prev_value = False
         # get the actual value
         # actual_value = RecordedDataCache.objects.filter(variable=self.variable).last() # TODO change to RecordedData
-        actual_value = RecordedData.objects.last_element(variable=self.variable)
-        if not actual_value:
+        if not self.variable.query_prev_value():
             return False
-        timestamp = actual_value.time_value()
-        actual_value = actual_value.value()
+        timestamp = self.variable.timestamp_old
+        actual_value = self.variable.prev_value
         # determine the limit type, variable or fixed
         if self.variable_limit:
             # item has a variable limit
             # get the limit value
             # limit_value = RecordedDataCache.objects.filter(variable=self.variable_limit) # TODO change to RecordedData
-            limit_value = RecordedData.objects.last_element(
-                variable=self.variable_limit
-            )
-            if not limit_value:
-                return False
-            if timestamp < limit_value.last().time_value():
+            if not self.variable_limit.query_prev_value():
+                return False  # No previous value for this variable
+            if timestamp < self.variable_limit.timestamp_old:
                 # when limit value has changed after the actual value take that time
-                timestamp = limit_value.last().time_value()
-            limit_value = limit_value.last().value()  # get value
+                timestamp = self.variable_limit.timestamp_old
+            limit_value = self.variable_limit.prev_value  # get value
         else:
             # item has a fixed limit
             limit_value = self.fixed_limit

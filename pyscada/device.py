@@ -104,9 +104,8 @@ class GenericHandlerDevice:
         if self.before_read():
             for item in variables_dict.values():
                 value, read_time = self.read_data_and_time(item)
-
-                if value is not None and item.update_value(value, read_time):
-                    output.append(item.create_recorded_data_element())
+                if value is not None and item.update_values([value], [read_time]):
+                    output.append(item)
         self.after_read()
         return output
 
@@ -163,10 +162,10 @@ class GenericDevice:
             else:
                 self._h = GenericHandlerDevice(self.device, self.variables)
             self.driver_handler_ok = True
-        except ImportError:
+        except (ImportError, ModuleNotFoundError) as e:
             self.driver_handler_ok = False
             logger.error(
-                f"Handler import error : {self.device.short_name}", exc_info=True
+                f"Handler import error ({e}) : {self.device.short_name}", exc_info=True
             )
 
         # Wait 5 seconds to let changes appears in DB.
@@ -181,6 +180,7 @@ class GenericDevice:
         output = []
 
         if not self.driver_ok or not self.driver_handler_ok:
+            logger.info("Cannot request data. Driver or handler not working.")
             return output
 
         output = self._h.read_data_all(self.variables)
@@ -204,8 +204,8 @@ class GenericDevice:
                     )
                     return False
                 read_value = self._h.write_data(variable_id, value, task)
-                if read_value is not None and self.variables[item].update_value(
-                    read_value, time_ns() / 1000000000
+                if read_value is not None and self.variables[item].update_values(
+                    [read_value], [time_ns() / 1000000000]
                 ):
-                    output.append(self.variables[item].create_recorded_data_element())
+                    output.append(self.variables[item])
         return output

@@ -100,19 +100,17 @@ def export_recordeddata_to_file(
         os.mkdir(backup_file_path)
 
     # validate time values
-    db_time_min = RecordedData.objects.filter(
-        variable__isnull=False
-    ).first()  # todo add RecordedDataOld
-    if not db_time_min:
+    db_time_min = Variable.objects.get_first_element_timestamp()
+    if db_time_min is None:
         if tp is not None:
             tp.last_update = now()
             tp.message = "no data to export"
             tp.failed = 1
             tp.save()
         return
-    time_min = max(db_time_min.time_value(), time_min)
+    time_min = max(db_time_min, time_min)
 
-    db_time_max = RecordedData.objects.last()  # todo add RecordedDataOld
+    db_time_max = Variable.objects.get_last_element_timestamp()
     if not db_time_max:
         if tp is not None:
             tp.last_update = now()
@@ -120,7 +118,7 @@ def export_recordeddata_to_file(
             tp.failed = 1
             tp.save()
         return
-    time_max = min(db_time_max.time_value(), time_max)
+    time_max = min(db_time_max, time_max)
 
     # filename  and suffix
     cdstr_from = datetime.fromtimestamp(time_min).strftime("%Y_%m_%d_%H%M")
@@ -249,8 +247,8 @@ def export_recordeddata_to_file(
             tp.save()
         # query data
         var_slice = active_vars[var_idx : var_idx + 10]
-        data = RecordedData.objects.get_values_in_time_range(
-            variable_id__in=list(var_slice.values_list("pk", flat=True)),
+        data = Variable.objects.read_multiple(
+            variable_ids=list(var_slice.values_list("pk", flat=True)),
             time_min=time_min,
             time_max=time_max,
             query_first_value=True,

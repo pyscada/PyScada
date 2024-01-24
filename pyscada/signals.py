@@ -8,7 +8,6 @@ from pyscada.models import (
     BackgroundProcess,
     VariableProperty,
     DeviceHandler,
-    RecordedData,
     CalculatedVariableSelector,
     CalculatedVariable,
 )
@@ -76,7 +75,6 @@ def post_delete_user(sender, instance, *args, **kwargs):
 @receiver(post_save, sender=Device)
 @receiver(post_save, sender=Scaling)
 @receiver(post_save, sender=DeviceHandler)
-# @receiver(post_save, sender=RecordedData)
 def _reinit_daq_daemons(sender, instance, **kwargs):
     """
     update the daq daemon configuration when changes be applied in the models
