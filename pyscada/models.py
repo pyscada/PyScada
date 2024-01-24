@@ -1216,6 +1216,290 @@ class VariableProperty(models.Model):
             )
 
 
+class DataSourceModel(models.Model):
+    """
+    Used to define a data source type.
+    The data source base model have a foreign key to this model to specify the configuration :
+    - the name,
+    - can add, modify on select in the admin panel,
+    - the model name of the inline having the specific config (fields, functions, manager).
+    """
+
+    name = models.CharField(max_length=100)
+    inline_model_name = models.CharField(max_length=100)
+    can_add = models.BooleanField(
+        default=False,
+        help_text="True to enable custom data sources of this type to be added from the administration panel.",
+    )
+    can_change = models.BooleanField(
+        default=False,
+        help_text="True to enable custom data sources of this type to be modified from the administration panel.",
+    )
+    can_select = models.BooleanField(
+        default=True,
+        help_text="False to hide this type of custom data source in the variable administration panel.",
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class DataSource(models.Model):
+    """
+    The base model for all the data sources.
+    A data source needs to inherit from this class, and should have the basic functions :
+    - last_value,
+    - read_multiple,
+    - write_multiple,
+    - get_first_element_timestamp
+    - get_last_element_timestamp.
+    """
+
+    datasource_model = models.ForeignKey(DataSourceModel, on_delete=models.CASCADE)
+
+    def __str__(self):
+        if self.get_related_datasource() is not None:
+            return self.get_related_datasource().__str__()
+        else:
+            # logger.warning(f"No related datasource for DataSource {self}")
+            return f"Data source model {self.datasource_model} ({self.id}) : related datasource not found"
+
+    def get_related_datasource(self):
+        # Test if model does not exist
+        if hasattr(self, self.datasource_model.inline_model_name.lower()):
+            return getattr(self, self.datasource_model.inline_model_name.lower())
+        return None
+
+    def datasource_check(self, items, items_as_id=False, ids_model=None):
+        """
+        For a list of items (variables), check if the datasource is the correct one.
+        """
+        valid_items = []
+        items_to_check = []
+        if items_as_id:
+            if ids_model is None:
+                logger.warning(
+                    f"Cannot check datasource, item are ids and no model is passed."
+                )
+                return valid_items
+            else:
+                for item in items:
+                    items_to_check.append(ids_model.objects.get(id=item))
+        else:
+            items_to_check = items
+
+        for item in items_to_check:
+            if self.get_related_datasource() is None:
+                logger.info(
+                    f"Cannot check datasource for variable {item} because not related datasource is defined."
+                )
+                continue
+            if (
+                item.import_datasource_object().__class__
+                != self.get_related_datasource().__class__
+            ):
+                logger.warning(
+                    f"{self.get_related_datasource().__class__} is not the data source of {item} : {item.import_datasource_object().__class__} - {self.datasource_model.inline_model_name.lower()} - {self.__dict__}"
+                )
+            else:
+                if items_as_id:
+                    valid_items.append(item.pk)
+                else:
+                    valid_items.append(item)
+        return valid_items
+
+    def _send_cov_notification(self, variable):
+        """
+        Sends a COV Notification via the Django Signal interface
+        :param value:
+        :return:
+        """
+        try:
+            pass
+        except:
+            logger.error(
+                f"{self.name}, unhandled exception in COV Receiver application",
+                exc_info=True,
+            )
+
+    def last_value(self, **kwargs):
+        if self.get_related_datasource() is not None:
+            return self.get_related_datasource().last_value(**kwargs)
+        logger.warning(
+            f"{self._meta.object_name} class needs to override the lest_value function."
+        )
+
+    def read_multiple(
+        self,
+        **kwargs,
+    ):
+        if self.get_related_datasource() is not None:
+            return self.get_related_datasource().read_multiple(**kwargs)
+        logger.warning(
+            f"{self._meta.object_name} class needs to override the read_multiple function."
+        )
+
+    def write_multiple(self, **kwargs):
+        if self.get_related_datasource() is not None:
+            self.get_related_datasource().write_multiple(**kwargs)
+            items = kwargs.pop("items") if "items" in kwargs else []
+            return True
+        logger.warning(
+            f"{self._meta.object_name} class needs to override the write_multiple function."
+        )
+
+    def get_first_element_timestamp(self, **kwargs):
+        if self.get_related_datasource() is not None:
+            return self.get_related_datasource().get_first_element_timestamp(**kwargs)
+        logger.warning(
+            f"{self._meta.object_name} class needs to override the get_first_element_timestamp function."
+        )
+
+    def get_last_element_timestamp(self, **kwargs):
+        if self.get_related_datasource() is not None:
+            return self.get_related_datasource().get_last_element_timestamp(**kwargs)
+        logger.warning(
+            f"{self._meta.object_name} class needs to override the get_last_element_timestamp function."
+        )
+
+
+class DjangoDatabase(models.Model):
+    datasource = models.OneToOneField(DataSource, on_delete=models.CASCADE)
+    data_model_app_name = models.CharField(
+        max_length=50,
+    )
+    data_model_name = models.CharField(
+        max_length=50,
+    )
+
+    def __str__(self):
+        return f"Django database ({self.data_model_app_name}.{self.data_model_name})"
+
+    def _import_model(self):
+        class_name = self.data_model_name
+        class_path = self.data_model_app_name + ".models"
+        try:
+            mod = __import__(class_path, fromlist=[class_name])
+            content_class = getattr(mod, class_name)
+            if isinstance(content_class, models.base.ModelBase):
+                return content_class
+        except ModuleNotFoundError:
+            logger.info(
+                f"{class_name} of {class_path} not found. A module is not installed ?"
+            )
+        except:
+            logger.error(f"{class_path} unhandled exception", exc_info=True)
+        return None
+
+    def last_value(self, **kwargs):
+        variable = kwargs.pop("variable") if "variable" in kwargs else None
+        use_date_saved = (
+            kwargs.pop("use_date_saved") if "use_date_saved" in kwargs else False
+        )
+        if variable is None:
+            logger.info("No variable defined for DjangoDatabase last_value function")
+            return None
+        data_model = self._import_model()
+        last_element = data_model.objects.last_element(
+            use_date_saved=use_date_saved, variable_id=variable.pk, **kwargs
+        )
+        if last_element is not None:
+            return [last_element.time_value(), last_element.value()]
+        else:
+            return None
+
+    def read_multiple(self, **kwargs):
+        variable_ids = kwargs.pop("variable_ids") if "variable_ids" in kwargs else []
+        time_min = kwargs.pop("time_min") if "time_min" in kwargs else 0
+        time_max = kwargs.pop("time_max") if "time_max" in kwargs else time.time()
+        time_in_ms = kwargs.pop("time_in_ms") if "time_in_ms" in kwargs else True
+        query_first_value = (
+            kwargs.pop("query_first_value") if "query_first_value" in kwargs else False
+        )
+        variable_ids = self.datasource.datasource_check(
+            variable_ids, items_as_id=True, ids_model=Variable
+        )
+        return self._import_model().objects.db_data(
+            variable_ids=variable_ids,
+            time_min=time_min,
+            time_max=time_max,
+            time_in_ms=time_in_ms,
+            query_first_value=query_first_value,
+            **kwargs,
+        )
+
+    def write_multiple(self, **kwargs):
+        data_model = self._import_model()
+        items = kwargs.pop("items") if "items" in kwargs else []
+        items = self.datasource.datasource_check(items)
+        recorded_datas = []
+        date_saved = kwargs.pop("date_saved") if "date_saved" in kwargs else now()
+        for item in items:
+            logger.debug(f"{item} has {len(item.cached_values_to_write)} to write.")
+            if len(item.cached_values_to_write):
+                self.datasource._send_cov_notification(item)
+                for cached_value in item.cached_values_to_write:
+                    # add date saved if not exist in variable object, if date_saved is in kwargs it will be used instead of the variable.date_saved (see the create_data_element_from_variable function)
+                    if not hasattr(item, "date_saved") or item.date_saved is None:
+                        item.date_saved = date_saved
+                    # create the recorded data object
+                    rc = data_model.objects.create_data_element_from_variable(
+                        item, cached_value[0], cached_value[1], **kwargs
+                    )
+                    # append the object to the elements to save
+                    if rc is not None:
+                        recorded_datas.append(rc)
+
+                kwargs["batch_size"] = (
+                    1000 if not "batch_size" in kwargs else kwargs["batch_size"]
+                )
+        # remove date_saved if present in kwargs to avoid exception during bulk_create recorded data
+        if "date_saved" in kwargs:
+            kwargs.pop("date_saved")
+
+        try:
+            data_model.objects.bulk_create(recorded_datas, **kwargs)
+        except IntegrityError:
+            logger.debug(
+                f'{data_model._meta.object_name} objects already exists, retrying ignoring conflicts for : {", ".join(str(i.id) + " " + str(i.variable.id) for i in recorded_datas)}'
+            )
+            data_model.objects.bulk_create(
+                recorded_datas, ignore_conflicts=True, **kwargs
+            )
+
+    def get_first_element_timestamp(self, **kwargs):
+        first = self._import_model().objects.filter(variable__isnull=False)
+        if "variables" in kwargs:
+            first = first.filter(variable__in=kwargs["variables"])
+        elif "variable" in kwargs:
+            first = first.filter(variable=kwargs["variable"])
+        elif "variable_ids" in kwargs:
+            first = first.filter(variable_id__in=kwargs["variable_ids"])
+        elif "variable_id" in kwargs:
+            first = first.filter(variable_id=kwargs["variable_id"])
+        first = first.first()
+        if first is not None:
+            return first.timestamp
+        else:
+            return None
+
+    def get_last_element_timestamp(self, **kwargs):
+        last = self._import_model().objects.filter(variable__isnull=False)
+        if "variables" in kwargs:
+            last = last.filter(variable__in=kwargs["variables"])
+        elif "variable" in kwargs:
+            last = last.filter(variable=kwargs["variable"])
+        elif "variable_ids" in kwargs:
+            last = last.filter(variable_id__in=kwargs["variable_ids"])
+        elif "variable_id" in kwargs:
+            last = last.filter(variable_id=kwargs["variable_id"])
+        last = last.last()
+        if last is not None:
+            return last.timestamp
+        else:
+            return None
+
+
 class Variable(models.Model):
     """
     Stores a variable entry, related to :mod:`pyscada.Device`,
@@ -1304,6 +1588,16 @@ class Variable(models.Model):
     dictionary = models.ForeignKey(
         Dictionary, blank=True, null=True, on_delete=models.SET_NULL
     )
+    datasource = models.ForeignKey(
+        DataSource,
+        default=1,
+        on_delete=models.SET(1),
+        help_text="Select a custom data source to read/write data for this variable.",
+    )
+
+
+    def import_datasource_object(self):
+        return self.datasource.get_related_datasource()
 
     def hmi_name(self):
         if self.short_name and self.short_name != "-" and self.short_name != "":
