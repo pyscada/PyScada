@@ -8,8 +8,6 @@ from pyscada.models import (
     BackgroundProcess,
     VariableProperty,
     DeviceHandler,
-    CalculatedVariableSelector,
-    CalculatedVariable,
 )
 from pyscada.admin import VariableState
 
@@ -40,34 +38,6 @@ def _vp_value_change(sender, instance, **kwargs):
                 )
                 instance.last_value = str(previous.value())
                 instance.value_changed = True
-
-
-@receiver(m2m_changed, sender=CalculatedVariableSelector.period_fields.through)
-def _create_calculated_variables(sender, instance, action, **kwargs):
-    """
-    Create calculated variables
-    """
-    if type(instance) is CalculatedVariableSelector and action == "post_add":
-        try:
-            logger.debug(
-                "m2m "
-                + str(action)
-                + " "
-                + str(type(instance).__name__)
-                + "."
-                + str(instance)
-                + "-"
-                + str(instance.id)
-            )
-        except Exception as e:
-            logger.debug("post_add pyscada " + str(e))
-        instance.create_all_calculated_variables()
-
-
-@receiver(post_delete, sender=CalculatedVariable)
-def post_delete_user(sender, instance, *args, **kwargs):
-    if instance.store_variable:
-        instance.store_variable.delete()
 
 
 @receiver(post_save, sender=VariableProperty)

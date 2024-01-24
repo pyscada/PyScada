@@ -2,7 +2,6 @@
 from __future__ import unicode_literals
 
 from pyscada.models import Device, DeviceProtocol, DeviceHandler
-from pyscada.models import PeriodicField, CalculatedVariableSelector, CalculatedVariable
 from pyscada.models import Variable, VariableProperty, DataSource, DataSourceModel
 from pyscada.models import Scaling, Color
 from pyscada.models import Unit, Dictionary, DictionaryItem
@@ -251,43 +250,9 @@ class VariableStateAdmin(admin.ModelAdmin):
                     return f"ValueError {e} - with timestamp {v.timestamp_old} : {v.prev_value.__str__()} {instance.unit.unit}"
         except Variable.DoesNotExist:
             pass
-    def get_queryset(self, request):
-        """Limit Pages to those that belong to the request's user."""
-        qs = super(VariableStateAdmin, self).get_queryset(request)
-        return qs.filter(calculatedvariable__isnull=True)
-
-
-class CalculatedVariableSelectorAdmin(admin.ModelAdmin):
-    list_display = ("id", "main_variable", "active")
-    list_display_links = ("main_variable",)
-    list_editable = ("active",)
-    raw_id_fields = ("main_variable",)
-    filter_horizontal = ("period_fields",)
-    save_as = True
-    save_as_continue = True
-
-    # Disable changing variable
-    def get_readonly_fields(self, request, obj=None):
-        if obj is not None and obj.main_variable is not None:
-            return ["main_variable"]
-        return []
-
-
-class PeriodicFieldAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "__str__",
-        "type",
-        "property",
-        "start_from",
-        "period",
-        "period_factor",
-    )
-    list_filter = ("calculatedvariableselector",)
-    # list_editable = ('type', 'property', 'start_from', 'period', 'period_factor',)
-    list_display_links = None  # ('__str__',)
-    save_as = True
-    save_as_continue = True
+        except TimeoutError:
+            return "Timeout on value query"
+        return f" - : NaN {instance.unit.unit}"
 
 
 class DeviceForm(forms.ModelForm):
@@ -524,82 +489,7 @@ class CoreVariableAdmin(VariableAdmin):
     )
     list_display_links = ("name",)
 
-
-class ExtendedCalculatedVariable(Variable):
-    class Meta:
-        proxy = True
-        verbose_name = "Calculated variable"
-        verbose_name_plural = "Calculated variables"
-
-
-class CalculatedVariableAdminInline(admin.StackedInline):
-    model = CalculatedVariable
-
-
-class CalculatedVariableAdmin(VariableAdmin):
-    list_display = (
-        "name",
-        "last_check",
-        "state",
-        "last_value",
-        "chart_line_color",
-        "short_name",
-    )
-    list_editable = (
-        "chart_line_color",
-        "short_name",
-    )
-    list_filter = (
-        ProtocolListFilter,
-        DeviceListFilter,
-        VariableListFilter,
-        "active",
-        "writeable",
-        "unit__unit",
-    )
-    list_display_links = None
-
-    def has_add_permission(self, request):
-        return False
-
-    def get_changelist_form(self, request, **kwargs):
-        return VariableAdminFrom
-
-    def last_check(self, instance):
-        return instance.calculatedvariable.last_check
-
-    def state(self, instance):
-        return instance.calculatedvariable.state
-
-    def store_variable(self, instance):
-        return instance.calculatedvariable.store_variable
-
-    def main_device(self, instance):
-        return instance.calculatedvariable.store_variable.device
-
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "device":
-            kwargs["queryset"] = Device.objects.filter(
-                short_name=CalculatedVariableSelector.dname
-            )
-        return super(CalculatedVariableAdmin, self).formfield_for_foreignkey(
-            db_field, request, **kwargs
-        )
-
-    def get_queryset(self, request):
-        """Limit Pages to those that belong to the request's user."""
-        qs = super(admin.ModelAdmin, self).get_queryset(request)
-        return qs.filter(calculatedvariable__isnull=False)
-
-    inlines = [CalculatedVariableAdminInline]
-
-    @property
-    def media(self):
-        response = super(admin.ModelAdmin, self).media
-        return response
-
-    save_as = True
-    save_as_continue = True
         # show only datasource with can_select as True
         if db_field.name == "datasource":
             ids = []
@@ -1158,9 +1048,6 @@ admin_site.register(Device, DeviceAdmin)
 admin_site.register(DeviceHandler, DeviceHandlerAdmin)
 admin_site.register(Variable, CoreVariableAdmin)
 admin_site.register(VariableProperty, VariablePropertyAdmin)
-admin_site.register(CalculatedVariableSelector, CalculatedVariableSelectorAdmin)
-admin_site.register(PeriodicField, PeriodicFieldAdmin)
-admin_site.register(ExtendedCalculatedVariable, CalculatedVariableAdmin)
 admin_site.register(Scaling, ScalingAdmin)
 admin_site.register(Unit)
 admin_site.register(ComplexEvent, ComplexEventAdmin)
