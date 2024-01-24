@@ -57,6 +57,12 @@ if {{ auto_add_apps }}:
                 INSTALLED_APPS += [
                     'pyscada.' + str(lib),
                 ]
+                pyscada = __import__("pyscada." + str(lib))
+                if hasattr(pyscada, str(lib)) and hasattr(getattr(pyscada, str(lib)), "additional_installed_app"):
+                    for app in getattr(getattr(pyscada, str(lib)), "additional_installed_app"):
+                        INSTALLED_APPS += [
+                            app,
+                        ]
 
 if importlib.util.find_spec('channels') is not None:
     INSTALLED_APPS += [
