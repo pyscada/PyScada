@@ -19,6 +19,8 @@ Device Protocol IDs
 - 15: `MeterBus (MBus) <https://github.com/pyscada/PyScada-MeterBus>`_
 - 16: Generic dummy device
 - 17: `EMS <https://github.com/pyscada/PyScada-EMS>`_
+- 18: `Operations <https://github.com/pyscada/PyScada-Operations>`_
+- 19: `Aggregation <https://github.com/pyscada/PyScada-Operations>`_
 - 8X: Custom Worker
 - 93 `Reserved (Serial) <https://github.com/clavay/PyScada-Serial>`_
 - 94 `Reserved (WebService) <https://github.com/clavay/PyScada-WebService>`_
