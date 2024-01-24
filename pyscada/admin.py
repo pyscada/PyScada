@@ -242,6 +242,11 @@ class ProtocolListFilter(admin.SimpleListFilter):
 class VariableAdminFrom(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(VariableAdminFrom, self).__init__(*args, **kwargs)
+
+        # disable delete button for datasource foreign key
+        if "datasource" in self.fields:
+            self.fields["datasource"].widget.can_delete_related = False
+
         if isinstance(self.instance, Variable):
             wtf = Color.objects.all()
             if "chart_line_color" in self.fields:
@@ -728,6 +733,14 @@ class CalculatedVariableAdmin(VariableAdmin):
 
     save_as = True
     save_as_continue = True
+        # show only datasource with can_select as True
+        if db_field.name == "datasource":
+            ids = []
+            for d in DataSource.objects.all():
+                if d.datasource_model.can_select:
+                    ids.append(d.id)
+            kwargs["queryset"] = DataSource.objects.filter(id__in=ids)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 class ScalingAdmin(admin.ModelAdmin):
@@ -1094,6 +1107,185 @@ class DictionaryAdmin(admin.ModelAdmin):
         return False
 
 
+class DataSourceModelSelect(forms.Select):
+    def create_option(
+        self, name, value, label, selected, index, subindex=None, attrs=None
+    ):
+        option = super().create_option(
+            name, value, label, selected, index, subindex, attrs
+        )
+        if value:
+            option["attrs"][
+                "data-inline-datasource-model-name"
+            ] = value.instance.inline_model_name
+
+        return option
+
+
+class DataSourceAdminChangeForm(forms.ModelForm):
+    class Meta:
+        model = DataSource
+        fields = "__all__"
+        widgets = {"datasource_model": DataSourceModelSelect}
+
+
+class DataSourceAdminAddForm(forms.ModelForm):
+    class Meta:
+        model = DataSource
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        wtf = DataSourceModel.objects.all()
+        super().__init__(*args, **kwargs)
+        w = self.fields["datasource_model"].widget
+
+        datasource_choices = []
+        for choice in wtf:
+            if choice.can_add:
+                datasource_choices.append((choice.id, choice.__str__()))
+        w.choices = datasource_choices
+
+        def create_option_datasource(
+            self, name, value, label, selected, index, subindex=None, attrs=None
+        ):
+            inline_datasource_model_name = DataSourceModel.objects.get(
+                id=value
+            ).inline_model_name
+            self.option_inherits_attrs = True
+            return self._create_option(
+                name,
+                value,
+                label,
+                selected,
+                index,
+                subindex,
+                attrs={
+                    "data-inline-datasource-model-name": inline_datasource_model_name,
+                },
+            )
+
+        import types
+
+        # from django.forms.widgets import Select
+        w._create_option = w.create_option  # copy old method
+        w.create_option = types.MethodType(
+            create_option_datasource, w
+        )  # replace old with new
+
+
+class DataSourceAdmin(admin.ModelAdmin):
+    list_display = (
+        "datasource_model",
+        "datasource_name",
+    )
+
+    form = DataSourceAdminChangeForm
+
+    # Add inlines for any model with OneToOne relation with Device
+    items = [
+        field
+        for field in DataSource._meta.get_fields()
+        if issubclass(type(field), OneToOneRel)
+    ]
+    inlines = []
+    for item in items:
+        items_dict = dict(model=item.related_model)
+        if hasattr(item.related_model, "fk_name"):
+            items_dict["fk_name"] = item.related_model.fk_name
+        if hasattr(item.related_model, "FormSet"):
+            items_dict["formset"] = item.related_model.FormSet
+        if hasattr(item.related_model, "fieldsets"):
+            items_dict["fieldsets"] = item.related_model.fieldsets
+        if hasattr(item.related_model, "Form"):
+            items_dict["form"] = item.related_model.Form
+        # if hasattr(d.related_model, "formfield_for_foreignkey"):
+        #    items_dict["formfield_for_foreignkey"] = d.related_model.formfield_for_foreignkey
+        cl = type(item.name, (admin.StackedInline,), items_dict)  # classes=['collapse']
+        inlines.append(cl)
+
+    # Add JS file to display the right inline and to hide/show fields
+    class Media:
+        js = (
+            # To be sure the jquery files are loaded before our js file
+            "pyscada/js/admin/display_inline_datasource.js",
+        )
+
+    def get_form(self, request, obj=None, change=None, **kwargs):
+        if not obj:
+            # Use a different form only when adding a new record
+            return DataSourceAdminAddForm
+
+        return super().get_form(request, obj=obj, change=change, **kwargs)
+
+    def get_formsets_with_inlines(self, request, obj=None):
+        # disable all the of an inline if the data source model can_change field is false
+        def get_formset(self, request, obj=None, **kwargs):
+            formset = self.get_formset(request, obj=None, **kwargs)
+            for field in formset.form.base_fields:
+                if not obj.datasource_model.can_change:
+                    formset.form.base_fields[field].disabled = True
+            return formset
+
+        for inline in self.get_inline_instances(request, obj):
+            if obj is not None:
+                yield get_formset(inline, request, obj), inline
+            else:
+                yield inline.get_formset(request, obj), inline
+
+    def datasource_name(self, obj):
+        return obj.__str__()
+
+    def get_deleted_objects(self, objs, request):
+        # Not allow to delete the data source with id = 1
+        new_objs = list()
+        for obj in objs:
+            if obj.id != 1:
+                new_objs.append(obj.get_related_datasource())
+        (
+            deleted_objects,
+            model_count,
+            perms_needed,
+            protected,
+        ) = super().get_deleted_objects(objs, request)
+        return deleted_objects, model_count, perms_needed, protected
+
+    def has_view_permission(self, request, obj=None):
+        return True
+
+    def has_add_permission(self, request, obj=None):
+        return True
+
+    def has_change_permission(self, request, obj=None):
+        return True
+
+    def has_delete_permission(self, request, obj=None):
+        if obj is not None and obj.id == 1:
+            messages.error(request, f"You cannot delete the {obj} !")
+            return False
+        return super().has_delete_permission(request, obj)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        # For new data source, show all the data source models
+        # For existing data source, show only the selected data source model to avoid changing
+        if db_field.name == "datasource_model":
+            if (
+                "object_id" in request.resolver_match.kwargs
+                and DataSource.objects.get(
+                    id=request.resolver_match.kwargs["object_id"]
+                )
+                is not None
+                and DataSource.objects.get(
+                    id=request.resolver_match.kwargs["object_id"]
+                ).datasource_model
+            ):
+                kwargs["queryset"] = DataSourceModel.objects.filter(
+                    id=DataSource.objects.get(
+                        id=request.resolver_match.kwargs["object_id"]
+                    ).datasource_model.id,
+                )
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
 admin_site = PyScadaAdminSite(name="pyscada_admin")
 admin_site.register(Device, DeviceAdmin)
 admin_site.register(DeviceHandler, DeviceHandlerAdmin)
@@ -1117,3 +1309,5 @@ admin_site.register(VariableState, VariableStateAdmin)
 admin_site.register(User, UserAdmin)
 admin_site.register(Group, GroupAdmin)
 admin_site.register(Dictionary, DictionaryAdmin)
+admin_site.register(DataSource, DataSourceAdmin)
+# admin_site.register(DataSourceModel)
