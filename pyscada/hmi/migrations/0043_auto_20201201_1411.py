@@ -23,7 +23,16 @@ def add_vars_move_wc(apps, schema_editor):
             c.variables.add(Variable.objects.get(id=v.id))
         c.save()
         try:
-            ChartModel.objects.get(id=c.id).create_widget_content_entry()
+
+            def fullname(o):
+                return o.__module__ + "." + o.__class__.__name__
+
+            instance = ChartModel.objects.get(id=c.id)
+            c = WidgetContent.objects.update_or_create(
+                content_pk=instance.pk,
+                content_model=fullname(instance),
+                defaults={"content_str": instance.__str__()},
+            )
 
             wcxy = WidgetContent.objects.get(
                 content_pk=item.id, content_model__contains=".XYChart"
