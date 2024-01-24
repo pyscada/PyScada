@@ -70,8 +70,8 @@ from pyscada.models import (
     BackgroundProcess,
     DeviceWriteTask,
     Device,
-    RecordedData,
     DeviceReadTask,
+    Variable,
     VariableProperty,
 )
 from pyscada.utils import set_bit
@@ -818,20 +818,9 @@ class Process(object):
                     status, data = self.loop()
                     if data is not None:
                         # write data to the database
-                        date_now = now()
                         for item in data:
-                            for r in item:
-                                r.date_saved = date_now
-                            # todo add date field value
-                            try:
-                                RecordedData.objects.bulk_create(item, batch_size=1000)
-                            except IntegrityError:
-                                logger.debug(
-                                    f'RecordedData objects already exists, retrying ignoring conflicts for : {", ".join(str(i.id) + " " + str(i.variable.id) for i in item)}'
-                                )
-                                RecordedData.objects.bulk_create(
-                                    item, batch_size=1000, ignore_conflicts=True
-                                )
+                            logger.debug(f"Write multiple variables : {item}")
+                            Variable.objects.write_multiple(items=item)
                     if status == 1:  # Process OK
                         pass
                     elif status == -1:
@@ -1424,7 +1413,7 @@ class SingleDeviceDAQProcess(Process):
 
         # Get and change the variable value which has bit VP
         for var, item in variable_as_decimal.items():
-            if var.query_prev_value(0):
+            if var.query_prev_value():
                 prev_value = var.prev_value
             else:
                 prev_value = 0
@@ -1530,24 +1519,21 @@ class SingleDeviceDAQProcess(Process):
 
         if isinstance(data, list):
             if len(data) > 0:
-                # For all recorded data, if a variable is defined, find bit VP and set the bit value
+                # For all variable, find existing bit VP and set the bit value
                 for l in data:
-                    for d in l:
-                        if d.variable is not None:
-                            for vp in d.variable.variableproperty_set.all():
-                                if (
-                                    len(vp.name.split("bit")) == 2
-                                    and vp.name.split("bit")[0] == ""
-                                    and vp.name.split("bit")[1].isdigit()
-                                    and int(vp.name.split("bit")[1])
-                                    < vp.variable.get_bits_by_class()
-                                ):
-                                    bit = (
-                                        int(d.value()) >> int(vp.name.split("bit")[1])
-                                    ) & 1
-                                    VariableProperty.objects.update_property(
-                                        vp, value=bit
-                                    )
+                    for var in l:
+                        for vp in var.variableproperty_set.all():
+                            if (
+                                len(vp.name.split("bit")) == 2
+                                and vp.name.split("bit")[0] == ""
+                                and vp.name.split("bit")[1].isdigit()
+                                and int(vp.name.split("bit")[1])
+                                < vp.variable.get_bits_by_class()
+                            ):
+                                bit = (
+                                    int(var.prev_value) >> int(vp.name.split("bit")[1])
+                                ) & 1
+                                VariableProperty.objects.update_property(vp, value=bit)
                 return 1, data
         return 1, None
 
@@ -1662,7 +1648,7 @@ class MultiDeviceDAQProcess(Process):
 
             # Get and change the variable value which has bit VP
             for var, item in variable_as_decimal.items():
-                if var.query_prev_value(0):
+                if var.query_prev_value():
                     prev_value = var.prev_value
                 else:
                     prev_value = 0
@@ -1784,7 +1770,7 @@ class MultiDeviceDAQProcess(Process):
 
         if isinstance(data, list):
             if len(data) > 0:
-                # For all recorded data, if a variable is defined, find bit VP and set the bit value
+                # For all variable, find existing bit VP and set the bit value
                 for l in data:
                     for d in l:
                         if d.variable is not None:

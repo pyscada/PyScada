@@ -2,8 +2,8 @@
 from __future__ import unicode_literals
 
 from pyscada.models import Device, DeviceProtocol, DeviceHandler
-from pyscada.models import Variable, VariableProperty
 from pyscada.models import PeriodicField, CalculatedVariableSelector, CalculatedVariable
+from pyscada.models import Variable, VariableProperty, DataSource, DataSourceModel
 from pyscada.models import Scaling, Color
 from pyscada.models import Unit, Dictionary, DictionaryItem
 from pyscada.models import DeviceWriteTask, DeviceReadTask
@@ -19,6 +19,7 @@ from pyscada.models import Event
 from pyscada.models import RecordedEvent, RecordedData
 from pyscada.models import Mail
 
+from django.contrib import messages
 from django.contrib import admin
 from django import forms
 from django.contrib.admin import AdminSite
@@ -124,120 +125,6 @@ class BackgroundProcessFilter(admin.SimpleListFilter):
                 return queryset.filter(parent_process_id=self.value())
 
 
-class DeviceListFilter(admin.SimpleListFilter):
-    # Human-readable title which will be displayed in the
-    # right admin sidebar just above the filter options.
-    title = _("main device")
-
-    # Parameter for the filter that will be used in the URL query.
-    parameter_name = "device"
-
-    def lookups(self, request, model_admin):
-        """
-        Returns a list of tuples. The first element in each
-        tuple is the coded value for the option that will
-        appear in the URL query. The second element is the
-        human-readable name for the option that will appear
-        in the right sidebar.
-        """
-        devices = set(
-            [
-                d.device
-                for d in model_admin.model.objects.filter(
-                    calculatedvariableselector__isnull=False
-                )
-            ]
-        )
-        return [(d.id, d.__str__) for d in devices]
-
-    def queryset(self, request, queryset):
-        """
-        Returns the filtered queryset based on the value
-        provided in the query string and retrievable via
-        `self.value()`.
-        """
-        if self.value():
-            return queryset.filter(
-                calculatedvariable__variable_calculated_fields__main_variable__device_id=self.value()
-            )
-
-
-class VariableListFilter(admin.SimpleListFilter):
-    # Human-readable title which will be displayed in the
-    # right admin sidebar just above the filter options.
-    title = _("main variable")
-
-    # Parameter for the filter that will be used in the URL query.
-    parameter_name = "variable"
-
-    def lookups(self, request, model_admin):
-        """
-        Returns a list of tuples. The first element in each
-        tuple is the coded value for the option that will
-        appear in the URL query. The second element is the
-        human-readable name for the option that will appear
-        in the right sidebar.
-        """
-        variables = set(
-            [
-                v
-                for v in model_admin.model.objects.filter(
-                    calculatedvariableselector__isnull=False
-                )
-            ]
-        )
-        return [(v.id, v.name) for v in variables]
-
-    def queryset(self, request, queryset):
-        """
-        Returns the filtered queryset based on the value
-        provided in the query string and retrievable via
-        `self.value()`.
-        """
-        if self.value():
-            return queryset.filter(
-                calculatedvariable__variable_calculated_fields__main_variable_id=self.value()
-            )
-
-
-class ProtocolListFilter(admin.SimpleListFilter):
-    # Human-readable title which will be displayed in the
-    # right admin sidebar just above the filter options.
-    title = _("main protocol")
-
-    # Parameter for the filter that will be used in the URL query.
-    parameter_name = "protocol"
-
-    def lookups(self, request, model_admin):
-        """
-        Returns a list of tuples. The first element in each
-        tuple is the coded value for the option that will
-        appear in the URL query. The second element is the
-        human-readable name for the option that will appear
-        in the right sidebar.
-        """
-        protocols = set(
-            [
-                p.device.protocol
-                for p in model_admin.model.objects.filter(
-                    calculatedvariableselector__isnull=False
-                )
-            ]
-        )
-        return [(p.id, p.protocol) for p in protocols]
-
-    def queryset(self, request, queryset):
-        """
-        Returns the filtered queryset based on the value
-        provided in the query string and retrievable via
-        `self.value()`.
-        """
-        if self.value():
-            return queryset.filter(
-                calculatedvariable__variable_calculated_fields__main_variable__device__protocol__id=self.value()
-            )
-
-
 # Admin models
 class VariableAdminFrom(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -284,6 +171,7 @@ class VariableAdminFrom(forms.ModelForm):
 
     def has_changed(self):
         # Force save inline for the good protocol if selected device and protocol_id exists
+        # todo : try it with all the protocol, it seems to be not working
         if (
             self.data.get("device", None) != ""
             and self.data.get("device", None) is not None
@@ -354,32 +242,15 @@ class VariableStateAdmin(admin.ModelAdmin):
         )
 
     def last_value(self, instance):
-        """
-        element = RecordedData.objects.last_element(variable_id=instance.pk)
-        if element:
-            return datetime.datetime.fromtimestamp(
-                element.time_value()).strftime('%Y-%m-%d %H:%M:%S') \
-                   + ' : ' + element.value().__str__() + ' ' + instance.unit.unit
-        else:
-            return ' - : NaN ' + instance.unit.unit
-        """
-
         try:
             v = Variable.objects.get(id=instance.pk)
-            if v.query_prev_value(0):
-                return (
-                    datetime.datetime.fromtimestamp(v.timestamp_old).strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    )
-                    + " : "
-                    + v.prev_value.__str__()
-                    + " "
-                    + instance.unit.unit
-                )
+            if v.query_prev_value(timeout=10):
+                try:
+                    return f"{datetime.datetime.fromtimestamp(v.timestamp_old).strftime('%Y-%m-%d %H:%M:%S')} : {v.prev_value.__str__()} {instance.unit.unit}"
+                except ValueError as e:
+                    return f"ValueError {e} - with timestamp {v.timestamp_old} : {v.prev_value.__str__()} {instance.unit.unit}"
         except Variable.DoesNotExist:
             pass
-        return " - : NaN " + instance.unit.unit
-
     def get_queryset(self, request):
         """Limit Pages to those that belong to the request's user."""
         qs = super(VariableStateAdmin, self).get_queryset(request)
@@ -480,6 +351,10 @@ class DeviceAdmin(admin.ModelAdmin):
             device_dict["formset"] = d.related_model.FormSet
         if hasattr(d.related_model, "fieldsets"):
             device_dict["fieldsets"] = d.related_model.fieldsets
+        if hasattr(d.related_model, "filter_horizontal"):
+            device_dict["filter_horizontal"] = d.related_model.filter_horizontal
+        if hasattr(d.related_model, "filter_vertical"):
+            device_dict["filter_vertical"] = d.related_model.filter_vertical
         # if hasattr(d.related_model, "formfield_for_foreignkey"):
         #    device_dict["formfield_for_foreignkey"] = d.related_model.formfield_for_foreignkey
         cl = type(d.name, (admin.StackedInline,), device_dict)  # classes=['collapse']
@@ -550,6 +425,9 @@ class DeviceHandlerAdmin(admin.ModelAdmin):
     save_as = True
     save_as_continue = True
 
+    def has_module_permission(self, request):
+        return False
+
 
 class VariableAdmin(admin.ModelAdmin):
     list_filter = (
@@ -604,32 +482,21 @@ class VariableAdmin(admin.ModelAdmin):
         return instance.unit.unit
 
     def last_value(self, instance):
-        element = RecordedData.objects.last_element(variable_id=instance.pk)
-        if element:
-            return (
-                datetime.datetime.fromtimestamp(element.time_value()).strftime(
-                    "%Y-%m-%d %H:%M:%S"
+        try:
+            v = Variable.objects.get(id=instance.pk)
+            if v.query_prev_value():
+                return (
+                    datetime.datetime.fromtimestamp(v.timestamp_old).strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    )
+                    + " : "
+                    + v.prev_value.__str__()
+                    + " "
+                    + instance.unit.unit
                 )
-                + " : "
-                + element.value().__str__()
-                + " "
-                + instance.unit.unit
-            )
-        else:
-            return " - : NaN " + instance.unit.unit
-
-    def get_queryset(self, request):
-        """Limit Pages to those that belong to the request's user."""
-        qs = super(VariableAdmin, self).get_queryset(request)
-        # check if popup open from control item : include calculated variable
-        if "environ" in request.__dict__:
-            for i in request.__dict__["environ"]:
-                if (
-                    isinstance(request.__dict__["environ"][i], str)
-                    and "&_popup=1" in request.__dict__["environ"][i]
-                ):
-                    return qs
-        return qs.filter(calculatedvariable__isnull=True)
+        except Variable.DoesNotExist:
+            pass
+        return " - : NaN " + instance.unit.unit
 
     def color_code(self, instance):
         return instance.chart_line_color.color_code()

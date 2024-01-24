@@ -619,7 +619,7 @@ class ControlItem(models.Model):
         if self.variable_property:
             return self.variable_property.value()
         elif self.variable:
-            self.variable.query_prev_value(0)
+            self.variable.query_prev_value()
             return self.variable.prev_value
 
     def value_class(self):
