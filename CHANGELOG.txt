@@ -488,3 +488,50 @@
   - kill setTimeout and xhr request on page unload : store all timeouts in the PYSCADA_TIMEOUTS dictionary, store the current xhr blocking request in PYSCADA_XHR variable
   - JS: add PyScada HMI at the beginning of each console.log
   - add an event for a variable when data change to allow plugin do a custom action
+
+0.8.2
+  - prevent loading and showing data after DATA_TO_TIMESTAMP: the bug was that the timestamp_to for the data handler ajax query could be higher than DATA_TO_TIMESTAMP and then change the datepicker end value after the ajax request finish
+  - fix generic device init import
+  - last_element_min_time: set to 0 if no min time set
+  - add transform data and template for control item display value: allow to control the data (transform data function) and graphical representation (template) of a control item set to display value
+  - add sliceDATAusingTimestamps JS function to get DATA for a variable key using the daterangepicker and the timeline slinder
+  - add "Template not found" template
+  - fix difference percent period calculation
+  - add readthedocs config file: from : https://docs.readthedocs.io/en/stable/config-file/
+  - update docs
+  - add operations and aggregation protocols
+  - migration: update Chart WidgetContent if exist
+  - plugin can add apps to INSTALLED_APPS in settings: a plugin can specify additional apps to add to INSTALLED_APPS
+    - in the __init__.py file of the plugin (in pyscada/pluginName) add a list named : additional_installed_app = ["pyscada.otherAppX", "pyscada.otherAppY"]
+    - exemple in the pyscada-operations plugin.
+  - get_objects_for_html check if field.name is attr of obj
+  - add DataSourceModel, Datasource and DjangoDatabase
+    - DataSourceModel :
+      - Used to define a data source type.
+      - The data source base model have a foreign key to this model to specify the configuration :
+        - the name,
+        - can add, modify on select in the admin panel,
+        - the model name of the inline having the specific config (fields, functions, manager).
+    - DataSource :
+      - The base model for all the data sources.
+      - A data source needs to inherit from this class, and should have the basic functions :
+        - last_value,
+        - read_multiple,
+        - write_multiple,
+        - get_first_element_timestamp,
+        - get_last_element_timestamp.
+    - DjangoDatabase :
+      - Specify a table to store the values. The table model should have a manager similar to the RecordedDataManager (functions).
+    - The default data source added is the RecordedData table.
+    - To add new data source, look at the example in pyscada-operations.
+  - add VariableManager, rename and update RecordedDataManager
+    - To switch to the data source architecture, use the VariableManager function in order to :
+      - filter Variable list by datasource (_get_variables_by_datasource)
+      - read values from datasources (read_multiple)
+      - write values to datasources (write_multiple)
+      - get first timestamp recorded for a variable list (get_first_element_timestamp)
+      - get last one (get_last_element_timestamp)
+    - Plugins and handlers should not use directly the RecordedDataManager but the VariableManager in order to talk to differents data sources.
+    - Look at the new way to save read data from GenericDevice and GenericDeviceHandler in pyscada/device.py and in the pyscada.operations plugin.
+  - Delete CalculatedVariable (moved to the pyscada.operations plugin) in order to not loose your calculated variables you should install pyscada.operations plugin before running the pyscada migration 108.
+  - log ProgrammingError and OperationalError while populating models
