@@ -25,10 +25,8 @@ class PyScadaConfig(AppConfig):
 
             if Theme.objects.filter().count():
                 Theme.objects.first().check_all_themes()
-        except ProgrammingError:
-            pass
-        except OperationalError:
-            pass
+        except (ProgrammingError, OperationalError) as e:
+            logger.debug(e)
 
         try:
             from .models import DataSourceModel, DataSource, DjangoDatabase
@@ -83,7 +81,5 @@ class PyScadaConfig(AppConfig):
                 },
             )
 
-        except ProgrammingError:
-            pass
-        except OperationalError:
-            pass
+        except (ProgrammingError, OperationalError) as e:
+            logger.debug(e)
