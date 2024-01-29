@@ -6,6 +6,10 @@ from django.utils.translation import gettext_lazy as _
 from django.db.utils import ProgrammingError, OperationalError
 from django.conf import settings
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class PyScadaHMIConfig(AppConfig):
     name = "pyscada.hmi"
@@ -147,10 +151,8 @@ class PyScadaHMIConfig(AppConfig):
                     "need_historical_data": True,
                 },
             )
-        except ProgrammingError:
-            pass
-        except OperationalError:
-            pass
+        except (ProgrammingError, OperationalError) as e:
+            logger.debug(e)
 
         try:
             from .models import DisplayValueOptionTemplate
@@ -197,7 +199,5 @@ class PyScadaHMIConfig(AppConfig):
                     + "pyscada/js/jquery.flot.axisvalues.js",
                 },
             )
-        except ProgrammingError:
-            pass
-        except OperationalError:
-            pass
+        except (ProgrammingError, OperationalError) as e:
+            logger.debug(e)
