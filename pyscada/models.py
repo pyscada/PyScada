@@ -2518,7 +2518,7 @@ class RecordedDataOld(models.Model):
                 "INT",
             ]:
                 kwargs["value_int16"] = int(kwargs.pop("value"))
-                if kwargs["value_int16"].bit_length() > 15:
+                if kwargs["value_int16"].bit_length() > 16:
                     # todo throw exeption or do anything
                     pass
 
@@ -2660,7 +2660,7 @@ class RecordedData(models.Model):
                 "INT",
             ]:
                 kwargs["value_int16"] = int(kwargs.pop("value"))
-                if kwargs["value_int16"].bit_length() > 15:
+                if kwargs["value_int16"].bit_length() > 16:
                     # todo throw exeption or do anything
                     pass
 
