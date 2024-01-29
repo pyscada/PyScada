@@ -1905,8 +1905,8 @@ class Variable(models.Model):
                     "Value read for %s format not supported : %s" % (self, type(value))
                 )
                 value = None
-        except TypeError:
-            pass
+        except TypeError as e:
+            logger.debug(e)
 
         if (
             self.scaling is None
@@ -2278,8 +2278,8 @@ class Variable(models.Model):
                     and getattr(self, v.name).protocol_id == self.device.protocol.id
                 ):
                     return getattr(self, v.name)
-            except ProgrammingError:
-                pass
+            except (ProgrammingError, OperationalError) as e:
+                logger.debug(e)
         return None
 
 
@@ -2360,8 +2360,8 @@ class DeviceWriteTask(models.Model):
                     AttributeError,
                     ConnectionRefusedError,
                     InvalidChannelLayerError,
-                ):
-                    pass
+                ) as e:
+                    logger.debug(e)
 
 
 class DeviceReadTask(models.Model):
@@ -2444,8 +2444,8 @@ class DeviceReadTask(models.Model):
                     AttributeError,
                     ConnectionRefusedError,
                     InvalidChannelLayerError,
-                ):
-                    pass
+                ) as e:
+                    logger.debug(e)
 
 
 class RecordedDataOld(models.Model):
@@ -2500,7 +2500,9 @@ class RecordedDataOld(models.Model):
                 kwargs["value_int64"] = int(kwargs.pop("value"))
                 if kwargs["value_int64"].bit_length() > 64:
                     # todo throw exeption or do anything
-                    pass
+                    logger.warning(
+                        f"Variable {Variable.objects.get(id=variable_id)} read value bit length is {kwargs['value_int64'].bit_length()} > 64"
+                    )
             elif kwargs["variable"].value_class.upper() in [
                 "WORD",
                 "UINT",
@@ -2510,7 +2512,9 @@ class RecordedDataOld(models.Model):
                 kwargs["value_int32"] = int(kwargs.pop("value"))
                 if kwargs["value_int32"].bit_length() > 32:
                     # todo throw exeption or do anything
-                    pass
+                    logger.warning(
+                        f"Variable {Variable.objects.get(id=variable_id)} read value bit length is {kwargs['value_int32'].bit_length()} > 32"
+                    )
             elif kwargs["variable"].value_class.upper() in [
                 "INT16",
                 "INT8",
@@ -2520,7 +2524,9 @@ class RecordedDataOld(models.Model):
                 kwargs["value_int16"] = int(kwargs.pop("value"))
                 if kwargs["value_int16"].bit_length() > 15:
                     # todo throw exeption or do anything
-                    pass
+                    logger.warning(
+                        f"Variable {Variable.objects.get(id=variable_id)} read value bit length is {kwargs['value_int16'].bit_length()} > 16"
+                    )
 
             elif kwargs["variable"].value_class.upper() in ["BOOL", "BOOLEAN"]:
                 kwargs["value_boolean"] = bool(kwargs.pop("value"))
@@ -2642,7 +2648,9 @@ class RecordedData(models.Model):
                 kwargs["value_int64"] = int(kwargs.pop("value"))
                 if kwargs["value_int64"].bit_length() > 64:
                     # todo throw exeption or do anything
-                    pass
+                    logger.warning(
+                        f"Variable {Variable.objects.get(id=variable_id)} read value bit length is {kwargs['value_int64'].bit_length()} > 64"
+                    )
             elif kwargs["variable"].value_class.upper() in [
                 "WORD",
                 "UINT",
@@ -2652,7 +2660,9 @@ class RecordedData(models.Model):
                 kwargs["value_int32"] = int(kwargs.pop("value"))
                 if kwargs["value_int32"].bit_length() > 32:
                     # todo throw exeption or do anything
-                    pass
+                    logger.warning(
+                        f"Variable {Variable.objects.get(id=variable_id)} read value bit length is {kwargs['value_int32'].bit_length()} > 32"
+                    )
             elif kwargs["variable"].value_class.upper() in [
                 "INT16",
                 "INT8",
@@ -2662,7 +2672,9 @@ class RecordedData(models.Model):
                 kwargs["value_int16"] = int(kwargs.pop("value"))
                 if kwargs["value_int16"].bit_length() > 15:
                     # todo throw exeption or do anything
-                    pass
+                    logger.warning(
+                        f"Variable {Variable.objects.get(id=variable_id)} read value bit length is {kwargs['value_int16'].bit_length()} > 16"
+                    )
 
             elif kwargs["variable"].value_class.upper() in ["BOOL", "BOOLEAN"]:
                 kwargs["value_boolean"] = bool(kwargs.pop("value"))
