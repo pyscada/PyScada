@@ -1772,22 +1772,19 @@ class MultiDeviceDAQProcess(Process):
             if len(data) > 0:
                 # For all variable, find existing bit VP and set the bit value
                 for l in data:
-                    for d in l:
-                        if d.variable is not None:
-                            for vp in d.variable.variableproperty_set.all():
-                                if (
-                                    len(vp.name.split("bit")) == 2
-                                    and vp.name.split("bit")[0] == ""
-                                    and vp.name.split("bit")[1].isdigit()
-                                    and int(vp.name.split("bit")[1])
-                                    < vp.variable.get_bits_by_class()
-                                ):
-                                    bit = (
-                                        d.value() >> int(vp.name.split("bit")[1])
-                                    ) & 1
-                                    VariableProperty.objects.update_property(
-                                        vp, value=bit
-                                    )
+                    for var in l:
+                        for vp in var.variableproperty_set.all():
+                            if (
+                                len(vp.name.split("bit")) == 2
+                                and vp.name.split("bit")[0] == ""
+                                and vp.name.split("bit")[1].isdigit()
+                                and int(vp.name.split("bit")[1])
+                                < vp.variable.get_bits_by_class()
+                            ):
+                                bit = (
+                                    int(var.prev_value) >> int(vp.name.split("bit")[1])
+                                ) & 1
+                                VariableProperty.objects.update_property(vp, value=bit)
                 return 1, data
         return 1, None
 
