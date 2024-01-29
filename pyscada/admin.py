@@ -249,7 +249,7 @@ class VariableStateAdmin(admin.ModelAdmin):
                 except ValueError as e:
                     return f"ValueError {e} - with timestamp {v.timestamp_old} : {v.prev_value.__str__()} {instance.unit.unit}"
         except Variable.DoesNotExist:
-            pass
+            return "Variable does not exist"
         except TimeoutError:
             return "Timeout on value query"
         return f" - : NaN {instance.unit.unit}"
@@ -334,10 +334,8 @@ class DeviceAdmin(admin.ModelAdmin):
                 app_name__in=settings.INSTALLED_APPS
             ):
                 protocol_list.append(protocol.protocol)
-        except ProgrammingError:
-            pass
-        except OperationalError:
-            pass
+        except (ProgrammingError, OperationalError) as e:
+            logger.debug(e)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         # For new device, show all the protocols from the installed apps in settings.py
@@ -460,7 +458,7 @@ class VariableAdmin(admin.ModelAdmin):
                     + instance.unit.unit
                 )
         except Variable.DoesNotExist:
-            pass
+            return "Variable does not exist"
         return " - : NaN " + instance.unit.unit
 
     def color_code(self, instance):

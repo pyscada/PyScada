@@ -66,8 +66,8 @@ def validate_tempalte(value):
         raise ValidationError(
             _("Template filename not found."),
         )
-    except TemplateSyntaxError:
-        pass
+    except TemplateSyntaxError as e:
+        logger.info(e)
 
 
 # raise a ValidationError if value not endswith .html or if template not found
@@ -228,8 +228,8 @@ class Theme(models.Model):
                 get_template(theme.base_filename + ".html").render()
             except TemplateDoesNotExist:
                 theme.delete()
-            except TemplateSyntaxError:
-                pass
+            except TemplateSyntaxError as e:
+                logger.info(e)
 
 
 class ControlElementOption(models.Model):

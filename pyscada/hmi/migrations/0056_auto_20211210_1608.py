@@ -23,8 +23,8 @@ def add_height_width(apps, schema_editor):
                     item.url_width = int(img.width)
                     item.save()
                     count += 1
-                except:
-                    pass
+                except Exception as e:
+                    logger.info(e)
 
     logger.info("changed %d ProcessFlowDiagram\n" % count)
 

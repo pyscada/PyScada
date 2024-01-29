@@ -43,8 +43,8 @@ def add_vars_move_wc(apps, schema_editor):
             Widget.objects.filter(content=wcxy).update(content=wc)
             if wcxy is not None:
                 wcxy.delete()
-        except:
-            pass
+        except Exception as e:
+            logger.info(e)
 
 
 def move_xy_chart(apps, schema_editor):
