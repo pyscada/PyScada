@@ -2355,7 +2355,6 @@ class DeviceWriteTask(models.Model):
                         + "_DeviceAction_for_"
                         + str(dwt.get_device_id)
                     )
-                    pass
                 except (
                     AttributeError,
                     ConnectionRefusedError,
@@ -2439,7 +2438,6 @@ class DeviceReadTask(models.Model):
                         + "_DeviceAction_for_"
                         + str(drt.get_device_id)
                     )
-                    pass
                 except (
                     AttributeError,
                     ConnectionRefusedError,
