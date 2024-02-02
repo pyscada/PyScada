@@ -21,7 +21,6 @@ try:
     import h5py
 except:
     logger.error("Cannot import h5py", exc_info=True)
-    pass
 
 
 class ExportProcess(BaseProcess):

@@ -1905,8 +1905,8 @@ class Variable(models.Model):
                     "Value read for %s format not supported : %s" % (self, type(value))
                 )
                 value = None
-        except TypeError:
-            pass
+        except TypeError as e:
+            logger.debug(e)
 
         if (
             self.scaling is None
@@ -2278,8 +2278,8 @@ class Variable(models.Model):
                     and getattr(self, v.name).protocol_id == self.device.protocol.id
                 ):
                     return getattr(self, v.name)
-            except ProgrammingError:
-                pass
+            except (ProgrammingError, OperationalError) as e:
+                logger.debug(e)
         return None
 
 
@@ -2355,13 +2355,12 @@ class DeviceWriteTask(models.Model):
                         + "_DeviceAction_for_"
                         + str(dwt.get_device_id)
                     )
-                    pass
                 except (
                     AttributeError,
                     ConnectionRefusedError,
                     InvalidChannelLayerError,
-                ):
-                    pass
+                ) as e:
+                    logger.debug(e)
 
 
 class DeviceReadTask(models.Model):
@@ -2439,13 +2438,12 @@ class DeviceReadTask(models.Model):
                         + "_DeviceAction_for_"
                         + str(drt.get_device_id)
                     )
-                    pass
                 except (
                     AttributeError,
                     ConnectionRefusedError,
                     InvalidChannelLayerError,
-                ):
-                    pass
+                ) as e:
+                    logger.debug(e)
 
 
 class RecordedDataOld(models.Model):

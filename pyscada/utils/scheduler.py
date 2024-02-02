@@ -371,8 +371,8 @@ class Scheduler(object):
         for process in BackgroundProcess.objects.filter(done=False, pid__gt=0):
             try:
                 kill(process.pid, 9)
-            except:
-                pass
+            except Exception as e:
+                logger.debug(f"{e} for pid {process.pid}")
         # Init the DB
         if not self.init_db():
             logger.debug("Init DB failed\n")
@@ -456,7 +456,9 @@ class Scheduler(object):
                     raise StopIteration
                 elif sig == signal.SIGHUP:
                     # todo handle sighup
-                    pass
+                    logger.debug(
+                        f"Received signal.SIGHUP for {self.label}. Nothing to do."
+                    )
                 elif sig == signal.SIGUSR1:
                     # restart all child processes
                     logger.debug(
@@ -467,7 +469,9 @@ class Scheduler(object):
                 elif sig == signal.SIGUSR2:
                     # write the process status to stdout
                     self.status()
-                    pass
+                    logger.debug(
+                        f"Received signal.SIGUSR2 for {self.label}. Writting the process status to stdout."
+                    )
                 close_db_connection()
                 sleep(5)
         except StopIteration:
@@ -509,8 +513,8 @@ class Scheduler(object):
                         if process.pk not in self.PROCESSES or time() > timeout:
                             try:
                                 self.kill_process(process.pk, signal.SIGKILL)
-                            except:
-                                pass
+                            except Exception as e:
+                                logger.debug(e)
                             break
                         self.kill_process(process.pk)
                         sleep(1)
@@ -546,8 +550,8 @@ class Scheduler(object):
 
                     try:
                         self.PROCESSES.pop(process.process_id)
-                    except:
-                        pass
+                    except Exception as e:
+                        logger.debug(e)
                     # process is dead, delete process
                     if process.parent_process_id == self.process_id:
                         p = BackgroundProcess.objects.filter(
@@ -839,7 +843,7 @@ class Process(object):
                         # raise StopIteration
                         exec_loop = False
                     else:
-                        pass
+                        logger.info(f"Unknown {self.label} loop status : {status}")
                 elif sig is None:
                     continue
                 elif sig not in self.SIGNALS:
@@ -1018,9 +1022,10 @@ class Process(object):
                         + "_ProcessAction_for_"
                         + str(self.process_id)
                     )
-                    pass
-                except (RuntimeWarning, RuntimeError):
-                    pass
+                except (RuntimeWarning, RuntimeError) as e:
+                    logger.debug(
+                        f"Failed to send {message} ProcessSignal {signum} : {e}"
+                    )
 
     def stop(self, signum=None, frame=None):
         """
@@ -1168,7 +1173,9 @@ class SingleDeviceDAQProcessWorker(Process):
                     process["failed"] -= 1
                     self.processes.remove(process)
             except BackgroundProcess.DoesNotExist:
-                pass
+                logger.debug(
+                    f"BackgroundProcess for {self.label} does not exist : failed to restart."
+                )
             except:
                 logger.debug(
                     "%s, unhandled exception\n%s" % (self.label, traceback.format_exc())
@@ -1309,7 +1316,9 @@ class MultiDeviceDAQProcessWorker(Process):
                     process["failed"] -= 1
                     self.processes.remove(process)
             except BackgroundProcess.DoesNotExist:
-                pass
+                logger.debug(
+                    f"BackgroundProcess for {self.label} does not exist : failed to restart."
+                )
             except:
                 logger.debug(
                     "%s, unhandled exception\n%s" % (self.label, traceback.format_exc())
@@ -1772,22 +1781,19 @@ class MultiDeviceDAQProcess(Process):
             if len(data) > 0:
                 # For all variable, find existing bit VP and set the bit value
                 for l in data:
-                    for d in l:
-                        if d.variable is not None:
-                            for vp in d.variable.variableproperty_set.all():
-                                if (
-                                    len(vp.name.split("bit")) == 2
-                                    and vp.name.split("bit")[0] == ""
-                                    and vp.name.split("bit")[1].isdigit()
-                                    and int(vp.name.split("bit")[1])
-                                    < vp.variable.get_bits_by_class()
-                                ):
-                                    bit = (
-                                        d.value() >> int(vp.name.split("bit")[1])
-                                    ) & 1
-                                    VariableProperty.objects.update_property(
-                                        vp, value=bit
-                                    )
+                    for var in l:
+                        for vp in var.variableproperty_set.all():
+                            if (
+                                len(vp.name.split("bit")) == 2
+                                and vp.name.split("bit")[0] == ""
+                                and vp.name.split("bit")[1].isdigit()
+                                and int(vp.name.split("bit")[1])
+                                < vp.variable.get_bits_by_class()
+                            ):
+                                bit = (
+                                    int(var.prev_value) >> int(vp.name.split("bit")[1])
+                                ) & 1
+                                VariableProperty.objects.update_property(vp, value=bit)
                 return 1, data
         return 1, None
 
