@@ -2496,10 +2496,13 @@ class RecordedDataOld(models.Model):
                 kwargs["value_float64"] = float(kwargs.pop("value"))
             elif kwargs["variable"].value_class.upper() in ["INT64", "UINT32", "DWORD"]:
                 kwargs["value_int64"] = int(kwargs.pop("value"))
-                if kwargs["value_int64"].bit_length() > 64:
-                    # todo throw exeption or do anything
-                    logger.warning(
-                        f"Variable {Variable.objects.get(id=variable_id)} read value bit length is {kwargs['value_int64'].bit_length()} > 64"
+                # See https://docs.djangoproject.com/en/stable/ref/models/fields/#bigintegerfield
+                if (
+                    kwargs["value_int64"] < -9223372036854775808
+                    or kwargs["value_int64"] > 9223372036854775807
+                ):
+                    raise ValueError(
+                        f"Saving value to RecordedDataOld for {kwargs['variable']} with value class {kwargs['variable'].value_class.upper()} should be in the interval [-9223372036854775808:9223372036854775807], it is {kwargs['value_int64']}"
                     )
             elif kwargs["variable"].value_class.upper() in [
                 "WORD",
@@ -2508,10 +2511,13 @@ class RecordedDataOld(models.Model):
                 "INT32",
             ]:
                 kwargs["value_int32"] = int(kwargs.pop("value"))
-                if kwargs["value_int32"].bit_length() > 32:
-                    # todo throw exeption or do anything
-                    logger.warning(
-                        f"Variable {Variable.objects.get(id=variable_id)} read value bit length is {kwargs['value_int32'].bit_length()} > 32"
+                # See https://docs.djangoproject.com/en/stable/ref/models/fields/#integerfield
+                if (
+                    kwargs["value_int32"] < -2147483648
+                    or kwargs["value_int32"] > 2147483647
+                ):
+                    raise ValueError(
+                        f"Saving value to RecordedDataOld for {kwargs['variable']} with value class {kwargs['variable'].value_class.upper()} should be in the interval [-2147483648:2147483647], it is {kwargs['value_int32']}"
                     )
             elif kwargs["variable"].value_class.upper() in [
                 "INT16",
@@ -2520,12 +2526,11 @@ class RecordedDataOld(models.Model):
                 "INT",
             ]:
                 kwargs["value_int16"] = int(kwargs.pop("value"))
-                if kwargs["value_int16"].bit_length() > 15:
-                    # todo throw exeption or do anything
-                    logger.warning(
-                        f"Variable {Variable.objects.get(id=variable_id)} read value bit length is {kwargs['value_int16'].bit_length()} > 16"
+                # See https://docs.djangoproject.com/en/stable/ref/models/fields/#smallintegerfield
+                if kwargs["value_int16"] < -32768 or kwargs["value_int16"] > 32767:
+                    raise ValueError(
+                        f"Saving value to RecordedDataOld for {kwargs['variable']} with value class {kwargs['variable'].value_class.upper()} should be in the interval [-32768:32767], it is {kwargs['value_int16']}"
                     )
-
             elif kwargs["variable"].value_class.upper() in ["BOOL", "BOOLEAN"]:
                 kwargs["value_boolean"] = bool(kwargs.pop("value"))
 
@@ -2644,10 +2649,13 @@ class RecordedData(models.Model):
                 "INT48",
             ]:
                 kwargs["value_int64"] = int(kwargs.pop("value"))
-                if kwargs["value_int64"].bit_length() > 64:
-                    # todo throw exeption or do anything
-                    logger.warning(
-                        f"Variable {Variable.objects.get(id=variable_id)} read value bit length is {kwargs['value_int64'].bit_length()} > 64"
+                # See https://docs.djangoproject.com/en/stable/ref/models/fields/#bigintegerfield
+                if (
+                    kwargs["value_int64"] < -9223372036854775808
+                    or kwargs["value_int64"] > 9223372036854775807
+                ):
+                    raise ValueError(
+                        f"Saving value to RecordedData for {kwargs['variable']} with value class {kwargs['variable'].value_class.upper()} should be in the interval [-9223372036854775808:9223372036854775807], it is {kwargs['value_int64']}"
                     )
             elif kwargs["variable"].value_class.upper() in [
                 "WORD",
@@ -2656,10 +2664,13 @@ class RecordedData(models.Model):
                 "INT32",
             ]:
                 kwargs["value_int32"] = int(kwargs.pop("value"))
-                if kwargs["value_int32"].bit_length() > 32:
-                    # todo throw exeption or do anything
-                    logger.warning(
-                        f"Variable {Variable.objects.get(id=variable_id)} read value bit length is {kwargs['value_int32'].bit_length()} > 32"
+                # See https://docs.djangoproject.com/en/stable/ref/models/fields/#integerfield
+                if (
+                    kwargs["value_int32"] < -2147483648
+                    or kwargs["value_int32"] > 2147483647
+                ):
+                    raise ValueError(
+                        f"Saving value to RecordedData for {kwargs['variable']} with value class {kwargs['variable'].value_class.upper()} should be in the interval [-2147483648:2147483647], it is {kwargs['value_int32']}"
                     )
             elif kwargs["variable"].value_class.upper() in [
                 "INT16",
@@ -2668,12 +2679,11 @@ class RecordedData(models.Model):
                 "INT",
             ]:
                 kwargs["value_int16"] = int(kwargs.pop("value"))
-                if kwargs["value_int16"].bit_length() > 15:
-                    # todo throw exeption or do anything
-                    logger.warning(
-                        f"Variable {Variable.objects.get(id=variable_id)} read value bit length is {kwargs['value_int16'].bit_length()} > 16"
+                # See https://docs.djangoproject.com/en/stable/ref/models/fields/#smallintegerfield
+                if kwargs["value_int16"] < -32768 or kwargs["value_int16"] > 32767:
+                    raise ValueError(
+                        f"Saving value to RecordedData for {kwargs['variable']} with value class {kwargs['variable'].value_class.upper()} should be in the interval [-32768:32767], it is {kwargs['value_int16']}"
                     )
-
             elif kwargs["variable"].value_class.upper() in ["BOOL", "BOOLEAN"]:
                 kwargs["value_boolean"] = bool(kwargs.pop("value"))
 
