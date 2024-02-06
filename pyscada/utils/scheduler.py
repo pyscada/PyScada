@@ -823,8 +823,11 @@ class Process(object):
                     if data is not None:
                         # write data to the database
                         for item in data:
-                            logger.debug(f"Write multiple variables : {item}")
-                            Variable.objects.write_multiple(items=item)
+                            if len(item):
+                                logger.debug(
+                                    f"{self.label} write multiple variables : {item}"
+                                )
+                                Variable.objects.write_multiple(items=item)
                     if status == 1:  # Process OK
                         pass
                     elif status == -1:
