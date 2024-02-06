@@ -45,6 +45,31 @@ class PyScadaAdminSite(AdminSite):
     site_header = "PyScada Administration"
 
 
+def populate_inline(items, form_model=None, output=[], stacked=admin.StackedInline):
+    for item in items:
+        if form_model is None:
+            item_dict = dict(model=item.related_model)
+        else:
+            item_dict = dict(model=item.related_model, form=form_model)
+        if hasattr(item.related_model, "fk_name"):
+            item_dict["fk_name"] = item.related_model.fk_name
+        if hasattr(item.related_model, "FormSet"):
+            item_dict["formset"] = item.related_model.FormSet
+        if hasattr(item.related_model, "fieldsets"):
+            item_dict["fieldsets"] = item.related_model.fieldsets
+        if hasattr(item.related_model, "filter_horizontal"):
+            item_dict["filter_horizontal"] = item.related_model.filter_horizontal
+        if hasattr(item.related_model, "filter_vertical"):
+            item_dict["filter_vertical"] = item.related_model.filter_vertical
+        if hasattr(item.related_model, "Form"):
+            items_dict["form"] = item.related_model.Form
+        # if hasattr(item.related_model, "formfield_for_foreignkey"):
+        #    item_dict["formfield_for_foreignkey"] = item.related_model.formfield_for_foreignkey
+        out = type(item.name, (stacked,), item_dict)  # classes=['collapse']
+        output.append(out)
+    return output
+
+
 ## admin actions
 def restart_process(modeladmin, request, queryset):
     """
@@ -223,14 +248,9 @@ class VariableStateAdmin(admin.ModelAdmin):
         for field in Variable._meta.get_fields()
         if issubclass(type(field), OneToOneRel)
     ]
-    inlines = []
-    for v in related_variables:
-        cl = type(
-            v.name,
-            (admin.StackedInline,),
-            dict(model=v.related_model, form=VariableAdminFrom),
-        )  # classes=['collapse']
-        inlines.append(cl)
+    inlines = populate_inline(
+        related_variables, VariableAdminFrom, output=[], stacked=admin.StackedInline
+    )
 
     class Media:
         js = (
@@ -307,23 +327,9 @@ class DeviceAdmin(admin.ModelAdmin):
         for field in Device._meta.get_fields()
         if issubclass(type(field), OneToOneRel)
     ]
-    inlines = []
-    for d in devices:
-        device_dict = dict(model=d.related_model, form=DeviceForm)
-        if hasattr(d.related_model, "fk_name"):
-            device_dict["fk_name"] = d.related_model.fk_name
-        if hasattr(d.related_model, "FormSet"):
-            device_dict["formset"] = d.related_model.FormSet
-        if hasattr(d.related_model, "fieldsets"):
-            device_dict["fieldsets"] = d.related_model.fieldsets
-        if hasattr(d.related_model, "filter_horizontal"):
-            device_dict["filter_horizontal"] = d.related_model.filter_horizontal
-        if hasattr(d.related_model, "filter_vertical"):
-            device_dict["filter_vertical"] = d.related_model.filter_vertical
-        # if hasattr(d.related_model, "formfield_for_foreignkey"):
-        #    device_dict["formfield_for_foreignkey"] = d.related_model.formfield_for_foreignkey
-        cl = type(d.name, (admin.StackedInline,), device_dict)  # classes=['collapse']
-        inlines.append(cl)
+    inlines = populate_inline(
+        devices, DeviceForm, output=[], stacked=admin.StackedInline
+    )
 
     # List only activated protocols
     protocol_list = list()
@@ -416,17 +422,9 @@ class VariableAdmin(admin.ModelAdmin):
         for field in Variable._meta.get_fields()
         if issubclass(type(field), OneToOneRel)
     ]
-    inlines = []
-    for v in related_variables:
-        variable_dict = dict(model=v.related_model, form=VariableAdminFrom)
-        if hasattr(v.related_model, "fk_name"):
-            variable_dict["fk_name"] = v.related_model.fk_name
-        if hasattr(v.related_model, "FormSet"):
-            variable_dict["formset"] = v.related_model.FormSet
-        if hasattr(v.related_model, "fieldsets"):
-            variable_dict["fieldsets"] = v.related_model.fieldsets
-        cl = type(v.name, (admin.StackedInline,), variable_dict)  # classes=['collapse']
-        inlines.append(cl)
+    inlines = populate_inline(
+        related_variables, VariableAdminFrom, output=[], stacked=admin.StackedInline
+    )
 
     # Add JS file to display the right inline
     class Media:
@@ -925,21 +923,7 @@ class DataSourceAdmin(admin.ModelAdmin):
         for field in DataSource._meta.get_fields()
         if issubclass(type(field), OneToOneRel)
     ]
-    inlines = []
-    for item in items:
-        items_dict = dict(model=item.related_model)
-        if hasattr(item.related_model, "fk_name"):
-            items_dict["fk_name"] = item.related_model.fk_name
-        if hasattr(item.related_model, "FormSet"):
-            items_dict["formset"] = item.related_model.FormSet
-        if hasattr(item.related_model, "fieldsets"):
-            items_dict["fieldsets"] = item.related_model.fieldsets
-        if hasattr(item.related_model, "Form"):
-            items_dict["form"] = item.related_model.Form
-        # if hasattr(d.related_model, "formfield_for_foreignkey"):
-        #    items_dict["formfield_for_foreignkey"] = d.related_model.formfield_for_foreignkey
-        cl = type(item.name, (admin.StackedInline,), items_dict)  # classes=['collapse']
-        inlines.append(cl)
+    inlines = populate_inline(items, None, output=[], stacked=admin.StackedInline)
 
     # Add JS file to display the right inline and to hide/show fields
     class Media:
