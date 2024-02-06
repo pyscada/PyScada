@@ -527,3 +527,6 @@ if [[ "$answer_update" == "n" ]]; then
 fi
 
 pyscada_init
+
+# fix owner in /home/pyscada
+chown -R pyscada:pyscada $pyscada_home
