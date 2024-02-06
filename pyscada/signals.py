@@ -133,12 +133,16 @@ def _del_daq_daemons(sender, instance, **kwargs):
                 label=f"pyscada.{instance.protocol.protocol}-{instance.id}",
             )
         except BackgroundProcess.DoesNotExist:
-            # for modbus protocol
-            bp = BackgroundProcess.objects.get(
-                done=False,
-                failed=False,
-                label__startswith=f"pyscada.{instance.protocol.protocol}-{instance.id}",
-            )
+            try:
+                # for modbus protocol
+                bp = BackgroundProcess.objects.get(
+                    done=False,
+                    failed=False,
+                    label__startswith=f"pyscada.{instance.protocol.protocol}-{instance.id}",
+                )
+            except BackgroundProcess.DoesNotExist:
+                # BP not created, cannot stop
+                return False
         except Exception as e:
             logger.debug(e)
             return False
