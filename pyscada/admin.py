@@ -444,23 +444,6 @@ class VariableAdmin(admin.ModelAdmin):
     def unit(self, instance):
         return instance.unit.unit
 
-    def last_value(self, instance):
-        try:
-            v = Variable.objects.get(id=instance.pk)
-            if v.query_prev_value():
-                return (
-                    datetime.datetime.fromtimestamp(v.timestamp_old).strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    )
-                    + " : "
-                    + v.prev_value.__str__()
-                    + " "
-                    + instance.unit.unit
-                )
-        except Variable.DoesNotExist:
-            return "Variable does not exist"
-        return " - : NaN " + instance.unit.unit
-
     def color_code(self, instance):
         return instance.chart_line_color.color_code()
 
