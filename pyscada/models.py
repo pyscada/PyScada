@@ -2642,6 +2642,17 @@ class RecordedData(models.Model):
                 "variable"
             ].value_class.upper() in ["BOOL", "BOOLEAN"]:
                 kwargs["value_float64"] = float(kwargs.pop("value"))
+            elif kwargs["variable"].value_class.upper() in ["UINT64"]:
+                # moving the uint64 range [0, 2**64 - 1] to the int64 [-2**63, 2**63 - 1] to be stored as a django BigIntegerField
+                kwargs["value_int64"] = int(kwargs.pop("value")) - 2**63
+                # See https://docs.djangoproject.com/en/stable/ref/models/fields/#bigintegerfield
+                if (
+                    kwargs["value_int64"] < -9223372036854775808
+                    or kwargs["value_int64"] > 9223372036854775807
+                ):
+                    raise ValueError(
+                        f"Saving value to RecordedData for {kwargs['variable']} with value class {kwargs['variable'].value_class.upper()} should be in the interval [0:18446744073709551616], it is {kwargs['value_int64'] + 2**63}"
+                    )
             elif kwargs["variable"].value_class.upper() in [
                 "INT64",
                 "UINT32",
@@ -2686,6 +2697,9 @@ class RecordedData(models.Model):
                     )
             elif kwargs["variable"].value_class.upper() in ["BOOL", "BOOLEAN"]:
                 kwargs["value_boolean"] = bool(kwargs.pop("value"))
+            else:
+                logger.warning(f"The {kwargs['variable'].value_class.upper()} variable value class is not defined in RecordedData __init__ function. Default storing value as float.")
+                kwargs["value_float64"] = float(kwargs.pop("value"))
 
         # call the django model __init__
         super(RecordedData, self).__init__(*args, **kwargs)
@@ -2733,6 +2747,12 @@ class RecordedData(models.Model):
             return self.value_float64
         elif self.variable.scaling and not value_class.upper() in ["BOOL", "BOOLEAN"]:
             return self.value_float64
+        elif value_class.upper() in ["UINT64"]:
+            # moving the int64 range [2**63, 2**63 - 1] stored as a django BigIntegerField to the int64 [0, 2**64 - 1]
+            value = self.value_int64
+            if value is None:
+                return value
+            return value + 2**63
         elif value_class.upper() in ["INT64", "UINT32", "DWORD", "INT48"]:
             return self.value_int64
         elif value_class.upper() in ["WORD", "UINT", "UINT16", "INT32"]:
@@ -2742,7 +2762,8 @@ class RecordedData(models.Model):
         elif value_class.upper() in ["BOOL", "BOOLEAN"]:
             return self.value_boolean
         else:
-            return None
+            logger.warning(f"The {value_class.upper()} variable value class is not defined in RecordedData value function. Default reading value as float.")
+            return self.value_float64
 
     def save(self, *args, **kwargs):
         if self.date_saved is None:
