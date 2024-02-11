@@ -1916,7 +1916,11 @@ class Variable(models.Model):
             self.value = value
         else:
             self.value = self.scaling.scale_value(value)
-        self.timestamp = timestamp
+        try:
+            self.timestamp = float(timestamp)
+        except ValueError as e:
+            logger.error(f"{self} - wrong timestamp : {e}")
+            return False
         self.store_value = False
         if self.prev_value is None:
             # no prev value in the cache, always store the value
@@ -1947,18 +1951,28 @@ class Variable(models.Model):
         if erase_cache:
             self.cached_values_to_write = []
         has_value = False
-        if isinstance(value_list.__class__, list):
-            logger.error(
-                f"{self} - Value list must be a list, it is a {type(value_list)}"
-            )
-            return False
-        if isinstance(timestamp_list.__class__, list):
-            logger.error(
-                f"{self} - Timestamp list must be a list, it is a {type(timestamp_list)}"
-            )
-            return False
+        if not isinstance(value_list, list):
+            if isinstance(value_list, bool) or isinstance(value_list, int) or isinstance(value_list, float) or isinstance(value_list, str):
+                value_list = [value_list]
+            else:
+                logger.warning(
+                    f"{self} - Value list wrong type : {type(value_list)}"
+                )
+                return False
+        if not isinstance(timestamp_list, list):
+            if isinstance(timestamp_list, bool) or isinstance(timestamp_list, int) or isinstance(timestamp_list, float) or isinstance(timestamp_list, str):
+                try:
+                    timestamp_list = [float(timestamp_list)]
+                except ValueError as e:
+                    logger.warning(f"{self} - wrong timestamp : {e}")
+                    return False
+            else:
+                logger.warning(
+                    f"{self} - Timestamp list wrong type : {type(timestamp_list)}"
+                )
+                return False
         if len(value_list) != len(timestamp_list):
-            logger.error(
+            logger.warning(
                 f"{self} - value and timestamp lists have not the same length ({len(value_list)}, {len(timestamp_list)})"
             )
             return False
