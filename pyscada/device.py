@@ -98,13 +98,13 @@ class GenericHandlerDevice:
 
         return self.read_data(variable_instance), self.time()
 
-    def read_data_all(self, variables_dict):
+    def read_data_all(self, variables_dict, erase_cache=True):
         output = []
 
         if self.before_read():
             for item in variables_dict.values():
                 value, read_time = self.read_data_and_time(item)
-                if value is not None and read_time is not None and item.update_values(value, read_time):
+                if value is not None and read_time is not None and item.update_values(value, read_time, erase_cache=erase_cache):
                     output.append(item)
         self.after_read()
         return output
