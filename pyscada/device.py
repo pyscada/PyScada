@@ -104,7 +104,7 @@ class GenericHandlerDevice:
         if self.before_read():
             for item in variables_dict.values():
                 value, read_time = self.read_data_and_time(item)
-                if value is not None and item.update_values([value], [read_time]):
+                if value is not None and read_time is not None and item.update_values(value, read_time):
                     output.append(item)
         self.after_read()
         return output
