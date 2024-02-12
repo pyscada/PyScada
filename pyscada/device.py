@@ -48,6 +48,7 @@ class GenericHandlerDevice:
             return False
 
         # self.accessibility()
+        return True
 
     def accessibility(self):
         if self.inst is not None:
@@ -67,8 +68,7 @@ class GenericHandlerDevice:
     def disconnect(self):
         if self.inst is not None:
             self.inst = None
-            return True
-        return False
+        return True
 
     def before_read(self):
         """
