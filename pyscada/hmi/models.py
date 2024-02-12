@@ -224,7 +224,7 @@ class Theme(models.Model):
         # Delete theme with missing template file
         for theme in Theme.objects.all():
             try:
-                get_template(theme.view_filename + ".html").render()
+                get_template(theme.view_filename + ".html").render({"base_html":"base"})
                 get_template(theme.base_filename + ".html").render()
             except TemplateDoesNotExist:
                 theme.delete()
