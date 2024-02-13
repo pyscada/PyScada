@@ -2665,7 +2665,7 @@ class RecordedData(models.Model):
                     or kwargs["value_int64"] > 9223372036854775807
                 ):
                     raise ValueError(
-                        f"Saving value to RecordedData for {kwargs['variable']} with value class {kwargs['variable'].value_class.upper()} should be in the interval [0:18446744073709551616], it is {kwargs['value_int64'] + 2**63}"
+                        f"Saving value to RecordedData for {kwargs['variable']} with value class {kwargs['variable'].value_class.upper()} should be in the interval [0:18446744073709551615], it is {kwargs['value_int64'] + 2**63}"
                     )
             elif kwargs["variable"].value_class.upper() in [
                 "INT64",
