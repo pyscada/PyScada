@@ -1,5 +1,5 @@
 function PyScadaControlItemDisplayValueTransformDataMin(key, val, control_item_id, display_value_option_id, transform_data_id) {
-  var variable_id = get_config_from_hidden_config('controlitem', 'display-value-options', displayvalueoption_id, 'variable');
+  var variable_id = get_config_from_hidden_config('controlitem', 'id', control_item_id, 'variable');
   if (DATA[variable_id] == undefined) {
     console.log("PyScada HMI : PyScadaControlItemDisplayValueTransformDataMin : " + variable_id + " not in DATA. ")
     return val;
@@ -14,7 +14,7 @@ function PyScadaControlItemDisplayValueTransformDataMin(key, val, control_item_i
 }
 
 function PyScadaControlItemDisplayValueTransformDataMax(key, val, control_item_id, display_value_option_id, transform_data_id) {
-  var variable_id = get_config_from_hidden_config('controlitem', 'display-value-options', displayvalueoption_id, 'variable');
+  var variable_id = get_config_from_hidden_config('controlitem', 'id', control_item_id, 'variable');
   if (DATA[variable_id] == undefined) {
     console.log("PyScada HMI : PyScadaControlItemDisplayValueTransformDataMax : " + variable_id + " not in DATA. ")
     return val;
@@ -29,7 +29,7 @@ function PyScadaControlItemDisplayValueTransformDataMax(key, val, control_item_i
 }
 
 function PyScadaControlItemDisplayValueTransformDataTotal(key, val, control_item_id, display_value_option_id, transform_data_id) {
-  var variable_id = get_config_from_hidden_config('controlitem', 'display-value-options', displayvalueoption_id, 'variable');
+  var variable_id = get_config_from_hidden_config('controlitem', 'id', control_item_id, 'variable');
   if (DATA[variable_id] == undefined) {
     console.log("PyScada HMI : PyScadaControlItemDisplayValueTransformDataTotal : " + variable_id + " not in DATA. ")
     return val;
@@ -43,7 +43,7 @@ function PyScadaControlItemDisplayValueTransformDataTotal(key, val, control_item
 }
 
 function PyScadaControlItemDisplayValueTransformDataDifference(key, val, control_item_id, display_value_option_id, transform_data_id) {
-  var variable_id = get_config_from_hidden_config('controlitem', 'display-value-options', displayvalueoption_id, 'variable');
+  var variable_id = get_config_from_hidden_config('controlitem', 'id', control_item_id, 'variable');
   if (DATA[variable_id] == undefined) {
     console.log("PyScada HMI : PyScadaControlItemDisplayValueTransformDataDifference : " + variable_id + " not in DATA. ")
     return val;
@@ -56,8 +56,35 @@ function PyScadaControlItemDisplayValueTransformDataDifference(key, val, control
   return result;
 }
 
+
+// After PyScada Core JS loaded, add the variable needed by Difference and DifferencePercent to CHART_VARIABLE_KEYS
+document.addEventListener("PyScadaCoreJSLoaded", (event) => {
+  document.querySelectorAll(".transformdata-config2[data-inline-model-name='TransformDataDifference']").forEach(e => {
+    tid=e.dataset["id"];
+    document.querySelectorAll(".displayvalueoption-config2[data-transform-data='"+tid+"']").forEach(f => {
+      did=f.dataset["id"];
+      document.querySelectorAll(".controlitem-config2[data-display-value-options='"+did+"']").forEach(g => {
+        if (g.dataset["variable"]) {
+          CHART_VARIABLE_KEYS[g.dataset["variable"]] = 0;
+        };
+      });
+    });
+  });
+  document.querySelectorAll(".transformdata-config2[data-inline-model-name='TransformDataDifferencePercent']").forEach(e => {
+    tid=e.dataset["id"];
+    document.querySelectorAll(".displayvalueoption-config2[data-transform-data='"+tid+"']").forEach(f => {
+      did=f.dataset["id"];
+      document.querySelectorAll(".controlitem-config2[data-display-value-options='"+did+"']").forEach(g => {
+        if (g.dataset["variable"]) {
+          CHART_VARIABLE_KEYS[g.dataset["variable"]] = 0;
+        };
+      });
+    });
+  });
+});
+
 function PyScadaControlItemDisplayValueTransformDataDifferencePercent(key, val, control_item_id, display_value_option_id, transform_data_id) {
-  var variable_id = get_config_from_hidden_config('controlitem', 'display-value-options', displayvalueoption_id, 'variable');
+  var variable_id = get_config_from_hidden_config('controlitem', 'id', control_item_id, 'variable');
   if (DATA[variable_id] == undefined) {
     console.log("PyScada HMI : PyScadaControlItemDisplayValueTransformDataDifferencePercent : " + variable_id + " not in DATA. ")
     return val;
@@ -72,7 +99,7 @@ function PyScadaControlItemDisplayValueTransformDataDifferencePercent(key, val, 
 }
 
 function PyScadaControlItemDisplayValueTransformDataDelta(key, val, control_item_id, display_value_option_id, transform_data_id) {
-  var variable_id = get_config_from_hidden_config('controlitem', 'display-value-options', displayvalueoption_id, 'variable');
+  var variable_id = get_config_from_hidden_config('controlitem', 'id', control_item_id, 'variable');
   if (DATA[variable_id] == undefined) {
     console.log("PyScada HMI : PyScadaControlItemDisplayValueTransformDataDelta : " + variable_id + " not in DATA. ")
     return val;
@@ -90,7 +117,7 @@ function PyScadaControlItemDisplayValueTransformDataDelta(key, val, control_item
 }
 
 function PyScadaControlItemDisplayValueTransformDataMean(key, val, control_item_id, display_value_option_id, transform_data_id) {
-  var variable_id = get_config_from_hidden_config('controlitem', 'display-value-options', displayvalueoption_id, 'variable');
+  var variable_id = get_config_from_hidden_config('controlitem', 'id', control_item_id, 'variable');
   if (DATA[variable_id] == undefined) {
     console.log("PyScada HMI : PyScadaControlItemDisplayValueTransformDataMean : " + variable_id + " not in DATA. ")
     return val;
@@ -105,7 +132,7 @@ function PyScadaControlItemDisplayValueTransformDataMean(key, val, control_item_
 }
 
 function PyScadaControlItemDisplayValueTransformDataFirst(key, val, control_item_id, display_value_option_id, transform_data_id) {
-  var variable_id = get_config_from_hidden_config('controlitem', 'display-value-options', displayvalueoption_id, 'variable');
+  var variable_id = get_config_from_hidden_config('controlitem', 'id', control_item_id, 'variable');
   if (DATA[variable_id] == undefined) {
     console.log("PyScada HMI : PyScadaControlItemDisplayValueTransformDataFirst : " + variable_id + " not in DATA. ")
     return val;
@@ -116,7 +143,7 @@ function PyScadaControlItemDisplayValueTransformDataFirst(key, val, control_item
 }
 
 function PyScadaControlItemDisplayValueTransformDataCount(key, val, control_item_id, display_value_option_id, transform_data_id) {
-  var variable_id = get_config_from_hidden_config('controlitem', 'display-value-options', displayvalueoption_id, 'variable');
+  var variable_id = get_config_from_hidden_config('controlitem', 'id', control_item_id, 'variable');
   if (DATA[variable_id] == undefined) {
     console.log("PyScada HMI : PyScadaControlItemDisplayValueTransformDataCount : " + variable_id + " not in DATA. ")
     return val;
@@ -130,7 +157,7 @@ function PyScadaControlItemDisplayValueTransformDataCount(key, val, control_item
 }
 
 function PyScadaControlItemDisplayValueTransformDataCountValue(key, val, control_item_id, display_value_option_id, transform_data_id) {
-  var variable_id = get_config_from_hidden_config('controlitem', 'display-value-options', displayvalueoption_id, 'variable');
+  var variable_id = get_config_from_hidden_config('controlitem', 'id', control_item_id, 'variable');
   if (DATA[variable_id] == undefined) {
     console.log("PyScada HMI : PyScadaControlItemDisplayValueTransformDataCountValue : " + variable_id + " not in DATA. ")
     return val;
@@ -147,7 +174,7 @@ function PyScadaControlItemDisplayValueTransformDataCountValue(key, val, control
 }
 
 function PyScadaControlItemDisplayValueTransformDataRange(key, val, control_item_id, display_value_option_id, transform_data_id) {
-  var variable_id = get_config_from_hidden_config('controlitem', 'display-value-options', displayvalueoption_id, 'variable');
+  var variable_id = get_config_from_hidden_config('controlitem', 'id', control_item_id, 'variable');
   if (DATA[variable_id] == undefined) {
     console.log("PyScada HMI : PyScadaControlItemDisplayValueTransformDataRange : " + variable_id + " not in DATA. ")
     return val;
@@ -169,7 +196,7 @@ function PyScadaControlItemDisplayValueTransformDataRange(key, val, control_item
 }
 
 function PyScadaControlItemDisplayValueTransformDataStep(key, val, control_item_id, display_value_option_id, transform_data_id) {
-  var variable_id = get_config_from_hidden_config('controlitem', 'display-value-options', displayvalueoption_id, 'variable');
+  var variable_id = get_config_from_hidden_config('controlitem', 'id', control_item_id, 'variable');
   if (DATA[variable_id] == undefined) {
     console.log("PyScada HMI : PyScadaControlItemDisplayValueTransformDataStep : " + variable_id + " not in DATA. ")
     return val;
@@ -192,7 +219,7 @@ function PyScadaControlItemDisplayValueTransformDataStep(key, val, control_item_
 }
 
 function PyScadaControlItemDisplayValueTransformDataChangeCount(key, val, control_item_id, display_value_option_id, transform_data_id) {
-  var variable_id = get_config_from_hidden_config('controlitem', 'display-value-options', displayvalueoption_id, 'variable');
+  var variable_id = get_config_from_hidden_config('controlitem', 'id', control_item_id, 'variable');
   if (DATA[variable_id] == undefined) {
     console.log("PyScada HMI : PyScadaControlItemDisplayValueTransformDataChangeCount : " + variable_id + " not in DATA. ")
     return val;
@@ -211,7 +238,7 @@ function PyScadaControlItemDisplayValueTransformDataChangeCount(key, val, contro
 }
 
 function PyScadaControlItemDisplayValueTransformDataDistinctCount(key, val, control_item_id, display_value_option_id, transform_data_id) {
-  var variable_id = get_config_from_hidden_config('controlitem', 'display-value-options', displayvalueoption_id, 'variable');
+  var variable_id = get_config_from_hidden_config('controlitem', 'id', control_item_id, 'variable');
   if (DATA[variable_id] == undefined) {
     console.log("PyScada HMI : PyScadaControlItemDisplayValueTransformDataDistinctCount : " + variable_id + " not in DATA. ")
     return val;
