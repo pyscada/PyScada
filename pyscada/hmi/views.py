@@ -470,6 +470,9 @@ def view(request, link_title):
             {"src": STATIC_URL + "pyscada/js/jquery/parser-input-select.js"}
         )
         javascript_files_list.append(
+            {"src": STATIC_URL + "pyscada/js/flot/lib/jquery.event.drag.js"}
+        )
+        javascript_files_list.append(
             {"src": STATIC_URL + "pyscada/js/flot/lib/jquery.mousewheel.js"}
         )
         javascript_files_list.append(

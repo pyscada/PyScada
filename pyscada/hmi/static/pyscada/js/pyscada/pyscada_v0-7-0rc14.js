@@ -217,6 +217,12 @@ var ONBEFORERELOAD_ASK = true;
   */
  var UPDATE_X_AXES_TIME_LINE_STATUS = true;
 
+ /**
+  * Crosshair status
+  * @type {boolean}
+  */
+ var CROSSHAIR_LOCKED = false;
+
 
  //                             -----------------------------------------------------------
  //                                                  Data's Variables
@@ -1613,6 +1619,7 @@ function createOffset(date) {
              },
              bars: {
                  show: false,
+                 barWidth: 2,
                  barWidth: [0.5, false],
                  align: "center",
              },
@@ -1635,7 +1642,9 @@ function createOffset(date) {
          },
          yaxes: [],
          selection: {
-             mode: "y"
+             mode: "xy",
+             visualization: "focus",
+             minSize: 0,
          },
          grid: {
              labelMargin: 10,
@@ -1652,7 +1661,7 @@ function createOffset(date) {
              active: true,
          },
          pan: {
-             interactive: true,
+             interactive: false,
          },
          axisvalues: {
              mode: "xy",
@@ -1762,7 +1771,7 @@ function createOffset(date) {
 
      //Show interpolated value in legend
      function updateLegend() {
-         var pos = flotPlot.c2p({left:flotPlot.getOptions().crosshair.lastPosition.x, top:flotPlot.getOptions().crosshair.lastPosition.y});
+         var pos = flotPlot.c2p({left:flotPlot.crosshair_x, top:flotPlot.crosshair_y});
          var axes = flotPlot.getAxes();
 
          if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max ||
@@ -1858,7 +1867,7 @@ function createOffset(date) {
          update(true);
 
          //add info on mouse over a point and position of the mouse
-         $(chart_container_id + ' .chart-placeholder').bind("plothover", function (event, pos, item) {
+         $(chart_container_id + ' .chart-placeholder').on("plothover", function (event, pos, item) {
              if(!pos) {
                  //$(".axes-tooltips").hide();
              }
@@ -1897,44 +1906,54 @@ function createOffset(date) {
                  $("#tooltip").hide();
              }
              // set Crosshairs
+             var offset = flotPlot.getPlaceholder().offset();
+             var plotOffset = flotPlot.getPlotOffset();
+             flotPlot.crosshair_x = Math.max(0, Math.min(pos.pageX - offset.left - plotOffset.left, flotPlot.width()));
+             flotPlot.crosshair_y = Math.max(0, Math.min(pos.pageY - offset.top - plotOffset.top, flotPlot.height()));
              setCrosshairs(flotPlot, id);
 
          // mouse leave
-         }).bind("mouseleave", function (event, pos, item) {
-             if(! flotPlot.getOptions().crosshair.locked) {
+         }).on("mouseleave", function (event, pos, item) {
+             if(! CROSSHAIR_LOCKED) {
                  delCrosshairs(flotPlot);
              }
          // mouse down
-         }).bind("mousedown", function (e) {
+         }).on("mousedown", function (e) {
              var offset = flotPlot.getPlaceholder().offset();
              var plotOffset = flotPlot.getPlotOffset();
-             pos={};
-             pos.x = Math.max(0, e.pageX - offset.left - plotOffset.left, flotPlot.width());
-             pos.y = Math.max(0, e.pageY - offset.top - plotOffset.top, flotPlot.height());
+             var pos={};
+             pos.x = Math.max(0, Math.min(e.pageX - offset.left - plotOffset.left, flotPlot.width()));
+             pos.y = Math.max(0, Math.min(e.pageY - offset.top - plotOffset.top, flotPlot.height()));
              //pos.x = clamp(0, e.pageX - offset.left - plotOffset.left, flotPlot.width());
              //pos.y = clamp(0, e.pageY - offset.top - plotOffset.top, flotPlot.height());
-             flotPlot.getOptions().crosshair.lastPositionMouseDown = pos;
+             flotPlot.crosshair_lastPositionMouseDown = pos;
          // mouse up
-         }).bind("mouseup", function (e) {
+         }).on("mouseup", function (e) {
              var offset = flotPlot.getPlaceholder().offset();
              var plotOffset = flotPlot.getPlotOffset();
-             pos={};
-             pos.x = Math.max(0, e.pageX - offset.left - plotOffset.left, flotPlot.width());
-             pos.y = Math.max(0, e.pageY - offset.top - plotOffset.top, flotPlot.height());
+             var pos={};
+             pos.x = Math.max(0, Math.min(e.pageX - offset.left - plotOffset.left, flotPlot.width()));
+             pos.y = Math.max(0, Math.min(e.pageY - offset.top - plotOffset.top, flotPlot.height()));
              //pos.x = clamp(0, e.pageX - offset.left - plotOffset.left, flotPlot.width());
              //pos.y = clamp(0, e.pageY - offset.top - plotOffset.top, flotPlot.height());
-             old_pos = flotPlot.getOptions().crosshair.lastPositionMouseDown;
-             if (flotPlot.getOptions().crosshair.locked) {
-                 flotPlot.getOptions().crosshair.lastPosition.x = pos.x;
-                 flotPlot.getOptions().crosshair.lastPosition.y = pos.y;
+             var old_pos = flotPlot.crosshair_lastPositionMouseDown;
+             if (CROSSHAIR_LOCKED) {
+                 CROSSHAIR_LOCKED = false;
+                 flotPlot.crosshair_x = pos.x;
+                 flotPlot.crosshair_y = pos.y;
                  unlockCrosshairs(flotPlot);
                  setCrosshairs(flotPlot, id);
              } else if (pos.x == old_pos.x && pos.y == old_pos.y) {
+                 CROSSHAIR_LOCKED = true;
+                 flotPlot.crosshair_x = pos.x;
+                 flotPlot.crosshair_y = pos.y;
                  setCrosshairs(flotPlot, id);
-                 lockCrosshairs();
+                 var x = e.pageX
+                 var y = e.pageY
+                 lockCrosshairs(x, y);
              }
          // plot selected
-         }).bind("plotselected", function(event, ranges) {
+         }).on("plotselected", function(event, ranges) {
              pOpt = flotPlot.getOptions();
              // activate zoom y
              if ($(chart_container_id + " .activate_zoom_y").is(':checked')) {
@@ -2543,7 +2562,7 @@ function createOffset(date) {
 
      //Show interpolated value in legend
      function updateLegend() {
-         var pos = flotPlot.c2p({left:flotPlot.getOptions().crosshair.lastPosition.x, top:flotPlot.getOptions().crosshair.lastPosition.y});
+         var pos = flotPlot.c2p({left:flotPlot.crosshair_x, top:flotPlot.crosshair_y});
          var axes = flotPlot.getAxes();
 
          if (pos.x < axes.xaxis.min || pos.x > axes.xaxis.max ||
@@ -2625,7 +2644,7 @@ function createOffset(date) {
          }
 
          //add info on mouse over a slice
-         $(chart_container_id + ' .chart-placeholder').bind("plothover", function (event, pos, item) {
+         $(chart_container_id + ' .chart-placeholder').on("plothover", function (event, pos, item) {
              var eventDoc, doc, body;
 
             event = window.event; // IE-ism
@@ -2988,20 +3007,23 @@ function createOffset(date) {
      $('.chart-legend-value-' + id).removeClass('type-numeric');
      pOpt=flotPlot.getOptions();
      $.each(PyScadaPlots,function(plot_id){
-         if(typeof(pOpt.crosshair) !== 'undefined' && pOpt.crosshair.lastPosition.x !== -1  && pOpt.crosshair.lastPosition.x !== 0 && !pOpt.crosshair.locked) {
+         if(flotPlot.crosshair_x !== -1  && flotPlot.crosshair_x !== 0 && !CROSSHAIR_LOCKED) {
              if(typeof(PyScadaPlots[plot_id].getFlotObject()) !== 'undefined' && typeof(PyScadaPlots[plot_id].getFlotObject().getOptions) !== 'undefined' && PyScadaPlots[plot_id].getFlotObject().getOptions().xaxes.length === pOpt.xaxes.length){
                  if (PyScadaPlots[plot_id].getFlotObject().getOptions().xaxes.length === 1 && pOpt.xaxes.length === 1 && PyScadaPlots[plot_id].getFlotObject().getOptions().xaxes[0].key === pOpt.xaxes[0].key) {
-                     PyScadaPlots[plot_id].getFlotObject().setCrosshair(flotPlot.c2p({left:pOpt.crosshair.lastPosition.x, top:pOpt.crosshair.lastPosition.y}))
                      $('.chart-legend-value-' + PyScadaPlots[plot_id].getId()).removeClass('type-numeric');
                      setTimeout(PyScadaPlots[plot_id].updateLegend(), 50);
                      if (PyScadaPlots[plot_id].getId() == id) {
                          PyScadaPlots[plot_id].getFlotObject().getOptions().crosshair.mode = 'xy';
+                         //PyScadaPlots[plot_id].getFlotObject().setCrosshair(flotPlot.c2p({left:flotPlot.crosshair_x, top:flotPlot.crosshair_y}))
                      }else {
                          PyScadaPlots[plot_id].getFlotObject().getOptions().crosshair.mode = 'x';
+                         var x = flotPlot.crosshair_x + flotPlot.getPlaceholder().offset().left + flotPlot.getPlotOffset().left - PyScadaPlots[plot_id].getFlotObject().getPlaceholder().offset().left - PyScadaPlots[plot_id].getFlotObject().getPlotOffset().left;
+                         x = Math.max(0, Math.min(x, PyScadaPlots[plot_id].getFlotObject().width()));
+                         PyScadaPlots[plot_id].getFlotObject().setCrosshair(PyScadaPlots[plot_id].getFlotObject().c2p({left:x}))
                      }
                  }else {
-                     PyScadaPlots[plot_id].getFlotObject().setCrosshair();
                      PyScadaPlots[plot_id].getFlotObject().getOptions().crosshair.mode = 'xy';
+                     PyScadaPlots[plot_id].getFlotObject().setCrosshair();
                      $('.chart-legend-value-' + PyScadaPlots[plot_id].getId()).addClass('type-numeric');
                  }
              }
@@ -3017,8 +3039,8 @@ function createOffset(date) {
  function delCrosshairs(flotPlot) {
      $.each(PyScadaPlots,function(plot_id){
          if (typeof PyScadaPlots[plot_id].getFlotObject() !== 'undefined' && typeof(PyScadaPlots[plot_id].getFlotObject().getOptions) !== 'undefined' && typeof(PyScadaPlots[plot_id].getFlotObject().setCrosshair) !== 'undefined') {
-             PyScadaPlots[plot_id].getFlotObject().setCrosshair();
              PyScadaPlots[plot_id].getFlotObject().getOptions().crosshair.mode = 'xy';
+             PyScadaPlots[plot_id].getFlotObject().setCrosshair();
          }
          $('.chart-legend-value-' + PyScadaPlots[plot_id].getId()).addClass('type-numeric');
      });
@@ -3031,7 +3053,7 @@ function createOffset(date) {
   */
  function unlockCrosshairs(flotPlot) {
      $.each(PyScadaPlots,function(plot_id){
-         if (typeof PyScadaPlots[plot_id].getFlotObject() !== 'undefined' && typeof(PyScadaPlots[plot_id].getFlotObject().getOptions) !== 'undefined' && typeof(PyScadaPlots[plot_id].getFlotObject().unlockCrosshair) !== 'undefined') {
+         if (typeof PyScadaPlots[plot_id].getFlotObject() !== 'undefined' && typeof(PyScadaPlots[plot_id].getFlotObject().unlockCrosshair) !== 'undefined') {
              PyScadaPlots[plot_id].getFlotObject().unlockCrosshair();
          }
      });
@@ -3040,10 +3062,15 @@ function createOffset(date) {
  /**
   * Lock each crosshairs on each chart
   */
- function lockCrosshairs() {
+ function lockCrosshairs(x, y) {
      $.each(PyScadaPlots,function(plot_id){
-         if (typeof PyScadaPlots[plot_id].getFlotObject() !== 'undefined') {
-             PyScadaPlots[plot_id].getFlotObject().lockCrosshair();
+         if (typeof PyScadaPlots[plot_id].getFlotObject() !== 'undefined' && PyScadaPlots[plot_id].getFlotObject().getData().length) {
+             flotPlot=PyScadaPlots[plot_id].getFlotObject();
+             x_tmp = x - flotPlot.getPlaceholder().offset().left - flotPlot.getPlotOffset().left;
+             x_tmp = Math.max(0, Math.min(x_tmp, flotPlot.width()));
+             y_tmp = y - flotPlot.getPlaceholder().offset().top - flotPlot.getPlotOffset().top;
+             y_tmp = Math.max(0, Math.min(y_tmp, flotPlot.height()));
+             flotPlot.lockCrosshair(flotPlot.c2p({left:x_tmp, top:y_tmp}));
          }
      });
  }
@@ -4335,7 +4362,7 @@ function init_pyscada_content() {
          resize: timeline_resize,
          maxWidth: $('#timeline-border').width()-10
      });
-     $('#timeline-border').bind('resize', function(){
+     $('#timeline-border').on('resize', function(){
          $( "#timeline" ).resizable("option", "maxWidth",$('#timeline-border').width()-10);
      });
      $('#timeline').draggable({

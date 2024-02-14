@@ -10,6 +10,7 @@ selection: {
     color: color,
     shape: "round" or "miter" or "bevel",
     visualization: "fill" or "focus",
+    displaySelectionDecorations: true or false,
     minSize: number of pixels
 }
 
@@ -25,6 +26,10 @@ The way how the selection is visualized, can be changed by using the option
 option "focus" draws a colored bezel around the selected area while keeping
 the selected area clear. The option "fill" highlights (i.e., fills) the
 selected area with a colored highlight.
+
+There are optional selection decorations (handles) that are rendered with the
+"focus" visualization option. The selection decoration is rendered by default
+but can be turned off by setting displaySelectionDecorations to false.
 
 "minSize" is the minimum size a selection can be in pixels. This value can
 be customized to determine the smallest size a selection can be and still
@@ -104,9 +109,7 @@ The plugin allso adds the following methods to the plot object:
         // make this plugin much slimmer.
         var savedhandlers = {};
 
-        var mouseUpHandler = null;
-
-        function onMouseMove(e) {
+        function onDrag(e) {
             if (selection.active) {
                 updateSelection(e);
 
@@ -114,7 +117,7 @@ The plugin allso adds the following methods to the plot object:
             }
         }
 
-        function onMouseDown(e) {
+        function onDragStart(e) {
             var o = plot.getOptions();
             // only accept left-click
             if (e.which !== 1 || o.selection.mode === null) return;
@@ -138,17 +141,9 @@ The plugin allso adds the following methods to the plot object:
             setSelectionPos(selection.first, e);
 
             selection.active = true;
-
-            // this is a bit silly, but we have to use a closure to be
-            // able to whack the same handler again
-            mouseUpHandler = function (e) { onMouseUp(e); };
-
-            $(document).one("mouseup", mouseUpHandler);
         }
 
-        function onMouseUp(e) {
-            mouseUpHandler = null;
-
+        function onDragEnd(e) {
             // revert drag stuff for old-school browsers
             if (document.onselectstart !== undefined) {
                 document.onselectstart = savedhandlers.onselectstart;
@@ -360,8 +355,9 @@ The plugin allso adds the following methods to the plot object:
         plot.hooks.bindEvents.push(function(plot, eventHolder) {
             var o = plot.getOptions();
             if (o.selection.mode != null) {
-                eventHolder.mousemove(onMouseMove);
-                eventHolder.mousedown(onMouseDown);
+                plot.addEventHandler("dragstart", onDragStart, eventHolder, 0);
+                plot.addEventHandler("drag", onDrag, eventHolder, 0);
+                plot.addEventHandler("dragend", onDragEnd, eventHolder, 0);
             }
         });
 
@@ -459,6 +455,7 @@ The plugin allso adds the following methods to the plot object:
 
                 var c = $.color.parse(o.selection.color);
                 var visualization = o.selection.visualization;
+                var displaySelectionDecorations = o.selection.displaySelectionDecorations;
 
                 var scalingFactor = 1;
 
@@ -495,7 +492,10 @@ The plugin allso adds the following methods to the plot object:
                 } else {
                     ctx.fillRect(0, 0, plot.width(), plot.height());
                     ctx.clearRect(x, y, w, h);
-                    drawSelectionDecorations(ctx, x, y, w, h, oX, oY, selectionDirection(plot));
+
+                    if (displaySelectionDecorations) {
+                        drawSelectionDecorations(ctx, x, y, w, h, oX, oY, selectionDirection(plot));
+                    }
                 }
 
                 ctx.restore();
@@ -503,12 +503,9 @@ The plugin allso adds the following methods to the plot object:
         });
 
         plot.hooks.shutdown.push(function (plot, eventHolder) {
-            eventHolder.unbind("mousemove", onMouseMove);
-            eventHolder.unbind("mousedown", onMouseDown);
-
-            if (mouseUpHandler) {
-                $(document).unbind("mouseup", mouseUpHandler);
-            }
+            eventHolder.unbind("dragstart", onDragStart);
+            eventHolder.unbind("drag", onDrag);
+            eventHolder.unbind("dragend", onDragEnd);
         });
     }
 
@@ -518,6 +515,7 @@ The plugin allso adds the following methods to the plot object:
             selection: {
                 mode: null, // one of null, "x", "y" or "xy"
                 visualization: "focus", // "focus" or "fill"
+                displaySelectionDecorations: true, // true or false (currently only relevant for the focus visualization)
                 color: "#888888",
                 shape: "round", // one of "round", "miter", or "bevel"
                 minSize: 5 // minimum number of pixels
