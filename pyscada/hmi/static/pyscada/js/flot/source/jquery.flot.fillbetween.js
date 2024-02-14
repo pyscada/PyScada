@@ -32,7 +32,7 @@ jquery.flot.stack.js plugin, possibly some code could be shared.
 (function ($) {
     var options = {
         series: {
-            fillBetween: null    // or number
+            fillBetween: null // or number
         }
     };
 
@@ -60,11 +60,11 @@ jquery.flot.stack.js plugin, possibly some code could be shared.
             if (s.fillBetween == null) {
                 return;
             }
-            
-            format = datapoints.format;
+
+            var format = datapoints.format;
             var plotHasId = function(id) {
                 var plotData = plot.getData();
-                for (i = 0; i < plotData.length; i++) {
+                for (var i = 0; i < plotData.length; i++) {
                     if (plotData[i].id === id) {
                         return true;
                     }
@@ -76,17 +76,17 @@ jquery.flot.stack.js plugin, possibly some code could be shared.
             if (!format) {
                 format = [];
 
-                format.push({ 
-                    x: true, 
-                    number: true, 
+                format.push({
+                    x: true,
+                    number: true,
                     computeRange: s.xaxis.options.autoScale !== 'none',
-                    required: true 
+                    required: true
                 });
-                format.push({ 
-                    y: true, 
-                    number: true, 
+                format.push({
+                    y: true,
+                    number: true,
                     computeRange: s.yaxis.options.autoScale !== 'none',
-                    required: true 
+                    required: true
                 });
 
                 if (s.fillBetween !== undefined && s.fillBetween !== '' && plotHasId(s.fillBetween) && s.fillBetween !== s.id) {

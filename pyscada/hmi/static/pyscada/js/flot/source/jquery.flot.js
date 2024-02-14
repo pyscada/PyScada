@@ -234,6 +234,7 @@ Licensed under the MIT license.
                 drawSeries: [],
                 drawAxis: [],
                 draw: [],
+                findNearbyItems: [],
                 axisReserveSpace: [],
                 bindEvents: [],
                 drawOverlay: [],
@@ -345,6 +346,7 @@ Licensed under the MIT license.
         plot.computeRangeForDataSeries = computeRangeForDataSeries;
         plot.adjustSeriesDataRange = adjustSeriesDataRange;
         plot.findNearbyItem = findNearbyItem;
+        plot.findNearbyItems = findNearbyItems;
         plot.findNearbyInterpolationPoint = findNearbyInterpolationPoint;
         plot.computeValuePrecision = computeValuePrecision;
         plot.computeTickSize = computeTickSize;
@@ -824,8 +826,8 @@ Licensed under the MIT license.
                         var expectedPs = s.datapoints.pointsize != null ? s.datapoints.pointsize : (s.data && s.data[0] && s.data[0].length ? s.data[0].length : 3);
                         if (expectedPs > 2) {
                             format.push({
-                                x: false,
-                                y: true,
+                                x: s.bars.horizontal,
+                                y: !s.bars.horizontal,
                                 number: true,
                                 required: false,
                                 computeRange: s.yaxis.options.autoScale !== 'none',
@@ -844,8 +846,6 @@ Licensed under the MIT license.
                 s.datapoints.pointsize = format.length;
                 ps = s.datapoints.pointsize;
                 points = s.datapoints.points;
-
-                var insertSteps = s.lines.show && s.lines.steps;
 
                 for (j = k = 0; j < data.length; ++j, k += ps) {
                     p = data[j];
@@ -978,8 +978,8 @@ Licensed under the MIT license.
             var eventList = eventManager[key] || [];
 
             eventList.push({"event": event, "handler": handler, "eventHolder": eventHolder, "priority": priority});
-            eventList.sort((a, b) => b.priority - a.priority );
-            eventList.forEach( eventData => {
+            eventList.sort((a, b) => b.priority - a.priority);
+            eventList.forEach(eventData => {
                 eventData.eventHolder.unbind(eventData.event, eventData.handler);
                 eventData.eventHolder.bind(eventData.event, eventData.handler);
             });
@@ -1520,7 +1520,7 @@ Licensed under the MIT license.
             var magn = parseFloat('1e' + (-dec)),
                 norm = delta / magn;
 
-            if (norm > 2.25 && norm < 3 && (dec + 1) <= tickDecimals) {
+            if (norm > 2.25 && norm < 3 && (tickDecimals == null || (dec + 1) <= tickDecimals)) {
                 //we need an extra decimals when tickSize is 2.5
                 ++dec;
             }
@@ -1761,7 +1761,7 @@ Licensed under the MIT license.
             }
             if (axis.options.showTickLabels === 'all') {
                 var associatedSeries = series.filter(function(s) {
-                        return s.xaxis === axis;
+                        return s.bars.horizontal ? s.yaxis === axis : s.xaxis === axis;
                     }),
                     notAllBarSeries = associatedSeries.some(function(s) {
                         return !s.bars.show;
@@ -2435,8 +2435,7 @@ Licensed under the MIT license.
                 if (series.bars.horizontal) {
                     range.ymin += delta;
                     range.ymax += delta + barWidth;
-                }
-                else {
+                } else {
                     range.xmin += delta;
                     range.xmax += delta + barWidth;
                 }
@@ -2465,7 +2464,7 @@ Licensed under the MIT license.
             }
 
             var start = series.bars.horizontal ? 1 : 0;
-            for (var j = start; j < series.datapoints.points.length; j += pointsize) {
+            for (let j = start; j < series.datapoints.points.length; j += pointsize) {
                 if (isFinite(series.datapoints.points[j]) && series.datapoints.points[j] !== null) {
                     xValues.push(series.datapoints.points[j]);
                 }
@@ -2475,10 +2474,10 @@ Licensed under the MIT license.
                 return self.indexOf(value) === index;
             }
 
-            xValues = xValues.filter( onlyUnique );
-            xValues.sort(function(a, b){return a - b});
+            xValues = xValues.filter(onlyUnique);
+            xValues.sort(function(a, b) { return a - b });
 
-            for (var j = 1; j < xValues.length; j++) {
+            for (let j = 1; j < xValues.length; j++) {
                 var distance = Math.abs(xValues[j] - xValues[j - 1]);
                 if (distance < minDistance && isFinite(distance)) {
                     minDistance = distance;
@@ -2492,55 +2491,85 @@ Licensed under the MIT license.
             }
         }
 
-        // returns the data item the mouse is over/ the cursor is closest to, or null if none is found
+        function findNearbyItems(mouseX, mouseY, seriesFilter, radius, computeDistance) {
+            var items = findItems(mouseX, mouseY, seriesFilter, radius, computeDistance);
+            for (var i = 0; i < series.length; ++i) {
+                if (seriesFilter(i)) {
+                    executeHooks(hooks.findNearbyItems, [mouseX, mouseY, series, i, radius, computeDistance, items]);
+                }
+            }
+
+            return items.sort((a, b) => {
+                if (b.distance === undefined) {
+                    return -1;
+                } else if (a.distance === undefined && b.distance !== undefined) {
+                    return 1;
+                }
+
+                return a.distance - b.distance;
+            });
+        }
+
         function findNearbyItem(mouseX, mouseY, seriesFilter, radius, computeDistance) {
-            var i, j,
-                item = null,
+            var items = findNearbyItems(mouseX, mouseY, seriesFilter, radius, computeDistance);
+            return items[0] !== undefined ? items[0] : null;
+        }
+
+        // returns the data item the mouse is over/ the cursor is closest to, or null if none is found
+        function findItems(mouseX, mouseY, seriesFilter, radius, computeDistance) {
+            var i, foundItems = [],
+                items = [],
                 smallestDistance = radius * radius + 1;
 
-            for (var i = series.length - 1; i >= 0; --i) {
+            for (i = series.length - 1; i >= 0; --i) {
                 if (!seriesFilter(i)) continue;
 
                 var s = series[i];
                 if (!s.datapoints) return;
 
+                var foundPoint = false;
                 if (s.lines.show || s.points.show) {
-                    var found = findNearbyPoint(s, mouseX, mouseY, radius, smallestDistance, computeDistance);
+                    var found = findNearbyPoint(s, mouseX, mouseY, radius, computeDistance);
                     if (found) {
-                        smallestDistance = found.distance;
-                        item = [i, found.dataIndex];
+                        items.push({ seriesIndex: i, dataIndex: found.dataIndex, distance: found.distance });
+                        foundPoint = true;
                     }
                 }
 
-                if (s.bars.show && !item) { // no other point can be nearby
+                if (s.bars.show && !foundPoint) { // no other point can be nearby
                     var foundIndex = findNearbyBar(s, mouseX, mouseY);
-                    if (foundIndex >= 0) item = [i, foundIndex];
+                    if (foundIndex >= 0) {
+                        items.push({ seriesIndex: i, dataIndex: foundIndex, distance: smallestDistance });
+                    }
                 }
             }
 
-            if (item) {
-                i = item[0];
-                j = item[1];
-                var ps = series[i].datapoints.pointsize;
+            for (i = 0; i < items.length; i++) {
+                var seriesIndex = items[i].seriesIndex;
+                var dataIndex = items[i].dataIndex;
+                var itemDistance = items[i].distance;
+                var ps = series[seriesIndex].datapoints.pointsize;
 
-                return {
-                    datapoint: series[i].datapoints.points.slice(j * ps, (j + 1) * ps),
-                    dataIndex: j,
-                    series: series[i],
-                    seriesIndex: i
-                };
+                foundItems.push({
+                    datapoint: series[seriesIndex].datapoints.points.slice(dataIndex * ps, (dataIndex + 1) * ps),
+                    dataIndex: dataIndex,
+                    series: series[seriesIndex],
+                    seriesIndex: seriesIndex,
+                    distance: Math.sqrt(itemDistance)
+                });
             }
 
-            return null;
+            return foundItems;
         }
 
-        function findNearbyPoint (series, mouseX, mouseY, maxDistance, smallestDistance, computeDistance) {
+        function findNearbyPoint (series, mouseX, mouseY, maxDistance, computeDistance) {
             var mx = series.xaxis.c2p(mouseX),
                 my = series.yaxis.c2p(mouseY),
                 maxx = maxDistance / series.xaxis.scale,
                 maxy = maxDistance / series.yaxis.scale,
                 points = series.datapoints.points,
-                ps = series.datapoints.pointsize;
+                ps = series.datapoints.pointsize,
+                smallestDistance = Number.POSITIVE_INFINITY;
 
             // with inverse transforms, we can't use the maxx/maxy
             // optimization, sadly
@@ -2604,21 +2633,24 @@ Licensed under the MIT license.
             barRight = barLeft + barWidth;
 
             var fillTowards = series.bars.fillTowards || 0;
-            var bottom = fillTowards > series.yaxis.min ? Math.min(series.yaxis.max, fillTowards) : series.yaxis.min;
+            var defaultBottom = fillTowards > series.yaxis.min ? Math.min(series.yaxis.max, fillTowards) : series.yaxis.min;
 
             var foundIndex = -1;
             for (var j = 0; j < points.length; j += ps) {
                 var x = points[j], y = points[j + 1];
-                if (x == null)
+                if (x == null) {
                     continue;
+                }
 
+                var bottom = ps === 3 ? points[j + 2] : defaultBottom;
                 // for a bar graph, the cursor must be inside the bar
-                if (series.bars.horizontal ?
-                    (mx <= Math.max(bottom, x) && mx >= Math.min(bottom, x) &&
-                        my >= y + barLeft && my <= y + barRight) :
-                    (mx >= x + barLeft && mx <= x + barRight &&
-                        my >= Math.min(bottom, y) && my <= Math.max(bottom, y)))
-                        foundIndex = j / ps;
+                if (series.bars.horizontal
+                    ? (mx <= Math.max(bottom, x) && mx >= Math.min(bottom, x) &&
+                        my >= y + barLeft && my <= y + barRight)
+                    : (mx >= x + barLeft && mx <= x + barRight &&
+                        my >= Math.min(bottom, y) && my <= Math.max(bottom, y))) {
+                    foundIndex = j / ps;
+                }
             }
 
             return foundIndex;
