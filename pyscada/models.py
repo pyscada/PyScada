@@ -2632,15 +2632,22 @@ class RecordedData(models.Model):
         else:
             timestamp = time.time_ns() / 1000000000
 
-        if "variable_id" in kwargs:
-            variable_id = kwargs["variable_id"]
-        elif "variable" in kwargs:
+        if "variable" in kwargs:
             variable_id = kwargs["variable"].pk
+        elif "variable_id" in kwargs:
+            variable_id = kwargs["variable_id"]
+            try:
+                kwargs["variable"] = Variable.objects.get(id=variable_id)
+            except Variable.DoesNotExist:
+                raise ValidationError(f"Variable with id {variable_id} not found. Cannot save data.")
         else:
             variable_id = None
 
         if variable_id is not None and "id" not in kwargs:
-            kwargs["id"] = int(int(int(timestamp * 1000) * 2097152) + variable_id)
+            try:
+                kwargs["id"] = int(int(int(float(timestamp) * 1000) * 2097152) + variable_id)
+            except (TypeError , ValueError)as e:
+                raise ValidationError(f"Cannot save data for variable {kwargs['variable']}, timestamp error : {e}")
         if "variable" in kwargs and "value" in kwargs:
             if kwargs["variable"].value_class.upper() in [
                 "FLOAT",
@@ -2719,8 +2726,10 @@ class RecordedData(models.Model):
         super(RecordedData, self).__init__(*args, **kwargs)
         if self.variable is not None:
             self.timestamp = self.time_value()
-        else:
+        elif self.date_saved is not None:
             self.timestamp = self.date_saved.timestamp()
+        else:
+            self.timestamp = time.time()
 
     def calculate_pk(self, timestamp=None):
         """
