@@ -1906,7 +1906,8 @@ class Variable(models.Model):
                 )
                 value = None
         except TypeError as e:
-            logger.debug(e)
+            if value is not None:
+                logger.debug(e)
 
         if (
             self.scaling is None
