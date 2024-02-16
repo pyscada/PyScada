@@ -1619,7 +1619,6 @@ function createOffset(date) {
              },
              bars: {
                  show: false,
-                 barWidth: 2,
                  barWidth: [0.5, false],
                  align: "center",
              },
@@ -2307,6 +2306,7 @@ function createOffset(date) {
 
                    pOpt.xaxes[0].key=xkey
                }
+
                // update flot plot
                flotPlot.setData(series);
                flotPlot.setupGrid(true);
@@ -2348,7 +2348,7 @@ function createOffset(date) {
      var options = {
          series: {
              gauges: {
-             debug:{log:false},
+                 debug:{log:false},
                  show: true,
                  frame: {
                      show: false
@@ -2436,10 +2436,12 @@ function createOffset(date) {
                  key = keys[key];
                  if (key in DATA) {
                      // get the last value using the daterangepicker and the timeline slider values
-                     var value = sliceDATAusingTimestamps(key)[sliceDATAusingTimestamps(key).length - 1][1];
-                     value = transform_data(id.split("-")[1], value, "var-" + key);
-                     data=[[min_value, value]];
-                     series.push({"data":data, "label":variables[key].label});
+                     var value = sliceDATAusingTimestamps(key)[sliceDATAusingTimestamps(key).length - 1];
+                     if (value != "undefined") {
+                        value = transform_data(id.split("-")[1], value[1], "var-" + key);
+                        data=[[min_value, value]];
+                        series.push({"data":data, "label":variables[key].label});
+                     }
                  }
              }
              // draw the chart if we have data
@@ -2456,8 +2458,8 @@ function createOffset(date) {
                  fontScale = parseInt(30, 10) / 100;
                  fontSize = Math.min(mhw / 5, 100) * fontScale;
 
+
                  options["series"]["gauges"]["value"]["font"] = {"size": fontSize};
-                 console.log(options);
 
                  var plotCss = {
                      top: '0px',
@@ -2469,7 +2471,13 @@ function createOffset(date) {
 
                  elem.css(plotCss)
                  //elem.append(plotCanvas);
-                 flotPlot = $.plot(elem, series, options);
+                 try {
+                    flotPlot = $.plot(elem, series, options);
+                 }catch(err) {
+                    //options["series"]["gauges"]["threshold"]["values"] = [];
+                    //flotPlot = $.plot(elem, [{"data":[[0, 0]], "label":variables[key].label}], options);
+                    // TODO: empty gauge when no data
+                 }
              }
          }
      }
