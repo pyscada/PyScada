@@ -2348,6 +2348,7 @@ function createOffset(date) {
      var options = {
          series: {
              gauges: {
+             debug:{log:false},
                  show: true,
                  frame: {
                      show: false
@@ -2366,6 +2367,11 @@ function createOffset(date) {
                  },
                  threshold: {
                      values: threshold_values,
+                 },
+                 value: {
+                     formatter: function(label, value) {
+                         return value;
+                     },
                  }
              },
          },
@@ -2412,7 +2418,7 @@ function createOffset(date) {
      variables[variable_key].label = variable_name
      variables[variable_key].unit = $(val_inst).data('unit');
 
-     //options["series"]["gauges"]["gauge"] = {"background": {"color": $(val_inst).data('color')}}
+     //options["series"]["gauges"]["gauge"]["background"] = {"color": $(val_inst).data('color')};
 
      // prepare the chart and display it even without data
      function prepare(){
@@ -2450,7 +2456,8 @@ function createOffset(date) {
                  fontScale = parseInt(30, 10) / 100;
                  fontSize = Math.min(mhw / 5, 100) * fontScale;
 
-                 options["series"]["gauges"]["value"] = {"font": {"size": fontSize}};
+                 options["series"]["gauges"]["value"]["font"] = {"size": fontSize};
+                 console.log(options);
 
                  var plotCss = {
                      top: '0px',
@@ -2499,7 +2506,7 @@ function createOffset(date) {
                      formatter: labelFormatter,
                      background:{
                        opacity: 0.5,
-       								 color: "#FFF"
+                       color: "#FFF"
                      }
                      //threshold: 0.05
                  }
@@ -2726,6 +2733,8 @@ function createOffset(date) {
                      // update flot plot
                      flotPlot.setData(series);
                      flotPlot.setupGrid(true);
+                     // remove old errors
+                     document.querySelectorAll(chart_container_id + ' .chart-placeholder .error').forEach(e => e.remove());
                      flotPlot.draw();
                  }else {
                      flotPlot = $.plot($(chart_container_id + ' .chart-placeholder'), series, options)
@@ -4273,19 +4282,20 @@ function init_pyscada_content() {
          // add a new Plot
          PyScadaPlots.push(new Pie(id, radius, innerRadius));
      });
-     $.each($('.gauge-container'),function(key,val){
+     document.querySelectorAll('.gauge-container').forEach(e => {
          // get identifier of the chart
-         id = val.id.substring(16);
-         min = $(val).data('params').min;
-         max = $(val).data('params').max;
+         id = e.id.substring(16);
+         min = JSON.parse(e.dataset["params"]).min;
+         max = JSON.parse(e.dataset["params"]).max;
          if ( min === null ) {min = 0;}
          if ( max === null ) {max = 100;}
 
-         thresholdValues = JSON.parse($(val).data('params').threshold_values);
+         thresholdValues = JSON.parse(JSON.parse(e.dataset["params"]).threshold_values);
 
          max2 = max;
-         for (v in thresholdValues) {if (v != "max") {max2 = Math.max(max2, v);}
-     }
+         for (v in thresholdValues) {
+             if (v != "max") {max2 = Math.max(max2, v);}
+         }
          threshold_values = [];
          for (var v in thresholdValues) {
              if (v == "max") {
@@ -4293,6 +4303,10 @@ function init_pyscada_content() {
                 thresholdValues[v]=thresholdValues['max'];
              }
              threshold_values.push({value:Number(v), color:thresholdValues[v]})
+         }
+         // fix threshold values: items must be minimum 3, has the gauge threshold default
+         while (threshold_values.length < 3 && Object.keys(thresholdValues).length) {
+             threshold_values.push({value:Number(Object.keys(thresholdValues)[0]), color:thresholdValues[Object.keys(thresholdValues)[0]]})
          }
          if ( threshold_values === "" ) {threshold_values = [];}
          // add a new Plot
