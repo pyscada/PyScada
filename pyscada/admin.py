@@ -192,6 +192,10 @@ class VariableAdminFrom(forms.ModelForm):
                 w.widget.create_option = types.MethodType(
                     create_option_color, w.widget
                 )  # replace old with new
+                w.widget.attrs = {
+                    "onchange": "this.style.backgroundColor=this.options[this.selectedIndex].style."
+                    "backgroundColor;this.style.color=this.options[this.selectedIndex].style.color"
+                }
 
     def has_changed(self):
         # Force save inline for the good protocol if selected device and protocol_id exists
