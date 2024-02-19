@@ -1669,14 +1669,9 @@ class Variable(models.Model):
     unit = models.ForeignKey(Unit, on_delete=models.SET(1))
     writeable = models.BooleanField(default=False)
     value_class_choices = (
-        ("FLOAT32", "REAL (FLOAT32)"),
-        ("FLOAT32", "SINGLE (FLOAT32)"),
-        ("FLOAT32", "FLOAT32"),
+        ("FLOAT32", "REAL, SINGLE or FLOAT32"),
         ("UNIXTIMEF32", "UNIXTIMEF32"),
-        ("FLOAT64", "LREAL (FLOAT64)"),
-        ("FLOAT64", "FLOAT  (FLOAT64)"),
-        ("FLOAT64", "DOUBLE (FLOAT64)"),
-        ("FLOAT64", "FLOAT64"),
+        ("FLOAT64", "LREAL, FLOAT, DOUBLE or FLOAT64"),
         ("UNIXTIMEF64", "UNIXTIMEF64"),
         ("FLOAT48", "FLOAT48"),
         ("INT64", "INT64"),
@@ -1685,17 +1680,12 @@ class Variable(models.Model):
         ("INT48", "INT48"),
         ("UNIXTIMEI32", "UNIXTIMEI32"),
         ("INT32", "INT32"),
-        ("UINT32", "DWORD (UINT32)"),
-        ("UINT32", "UINT32"),
-        ("INT16", "INT (INT16)"),
-        ("INT16", "INT16"),
-        ("UINT16", "WORD (UINT16)"),
-        ("UINT16", "UINT (UINT16)"),
-        ("UINT16", "UINT16"),
+        ("UINT32", "DWORD or UINT32"),
+        ("INT16", "INT or INT16"),
+        ("UINT16", "WORD, UINT or UINT16"),
         ("INT8", "INT8"),
         ("UINT8", "UINT8"),
-        ("BOOLEAN", "BOOL (BOOLEAN)"),
-        ("BOOLEAN", "BOOLEAN"),
+        ("BOOLEAN", "BOOL or BOOLEAN"),
     )
     scaling = models.ForeignKey(
         Scaling, null=True, blank=True, on_delete=models.SET_NULL
