@@ -1165,7 +1165,11 @@ class ProcessFlowDiagram(WidgetContentModel):
                 )
         except ValueError:
             logger.info(
-                "ProcessFlowDiagram (%s) has no background image defined" % self
+                f"ProcessFlowDiagram {self} has no background image defined"
+            )
+        except FileNotFoundError as e:
+            logger.info(
+                f"ProcessFlowDiagram {self} : {e}"
             )
         sidebar_content = None
         opts = dict()
