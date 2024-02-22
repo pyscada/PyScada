@@ -13,7 +13,7 @@ from django.db.models.signals import post_save
 from django.db.models.fields.related import OneToOneRel
 from django.forms.models import BaseInlineFormSet
 
-from pyscada.utils import blow_up_data, timestamp_to_datetime, min_pass, max_pass
+from pyscada.utils import blow_up_data, timestamp_to_datetime
 from pyscada.utils import _get_objects_for_html as get_objects_for_html
 
 from six import text_type

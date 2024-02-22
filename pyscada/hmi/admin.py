@@ -33,6 +33,8 @@ from django.contrib import admin
 from django import forms
 from django.db.models.fields.related import OneToOneRel
 from django.core.exceptions import ValidationError
+from django.template.exceptions import TemplateDoesNotExist, TemplateSyntaxError
+from django.template.loader import get_template
 
 import logging
 
@@ -631,9 +633,24 @@ class ProcessFlowDiagramAdmin(admin.ModelAdmin):
     save_as_continue = True
 
 
+class ThemeForm(forms.ModelForm):
+
+    def clean(self):
+        super().clean()
+        try:
+            get_template(self.cleaned_data["base_filename"] + ".html").render()
+        except TemplateDoesNotExist as e:
+            raise ValidationError(f"Template {e} not found.")
+        try:
+            get_template(self.cleaned_data["view_filename"] + ".html").render({"base_html":self.cleaned_data.get("base_filename", "base") + ".html"})
+        except TemplateDoesNotExist as e:
+            raise ValidationError(f"Template {e} not found.")
+
+
 class ThemeAdmin(admin.ModelAdmin):
     save_as = True
     save_as_continue = True
+    form = ThemeForm
 
     def has_module_permission(self, request):
         return False

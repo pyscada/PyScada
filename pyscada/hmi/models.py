@@ -58,18 +58,6 @@ def _create_widget_content(sender, instance, created=False, **kwargs):
     return
 
 
-def validate_tempalte(value):
-    try:
-        get_template(value + ".html").render()
-    except TemplateDoesNotExist:
-        logger.warning("Template filename not found.")
-        raise ValidationError(
-            _("Template filename not found."),
-        )
-    except TemplateSyntaxError as e:
-        logger.info(e)
-
-
 # raise a ValidationError if value not endswith .html or if template not found
 def validate_html(value):
     if not value.endswith(".html"):
@@ -208,13 +196,11 @@ class Theme(models.Model):
         max_length=400,
         default="base",
         help_text="Enter the filename without '.html'",
-        validators=[validate_tempalte],
     )
     view_filename = models.CharField(
         max_length=400,
         default="view",
         help_text="Enter the filename without '.html'",
-        validators=[validate_tempalte],
     )
 
     def __str__(self):
@@ -224,12 +210,21 @@ class Theme(models.Model):
         # Delete theme with missing template file
         for theme in Theme.objects.all():
             try:
-                get_template(theme.view_filename + ".html").render({"base_html":"base"})
-                get_template(theme.base_filename + ".html").render()
-            except TemplateDoesNotExist:
+                get_template(theme.base_filename + ".html")
+                get_template(theme.view_filename + ".html")
+            except TemplateDoesNotExist as e:
+                logger.info(f"Template {e} not found. {self} will be delete.")
                 theme.delete()
-            except TemplateSyntaxError as e:
-                logger.info(e)
+            else:
+                try:
+                    get_template(theme.view_filename + ".html").render({"base_html":theme.base_filename + ".html"})
+                except TemplateDoesNotExist as e:
+                    logger.info(f"Template {e} used in the view as base_html not found. {self} will be delete.")
+                    theme.delete()
+                except TemplateSyntaxError as e:
+                    logger.info(e)
+                except AttributeError:
+                    pass
 
 
 class ControlElementOption(models.Model):
