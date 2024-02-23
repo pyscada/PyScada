@@ -212,12 +212,6 @@ var ONBEFORERELOAD_ASK = true;
  var progressbar_resize_active = false;
 
  /**
-  * Update chart's x axes time line status
-  * @type {boolean}
-  */
- var UPDATE_X_AXES_TIME_LINE_STATUS = true;
-
- /**
   * Crosshair status
   * @type {boolean}
   */
@@ -386,7 +380,6 @@ var store_temp_ajax_data = null;
                  document.dispatchEvent(event);
                  if (DATA[key][0] < DATA_FROM_TIMESTAMP){
                      //DATA_FROM_TIMESTAMP = value[0][0];
-                     UPDATE_X_AXES_TIME_LINE_STATUS = true;
                  }
              }else {
                  // if the input data is not stored, we save it
@@ -459,12 +452,6 @@ var store_temp_ajax_data = null;
                          // value should already be in data, pass
                          console.log("PyScada HMI : var" , key, ' : no new data, drop.');
                      }
-                 }
-
-                 // update x axes
-                 if (value[0][0] < DATA_FROM_TIMESTAMP){
-                     //DATA_FROM_TIMESTAMP = value[0][0];
-                     UPDATE_X_AXES_TIME_LINE_STATUS = true;
                  }
              }
          }else{
@@ -1273,26 +1260,6 @@ function createOffset(date) {
                  // from time fixed
                  DATA_DISPLAY_TO_TIMESTAMP = DATA_FROM_TIMESTAMP + DATA_DISPLAY_WINDOW;
              }
-             UPDATE_X_AXES_TIME_LINE_STATUS = true;
-         }
-         $.each(PyScadaPlots,function(plot_id){
-             var self = this, doBind = function() {
-                 PyScadaPlots[plot_id].update(false);
-             };
-             $.browserQueue.add(doBind, this);
-         });
-         for (var key in VARIABLE_KEYS) {
-             key = VARIABLE_KEYS[key];
-             if (typeof(DATA[key]) == 'object'){
-                 update_data_values('var-' + key,DATA[key][DATA[key].length-1][1],DATA[key][DATA[key].length-1][0]);
-             }
-         }
-         for (var key in VARIABLE_PROPERTIES_DATA) {
-             value = VARIABLE_PROPERTIES_DATA[key];
-             if (key in VARIABLE_PROPERTIES_LAST_MODIFIED) {
-                 time = VARIABLE_PROPERTIES_LAST_MODIFIED[key];
-             }else {time = null};
-             update_data_values('prop-' + key,value,time);
          }
          /*
          DATA_OUT_OF_DATE = (SERVER_TIME - timestamp  > CACHE_TIMEOUT);
@@ -1306,9 +1273,8 @@ function createOffset(date) {
      }
 
      // update time line
-     if (UPDATE_X_AXES_TIME_LINE_STATUS){
-         update_timeline();
-     }
+     update_timeline();
+
      // update all legend tables
      $('.legend table').trigger("update");
      if (JSON_ERROR_COUNT > 0) {
@@ -2370,7 +2336,7 @@ function createOffset(date) {
                  },
                  value: {
                      formatter: function(label, value) {
-                         return value;
+                         if (value == null) {return "No data"}else{return value;}
                      },
                  }
              },
@@ -2436,12 +2402,16 @@ function createOffset(date) {
                  key = keys[key];
                  if (key in DATA) {
                      // get the last value using the daterangepicker and the timeline slider values
-                     var value = sliceDATAusingTimestamps(key)[sliceDATAusingTimestamps(key).length - 1];
-                     if (value != "undefined") {
-                        value = transform_data(id.split("-")[1], value[1], "var-" + key);
+
+                     var value = sliceDATAusingTimestamps(key)
+                     if (value.length) {
+                        value = value[value.length - 1][1];
+                        value = transform_data(id.split("-")[1], value, "var-" + key);
                         data=[[min_value, value]];
-                        series.push({"data":data, "label":variables[key].label});
+                     }else {
+                        data=[[min_value, null]];
                      }
+                     series.push({"data":data, "label":variables[key].label});
                  }
              }
              // draw the chart if we have data
@@ -2474,9 +2444,7 @@ function createOffset(date) {
                  try {
                     flotPlot = $.plot(elem, series, options);
                  }catch(err) {
-                    //options["series"]["gauges"]["threshold"]["values"] = [];
-                    //flotPlot = $.plot(elem, [{"data":[[0, 0]], "label":variables[key].label}], options);
-                    // TODO: empty gauge when no data
+                    console.log("Gauge : " + err);
                  }
              }
          }
@@ -2732,8 +2700,18 @@ function createOffset(date) {
              series = [];
              for (var key in keys){
                  key = keys[key];
-                 if($(legend_checkbox_id+key).is(':checked') && typeof(DATA[key]) === 'object'){
-                     series.push({"data":DATA[key][DATA[key].length - 1], "label":variables[key].label,"unit":variables[key].unit, "color":variables[key].color});
+                 if (key in DATA) {
+                    d = sliceDATAusingTimestamps(key)
+                    if (d.length) {
+                        d = d[d.length - 1];
+                    }else {
+                        d=null;
+                    }
+                 }else {
+                    d=null;
+                 }
+                 if($(legend_checkbox_id+key).is(':checked') && typeof(d) === 'object'){
+                     series.push({"data":d, "label":variables[key].label,"unit":variables[key].unit, "color":variables[key].color});
                  }
              }
              if (series.length > 0 || force) {
@@ -2872,6 +2850,23 @@ function createOffset(date) {
      if (DATERANGEPICKER_SET == false) {
          set_datetimepicker();
      }
+    updatePyScadaPlots(force=false, update=true, resize=false);
+    for (var key in VARIABLE_KEYS) {
+        key = VARIABLE_KEYS[key];
+        data = sliceDATAusingTimestamps(key)
+        if (data.length){
+            update_data_values('var-' + key,data[data.length-1][1],data[data.length-1][0]);
+        }else {
+            update_data_values('var-' + key, "No data", null);
+        }
+    }
+    for (var key in VARIABLE_PROPERTIES_DATA) {
+        value = VARIABLE_PROPERTIES_DATA[key];
+        if (key in VARIABLE_PROPERTIES_LAST_MODIFIED) {
+            time = VARIABLE_PROPERTIES_LAST_MODIFIED[key];
+        }else {time = null};
+        update_data_values('prop-' + key,value,time);
+    }
  }
 
 
@@ -3000,11 +2995,11 @@ function createOffset(date) {
   * @param {boolean} force
   * @returns void
   */
- function updatePyScadaPlots(force=false) {
-     $.each(PyScadaPlots,function(plot_id){
-         var self = this, doBind = function() {
-             PyScadaPlots[plot_id].update(force);
-             PyScadaPlots[plot_id].resize();
+ function updatePyScadaPlots(force=false, update=true, resize=true) {
+      $.each(PyScadaPlots,function(plot_id){
+          var self = this, doBind = function() {
+            if (update) {PyScadaPlots[plot_id].update(force);}
+            if (resize) {PyScadaPlots[plot_id].resize();}
          };
          $.browserQueue.add(doBind, this);
      });
@@ -3199,7 +3194,7 @@ function setAggregatedPeriodList(widget_id, var_id) {
  */
 function sliceDATAusingTimestamps(key) {
   if (!(key in DATA)) {
-    console.log("PyScada HMI : " + key + " not in DATA.");
+    //console.log("PyScada HMI : " + key + " not in DATA.");
     return [];
   }
   if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
@@ -3219,7 +3214,11 @@ function sliceDATAusingTimestamps(key) {
       start_id = find_index_sub_gte(DATA[key],DATA_FROM_TIMESTAMP,0);
       stop_id = find_index_sub_lte(DATA[key],DATA_TO_TIMESTAMP,0) + 1;
   }
-  return DATA[key].slice(start_id, stop_id);
+  if (stop_id >= 0 && start_id >= 0 ) {
+    return DATA[key].slice(start_id, stop_id);
+  }else {
+    return []
+  }
 }
 
  //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -4449,12 +4448,7 @@ function init_pyscada_content() {
 
      // Resize charts on windows resize
      $(window).resize(function() {
-       $.each(PyScadaPlots,function(plot_id){
-             var self = this, doBind = function() {
-                 PyScadaPlots[plot_id].resize();
-             };
-             $.browserQueue.add(doBind, this);
-       });
+       updatePyScadaPlots(force=false, update=false, resize=true);
        fix_page_anchor(); // also adjust the anchor points for page refs if nessesary
      });
      set_loading_state(1, loading_states[1] + 10);
