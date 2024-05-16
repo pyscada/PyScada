@@ -314,6 +314,11 @@ html,body {
 
 }
 
+.legend-sidebar .legend {
+	max-height: 450px;
+	overflow-y: scroll;
+}
+
 .legendTitle {
 	font-size: 12px;
 }
