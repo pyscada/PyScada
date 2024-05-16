@@ -244,6 +244,8 @@ html,body {
 	position: relative;
 	min-height: 1px;
 	float: left;
+	height:450px;
+	width:100%;
 }
 .half-size-chart{
 	float: left;
