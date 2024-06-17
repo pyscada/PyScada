@@ -367,78 +367,78 @@ def view(request, link_title):
                 user=request.user,
                 visible_objects_lists=visible_objects_lists,
             )
+            # main content
             if mc is None:
                 logger.info(
                     f"User {request.user} not allowed to see the content of widget {widget}"
                 )
-            elif mc == "":
-                logger.info(f"Content of widget {widget} is empty")
             else:
                 main_content.append(dict(html=mc, widget=widget, topbar=sbc))
+            #sidebar content
             if sbc is not None:
                 sidebar_content.append(dict(html=sbc, widget=widget))
-            if type(opts) == dict and "topbar" in opts and opts["topbar"] == True:
-                topbar = True
-            if (
-                type(opts) == dict
-                and "show_daterangepicker" in opts
-                and opts["show_daterangepicker"] == True
-            ):
-                show_daterangepicker = True
-                show_daterangepicker_temp = True
-            if (
-                type(opts) == dict
-                and "show_timeline" in opts
-                and opts["show_timeline"] == True
-            ):
-                show_timeline_temp = True
-            if type(opts) == dict and "flot" in opts and opts["flot"]:
-                has_flot_chart = True
-            if type(opts) == dict and "base_template" in opts:
-                base_template = opts["base_template"]
-            if type(opts) == dict and "view_template" in opts:
-                view_template = opts["view_template"]
-            if type(opts) == dict and "add_context" in opts:
-                add_context.update(opts["add_context"])
-            if type(opts) == dict and "javascript_files_list" in opts:
-                for file_src in opts["javascript_files_list"]:
-                    if {"src": file_src} not in javascript_files_list:
-                        javascript_files_list.append({"src": file_src})
-            if type(opts) == dict and "css_files_list" in opts:
-                for file_src in opts["css_files_list"]:
-                    if {"src": file_src} not in css_files_list:
-                        css_files_list.append({"src": file_src})
-            if (
-                type(opts) == dict
-                and "object_config_list" in opts
-                and type(opts["object_config_list"] == list)
-            ):
-                for obj in opts["object_config_list"]:
-                    model_name = str(obj._meta.model_name).lower()
-                    if model_name not in object_config_list:
-                        object_config_list[model_name] = list()
-                    if obj not in object_config_list[model_name]:
-                        object_config_list[model_name].append(obj)
-            if (
-                type(opts) == dict
-                and "custom_fields_list" in opts
-                and type(opts["custom_fields_list"] == list)
-            ):
-                for model in opts["custom_fields_list"]:
-                    custom_fields_list[str(model).lower()] = opts["custom_fields_list"][
-                        model
-                    ]
+            # options
+            if type(opts) == dict:
+                if "topbar" in opts and opts["topbar"] == True:
+                    topbar = True
+                if (
+                    "show_daterangepicker" in opts
+                    and opts["show_daterangepicker"] == True
+                ):
+                    show_daterangepicker = True
+                    show_daterangepicker_temp = True
+                if (
+                    "show_timeline" in opts
+                    and opts["show_timeline"] == True
+                ):
+                    show_timeline_temp = True
+                if "flot" in opts and opts["flot"]:
+                    has_flot_chart = True
+                if "base_template" in opts:
+                    base_template = opts["base_template"]
+                if "view_template" in opts:
+                    view_template = opts["view_template"]
+                if "add_context" in opts:
+                    add_context.update(opts["add_context"])
+                if "javascript_files_list" in opts:
+                    for file_src in opts["javascript_files_list"]:
+                        if {"src": file_src} not in javascript_files_list:
+                            javascript_files_list.append({"src": file_src})
+                if "css_files_list" in opts:
+                    for file_src in opts["css_files_list"]:
+                        if {"src": file_src} not in css_files_list:
+                            css_files_list.append({"src": file_src})
+                if (
+                    "object_config_list" in opts
+                    and type(opts["object_config_list"] == list)
+                ):
+                    for obj in opts["object_config_list"]:
+                        model_name = str(obj._meta.model_name).lower()
+                        if model_name not in object_config_list:
+                            object_config_list[model_name] = list()
+                        if obj not in object_config_list[model_name]:
+                            object_config_list[model_name].append(obj)
+                if (
+                    "custom_fields_list" in opts
+                    and type(opts["custom_fields_list"] == list)
+                ):
+                    for model in opts["custom_fields_list"]:
+                        custom_fields_list[str(model).lower()] = opts["custom_fields_list"][
+                            model
+                        ]
 
-            if (
-                type(opts) == dict
-                and "exclude_fields_list" in opts
-                and type(opts["exclude_fields_list"] == list)
-            ):
-                for model in opts["exclude_fields_list"]:
-                    exclude_fields_list[str(model).lower()] = opts[
-                        "exclude_fields_list"
-                    ][model]
-
+                if (
+                    "exclude_fields_list" in opts
+                    and type(opts["exclude_fields_list"] == list)
+                ):
+                    for model in opts["exclude_fields_list"]:
+                        exclude_fields_list[str(model).lower()] = opts[
+                            "exclude_fields_list"
+                        ][model]
+            else:
+                logger.info(
+                    f"Widget {widget} options is not a dict, it is {opts}"
+                )
         widget_rows_html += widget_row_template.render(
             {
                 "row": current_row,

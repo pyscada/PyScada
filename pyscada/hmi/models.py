@@ -110,7 +110,7 @@ class WidgetContentModel(models.Model):
         :return: main panel html and sidebar html as
         """
         logger.info(f"gen_html function of {self} model needs to be overwritten")
-        return "", "", ""
+        return None, None, {}
 
     def _get_objects_for_html(
         self, list_to_append=None, obj=None, exclude_model_names=None
