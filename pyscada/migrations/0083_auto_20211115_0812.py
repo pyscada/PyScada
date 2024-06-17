@@ -2,7 +2,7 @@
 
 import datetime
 from django.db import migrations, models
-from django.utils.timezone import utc
+from datetime import timezone
 
 
 class Migration(migrations.Migration):
@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
             model_name="periodfield",
             name="start_from",
             field=models.DateTimeField(
-                default=datetime.datetime(2021, 11, 15, 0, 0, tzinfo=utc),
+                default=datetime.datetime(2021, 11, 15, 0, 0, tzinfo=timezone.utc),
                 help_text="Count from this DateTime and then each period_factor*periodcalculate between 1min30 and 2min30 etc.",
             ),
         ),
