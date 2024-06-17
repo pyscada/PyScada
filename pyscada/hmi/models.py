@@ -936,6 +936,22 @@ class Form(models.Model):
             files += item.get_css()
         return files
 
+    def get_daterangepicker(self):
+        get_daterangepicker = False
+        for item in self.control_items.all():
+            get_daterangepicker = get_daterangepicker or item.get_daterangepicker()
+        for item in self.hidden_control_items_to_true.all():
+            get_daterangepicker = get_daterangepicker or item.get_daterangepicker()
+        return get_daterangepicker
+
+    def get_timeline(self):
+        get_timeline = False
+        for item in self.control_items.all():
+            get_timeline = get_timeline or item.get_timeline()
+        for item in self.hidden_control_items_to_true.all():
+            get_timeline = get_timeline or item.get_timeline()
+        return get_timeline
+
 
 class Page(models.Model):
     id = models.AutoField(primary_key=True)
@@ -1013,9 +1029,9 @@ class ControlPanel(WidgetContentModel):
             opts["javascript_files_list"] += form.get_js()
             opts["css_files_list"] += form.get_css()
             opts["show_daterangepicker"] = (
-                opts["show_daterangepicker"] or item.get_daterangepicker()
+                opts["show_daterangepicker"] or form.get_daterangepicker()
             )
-            opts["show_timeline"] = opts["show_timeline"] or item.get_timeline()
+            opts["show_timeline"] = opts["show_timeline"] or form.get_timeline()
         # opts["object_config_list"] = set()
         # opts["object_config_list"].update(self._get_objects_for_html())
         # opts = self.add_custom_fields_list(opts)
