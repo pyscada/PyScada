@@ -450,7 +450,7 @@ var store_temp_ajax_data = null;
                          }
                      } else{
                          // value should already be in data, pass
-                         console.log("PyScada HMI : var" , key, ' : no new data, drop.');
+//                         console.log("PyScada HMI : var" , key, ' : no new data, drop.');
                      }
                  }
              }
@@ -696,11 +696,9 @@ function transform_data(control_item_id, val, key) {
  /**
   * Update variable data values and refresh logo
   * @param {number} key Data id to update
-  * @param {*} val The new data
-  * @param {number} time The timestamp
+  * @param {object} data The data of the object
   */
- function update_data_values(key,val,time){
-
+ function update_data_values(key,data){
      // CHECKING 'key' TYPE :
      if (key.split("-")[0] == "var") {var type="variable";} else {var type="variable-property";}
 
@@ -718,136 +716,175 @@ function transform_data(control_item_id, val, key) {
      var device_id = get_config_from_hidden_config("variable", 'id', var_id, 'device')
      var device_polling_interval = get_config_from_hidden_config("device", 'id', device_id, 'polling-interval')
 
-     // TIME UPDATE :
-     if (time != null) {
-         var t_last_update = SERVER_TIME - time;
-         //t_next_update = 1000 * $(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-device-polling_interval') - t_last_update;
-         var t_next_update = 1000 * device_polling_interval - t_last_update;
-         var t_next_update_string = ((t_next_update < 1000) ? '< 1 sec' : msToTime(t_next_update));
-
-         //$(".type-numeric." + key).attr('data-original-title','Current value: ' + val + ' ' + unit + '<br>Last update: ' + msToTime(t_last_update) + ' ago<br>Next update: ' + t_next_update_string);
-         document.querySelectorAll(".type-numeric." + key).forEach(function(e) {
-            e.setAttribute('data-original-title','Current value: ' + val + ' ' + unit + '<br>Last update: ' + msToTime(t_last_update) + ' ago<br>Next update: ' + t_next_update_string);
-         });
-         //$(".variable-config[data-value-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-value-timestamp',time);
-         set_config_from_hidden_config(type, 'id', key.split("-")[1], 'value-timestamp', time)
-         //$(".variable-config2[data-value-timestamp][data-id=" + key.split("-")[1] + "]").attr('data-value-timestamp',time);
-
-         // Show and hide warning or alert icons left the the variable name when data is old in comparison of the device polling interval
-         //polling_interval = $(".variable-config[data-device-polling_interval][data-key=" + key.split("-")[1] + "]").attr('data-device-polling_interval');
-         if (time < SERVER_TIME - 10 * Math.max(1000 * device_polling_interval, REFRESH_RATE)) {
-             $(".type-numeric." + key).parent().find('.glyphicon-alert').removeClass("hidden");
-             $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').addClass("hidden");
-         }else if (time < SERVER_TIME - 3 * Math.max(1000 * device_polling_interval, REFRESH_RATE)) {
-             $(".type-numeric." + key).parent().find('.glyphicon-alert').addClass("hidden");
-             $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').removeClass("hidden");
-         }else {
-             $(".type-numeric." + key).parent().find('.glyphicon-alert').addClass("hidden");
-             $(".type-numeric." + key).parent().find('.glyphicon-exclamation-sign').addClass("hidden");
-         }
-     }
-
-     //if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp') != "" && time != null && time <= $(".variable-config[data-refresh-requested-timestamp][data-key=" + key.split("-")[1] + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp')) {
-     // Quit if the value is not newer than the last read request
-     var refresh_requested_timestamp = get_config_from_hidden_config(type, 'id', key.split("-")[1], 'refresh-requested-timestamp');
-     if (refresh_requested_timestamp != null && time != null && time <= refresh_requested_timestamp) {
-         return;
-     }
-
-
      // TYPE OF 'val' :
      // NUMBER and BOOLEAN :
-     if (typeof(val)==="number" || typeof(val)==="boolean"){
-
+     if (typeof(data)==="object" && data !== null){
          // timestamp, dictionary and color
          document.querySelectorAll(".control-item.type-numeric." + key).forEach(function(e) {
              var control_item_id = e.id;
              var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'display-value-options');
-             var color_only = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-only');
-             var ci_type = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'type');
-             var timestamp_conversion_value = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'timestamp-conversion');
-             var var_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], type);
-             var dictionary_value = get_config_from_hidden_config(type.replace('-', ''), 'id', var_id, 'dictionary');
-             var ci_label = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'label');
-             var temp_val = transform_data(control_item_id.split("-")[1], val, key);
+             var from_timestamp_offset = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'from-timestamp-offset');
 
-             if (typeof(temp_val)==="number") {
-                 var r_val = Number(temp_val);
-
-                 // adjusting r_val
-                 if(Math.abs(r_val) == 0 ){
-                     r_val = 0;
-                 }else if(Math.abs(r_val) < 0.001) {
-                     r_val = r_val.toExponential(2);
-                 }else if (Math.abs(r_val) < 0.01) {
-                     r_val = r_val.toPrecision(1);
-                 }else if(Math.abs(r_val) < 0.1) {
-                     r_val = r_val.toPrecision(2);
-                 }else if(Math.abs(r_val) < 1) {
-                     r_val = r_val.toPrecision(3);
-                 }else if(r_val > 100) {
-                     r_val = r_val.toPrecision(4);
-                 }else{
-                     r_val = r_val.toPrecision(4);
-                 }
-             }else {
-                 var r_val = val;
-                 // set button colors
-                 if (r_val === 0 | r_val == false) {
-                     $('button.btn-success.write-task-btn.' + key).addClass("update-able");
-                     $('button.update-able.write-task-btn.' + key).addClass("btn-default");
-                     $('button.update-able.write-task-btn.' + key).removeClass("btn-success");
-
-                     r_val = 0;
-
-                     //$(".type-numeric." + key).html(0);
-                     if ($('input.'+ key).attr("placeholder") == "") {
-                         $('input.'+ key).attr("placeholder",0);
-                     }
-                 } else if (typeof(temp_val)==="boolean"){
-                     r_val = 1;
-
-                     $('button.btn-default.write-task-btn.' + key).addClass("update-able");
-                     $('button.update-able.write-task-btn.' + key).removeClass("btn-default");
-                     $('button.update-able.write-task-btn.' + key).addClass("btn-success");
-
-                     //$(".type-numeric." + key).html(1);
-                     if ($('input.'+ key).attr("placeholder") == "") {
-                         $('input.'+ key).attr("placeholder",1);
-                     }
-                 }
-             }
-
-             if (display_value_option_id == 'None' || color_only == 'False') {
-                if (typeof(val)==="number") {
-                    if (timestamp_conversion_value != null && timestamp_conversion_value != 0 && typeof(timestamp_conversion_value) != "undefined"){
-                        // Transform timestamps
-                        r_val=dictionary(var_id, temp_val, type.replace('-', ''));
-                        r_val=timestamp_conversion(timestamp_conversion_value,r_val);
+            // get time and value depending on date range picker, timeline and control item option
+            if (data.length){
+                from_timestamp_offset = parseFloat(from_timestamp_offset);
+                if (isNaN(from_timestamp_offset)){
+                    var data_temp = sliceDATAusingTimestamps(key);
+                }else {
+                    if (from_timestamp_offset === 0) {
+                        var data_temp = data;
                     }else {
-                        // Transform value in dictionaries
-                        r_val=dictionary(var_id, temp_val, type.replace('-', ''));
+                        var data_temp = sliceDATAusingTimestamps(key, display_from=DATA_DISPLAY_FROM_TIMESTAMP-from_timestamp_offset);
                     }
-                    // Set the text value
-                    document.querySelector("#" + control_item_id).innerHTML = r_val + " " + unit;
-                }else if(typeof(temp_val)==="boolean" && e.querySelector('.boolean-value') != null){
-                    // Set the text value
-                    e.querySelector('.boolean-value').innerHTML = ci_label + " : " + dictionary(var_id, temp_val, type.replace('-', '')) + " " + unit;
+                    var data_temp = sliceDATAusingTimestamps(key);
                 }
-             }
-             if (display_value_option_id == 'None' || ci_type == 0){
-                 // Change background color
-                 if (e.classList.contains("process-flow-diagram-item")) {
-                   e.style.fill = update_data_colors(control_item_id,temp_val);
-                 }else {
-                   e.style.backgroundColor = update_data_colors(control_item_id,temp_val);
-                 }
-                 // create event to announce color change for a control item
-                 var event = new CustomEvent("changePyScadaControlItemColor_" + control_item_id.split('-')[1], { detail: update_data_colors(control_item_id,val) });
-                 window.dispatchEvent(event);
-             }
+                if (data_temp.length){
+                    var val = data_temp[data.length-1][1];
+                    var time = data_temp[data.length-1][0];
+                }else {
+                    var val = "No data";
+                    var time = null;
+                    console.log("no data");
+                }
+            }else {
+                var val = "No data";
+                var time = null;
+                console.log("no data");
+            }
+
+            // TIME UPDATE :
+            if (time != null) {
+                var t_last_update = SERVER_TIME - time;
+                var t_next_update = 1000 * device_polling_interval - t_last_update;
+                var t_next_update_string = ((t_next_update < 1000) ? '< 1 sec' : msToTime(t_next_update));
+
+                e.setAttribute('data-original-title','Current value: ' + val + ' ' + unit + '<br>Last update: ' + msToTime(t_last_update) + ' ago<br>Next update: ' + t_next_update_string);
+                set_config_from_hidden_config(type, 'id', key.split("-")[1], 'value-timestamp', time)
+
+                // Show and hide warning or alert icons left the the variable name when data is old in comparison of the device polling interval
+                if (time < SERVER_TIME - 10 * Math.max(1000 * device_polling_interval, REFRESH_RATE)) {
+                    e.parentElement.querySelector('.glyphicon-alert').classList.remove("hidden");
+                    e.parentElement.querySelector('.glyphicon-exclamation-sign').classList.add("hidden");
+                }else if (time < SERVER_TIME - 3 * Math.max(1000 * device_polling_interval, REFRESH_RATE)) {
+                    e.parentElement.querySelector('.glyphicon-alert').classList.add("hidden");
+                    e.parentElement.querySelector('.glyphicon-exclamation-sign').classList.remove("hidden");
+                }else {
+                    e.parentElement.querySelector('.glyphicon-alert').classList.add("hidden");
+                    e.parentElement.querySelector('.glyphicon-exclamation-sign').classList.add("hidden");
+                }
+            }
+
+            // Quit if the value is not newer than the last read request
+            var refresh_requested_timestamp = get_config_from_hidden_config(type, 'id', key.split("-")[1], 'refresh-requested-timestamp');
+            if (refresh_requested_timestamp != null && time != null && time <= refresh_requested_timestamp) {
+                return;
+            }
+
+            if (typeof(val)==="number" || typeof(val)==="boolean"){
+
+                // value update, dictionary, timestamp convertion
+                var color_only = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-only');
+                var timestamp_conversion_value = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'timestamp-conversion');
+                var var_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], type);
+                var ci_label = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'label');
+                var temp_val = transform_data(control_item_id.split("-")[1], val, key);
+
+                if (typeof(temp_val)==="number") {
+                    var r_val = Number(temp_val);
+
+                    // adjusting r_val
+                    if(Math.abs(r_val) == 0 ){
+                        r_val = 0;
+                    }else if(Math.abs(r_val) < 0.001) {
+                        r_val = r_val.toExponential(2);
+                    }else if (Math.abs(r_val) < 0.01) {
+                        r_val = r_val.toPrecision(1);
+                    }else if(Math.abs(r_val) < 0.1) {
+                        r_val = r_val.toPrecision(2);
+                    }else if(Math.abs(r_val) < 1) {
+                        r_val = r_val.toPrecision(3);
+                    }else if(r_val > 100) {
+                        r_val = r_val.toPrecision(4);
+                    }else{
+                        r_val = r_val.toPrecision(4);
+                    }
+                }else {
+                    var r_val = val;
+                    // set button colors
+                    if (r_val === 0 | r_val == false) {
+                        $('button.btn-success.write-task-btn.' + key).addClass("update-able");
+                        $('button.update-able.write-task-btn.' + key).addClass("btn-default");
+                        $('button.update-able.write-task-btn.' + key).removeClass("btn-success");
+
+                        r_val = 0;
+
+                        //$(".type-numeric." + key).html(0);
+                        if ($('input.'+ key).attr("placeholder") == "") {
+                            $('input.'+ key).attr("placeholder",0);
+                        }
+                    } else if (typeof(temp_val)==="boolean"){
+                        r_val = 1;
+
+                        $('button.btn-default.write-task-btn.' + key).addClass("update-able");
+                        $('button.update-able.write-task-btn.' + key).removeClass("btn-default");
+                        $('button.update-able.write-task-btn.' + key).addClass("btn-success");
+
+                        //$(".type-numeric." + key).html(1);
+                        if ($('input.'+ key).attr("placeholder") == "") {
+                            $('input.'+ key).attr("placeholder",1);
+                        }
+                    }
+                }
+
+                if (display_value_option_id == 'None' || color_only == 'False') {
+                    if (typeof(val)==="number") {
+                        if (timestamp_conversion_value != null && timestamp_conversion_value != 0 && typeof(timestamp_conversion_value) != "undefined"){
+                            // Transform timestamps
+                            r_val=dictionary(var_id, temp_val, type.replace('-', ''));
+                            r_val=timestamp_conversion(timestamp_conversion_value,r_val);
+                        }else {
+                            // Transform value in dictionaries
+                            r_val=dictionary(var_id, temp_val, type.replace('-', ''));
+                        }
+                        // Set the text value
+                        document.querySelector("#" + control_item_id).innerHTML = r_val + " " + unit;
+                    }else if(typeof(temp_val)==="boolean" && e.querySelector('.boolean-value') != null){
+                        // Set the text value
+                        e.querySelector('.boolean-value').innerHTML = ci_label + " : " + dictionary(var_id, temp_val, type.replace('-', '')) + " " + unit;
+                    }
+                }
+                if (display_value_option_id != 'None'){
+                    // Change background color
+                    if (e.classList.contains("process-flow-diagram-item")) {
+                    e.style.fill = update_data_colors(control_item_id,temp_val);
+                    }else {
+                    e.style.backgroundColor = update_data_colors(control_item_id,temp_val);
+                    }
+                    // create event to announce color change for a control item
+                    var event = new CustomEvent("changePyScadaControlItemColor_" + control_item_id.split('-')[1], { detail: update_data_colors(control_item_id,val) });
+                    window.dispatchEvent(event);
+                }
+            }else if (typeof(val)==="string"){
+            // STRING :
+                $(".type-numeric." + key).html(data);
+                // indicative text
+                if ($('input.'+ key).attr("placeholder") == "") {
+                    $('input.'+ key).attr("placeholder",data);
+                }
+            }else {
+                console.log("Invalid data format for " + control_item_id + " : " + typeof(data) + " : " + data);
+            }
          })
 
+        // prepare
+        if (data.length){
+            var val = data[data.length-1][1];
+            var time = data[data.length-1][0];
+        }else {
+            var val = "No data";
+            var time = null;
+            console.log("no data");
+        }
          if (typeof(val)==="number") {
              var r_val = Number(val);
 
@@ -867,31 +904,12 @@ function transform_data(control_item_id, val, key) {
              }else{
                  r_val = r_val.toPrecision(4);
              }
-         }else {
+         }else if (typeof(val)==="boolean"){
              var r_val = val;
-             // set button colors
              if (r_val === 0 | r_val == false) {
-                 $('button.btn-success.write-task-btn.' + key).addClass("update-able");
-                 $('button.update-able.write-task-btn.' + key).addClass("btn-default");
-                 $('button.update-able.write-task-btn.' + key).removeClass("btn-success");
-
                  r_val = 0;
-
-                 //$(".type-numeric." + key).html(0);
-                 if ($('input.'+ key).attr("placeholder") == "") {
-                     $('input.'+ key).attr("placeholder",0);
-                 }
-             } else if (typeof(val)==="boolean"){
+             } else {
                  r_val = 1;
-
-                 $('button.btn-default.write-task-btn.' + key).addClass("update-able");
-                 $('button.update-able.write-task-btn.' + key).removeClass("btn-default");
-                 $('button.update-able.write-task-btn.' + key).addClass("btn-success");
-
-                 //$(".type-numeric." + key).html(1);
-                 if ($('input.'+ key).attr("placeholder") == "") {
-                     $('input.'+ key).attr("placeholder",1);
-                 }
              }
          }
 
@@ -904,29 +922,13 @@ function transform_data(control_item_id, val, key) {
              $(".legendValue.type-numeric." + key).html(r_val);
          }
 
-         // update sliding panel menu variable value
-         $(".label .type-numeric." + key).html(r_val);
-
-         // set input placeholder value : displayed in the input field before the user enters a value
-         if ($('input.'+ key).attr("placeholder") == "") {
-             $('input.'+ key).attr("placeholder",r_val);
-         }
      }
 
-     // OBJECT :
-     if (typeof(val)==="object" && val === null){
-         $(".type-numeric." + key).html(val);
+     // null OBJECT :
+     if (typeof(data)==="object" && data === null){
+         $(".type-numeric." + key).html(data);
          if ($('input.'+ key).attr("placeholder") == "") {
-             $('input.'+ key).attr("placeholder",val);
-         }
-     }
-
-     // STRING :
-     if (typeof(val)==="string"){
-         $(".type-numeric." + key).html(val);
-         // indicative text
-         if ($('input.'+ key).attr("placeholder") == "") {
-             $('input.'+ key).attr("placeholder",val);
+             $('input.'+ key).attr("placeholder",data);
          }
      }
 
@@ -2853,19 +2855,14 @@ function createOffset(date) {
     updatePyScadaPlots(force=false, update=true, resize=false);
     for (var key in VARIABLE_KEYS) {
         key = VARIABLE_KEYS[key];
-        data = sliceDATAusingTimestamps(key)
-        if (data.length){
-            update_data_values('var-' + key,data[data.length-1][1],data[data.length-1][0]);
-        }else {
-            update_data_values('var-' + key, "No data", null);
-        }
+        update_data_values('var-' + key,DATA[key]);
     }
     for (var key in VARIABLE_PROPERTIES_DATA) {
         value = VARIABLE_PROPERTIES_DATA[key];
         if (key in VARIABLE_PROPERTIES_LAST_MODIFIED) {
             time = VARIABLE_PROPERTIES_LAST_MODIFIED[key];
         }else {time = null};
-        update_data_values('prop-' + key,value,time);
+        update_data_values('prop-' + key,[time, value]);
     }
  }
 
@@ -3192,27 +3189,27 @@ function setAggregatedPeriodList(widget_id, var_id) {
 /**
  *  select data in DATA for key using the daterangepicker and timeline slider values
  */
-function sliceDATAusingTimestamps(key) {
+function sliceDATAusingTimestamps(key, display_from=DATA_DISPLAY_FROM_TIMESTAMP, display_to=DATA_DISPLAY_TO_TIMESTAMP, from=DATA_FROM_TIMESTAMP, to=DATA_TO_TIMESTAMP) {
   if (!(key in DATA)) {
     //console.log("PyScada HMI : " + key + " not in DATA.");
     return [];
   }
-  if (DATA_DISPLAY_TO_TIMESTAMP > 0 && DATA_DISPLAY_FROM_TIMESTAMP > 0){
-      start_id = find_index_sub_gte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
-      stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0) + 1;
-  }else if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && DATA_DISPLAY_TO_TIMESTAMP < 0){
-      start_id = find_index_sub_gte(DATA[key],DATA_DISPLAY_FROM_TIMESTAMP,0);
-      stop_id = find_index_sub_lte(DATA[key],DATA_TO_TIMESTAMP,0) + 1;
-  }else if (DATA_DISPLAY_FROM_TIMESTAMP < 0 && DATA_DISPLAY_TO_TIMESTAMP > 0){
-      if (DATA_DISPLAY_TO_TIMESTAMP < DATA[key][0][0]){
+  if (display_to > 0 && display_from > 0){
+      start_id = find_index_sub_gte(DATA[key],display_from,0);
+      stop_id = find_index_sub_lte(DATA[key],display_to,0) + 1;
+  }else if (display_from > 0 && display_to < 0){
+      start_id = find_index_sub_gte(DATA[key],display_from,0);
+      stop_id = find_index_sub_lte(DATA[key],to,0) + 1;
+  }else if (display_from < 0 && display_to > 0){
+      if (display_to < DATA[key][0][0]){
         start_id = stop_id = null;
       }else {
-        start_id = find_index_sub_gte(DATA[key],DATA_FROM_TIMESTAMP,0);
-        stop_id = find_index_sub_lte(DATA[key],DATA_DISPLAY_TO_TIMESTAMP,0) + 1;
+        start_id = find_index_sub_gte(DATA[key],from,0);
+        stop_id = find_index_sub_lte(DATA[key],display_to,0) + 1;
       }
   }else {
-      start_id = find_index_sub_gte(DATA[key],DATA_FROM_TIMESTAMP,0);
-      stop_id = find_index_sub_lte(DATA[key],DATA_TO_TIMESTAMP,0) + 1;
+      start_id = find_index_sub_gte(DATA[key],from,0);
+      stop_id = find_index_sub_lte(DATA[key],to,0) + 1;
   }
   if (stop_id >= 0 && start_id >= 0 ) {
     return DATA[key].slice(start_id, stop_id);
