@@ -1667,6 +1667,7 @@ class Variable(models.Model):
     device = models.ForeignKey(Device, null=True, on_delete=models.CASCADE)
     active = models.BooleanField(default=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET(1))
+    readable = models.BooleanField(default=True)
     writeable = models.BooleanField(default=False)
     value_class_choices = (
         ("FLOAT32", "REAL, SINGLE or FLOAT32"),
