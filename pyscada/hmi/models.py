@@ -373,6 +373,13 @@ class DisplayValueOption(models.Model):
         help_text="Select a function to transform and manipulate data before displaying it.",
     )
 
+    from_timestamp_offset = models.PositiveSmallIntegerField(
+        default=None, blank=True, null=True,
+        help_text="Manage the value to be displayed if there is no data within the specified time interval.<br>"
+        "If the field is empty, the last known data before the specified time interval will be displayed.<br>"
+        "Set a value to add an offset in milliseconds before the start of the specified time interval.",
+    )
+
     def __str__(self):
         return self.title
 
