@@ -724,6 +724,8 @@ function transform_data(control_item_id, val, key) {
              var control_item_id = e.id;
              var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'display-value-options');
              var from_timestamp_offset = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'from-timestamp-offset');
+             var var_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], type);
+             var var_readable = get_config_from_hidden_config("variable", 'id', var_id, "readable");
 
             // get time and value depending on date range picker, timeline and control item option
             if (data.length){
@@ -750,21 +752,27 @@ function transform_data(control_item_id, val, key) {
                 var t_last_update = SERVER_TIME - time;
                 var t_next_update = 1000 * device_polling_interval - t_last_update;
                 var t_next_update_string = ((t_next_update < 1000) ? '< 1 sec' : msToTime(t_next_update));
+                var tooltip_text = 'Current value: ' + val + ' ' + unit + '<br>Last update: ' + msToTime(t_last_update) + ' ago';
+                if (var_readable === "True") {
+                    tooltip_text += '<br>Next update: ' + t_next_update_string;
 
-                e.setAttribute('data-original-title','Current value: ' + val + ' ' + unit + '<br>Last update: ' + msToTime(t_last_update) + ' ago<br>Next update: ' + t_next_update_string);
+                    // Show and hide warning or alert icons left the the variable name when data is old in comparison of the device polling interval
+                    if (time < SERVER_TIME - 10 * Math.max(1000 * device_polling_interval, REFRESH_RATE)) {
+                        e.parentElement.querySelector('.glyphicon-alert').classList.remove("hidden");
+                        e.parentElement.querySelector('.glyphicon-exclamation-sign').classList.add("hidden");
+                    }else if (time < SERVER_TIME - 3 * Math.max(1000 * device_polling_interval, REFRESH_RATE)) {
+                        e.parentElement.querySelector('.glyphicon-alert').classList.add("hidden");
+                        e.parentElement.querySelector('.glyphicon-exclamation-sign').classList.remove("hidden");
+                    }else {
+                        e.parentElement.querySelector('.glyphicon-alert').classList.add("hidden");
+                        e.parentElement.querySelector('.glyphicon-exclamation-sign').classList.add("hidden");
+                    }
+                }
+
+                e.setAttribute('data-original-title', tooltip_text);
                 set_config_from_hidden_config(type, 'id', key.split("-")[1], 'value-timestamp', time)
 
-                // Show and hide warning or alert icons left the the variable name when data is old in comparison of the device polling interval
-                if (time < SERVER_TIME - 10 * Math.max(1000 * device_polling_interval, REFRESH_RATE)) {
-                    e.parentElement.querySelector('.glyphicon-alert').classList.remove("hidden");
-                    e.parentElement.querySelector('.glyphicon-exclamation-sign').classList.add("hidden");
-                }else if (time < SERVER_TIME - 3 * Math.max(1000 * device_polling_interval, REFRESH_RATE)) {
-                    e.parentElement.querySelector('.glyphicon-alert').classList.add("hidden");
-                    e.parentElement.querySelector('.glyphicon-exclamation-sign').classList.remove("hidden");
-                }else {
-                    e.parentElement.querySelector('.glyphicon-alert').classList.add("hidden");
-                    e.parentElement.querySelector('.glyphicon-exclamation-sign').classList.add("hidden");
-                }
+
             }
 
             // Quit if the value is not newer than the last read request
@@ -778,7 +786,6 @@ function transform_data(control_item_id, val, key) {
                 // value update, dictionary, timestamp convertion
                 var color_only = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-only');
                 var timestamp_conversion_value = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'timestamp-conversion');
-                var var_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], type);
                 var ci_label = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'label');
                 var temp_val = transform_data(control_item_id.split("-")[1], val, key);
 
@@ -3742,7 +3749,7 @@ function fix_page_anchor() {
      });
      key = key.toString();
      //if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp')>$(".variable-config[data-value-timestamp][data-key=" + key + "][data-type=" + type + "]").attr('data-value-timestamp')) {
-     if (get_config_from_hidden_config(type, 'id', key, 'refresh-requested-timestamp')>get_config_from_hidden_config(type, 'id', key, 'value-timestamp')) {
+     if (get_config_from_hidden_config(type, 'id', key, 'refresh-requested-timestamp')>get_config_from_hidden_config(type, 'id', key, 'value-timestamp') && (get_config_from_hidden_config("variable", 'id', key, "readable") === "True" || type !== "variable")) {
          $.each($(".control-item.type-numeric." + type_short + "-" + key), function(k,v){
              val_temp=$(v).html();
              $(v).prepend('<img style="height:14px;" src="/static/pyscada/img/load.gif" alt="refreshing">');
