@@ -729,14 +729,10 @@ function transform_data(control_item_id, val, key) {
             if (data.length){
                 from_timestamp_offset = parseFloat(from_timestamp_offset);
                 if (isNaN(from_timestamp_offset)){
-                    var data_temp = sliceDATAusingTimestamps(key);
+                    var data_temp = data;
                 }else {
-                    if (from_timestamp_offset === 0) {
-                        var data_temp = data;
-                    }else {
-                        var data_temp = sliceDATAusingTimestamps(key, display_from=DATA_DISPLAY_FROM_TIMESTAMP-from_timestamp_offset);
-                    }
-                    var data_temp = sliceDATAusingTimestamps(key);
+                    console.log("timestamp offset for control_item_id : " + from_timestamp_offset);
+                    var data_temp = sliceDATAusingTimestamps(key, display_from=DATA_DISPLAY_FROM_TIMESTAMP-from_timestamp_offset);
                 }
                 if (data_temp.length){
                     var val = data_temp[data.length-1][1];
@@ -746,6 +742,7 @@ function transform_data(control_item_id, val, key) {
                     var time = null;
                     console.log("no data");
                 }
+                console.log(val, time);
             }else {
                 var val = "No data";
                 var time = null;
