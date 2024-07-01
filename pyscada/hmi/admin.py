@@ -362,6 +362,7 @@ class DisplayValueOptionAdmin(admin.ModelAdmin):
                     "template",
                     "timestamp_conversion",
                     "transform_data",
+                    "from_timestamp_offset",
                 ),
             },
         ),

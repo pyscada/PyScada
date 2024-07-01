@@ -731,22 +731,18 @@ function transform_data(control_item_id, val, key) {
                 if (isNaN(from_timestamp_offset)){
                     var data_temp = data;
                 }else {
-                    console.log("timestamp offset for control_item_id : " + from_timestamp_offset);
-                    var data_temp = sliceDATAusingTimestamps(key, display_from=DATA_DISPLAY_FROM_TIMESTAMP-from_timestamp_offset);
+                    var data_temp = sliceDATAusingTimestamps(data, display_from=DATA_DISPLAY_FROM_TIMESTAMP-from_timestamp_offset);
                 }
                 if (data_temp.length){
-                    var val = data_temp[data.length-1][1];
-                    var time = data_temp[data.length-1][0];
+                    var val = data_temp[data_temp.length-1][1];
+                    var time = data_temp[data_temp.length-1][0];
                 }else {
                     var val = "No data";
                     var time = null;
-                    console.log("no data");
                 }
-                console.log(val, time);
             }else {
                 var val = "No data";
                 var time = null;
-                console.log("no data");
             }
 
             // TIME UPDATE :
@@ -844,7 +840,7 @@ function transform_data(control_item_id, val, key) {
                             r_val=dictionary(var_id, temp_val, type.replace('-', ''));
                         }
                         // Set the text value
-                        document.querySelector("#" + control_item_id).innerHTML = r_val + " " + unit;
+                        e.innerHTML = r_val + " " + unit;
                     }else if(typeof(temp_val)==="boolean" && e.querySelector('.boolean-value') != null){
                         // Set the text value
                         e.querySelector('.boolean-value').innerHTML = ci_label + " : " + dictionary(var_id, temp_val, type.replace('-', '')) + " " + unit;
@@ -863,11 +859,14 @@ function transform_data(control_item_id, val, key) {
                 }
             }else if (typeof(val)==="string"){
             // STRING :
-                $(".type-numeric." + key).html(data);
+                e.innerHTML = val;
                 // indicative text
-                if ($('input.'+ key).attr("placeholder") == "") {
-                    $('input.'+ key).attr("placeholder",data);
+                if (e.getAttribute("placeholder") != null) {
+                    e.setAttribute("placeholder",val);
                 }
+                e.parentElement.querySelector('.glyphicon-alert').classList.add("hidden");
+                e.parentElement.querySelector('.glyphicon-exclamation-sign').classList.add("hidden");
+                e.style.backgroundColor = null;
             }else {
                 console.log("Invalid data format for " + control_item_id + " : " + typeof(data) + " : " + data);
             }
@@ -2402,7 +2401,7 @@ function createOffset(date) {
                  if (key in DATA) {
                      // get the last value using the daterangepicker and the timeline slider values
 
-                     var value = sliceDATAusingTimestamps(key)
+                     var value = sliceDATAusingTimestamps(DATA[key])
                      if (value.length) {
                         value = value[value.length - 1][1];
                         value = transform_data(id.split("-")[1], value, "var-" + key);
@@ -2700,7 +2699,7 @@ function createOffset(date) {
              for (var key in keys){
                  key = keys[key];
                  if (key in DATA) {
-                    d = sliceDATAusingTimestamps(key)
+                    var d = sliceDATAusingTimestamps(DATA[key]);
                     if (d.length) {
                         d = d[d.length - 1];
                     }else {
@@ -3186,30 +3185,27 @@ function setAggregatedPeriodList(widget_id, var_id) {
 /**
  *  select data in DATA for key using the daterangepicker and timeline slider values
  */
-function sliceDATAusingTimestamps(key, display_from=DATA_DISPLAY_FROM_TIMESTAMP, display_to=DATA_DISPLAY_TO_TIMESTAMP, from=DATA_FROM_TIMESTAMP, to=DATA_TO_TIMESTAMP) {
-  if (!(key in DATA)) {
-    //console.log("PyScada HMI : " + key + " not in DATA.");
-    return [];
-  }
+function sliceDATAusingTimestamps(data, display_from=DATA_DISPLAY_FROM_TIMESTAMP, display_to=DATA_DISPLAY_TO_TIMESTAMP, from=DATA_FROM_TIMESTAMP, to=DATA_TO_TIMESTAMP) {
+  if (typeof(data) === "undefined") {return [];}
   if (display_to > 0 && display_from > 0){
-      start_id = find_index_sub_gte(DATA[key],display_from,0);
-      stop_id = find_index_sub_lte(DATA[key],display_to,0) + 1;
+      start_id = find_index_sub_gte(data,display_from,0);
+      stop_id = find_index_sub_lte(data,display_to,0) + 1;
   }else if (display_from > 0 && display_to < 0){
-      start_id = find_index_sub_gte(DATA[key],display_from,0);
-      stop_id = find_index_sub_lte(DATA[key],to,0) + 1;
+      start_id = find_index_sub_gte(data,display_from,0);
+      stop_id = find_index_sub_lte(data,to,0) + 1;
   }else if (display_from < 0 && display_to > 0){
-      if (display_to < DATA[key][0][0]){
+      if (display_to < data[0][0]){
         start_id = stop_id = null;
       }else {
-        start_id = find_index_sub_gte(DATA[key],from,0);
-        stop_id = find_index_sub_lte(DATA[key],display_to,0) + 1;
+        start_id = find_index_sub_gte(data,from,0);
+        stop_id = find_index_sub_lte(data,display_to,0) + 1;
       }
   }else {
-      start_id = find_index_sub_gte(DATA[key],from,0);
-      stop_id = find_index_sub_lte(DATA[key],to,0) + 1;
+      start_id = find_index_sub_gte(data,from,0);
+      stop_id = find_index_sub_lte(data,to,0) + 1;
   }
   if (stop_id >= 0 && start_id >= 0 ) {
-    return DATA[key].slice(start_id, stop_id);
+    return data.slice(start_id, stop_id);
   }else {
     return []
   }
