@@ -715,6 +715,12 @@ class ControlItem(models.Model):
             return self.display_value_options.get_timeline()
         return False
 
+    def readable(self):
+        if self.variable_property:
+            return self.variable_property.variable.readable
+        elif self.variable:
+            return self.variable.readable
+
 
 class Chart(WidgetContentModel):
     id = models.AutoField(primary_key=True)
