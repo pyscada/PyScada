@@ -610,6 +610,7 @@ def view(request, link_title):
         "view_title": v.title,
         "view_link_title": link_title,
         "view_show_timeline": v.show_timeline,
+        "view_time_delta" : v.default_time_delta.total_seconds(),
         "version_string": core_version,
         "link_target": settings.LINK_TARGET
         if hasattr(settings, "LINK_TARGET")

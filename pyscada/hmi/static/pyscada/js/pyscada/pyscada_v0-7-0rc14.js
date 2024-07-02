@@ -169,6 +169,12 @@ Licensed under the AGPL.
   */
  var DATERANGEPICKER_SET = false;
 
+  /**
+  * Default time delta value
+  * @type {number}
+  */
+ var DEFAULT_TIME_DELTA = 0;
+
 /**
 * Ask before leaving the page
 */
@@ -1243,8 +1249,9 @@ function createOffset(date) {
      // update data timestamp
      if(DATA_TO_TIMESTAMP==0){
          //DATA_TO_TIMESTAMP = DATA_FROM_TIMESTAMP = SERVER_TIME;
+         DEFAULT_TIME_DELTA = document.querySelector("body").getAttribute("data-view-time-delta") == null ? 7200 : document.querySelector("body").getAttribute("data-view-time-delta");
          DATA_TO_TIMESTAMP = SERVER_TIME;
-         DATA_FROM_TIMESTAMP = SERVER_TIME - 120 * 60 * 1000;
+         DATA_FROM_TIMESTAMP = SERVER_TIME - DEFAULT_TIME_DELTA * 1000;
      }else{
          $.each(fetched_data, function(key, val) {
              add_fetched_data(parseInt(key),val);
