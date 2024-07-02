@@ -2856,9 +2856,7 @@ function createOffset(date) {
      //$("#timeline-time-left-label").html(date.toLocaleString());
 
      // Update DateTime pickers
-     if ($("#" + window.location.hash.substr(1) + ".show_daterangepicker").length || $("#" + window.location.hash.substr(1) + ".show_timeline").length) {
-         daterange_set(moment(DATA_FROM_TIMESTAMP), moment(DATA_TO_TIMESTAMP));
-     }
+     daterange_cb(moment(DATA_FROM_TIMESTAMP), moment(DATA_TO_TIMESTAMP));
      if (DATERANGEPICKER_SET == false) {
          set_datetimepicker();
      }
@@ -2962,6 +2960,15 @@ function createOffset(date) {
              DATA_TO_TIMESTAMP = Math.min(end.unix() * 1000, SERVER_TIME);
              DATA_BUFFER_SIZE = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
              INIT_CHART_VARIABLES_DONE = false;
+
+             DATA_DISPLAY_FROM_TIMESTAMP = -1;
+             DATA_DISPLAY_TO_TIMESTAMP = -1;
+             DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
+             set_x_axes();
+
+             var event = new CustomEvent("pyscadaDateTimeChange", { detail: {'picker': this}, bubbles: false, cancelable: true, composed: false});
+             document.querySelectorAll(".pyscadaDateTimeChange").forEach(el=>el.dispatchEvent(event));
+
              $('.loadingAnimation').show()
          });
          $('#daterange').on('show.daterangepicker', function(ev, picker) {
@@ -2975,13 +2982,6 @@ function createOffset(date) {
              if(!$('.AutoUpdateButton').bootstrapSwitch('state') && PREVIOUS_AUTO_UPDATE_ACTIVE_STATE){
                  auto_update_click();
              };
-             DATA_DISPLAY_FROM_TIMESTAMP = -1;
-             DATA_DISPLAY_TO_TIMESTAMP = -1;
-             DATA_DISPLAY_WINDOW = DATA_TO_TIMESTAMP - DATA_FROM_TIMESTAMP;
-             set_x_axes();
-
-             var event = new CustomEvent("pyscadaDateTimeChange", { detail: {'picker': picker}, bubbles: false, cancelable: true, composed: false});
-             document.querySelectorAll(".pyscadaDateTimeChange").forEach(el=>el.dispatchEvent(event));
          });
      }
 
@@ -3870,19 +3870,6 @@ function fix_page_anchor() {
 
  // DATE :
 
- // Set Date Range
- /**
-  * Set date range
-  * @param {number} start Date range start
-  * @param {number} end Date range stop
-  * @returns void
-  */
- function daterange_set(start, end) {
-     //$('#daterange').data('daterangepicker').setStartDate(start);
-     //$('#daterange').data('daterangepicker').setEndDate(end);
-     daterange_cb(start, end);
- }
-
  // Date Range Cb
  /**
   * Set 'daterange span' and adapt content padding top on navbar size
@@ -3890,8 +3877,6 @@ function fix_page_anchor() {
   * @param {number} end Date range stop
   */
  function daterange_cb(start, end) {
-     //
-     //
      $('#daterange span').html(start.format(daterange_format) + ' - ' + end.format(daterange_format));
  }
 
@@ -4432,15 +4417,6 @@ function init_pyscada_content() {
      // auto update function
      $(".AutoUpdateButton").on('switchChange.bootstrapSwitch', function(e, d) {
          auto_update_click(false);
-     });
-     $('#PlusTwoHoursButton').click(function(e) {
-     if (INIT_CHART_VARIABLES_DONE){
-         $('#PlusTwoHoursButton').addClass("disabled");
-         DATA_INIT_STATUS++;
-         DATA_BUFFER_SIZE = DATA_BUFFER_SIZE + 120*60*1000;
-         DATA_FROM_TIMESTAMP = DATA_FROM_TIMESTAMP - 120*60*1000;
-         INIT_CHART_VARIABLES_DONE = false;
-     }
      });
 
      // show timeline and daterangepicker
