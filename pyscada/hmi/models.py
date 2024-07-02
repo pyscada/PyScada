@@ -15,6 +15,7 @@ from django.db.models.query import QuerySet
 from django.conf import settings
 from django.forms.models import BaseInlineFormSet
 
+from datetime import timedelta
 from six import text_type
 import traceback
 from uuid import uuid4
@@ -1383,6 +1384,7 @@ class View(models.Model):
     theme = models.ForeignKey(
         Theme, blank=True, null=True, default=None, on_delete=models.SET_NULL
     )
+    default_time_delta = models.DurationField(default=timedelta(hours=2))
 
     def __str__(self):
         return self.title
