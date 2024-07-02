@@ -1,6 +1,6 @@
 /* Javascript library for the PyScada web client based on jquery and flot,
 
-version 0.8.2
+version 0.8.3
 
 Copyright (c) 2013-2023 Martin Schröder, Camille Lavayssière
 Licensed under the AGPL.
@@ -21,7 +21,7 @@ Licensed under the AGPL.
  * Script's version
  * @type {string}
  */
- var version = "0.8.2";
+ var version = "0.8.3";
 
  /**
   * Date format : day/month/year hours:minutes:seconds
