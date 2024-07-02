@@ -732,6 +732,8 @@ function transform_data(control_item_id, val, key) {
              var from_timestamp_offset = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'from-timestamp-offset');
              var var_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], type);
              var var_readable = get_config_from_hidden_config("variable", 'id', var_id, "readable");
+             var glyphicon_alert = e.parentElement.querySelector('.glyphicon-alert')
+             var glyphicon_exclamation = e.parentElement.querySelector('.glyphicon-exclamation-sign')
 
             // get time and value depending on date range picker, timeline and control item option
             if (data.length){
@@ -764,14 +766,14 @@ function transform_data(control_item_id, val, key) {
 
                     // Show and hide warning or alert icons left the the variable name when data is old in comparison of the device polling interval
                     if (time < SERVER_TIME - 10 * Math.max(1000 * device_polling_interval, REFRESH_RATE)) {
-                        e.parentElement.querySelector('.glyphicon-alert').classList.remove("hidden");
-                        e.parentElement.querySelector('.glyphicon-exclamation-sign').classList.add("hidden");
+                        glyphicon_alert !== null ? glyphicon_alert.classList.remove("hidden") : null;
+                        glyphicon_exclamation !== null ? glyphicon_exclamation.classList.add("hidden") : null;
                     }else if (time < SERVER_TIME - 3 * Math.max(1000 * device_polling_interval, REFRESH_RATE)) {
-                        e.parentElement.querySelector('.glyphicon-alert').classList.add("hidden");
-                        e.parentElement.querySelector('.glyphicon-exclamation-sign').classList.remove("hidden");
+                        glyphicon_alert !== null ? glyphicon_alert.classList.add("hidden") : null;
+                        glyphicon_exclamation !== null ? glyphicon_exclamation.classList.remove("hidden") : null;
                     }else {
-                        e.parentElement.querySelector('.glyphicon-alert').classList.add("hidden");
-                        e.parentElement.querySelector('.glyphicon-exclamation-sign').classList.add("hidden");
+                        glyphicon_alert !== null ? glyphicon_alert.classList.add("hidden") : null;
+                        glyphicon_exclamation !== null ? glyphicon_exclamation.classList.add("hidden") : null;
                     }
                 }
 
@@ -877,8 +879,8 @@ function transform_data(control_item_id, val, key) {
                 if (e.getAttribute("placeholder") != null) {
                     e.setAttribute("placeholder",val);
                 }
-                e.parentElement.querySelector('.glyphicon-alert').classList.add("hidden");
-                e.parentElement.querySelector('.glyphicon-exclamation-sign').classList.add("hidden");
+                glyphicon_alert !== null ? glyphicon_alert.classList.add("hidden") : null;
+                glyphicon_exclamation !== null ? glyphicon_exclamation.classList.add("hidden") : null;
                 e.style.backgroundColor = null;
             }else {
                 console.log("Invalid data format for " + control_item_id + " : " + typeof(data) + " : " + data);
