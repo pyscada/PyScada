@@ -1161,31 +1161,66 @@ class Dictionary(models.Model):
 
     def append(self, label, value, silent=False, update=None):
         if update is None:
-            _, created = DictionaryItem.objects.get_or_create(
-                label=label, value=value, dictionary=self
-            )
-            if not created and not silent:
-                logger.warning(
-                    "Item ({}:{}) for dictionary {} already exist".format(
-                        label, value, self
-                    )
+            try:
+                _, created = DictionaryItem.objects.get_or_create(
+                    label=label, value=value, dictionary=self
                 )
+                if not created and not silent:
+                    logger.warning(
+                        "Item ({}:{}) for dictionary {} already exist".format(
+                            label, value, self
+                        )
+                    )
+            except DictionaryItem.MultipleObjectsReturned:
+                logger.warning(
+                    f"MultipleObjectsReturned for label={label}, value={value}, dictionary={self}. Keep the first one."
+                )
+                for di in DictionaryItem.objects.filter(label=label, value=value, dictionary=self)[1:]:
+                    di.delete()
         elif update == "label":
-            DictionaryItem.objects.update_or_create(
-                value=value,
-                dictionary=self,
-                defaults={
-                    "label": label,
-                },
-            )
+            try:
+                DictionaryItem.objects.update_or_create(
+                    value=value,
+                    dictionary=self,
+                    defaults={
+                        "label": label,
+                    },
+                )
+            except DictionaryItem.MultipleObjectsReturned:
+                logger.warning(
+                    f"MultipleObjectsReturned for value={value}, dictionary={self}. Keep the first one."
+                )
+                for di in DictionaryItem.objects.filter(value=value, dictionary=self)[1:]:
+                    di.delete()
+                DictionaryItem.objects.update_or_create(
+                    value=value,
+                    dictionary=self,
+                    defaults={
+                        "label": label,
+                    },
+                )
         elif update == "value":
-            DictionaryItem.objects.update_or_create(
-                label=label,
-                dictionary=self,
-                defaults={
-                    "value": value,
-                },
-            )
+            try:
+                DictionaryItem.objects.update_or_create(
+                    label=label,
+                    dictionary=self,
+                    defaults={
+                        "value": value,
+                    },
+                )
+            except DictionaryItem.MultipleObjectsReturned:
+                logger.warning(
+                    f"MultipleObjectsReturned for label={label}, dictionary={self}. Keep the first one."
+                )
+                for di in DictionaryItem.objects.filter(label=label, dictionary=self)[1:]:
+                    di.delete()
+                DictionaryItem.objects.update_or_create(
+                    label=label,
+                    dictionary=self,
+                    defaults={
+                        "value": value,
+                    },
+                )
 
     def remove(self, label=None, value=None):
         if label is not None and value is not None:
