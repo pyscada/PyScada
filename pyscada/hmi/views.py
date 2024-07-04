@@ -563,7 +563,7 @@ def view(request, link_title):
         )
 
     javascript_files_list.append(
-        {"src": STATIC_URL + "pyscada/js/pyscada/pyscada_v0-7-0rc14.js"}
+        {"src": STATIC_URL + "pyscada/js/pyscada/pyscada_v0-8-3.js"}
     )
 
     # Generate css files list
