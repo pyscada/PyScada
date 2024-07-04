@@ -667,7 +667,7 @@ class RecordedDataManager(models.Manager):
             for pk in variable_ids:
                 if pk not in values:
                     values[pk] = []
-                time_max_last_value = time.time()
+                time_max_last_value = time_max
                 if pk in times:
                     time_max_last_value = times[pk]["time_min"]
                 last_element = self.last_element(
