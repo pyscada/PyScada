@@ -566,17 +566,8 @@ def view(request, link_title):
                     object_config_list[obj._meta.model_name] = list()
                 if obj not in object_config_list[obj._meta.model_name]:
                     object_config_list[obj._meta.model_name].append(obj)
-    # Generate html object hidden config
+    # Add html object hidden config div so that it can be filled in later
     pages_html += '<div class="hidden globalConfig2">'
-    for model, val in sorted(object_config_list.items(), key=lambda ele: ele[0]):
-        pages_html += '<div class="hidden ' + str(model) + 'Config2">'
-        for obj in val:
-            pages_html += gen_hiddenConfigHtml(
-                obj,
-                custom_fields_list.get(model, None),
-                exclude_fields_list.get(model, None),
-            )
-        pages_html += "</div>"
     pages_html += "</div>"
 
     context = {
