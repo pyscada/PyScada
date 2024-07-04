@@ -65,6 +65,7 @@ from django.db.utils import OperationalError
 from django.db.transaction import TransactionManagementError
 from django.db.models import Q
 from django.db.utils import IntegrityError
+from django.utils.timezone import now
 
 from pyscada.models import (
     BackgroundProcess,
@@ -75,7 +76,6 @@ from pyscada.models import (
     VariableProperty,
 )
 from pyscada.utils import set_bit
-from django.utils.timezone import now
 import logging
 
 logger = logging.getLogger(__name__)
