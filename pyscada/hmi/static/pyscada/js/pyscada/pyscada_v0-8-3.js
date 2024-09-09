@@ -2858,10 +2858,13 @@ function createOffset(date) {
      //$("#timeline-time-left-label").html(date.toLocaleString());
 
      // Update DateTime pickers
-     daterange_cb(moment(DATA_FROM_TIMESTAMP), moment(DATA_TO_TIMESTAMP));
-     if (DATERANGEPICKER_SET == false) {
-         set_datetimepicker();
-     }
+     if (typeof moment !== 'undefined' && typeof moment === 'function') {
+         daterange_cb(moment(DATA_FROM_TIMESTAMP), moment(DATA_TO_TIMESTAMP));
+         if (DATERANGEPICKER_SET == false) {
+             set_datetimepicker();
+         }
+     };
+
     updatePyScadaPlots(force=false, update=true, resize=false);
     for (var key in VARIABLE_KEYS) {
         key = VARIABLE_KEYS[key];
