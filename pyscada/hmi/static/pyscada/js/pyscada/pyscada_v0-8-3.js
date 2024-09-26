@@ -2875,7 +2875,7 @@ function createOffset(date) {
         if (key in VARIABLE_PROPERTIES_LAST_MODIFIED) {
             time = VARIABLE_PROPERTIES_LAST_MODIFIED[key];
         }else {time = null};
-        update_data_values('prop-' + key,[time, value]);
+        update_data_values('prop-' + key,[[time, value]]);
     }
  }
 
