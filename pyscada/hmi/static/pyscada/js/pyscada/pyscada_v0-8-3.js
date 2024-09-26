@@ -864,9 +864,9 @@ function transform_data(control_item_id, val, key) {
                 if (display_value_option_id != 'None'){
                     // Change background color
                     if (e.classList.contains("process-flow-diagram-item")) {
-                    e.style.fill = update_data_colors(control_item_id,temp_val);
+                        e.style.fill = update_data_colors(control_item_id,temp_val);
                     }else {
-                    e.style.backgroundColor = update_data_colors(control_item_id,temp_val);
+                        e.style.backgroundColor = update_data_colors(control_item_id,temp_val);
                     }
                     // create event to announce color change for a control item
                     var event = new CustomEvent("changePyScadaControlItemColor_" + control_item_id.split('-')[1], { detail: update_data_colors(control_item_id,val) });
