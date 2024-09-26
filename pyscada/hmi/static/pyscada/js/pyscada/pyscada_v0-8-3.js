@@ -883,7 +883,7 @@ function transform_data(control_item_id, val, key) {
                 glyphicon_exclamation !== null ? glyphicon_exclamation.classList.add("hidden") : null;
                 e.style.backgroundColor = null;
             }else {
-                console.log("Invalid data format for " + control_item_id + " : " + typeof(data) + " : " + data);
+                console.log("Invalid data format for " + control_item_id + " : " + typeof(val) + " : " + val);
             }
          })
 
