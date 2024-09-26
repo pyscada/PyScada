@@ -844,7 +844,7 @@ function transform_data(control_item_id, val, key) {
                     }
                 }
 
-                if (display_value_option_id == 'None' || color_only == 'False') {
+                if (typeof(color_only)=="undefined" || color_only != 'True') {
                     if (typeof(val)==="number") {
                         if (timestamp_conversion_value != null && timestamp_conversion_value != 0 && typeof(timestamp_conversion_value) != "undefined"){
                             // Transform timestamps
