@@ -726,7 +726,7 @@ function transform_data(control_item_id, val, key) {
      // NUMBER and BOOLEAN :
      if (typeof(data)==="object" && data !== null){
          // timestamp, dictionary and color
-         document.querySelectorAll(".control-item.type-numeric." + key).forEach(function(e) {
+         document.querySelectorAll(".control-item.type-numeric." + key + ", button.write-task-btn." + key).forEach(function(e) {
              var control_item_id = e.id;
              var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'display-value-options');
              var from_timestamp_offset = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'from-timestamp-offset');
@@ -3755,21 +3755,33 @@ function fix_page_anchor() {
   * @returns void
   */
  function refresh_logo(key, type){
-     if (type == "variable") {type_short="var";} else {type_short = "prop";}
-     $.each($(".control-item.type-numeric." + type_short + "-" + key + " img"), function(k,v){
-         $(v).remove();
+     last_time = 0;
+     if (type == "variable") {
+         type_short="var";
+         if (key in DATA && DATA[key].length) {
+             last_time = DATA[key][DATA[key].length - 1][0];
+         }
+     } else {
+         type_short = "prop";
+         if (key in VARIABLE_PROPERTIES_LAST_MODIFIED) {last_time = VARIABLE_PROPERTIES_LAST_MODIFIED[key]};
+     }
+     if (type == "variable_property") {type="variableproperty";}
+     document.querySelectorAll(".control-item.type-numeric." + type_short + "-" + key + " img, button.write-task-btn." + type_short + "-" + key + " img, button.write-task-set." + type_short + "-" + key + " img").forEach(item => {
+         item.remove();
      });
      key = key.toString();
-     //if ($(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp')>$(".variable-config[data-value-timestamp][data-key=" + key + "][data-type=" + type + "]").attr('data-value-timestamp')) {
-     if (get_config_from_hidden_config(type, 'id', key, 'refresh-requested-timestamp')>get_config_from_hidden_config(type, 'id', key, 'value-timestamp') && (get_config_from_hidden_config("variable", 'id', key, "readable") === "True" || type !== "variable")) {
-         $.each($(".control-item.type-numeric." + type_short + "-" + key), function(k,v){
-             val_temp=$(v).html();
-             $(v).prepend('<img style="height:14px;" src="/static/pyscada/img/load.gif" alt="refreshing">');
-             //$(v).html('<img style="height:14px;" src="/static/pyscada/img/load.gif" alt="refreshing">' + val_temp);
+     if (get_config_from_hidden_config(type, 'id', key, 'refresh-requested-timestamp')>last_time && (get_config_from_hidden_config("variable", 'id', key, "readable") === "True" || type !== "variable")) {
+         document.querySelectorAll(".control-item.type-numeric." + type_short + "-" + key + ", button.write-task-btn." + type_short + "-" + key + ", button.write-task-set." + type_short + "-" + key).forEach(e => {
+            var url = '/static/pyscada/img/load.gif';
+            var image = new Image();
+            image.src = url;
+            image.style = "height:14px;";
+            image.alt = "refreshing";
+            e.prepend(image);
          });
      }else {
-         $.each($(".control-item.type-numeric." + type_short + "-" + key + " img"), function(k,v){
-             $(v).remove();
+         document.querySelectorAll(".control-item.type-numeric." + type_short + "-" + key + " img, button.write-task-btn." + type_short + "-" + key + " img, button.write-task-set." + type_short + "-" + key + " img").forEach(item => {
+             item.remove();
          });
      }
  }
@@ -3899,8 +3911,7 @@ function fix_page_anchor() {
      type = $(this).data('type');
      type = type.replace("_", "");
      //$(".variable-config[data-key=" + key + "][data-type=" + type + "]").attr('data-refresh-requested-timestamp',t)
-     set_config_from_hidden_config("variable","id",key,"refresh-requested-timestamp",t)
-     set_config_from_hidden_config("variableproperty","id",key,"refresh-requested-timestamp",t)
+     set_config_from_hidden_config(type.replace("_",""),"id",key,"refresh-requested-timestamp",t);
      refresh_logo(key, type);
      data_type = $(this).data('type');
      $(this)[0].disabled = true;
@@ -3948,6 +3959,8 @@ function fix_page_anchor() {
              $(this).parents(".input-group").removeClass("has-error")
              if (isNaN(value)) {
                  if (item_type == "variable_property" && value_class == 'STRING'){
+                     set_config_from_hidden_config(item_type.replace("_",""),"id",key,"refresh-requested-timestamp",SERVER_TIME);
+                     refresh_logo(key, item_type);
                      PYSCADA_XHR = $.ajax({
                          type: 'post',
                          url: ROOT_URL+'form/write_property2/',
@@ -3964,6 +3977,8 @@ function fix_page_anchor() {
                      $(this).parents(".input-group-btn").after('<span id="helpBlock-' + id + '" class="help-block">The value must be a number ! Use dot not coma.</span>');
                  };
              }else {
+                 set_config_from_hidden_config(item_type.replace("_",""),"id",key,"refresh-requested-timestamp",SERVER_TIME);
+                 refresh_logo(key, item_type);
                  PYSCADA_XHR = $.ajax({
                      type: 'post',
                      url: ROOT_URL+'form/write_task/',
@@ -3992,6 +4007,8 @@ function fix_page_anchor() {
          var_name = $(val).data("name");
          key = parseInt($(val).data('key'));
          item_type = $(val).data('type');
+         set_config_from_hidden_config(item_type.replace("_",""),"id",key,"refresh-requested-timestamp",SERVER_TIME);
+         refresh_logo(key, item_type);
 
          if ($(tabinputs[i]).hasClass('btn-success')){
              id = $(tabinputs[i]).attr('id');
@@ -4039,6 +4056,8 @@ function fix_page_anchor() {
          var_name = $(tabselects[i]).data("name");
          key = $(tabselects[i]).data('key');
          item_type = $(tabselects[i]).data('type');
+         set_config_from_hidden_config(item_type.replace("_",""),"id",key,"refresh-requested-timestamp",SERVER_TIME);
+         refresh_logo(key, item_type);
          if (isNaN(value)){
              if (item_type == "variable_property"){
                  PYSCADA_XHR = $.ajax({
@@ -4076,6 +4095,8 @@ function fix_page_anchor() {
      key = $(this).data('key');
      id = $(this).attr('id');
      item_type = $(this).data('type');
+     set_config_from_hidden_config(item_type.replace("_",""),"id",key,"refresh-requested-timestamp",SERVER_TIME);
+     refresh_logo(key, item_type);
      $('#'+id).removeClass('update-able');
      $(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "][data-type=" + item_type + "]").attr('data-refresh-requested-timestamp', SERVER_TIME)
      $(".variable-config2[data-refresh-requested-timestamp][data-id=" + key + "]").attr('data-refresh-requested-timestamp', SERVER_TIME)
@@ -4092,6 +4113,8 @@ function fix_page_anchor() {
      key = $(this).data('key');
      id = $(this).attr('id');
      item_type = $(this).data('type');
+     set_config_from_hidden_config(item_type.replace("_",""),"id",key,"refresh-requested-timestamp",SERVER_TIME);
+     refresh_logo(key, item_type);
      $('#'+id).removeClass('update-able');
      $(".variable-config[data-refresh-requested-timestamp][data-key=" + key + "][data-type=" + item_type + "]").attr('data-refresh-requested-timestamp', SERVER_TIME)
      $(".variable-config2[data-refresh-requested-timestamp][data-id=" + key + "]").attr('data-refresh-requested-timestamp', SERVER_TIME)
