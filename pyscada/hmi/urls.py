@@ -9,6 +9,9 @@ from django.contrib.auth import views as auth_views
 urlpatterns = [
     # Public pages
     path("", views.index, name="view-overview"),
+    path(
+        "<link_title>/", views.index, name="view-overview-link"
+    ),  # this is used to add special links to the view-overview
     path("pyscada_admin/", admin_site.urls),
     # path('accounts/logout/$', views.logout_view),
     path("accounts/logout/", auth_views.LogoutView.as_view()),

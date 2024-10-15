@@ -44,6 +44,38 @@ UNAUTHENTICATED_REDIRECT = (
 )
 
 
+class ViewDummy:
+    def __init__(
+        self,
+        title="",
+        link_title=None,
+        link_url="",
+        description="",
+        url="",
+        visible=True,
+    ):
+        self.title = title
+        self.link_title = link_title
+        self.link_url = link_url
+        self.description = description
+
+        class Logo:
+            def __init__(self, url):
+                self.url = url
+
+            def __eq__(self, obj):
+                return obj == self.url
+
+            def __hash__(self):
+                return hash(self.url)
+
+            def __bool__(self):
+                return bool(self.url)
+
+        self.logo = Logo(url=url)
+        self.visible = visible
+
+
 def unauthenticated_redirect(func):
     def wrapper(*args, **kwargs):
         if not args[0].user.is_authenticated:
@@ -58,9 +90,23 @@ def index(request):
     if GroupDisplayPermission.objects.count() == 0:
         view_list = View.objects.all()
     else:
-        view_list = get_group_display_permission_list(
-            View.objects, request.user.groups.all()
+        view_list = list(
+            get_group_display_permission_list(View.objects, request.user.groups.all())
         )
+
+    if hasattr(settings, "OVERVIEW_ADDITIONAL_LINKS"):
+        for view_data in settings.OVERVIEW_ADDITIONAL_LINKS:
+            view = ViewDummy()
+            view.logo.url = view_data["logo_url"] if "logo_url" in view_data else None
+            view.title = view_data["title"] if "title" in view_data else ""
+            view.link_title = (
+                view_data["link_title"] if "link_title" in view_data else None
+            )
+            view.link_url = view_data["link_url"] if "link_url" in view_data else ""
+            view.description = (
+                view_data["description"] if "description" in view_data else ""
+            )
+        view_list.append(view)
 
     c = {
         "user": request.user,
