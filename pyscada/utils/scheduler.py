@@ -761,6 +761,7 @@ class Process(object):
         self.label = ""
         self.dwt_received = False
         self.drt_received = False
+        self.next_message = "running.."
         # register signals
         self.SIG_QUEUE = []
         self.SIGNALS = [signal.SIGTERM, signal.SIGUSR1, signal.SIGHUP, signal.SIGUSR2]
@@ -801,7 +802,7 @@ class Process(object):
 
     def run(self):
         BackgroundProcess.objects.filter(pk=self.process_id).update(
-            last_update=now(), message="running.."
+            last_update=now(), message=self.next_message
         )
         exec_loop = True
         try:
@@ -815,7 +816,7 @@ class Process(object):
 
                 # update progress
                 BackgroundProcess.objects.filter(pk=self.process_id).update(
-                    last_update=now()
+                    last_update=now(), message=self.next_message
                 )
                 if sig is None and exec_loop:
                     # run loop action
