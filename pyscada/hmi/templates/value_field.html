@@ -7,13 +7,13 @@
         {% if item.unit %}<span class="input-group-addon" style="width: 10%;display: inline-block;height: 34px;">{{ item.unit }}</span>{% endif %}
         {% if not form %}
             <span class="input-group-btn" style="display:inline-block;width:10%;"><!-- display value -->
-                <button class="btn btn-default write-task-set set-{{ item.key }}" id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}" type="button" style="width:100%;height:34px;padding-top:0;padding-bottom:0;">set</button>
+                <button class="btn btn-default write-task-set {{ item.web_class_str }}" id="{% if form %}{{ form.web_id }}-{% endif %}{{ item.web_id }}-{{ uuid }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}" type="button" style="width:100%;height:34px;padding-top:0;padding-bottom:0;">set</button>
             </span>
         {% endif %}
     {% elif item.type == 1 %}<!-- display value -->
         <span class="input-group-addon input-group-addon-label">
             {% if item.readable %}
-                <button class="btn btn-default read-task-set set-{{ item.key }}" type="button" data-key="{{ item.key }}" data-type="{{ item.item_type}}" style="width:16px;height:16px;padding:0;margin:0;">
+                <button class="btn btn-default read-task-set {{ item.web_class_str }}" type="button" data-key="{{ item.key }}" data-type="{{ item.item_type}}" style="width:16px;height:16px;padding:0;margin:0;">
                     <span class="glyphicon glyphicon-refresh" data-toggle="tooltip" data-placement="top" title="" data-original-title="Refresh data" style="font-size:10px;vertical-align:text-top;"></span>
             </button>
             {% endif %}
