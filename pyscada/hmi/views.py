@@ -607,6 +607,7 @@ def view(request, link_title):
             "visible_controlitem_list"
         ],
         "visible_form_list": visible_objects_lists["visible_form_list"],
+        "view_object": v,
         "view_title": v.title,
         "view_link_title": link_title,
         "view_show_timeline": v.show_timeline,
