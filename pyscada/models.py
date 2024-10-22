@@ -624,6 +624,7 @@ class RecordedDataManager(models.Manager):
         values = dict()
         times = dict()
         date_saved_max = 0
+        date_saved_min = time.time()
         tmp_time_max = 0
         tmp_time_min = time_max
 
@@ -653,6 +654,10 @@ class RecordedDataManager(models.Manager):
             )  # calc the timestamp in seconds
             date_saved_max = max(
                 date_saved_max,
+                time.mktime(item[7].utctimetuple()) + item[7].microsecond / 1e6,
+            )
+            date_saved_min = min(
+                date_saved_min,
                 time.mktime(item[7].utctimetuple()) + item[7].microsecond / 1e6,
             )
             tmp_time_max = max(tmp_time, tmp_time_max)
@@ -688,9 +693,16 @@ class RecordedDataManager(models.Manager):
                             last_element.value(),
                         ],
                     )
+                    date_saved_min = min(
+                        date_saved_min,
+                        time.mktime(last_element.date_saved.utctimetuple()) + last_element.date_saved.microsecond / 1e6,
+                    )
+                else:
+                    date_saved_min = 0
 
         values["timestamp"] = max(tmp_time_max, time_min) * f_time_scale
         values["date_saved_max"] = date_saved_max * f_time_scale
+        #values["date_saved_max"] = date_saved_min * f_time_scale
 
         return values
 
