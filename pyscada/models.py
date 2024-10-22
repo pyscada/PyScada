@@ -2166,15 +2166,18 @@ class Variable(models.Model):
         elif self.value_class.upper() in ["UINT32", "DWORD", "UNIXTIMEI32"]:
             source_format = "I"
             target_format = "2H"
+            value = int(value)
         elif self.value_class.upper() in ["INT32"]:
             source_format = "i"
             target_format = "2H"
+            value = int(value)
         elif self.value_class.upper() in ["FLOAT48"]:
             source_format = "f"
             target_format = "3H"
         elif self.value_class.upper() in ["INT48"]:
             source_format = "q"
             target_format = "3H"
+            value = int(value)
         elif self.value_class.upper() in [
             "FLOAT64",
             "DOUBLE",
@@ -2187,10 +2190,11 @@ class Variable(models.Model):
         elif self.value_class.upper() in ["UINT64"]:
             source_format = "Q"
             target_format = "4H"
+            value = int(value)
         elif self.value_class.upper() in ["INT64", "UNIXTIMEI64"]:
             source_format = "q"
             target_format = "4H"
-
+            value = int(value)
         elif self.value_class.upper() in ["BCD32", "BCD24", "BCD16"]:
             source_format = "f"
             target_format = "2H"
