@@ -416,6 +416,9 @@ class DeviceHandlerAdmin(admin.ModelAdmin):
             return True
         except ModuleNotFoundError:
             return False
+        except Exception as e:
+            logger.error(f"Handler {self} failed to be found : {e}")
+            return False
 
     def content(self, instance):
         try:
@@ -430,6 +433,8 @@ class DeviceHandlerAdmin(admin.ModelAdmin):
                 return f.read()
         except ModuleNotFoundError:
             return "Handler file not found."
+        except Exception as e:
+            return f"Handler reading failed : {e}"
 
     def get_form(self, request, obj=None, **kwargs):
         if kwargs.get("fields", False) and "content" in kwargs["fields"]:
