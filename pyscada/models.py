@@ -2190,13 +2190,14 @@ class Variable(models.Model):
         elif self.value_class.upper() in ["INT64", "UNIXTIMEI64"]:
             source_format = "q"
             target_format = "4H"
-
         elif self.value_class.upper() in ["BCD32", "BCD24", "BCD16"]:
             source_format = "f"
             target_format = "2H"
-            return value[0]
+            return (value,)
+        elif self.value_class.upper() in ["BOOLEAN", "BOOL"]:
+            return (bool(value),)
         else:
-            return value[0]
+            return (value,)
         output = unpack(target_format, pack(source_format, value))
         #
         if self.byte_order == "default":
