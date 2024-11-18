@@ -85,7 +85,7 @@ Licensed under the AGPL.
   * Token used for the ajax setup
   * @type {string}
   */
- var CSRFTOKEN = $.cookie('csrftoken');
+ var CSRFTOKEN = getCookie('csrftoken');
 
  /**
   * Refresh rate in milliseconds - used to update data
@@ -356,6 +356,8 @@ var store_temp_ajax_data = null;
    * store current ajax request
    */
   var PYSCADA_XHR = null;
+
+  var FETCH_CONTROLLERS = {}
 
  //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -778,13 +780,13 @@ function transform_data(control_item_id, val, key) {
                 }
 
                 e.setAttribute('data-original-title', tooltip_text);
-                set_config_from_hidden_config(type, 'id', key.split("-")[1], 'value-timestamp', time)
+                set_config_from_hidden_config(type.replace('-', ''), 'id', key.split("-")[1], 'value-timestamp', time)
 
 
             }
 
             // Quit if the value is not newer than the last read request
-            var refresh_requested_timestamp = get_config_from_hidden_config(type, 'id', key.split("-")[1], 'refresh-requested-timestamp');
+            var refresh_requested_timestamp = parseFloat(get_config_from_hidden_config(type.replace('-', ''), 'id', key.split("-")[1], 'refresh-requested-timestamp'));
             if (refresh_requested_timestamp != null && time != null && time <= refresh_requested_timestamp) {
                 return;
             }
@@ -1183,17 +1185,51 @@ function set_config_from_hidden_config(type,filter_data,val,get_data,value){
      FETCH_DATA_PENDING++;
      if(init){show_init_status();}
      request_data = {timestamp_from:timestamp_from, variables: variable_keys, init: init, variable_properties:variable_property_keys};
-     if (typeof(timestamp_to !== 'undefined')){request_data['timestamp_to']=timestamp_to};
+     if (typeof(timestamp_to) !== 'undefined'){request_data['timestamp_to']=timestamp_to};
      //if (!init){request_data['timestamp_from'] = request_data['timestamp_from'] - REFRESH_RATE;};
-     PYSCADA_XHR = $.ajax({
-         url: ROOT_URL+'json/cache_data/',
-         dataType: "json",
-         timeout: ((init == 1) ? FETCH_DATA_TIMEOUT*5: FETCH_DATA_TIMEOUT),
-         type: "POST",
-         data:request_data,
-         dataType:"json"
-         }).done(data_handler_done).fail(data_handler_fail);
- }
+     const formData = new FormData();
+     for ( var key in request_data ) {
+         formData.append(key, request_data[key]);
+     }
+     var controller = new AbortController();
+     var timeout = ((init == 1) ? FETCH_DATA_TIMEOUT*5: FETCH_DATA_TIMEOUT);
+     var timer = setTimeout(() => {add_notification("Timeout while fetching data", 3, 0.9*5*REFRESH_RATE);controller.abort();}, timeout);
+     const signal = controller.signal;
+     FETCH_CONTROLLERS["data_handler_ajax"] = controller
+     fetch(
+         ROOT_URL+'json/cache_data/', {
+         method: "POST",
+         headers: {'X-CSRFToken': CSRFTOKEN},
+         body:formData,
+         signal: signal,
+         redirect: "follow",
+         })
+     .then((response) => {
+        clearTimeout(timer);
+        timer = null;
+        if (response.redirected) {
+            var next = "?next=";
+            var url_redirect = response.url;
+            if (response.url.includes(next)) {url_redirect = url_redirect.split(next)[0] + next + window.location.href;};
+            if (AUTO_UPDATE_ACTIVE){auto_update_click();}
+            add_notification("Authentication issue, please log-in <a href='" + url_redirect + "'>here</a>", 3, 0, 0);
+            //window.location.href = response.url;
+        }else {
+            if (!response.ok || response.status != 200) {
+                data_handler_fail(response);
+            } else {
+                return response.json();
+            }
+        }
+     }).then((json) => {data_handler_done(json);})
+     .catch((error) => {
+        if (timer === null){add_notification("data_handler_ajax : " + error, 3, 0.9*REFRESH_RATE);};
+        increase_error_count();
+     }).then(() => {
+        hide_update_status();
+        FETCH_DATA_PENDING--;
+     });
+}
 
 function pad(value) {
     return value < 10 ? '0' + value : value;
@@ -1211,6 +1247,8 @@ function createOffset(date) {
   * @param {Array<*>} fetched_data
   */
  function data_handler_done(fetched_data){
+
+    if (typeof(fetched_data) === "undefined") {console.log("PyScada HMI : fetched data undefined"); return;}
 
      update_charts = true;
 
@@ -1295,11 +1333,12 @@ function createOffset(date) {
          JSON_ERROR_COUNT = JSON_ERROR_COUNT - 1;
      }
      UPDATE_STATUS_COUNT = 0;
-     hide_update_status();
+     //hide_update_status();
      if(request_data.init===1){
          hide_init_status();
      }
-     FETCH_DATA_PENDING--;
+     //FETCH_DATA_PENDING--;
+
  }
 
 
@@ -1309,17 +1348,15 @@ function createOffset(date) {
   * @param {*} t
   * @param {*} m
   */
- function data_handler_fail(x, t, m) {
-     //check if we are unauthenticated
-     if (x.status !== 0 && x.getResponseHeader("content-type") !== null && x.getResponseHeader("content-type").indexOf("text/html") !== -1) {
-         add_notification("Authentication failed, please reload the page", 2, 0);
-         //location.reload();
-     }
-
+ function data_handler_fail(response) {
      // error notifications
-     if(JSON_ERROR_COUNT % 5 == 0)
-         add_notification("Fetching data failed", 3);
+     if(JSON_ERROR_COUNT % 5 == 0) {
+         add_notification("Fetching data failed (" + response.status + ")", 3, 0.95*5*REFRESH_RATE);
+     }
+     increase_error_count();
+}
 
+  function increase_error_count() {
      JSON_ERROR_COUNT = JSON_ERROR_COUNT + 1;
      if (JSON_ERROR_COUNT > 15) {
          $(".AutoUpdateStatus").css("color", "red");
@@ -1344,7 +1381,8 @@ function createOffset(date) {
          }
          hide_init_status();
      }
-     FETCH_DATA_PENDING--;
+     //FETCH_DATA_PENDING--;
+
  }
 
 
@@ -3765,7 +3803,7 @@ function fix_page_anchor() {
          type_short = "prop";
          if (key in VARIABLE_PROPERTIES_LAST_MODIFIED) {last_time = VARIABLE_PROPERTIES_LAST_MODIFIED[key]};
      }
-     if (type == "variable_property") {type="variableproperty";}
+     type = type.replace("_", "").replace("-", "")
      document.querySelectorAll(".control-item.type-numeric." + type_short + "-" + key + " img, button.write-task-btn." + type_short + "-" + key + " img, button.write-task-set." + type_short + "-" + key + " img").forEach(item => {
          item.remove();
      });
@@ -3868,6 +3906,22 @@ function fix_page_anchor() {
          }
      }
  });
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
 
 
  //                             -----------------------------------------------------------
@@ -4239,7 +4293,8 @@ function init_pyscada_content() {
          for (t in PYSCADA_TIMEOUTS) {clearTimeout(PYSCADA_TIMEOUTS[t]);console.log("PyScada HMI : clearing timeout", t);}
          if(PYSCADA_XHR != null && PYSCADA_XHR.readyState != 4){
              PYSCADA_XHR.abort();
-             console.log("PyScada HMI : aborting xhr")
+             for (c in FETCH_CONTROLLERS) {FETCH_CONTROLLERS[c].abort();}
+             console.log("PyScada HMI : aborting xhr and fetch requests")
          }
      };
      $(window).on('hashchange', function() {
