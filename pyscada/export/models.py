@@ -116,6 +116,9 @@ class ExportTask(models.Model):
                 backup_file_path = os.path.expanduser(
                     settings.PYSCADA_EXPORT["output_folder"]
                 )
+        if self.filename is None:
+            return "error, file not exported"
+
         return mark_safe(
             '<a href="%s">%s</a>'
             % (

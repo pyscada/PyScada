@@ -75,9 +75,29 @@ def export_recordeddata_to_file(
         if tp is not None:
             tp.last_update = now()
             tp.message = "failed wrong file type"
-            tp.failed = 1
+            tp.failed = True
             tp.save()
+
+        if export_task_id is not None:
+            job = ExportTask.objects.filter(pk=export_task_id).first()
+            if job:
+                job.failed = True
+                job.save()
         return
+
+    #
+    if active_vars is None:
+        active_vars = Variable.objects.filter(active=1, device__active=1)
+    else:
+        if type(active_vars) is str:
+            if active_vars == "all":
+                active_vars = Variable.objects.all()
+            else:
+                active_vars = Variable.objects.filter(active=1, device__active=1)
+        else:
+            active_vars = Variable.objects.filter(
+                pk__in=active_vars, active=1, device__active=1
+            )
 
     #
     if hasattr(settings, "PYSCADA_EXPORT"):
@@ -98,27 +118,6 @@ def export_recordeddata_to_file(
     # create output dir if not existing
     if not os.path.exists(backup_file_path):
         os.mkdir(backup_file_path)
-
-    # validate time values
-    db_time_min = Variable.objects.get_first_element_timestamp()
-    if db_time_min is None:
-        if tp is not None:
-            tp.last_update = now()
-            tp.message = "no data to export"
-            tp.failed = 1
-            tp.save()
-        return
-    time_min = max(db_time_min, time_min)
-
-    db_time_max = Variable.objects.get_last_element_timestamp()
-    if not db_time_max:
-        if tp is not None:
-            tp.last_update = now()
-            tp.message = "no data to export"
-            tp.failed = 1
-            tp.save()
-        return
-    time_max = min(db_time_max, time_max)
 
     # filename  and suffix
     cdstr_from = datetime.fromtimestamp(time_min).strftime("%Y_%m_%d_%H%M")
@@ -161,20 +160,6 @@ def export_recordeddata_to_file(
             job.filename = filename
             job.save()
 
-    #
-    if active_vars is None:
-        active_vars = Variable.objects.filter(active=1, device__active=1)
-    else:
-        if type(active_vars) is str:
-            if active_vars == "all":
-                active_vars = Variable.objects.all()
-            else:
-                active_vars = Variable.objects.filter(active=1, device__active=1)
-        else:
-            active_vars = Variable.objects.filter(
-                pk__in=active_vars, active=1, device__active=1
-            )
-
     if mean_value_period == 0:
         no_mean_value = True
         mean_value_period = 5.0  # todo get from DB, default is 5 seconds
@@ -201,7 +186,7 @@ def export_recordeddata_to_file(
         description = "None"
         name = "None"
 
-    if file_extension in [".h5", ".mat"]:
+    if file_extension == ".mat":
         bf = MatCompatibleH5(
             filename,
             version="1.1",
@@ -212,7 +197,18 @@ def export_recordeddata_to_file(
         out_timevalues = [
             unix_time_stamp_to_matlab_datenum(element) for element in timevalues
         ]
-    elif file_extension in [".csv"]:
+
+    elif file_extension == ".h5":
+        bf = MatCompatibleH5(
+            filename,
+            version="1.1",
+            description=description,
+            name=name,
+            creation_date=strftime("%d-%b-%Y %H:%M:%S"),
+        )
+        out_timevalues = timevalues
+
+    elif file_extension == ".csv":
         bf = ExcelCompatibleCSV(
             filename,
             version="1.1",
@@ -223,6 +219,7 @@ def export_recordeddata_to_file(
         out_timevalues = [
             unix_time_stamp_to_excel_datenum(element) for element in timevalues
         ]
+
     else:
         return
 
@@ -265,6 +262,7 @@ def export_recordeddata_to_file(
                 value_class = var.value_class
             else:
                 value_class = "FLOAT64"
+
             # read unit
             if hasattr(var.unit, "udunit"):
                 udunit = var.unit.udunit
@@ -286,6 +284,10 @@ def export_recordeddata_to_file(
                     short_name=var.short_name,
                     chart_line_thickness=var.chart_line_thickness,
                 )
+                if tp is not None:
+                    tp.last_update = now()
+                    tp.message = "no values for %s (%d) to file" % (var.name, var.pk)
+                    tp.save()
                 continue
 
             out_data = np.zeros(len(timevalues))
@@ -299,31 +301,36 @@ def export_recordeddata_to_file(
                     # if not more data in data source break
                     if last_value is not None:
                         out_data[i] = last_value
-                        continue
+
+                    continue
                 # init mean value vars
-                tmp = 0.0  # sum
+                tmp = 0.0    # sum
                 tmp_i = 0.0  # count
 
-                if data[var.pk][ii][0] < timevalues[i]:
+                if data[var.pk][ii][0]/1000.0 < timevalues[i]:
                     # skip elements that are befor current time step
-                    while data[var.pk][ii][0] < timevalues[i] and ii < max_ii:
+                    while data[var.pk][ii][0]/1000.0 < timevalues[i] and ii < max_ii:
                         last_value = data[var.pk][ii][1]
                         ii += 1
 
                 if ii >= max_ii:
                     if last_value is not None:
                         out_data[i] = last_value
-                        continue
+
+                    continue
+
+
+
                 # calc mean value
                 if (
                     timevalues[i]
-                    <= data[var.pk][ii][0]
+                    <= data[var.pk][ii][0]/1000.0
                     < timevalues[i] + mean_value_period
                 ):
                     # there is data in time range
                     while (
                         timevalues[i]
-                        <= data[var.pk][ii][0]
+                        <= data[var.pk][ii][0]/1000.0
                         < timevalues[i] + mean_value_period
                         and ii < max_ii
                     ):
@@ -349,8 +356,13 @@ def export_recordeddata_to_file(
                         out_data[i] = last_value
 
             # write data
+            if file_extension == ".h5" or file_extension == ".mat":
+                var_name = var.name.replace("/", "_") # escape / character,
+            else:
+                var_name = var.name
+
             bf.write_data(
-                var.name,
+                var_name,
                 _cast_value(out_data, validate_value_class(value_class)),
                 id=var.pk,
                 description=var.description,
