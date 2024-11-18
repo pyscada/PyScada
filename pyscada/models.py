@@ -1161,31 +1161,66 @@ class Dictionary(models.Model):
 
     def append(self, label, value, silent=False, update=None):
         if update is None:
-            _, created = DictionaryItem.objects.get_or_create(
-                label=label, value=value, dictionary=self
-            )
-            if not created and not silent:
-                logger.warning(
-                    "Item ({}:{}) for dictionary {} already exist".format(
-                        label, value, self
-                    )
+            try:
+                _, created = DictionaryItem.objects.get_or_create(
+                    label=label, value=value, dictionary=self
                 )
+                if not created and not silent:
+                    logger.warning(
+                        "Item ({}:{}) for dictionary {} already exist".format(
+                            label, value, self
+                        )
+                    )
+            except DictionaryItem.MultipleObjectsReturned:
+                logger.warning(
+                    f"MultipleObjectsReturned for label={label}, value={value}, dictionary={self}. Keep the first one."
+                )
+                for di in DictionaryItem.objects.filter(label=label, value=value, dictionary=self)[1:]:
+                    di.delete()
         elif update == "label":
-            DictionaryItem.objects.update_or_create(
-                value=value,
-                dictionary=self,
-                defaults={
-                    "label": label,
-                },
-            )
+            try:
+                DictionaryItem.objects.update_or_create(
+                    value=value,
+                    dictionary=self,
+                    defaults={
+                        "label": label,
+                    },
+                )
+            except DictionaryItem.MultipleObjectsReturned:
+                logger.warning(
+                    f"MultipleObjectsReturned for value={value}, dictionary={self}. Keep the first one."
+                )
+                for di in DictionaryItem.objects.filter(value=value, dictionary=self)[1:]:
+                    di.delete()
+                DictionaryItem.objects.update_or_create(
+                    value=value,
+                    dictionary=self,
+                    defaults={
+                        "label": label,
+                    },
+                )
         elif update == "value":
-            DictionaryItem.objects.update_or_create(
-                label=label,
-                dictionary=self,
-                defaults={
-                    "value": value,
-                },
-            )
+            try:
+                DictionaryItem.objects.update_or_create(
+                    label=label,
+                    dictionary=self,
+                    defaults={
+                        "value": value,
+                    },
+                )
+            except DictionaryItem.MultipleObjectsReturned:
+                logger.warning(
+                    f"MultipleObjectsReturned for label={label}, dictionary={self}. Keep the first one."
+                )
+                for di in DictionaryItem.objects.filter(label=label, dictionary=self)[1:]:
+                    di.delete()
+                DictionaryItem.objects.update_or_create(
+                    label=label,
+                    dictionary=self,
+                    defaults={
+                        "value": value,
+                    },
+                )
 
     def remove(self, label=None, value=None):
         if label is not None and value is not None:
@@ -1304,7 +1339,7 @@ class VariableProperty(models.Model):
         verbose_name_plural = "variable properties"
 
     def __str__(self):
-        return self.get_property_class_display() + ": " + self.name
+        return f"{self.variable}-{self.get_property_class_display()} : {self.name}"
 
     def value(self):
         value_class = self.value_class
@@ -1667,6 +1702,7 @@ class Variable(models.Model):
     device = models.ForeignKey(Device, null=True, on_delete=models.CASCADE)
     active = models.BooleanField(default=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET(1))
+    readable = models.BooleanField(default=True)
     writeable = models.BooleanField(default=False)
     value_class_choices = (
         ("FLOAT32", "REAL, SINGLE or FLOAT32"),
@@ -1778,13 +1814,20 @@ class Variable(models.Model):
         max_length=15, default="default", choices=byte_order_choices
     )
 
-    # for RecodedVariable
-    value = None
-    prev_value = None
-    store_value = False
-    timestamp_old = None
-    timestamp = None
-    cached_values_to_write = []
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # for RecodedVariable
+        self.value = None
+        self.prev_value = None
+        self.store_value = False
+        self.timestamp_old = None
+        self.timestamp = None
+
+        self.erase_cache()
+
+    def erase_cache(self):
+        # for read values
+        self.cached_values_to_write = []
 
     def __str__(self):
         return str(self.id) + " - " + self.name
@@ -1938,9 +1981,10 @@ class Variable(models.Model):
         self.prev_value = self.value
         return self.store_value
 
-    def update_values(self, value_list, timestamp_list, erase_cache=True):
+    def update_values(self, value_list, timestamp_list, erase_cache=False):
         if erase_cache:
-            self.cached_values_to_write = []
+            self.erase_cache()
+
         has_value = False
         if not isinstance(value_list, list):
             if isinstance(value_list, bool) or isinstance(value_list, int) or isinstance(value_list, float) or isinstance(value_list, str):
@@ -2154,13 +2198,14 @@ class Variable(models.Model):
         elif self.value_class.upper() in ["INT64", "UNIXTIMEI64"]:
             source_format = "q"
             target_format = "4H"
-
         elif self.value_class.upper() in ["BCD32", "BCD24", "BCD16"]:
             source_format = "f"
             target_format = "2H"
-            return value[0]
+            return (value,)
+        elif self.value_class.upper() in ["BOOLEAN", "BOOL"]:
+            return (bool(value),)
         else:
-            return value[0]
+            return (value,)
 
         if source_format not in ["f", "d"]:
             if value != float(int(value)):

@@ -29,7 +29,7 @@
          {% endif %}
         ></div>
 		{% if item.type == 1 %}<!-- display value -->
-		<span class="label label-default type-label">{{ item.label }}: <span class="type-unit"><span class="type-numeric var-{{ item.variable.pk }}">0.0</span> {{ item.unit }}</span></span>
+               <span class="label label-default type-label">{{ item.label }}: <span class="type-unit"><span class="control-item type-numeric var-{{ item.variable.pk }}">Loading...</span> {{ item.unit }}</span></span>
     {% endif %}
 	</li>
 {% endif %}

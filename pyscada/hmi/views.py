@@ -27,6 +27,7 @@ from django.template.response import TemplateResponse
 from django.shortcuts import redirect
 from django.contrib.auth import logout
 from django.views.decorators.csrf import requires_csrf_token
+from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.db.models.fields.related import OneToOneRel
@@ -37,23 +38,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-UNAUTHENTICATED_REDIRECT = (
-    settings.UNAUTHENTICATED_REDIRECT
-    if hasattr(settings, "UNAUTHENTICATED_REDIRECT")
-    else "/accounts/login/"
-)
 
-
-def unauthenticated_redirect(func):
-    def wrapper(*args, **kwargs):
-        if not args[0].user.is_authenticated:
-            return redirect("%s?next=%s" % (UNAUTHENTICATED_REDIRECT, args[0].path))
-        return func(*args, **kwargs)
-
-    return wrapper
-
-
-@unauthenticated_redirect
+@login_required
 def index(request):
     if GroupDisplayPermission.objects.count() == 0:
         view_list = View.objects.all()
@@ -75,7 +61,7 @@ def index(request):
     )  # HttpResponse(t.render(c))
 
 
-@unauthenticated_redirect
+@login_required
 def get_hidden_config2(request, link_title):
     try:
         v = (
@@ -224,7 +210,7 @@ def get_hidden_config2(request, link_title):
     return HttpResponse(hidden_globalConfig_html, content_type="text/plain")
 
 
-@unauthenticated_redirect
+@login_required
 @requires_csrf_token
 def view(request, link_title):
     base_template = "base.html"
@@ -367,78 +353,78 @@ def view(request, link_title):
                 user=request.user,
                 visible_objects_lists=visible_objects_lists,
             )
+            # main content
             if mc is None:
                 logger.info(
                     f"User {request.user} not allowed to see the content of widget {widget}"
                 )
-            elif mc == "":
-                logger.info(f"Content of widget {widget} is empty")
             else:
                 main_content.append(dict(html=mc, widget=widget, topbar=sbc))
+            #sidebar content
             if sbc is not None:
                 sidebar_content.append(dict(html=sbc, widget=widget))
-            if type(opts) == dict and "topbar" in opts and opts["topbar"] == True:
-                topbar = True
-            if (
-                type(opts) == dict
-                and "show_daterangepicker" in opts
-                and opts["show_daterangepicker"] == True
-            ):
-                show_daterangepicker = True
-                show_daterangepicker_temp = True
-            if (
-                type(opts) == dict
-                and "show_timeline" in opts
-                and opts["show_timeline"] == True
-            ):
-                show_timeline_temp = True
-            if type(opts) == dict and "flot" in opts and opts["flot"]:
-                has_flot_chart = True
-            if type(opts) == dict and "base_template" in opts:
-                base_template = opts["base_template"]
-            if type(opts) == dict and "view_template" in opts:
-                view_template = opts["view_template"]
-            if type(opts) == dict and "add_context" in opts:
-                add_context.update(opts["add_context"])
-            if type(opts) == dict and "javascript_files_list" in opts:
-                for file_src in opts["javascript_files_list"]:
-                    if {"src": file_src} not in javascript_files_list:
-                        javascript_files_list.append({"src": file_src})
-            if type(opts) == dict and "css_files_list" in opts:
-                for file_src in opts["css_files_list"]:
-                    if {"src": file_src} not in css_files_list:
-                        css_files_list.append({"src": file_src})
-            if (
-                type(opts) == dict
-                and "object_config_list" in opts
-                and type(opts["object_config_list"] == list)
-            ):
-                for obj in opts["object_config_list"]:
-                    model_name = str(obj._meta.model_name).lower()
-                    if model_name not in object_config_list:
-                        object_config_list[model_name] = list()
-                    if obj not in object_config_list[model_name]:
-                        object_config_list[model_name].append(obj)
-            if (
-                type(opts) == dict
-                and "custom_fields_list" in opts
-                and type(opts["custom_fields_list"] == list)
-            ):
-                for model in opts["custom_fields_list"]:
-                    custom_fields_list[str(model).lower()] = opts["custom_fields_list"][
-                        model
-                    ]
+            # options
+            if type(opts) == dict:
+                if "topbar" in opts and opts["topbar"] == True:
+                    topbar = True
+                if (
+                    "show_daterangepicker" in opts
+                    and opts["show_daterangepicker"] == True
+                ):
+                    show_daterangepicker = True
+                    show_daterangepicker_temp = True
+                if (
+                    "show_timeline" in opts
+                    and opts["show_timeline"] == True
+                ):
+                    show_timeline_temp = True
+                if "flot" in opts and opts["flot"]:
+                    has_flot_chart = True
+                if "base_template" in opts:
+                    base_template = opts["base_template"]
+                if "view_template" in opts:
+                    view_template = opts["view_template"]
+                if "add_context" in opts:
+                    add_context.update(opts["add_context"])
+                if "javascript_files_list" in opts:
+                    for file_src in opts["javascript_files_list"]:
+                        if {"src": file_src} not in javascript_files_list:
+                            javascript_files_list.append({"src": file_src})
+                if "css_files_list" in opts:
+                    for file_src in opts["css_files_list"]:
+                        if {"src": file_src} not in css_files_list:
+                            css_files_list.append({"src": file_src})
+                if (
+                    "object_config_list" in opts
+                    and type(opts["object_config_list"] == list)
+                ):
+                    for obj in opts["object_config_list"]:
+                        model_name = str(obj._meta.model_name).lower()
+                        if model_name not in object_config_list:
+                            object_config_list[model_name] = list()
+                        if obj not in object_config_list[model_name]:
+                            object_config_list[model_name].append(obj)
+                if (
+                    "custom_fields_list" in opts
+                    and type(opts["custom_fields_list"] == list)
+                ):
+                    for model in opts["custom_fields_list"]:
+                        custom_fields_list[str(model).lower()] = opts["custom_fields_list"][
+                            model
+                        ]
 
-            if (
-                type(opts) == dict
-                and "exclude_fields_list" in opts
-                and type(opts["exclude_fields_list"] == list)
-            ):
-                for model in opts["exclude_fields_list"]:
-                    exclude_fields_list[str(model).lower()] = opts[
-                        "exclude_fields_list"
-                    ][model]
-
+                if (
+                    "exclude_fields_list" in opts
+                    and type(opts["exclude_fields_list"] == list)
+                ):
+                    for model in opts["exclude_fields_list"]:
+                        exclude_fields_list[str(model).lower()] = opts[
+                            "exclude_fields_list"
+                        ][model]
+            else:
+                logger.info(
+                    f"Widget {widget} options is not a dict, it is {opts}"
+                )
         widget_rows_html += widget_row_template.render(
             {
                 "row": current_row,
@@ -563,7 +549,7 @@ def view(request, link_title):
         )
 
     javascript_files_list.append(
-        {"src": STATIC_URL + "pyscada/js/pyscada/pyscada_v0-7-0rc14.js"}
+        {"src": STATIC_URL + "pyscada/js/pyscada/pyscada_v0-8-3.js"}
     )
 
     # Generate css files list
@@ -607,9 +593,11 @@ def view(request, link_title):
             "visible_controlitem_list"
         ],
         "visible_form_list": visible_objects_lists["visible_form_list"],
+        "view_object": v,
         "view_title": v.title,
         "view_link_title": link_title,
         "view_show_timeline": v.show_timeline,
+        "view_time_delta" : v.default_time_delta.total_seconds(),
         "version_string": core_version,
         "link_target": settings.LINK_TARGET
         if hasattr(settings, "LINK_TARGET")
@@ -622,7 +610,7 @@ def view(request, link_title):
     return TemplateResponse(request, view_template, context)
 
 
-@unauthenticated_redirect
+@login_required
 def log_data(request):
     if "timestamp" in request.POST:
         timestamp = float(request.POST["timestamp"])
@@ -647,7 +635,7 @@ def log_data(request):
     return HttpResponse(jdata, content_type="application/json")
 
 
-@unauthenticated_redirect
+@login_required
 def form_read_all_task(request):
     crts = []
     for device in Device.objects.all():
@@ -657,7 +645,7 @@ def form_read_all_task(request):
     return HttpResponse(status=200)
 
 
-@unauthenticated_redirect
+@login_required
 def form_read_task(request):
     if "key" in request.POST and "type" in request.POST:
         key = int(request.POST["key"])
@@ -727,7 +715,7 @@ def form_read_task(request):
     return HttpResponse(status=404)
 
 
-@unauthenticated_redirect
+@login_required
 def form_write_task(request):
     if "key" in request.POST and "value" in request.POST:
         key = int(request.POST["key"])
@@ -802,7 +790,7 @@ def form_write_task(request):
     return HttpResponse(status=404)
 
 
-@unauthenticated_redirect
+@login_required
 def form_write_property2(request):
     if "variable_property" in request.POST and "value" in request.POST:
         value = request.POST["value"]
@@ -837,16 +825,16 @@ def int_filter(someList):
             continue  # Skip these
 
 
-@unauthenticated_redirect
+@login_required
 def get_cache_data(request):
     if "init" in request.POST:
         init = bool(float(request.POST["init"]))
     else:
         init = False
     active_variables = []
-    if "variables[]" in request.POST:
-        active_variables = request.POST.getlist("variables[]")
-        active_variables = list(int_filter(active_variables))
+    if "variables" in request.POST:
+        active_variables = request.POST.get("variables")
+        active_variables = list(int_filter(active_variables.split(",")))
     """
     else:
         active_variables = list(
@@ -862,8 +850,9 @@ def get_cache_data(request):
     """
 
     active_variable_properties = []
-    if "variable_properties[]" in request.POST:
-        active_variable_properties = request.POST.getlist("variable_properties[]")
+    if "variable_properties" in request.POST:
+        active_variable_properties = request.POST.get("variable_properties")
+        active_variable_properties = list(int_filter(active_variable_properties.split(",")))
 
     timestamp_from = time.time()
     if "timestamp_from" in request.POST:
@@ -926,14 +915,3 @@ def get_cache_data(request):
 
     data["server_time"] = time.time() * 1000
     return HttpResponse(json.dumps(data), content_type="application/json")
-
-
-def logout_view(request):
-    logger.info("logout %s" % request.user)
-    logout(request)
-    # Redirect to a success page.
-    return redirect("%s?next=%s" % (UNAUTHENTICATED_REDIRECT, "/"))
-
-
-def user_profile_change(request):
-    return redirect("%s?next=%s" % (UNAUTHENTICATED_REDIRECT, request.path))

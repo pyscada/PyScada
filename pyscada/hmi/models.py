@@ -15,6 +15,7 @@ from django.db.models.query import QuerySet
 from django.conf import settings
 from django.forms.models import BaseInlineFormSet
 
+from datetime import timedelta
 from six import text_type
 import traceback
 from uuid import uuid4
@@ -110,7 +111,7 @@ class WidgetContentModel(models.Model):
         :return: main panel html and sidebar html as
         """
         logger.info(f"gen_html function of {self} model needs to be overwritten")
-        return "", "", ""
+        return None, None, {}
 
     def _get_objects_for_html(
         self, list_to_append=None, obj=None, exclude_model_names=None
@@ -371,6 +372,13 @@ class DisplayValueOption(models.Model):
         blank=True,
         on_delete=models.CASCADE,
         help_text="Select a function to transform and manipulate data before displaying it.",
+    )
+
+    from_timestamp_offset = models.PositiveSmallIntegerField(
+        default=None, blank=True, null=True,
+        help_text="Manage the value to be displayed if there is no data within the specified time interval.<br>"
+        "If the field is empty, the last known data before the specified time interval will be displayed.<br>"
+        "Set a value to add an offset in milliseconds before the start of the specified time interval.",
     )
 
     def __str__(self):
@@ -708,6 +716,12 @@ class ControlItem(models.Model):
             return self.display_value_options.get_timeline()
         return False
 
+    def readable(self):
+        if self.variable_property:
+            return self.variable_property.variable.readable
+        elif self.variable:
+            return self.variable.readable
+
 
 class Chart(WidgetContentModel):
     id = models.AutoField(primary_key=True)
@@ -936,6 +950,22 @@ class Form(models.Model):
             files += item.get_css()
         return files
 
+    def get_daterangepicker(self):
+        get_daterangepicker = False
+        for item in self.control_items.all():
+            get_daterangepicker = get_daterangepicker or item.get_daterangepicker()
+        for item in self.hidden_control_items_to_true.all():
+            get_daterangepicker = get_daterangepicker or item.get_daterangepicker()
+        return get_daterangepicker
+
+    def get_timeline(self):
+        get_timeline = False
+        for item in self.control_items.all():
+            get_timeline = get_timeline or item.get_timeline()
+        for item in self.hidden_control_items_to_true.all():
+            get_timeline = get_timeline or item.get_timeline()
+        return get_timeline
+
 
 class Page(models.Model):
     id = models.AutoField(primary_key=True)
@@ -1013,9 +1043,9 @@ class ControlPanel(WidgetContentModel):
             opts["javascript_files_list"] += form.get_js()
             opts["css_files_list"] += form.get_css()
             opts["show_daterangepicker"] = (
-                opts["show_daterangepicker"] or item.get_daterangepicker()
+                opts["show_daterangepicker"] or form.get_daterangepicker()
             )
-            opts["show_timeline"] = opts["show_timeline"] or item.get_timeline()
+            opts["show_timeline"] = opts["show_timeline"] or form.get_timeline()
         # opts["object_config_list"] = set()
         # opts["object_config_list"].update(self._get_objects_for_html())
         # opts = self.add_custom_fields_list(opts)
@@ -1370,6 +1400,7 @@ class View(models.Model):
     theme = models.ForeignKey(
         Theme, blank=True, null=True, default=None, on_delete=models.SET_NULL
     )
+    default_time_delta = models.DurationField(default=timedelta(hours=2))
 
     def __str__(self):
         return self.title

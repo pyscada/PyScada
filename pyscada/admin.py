@@ -26,11 +26,13 @@ from django.contrib.auth.models import User, Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.utils.translation import gettext_lazy as _
 from django.db.models.fields.related import OneToOneRel
+from django.utils.html import mark_safe
 
 from django import forms
 from django.db.utils import ProgrammingError, OperationalError
 from django.conf import settings
 
+import sys
 import datetime
 import signal
 import logging
@@ -389,6 +391,7 @@ class DeviceHandlerAdmin(admin.ModelAdmin):
         "name",
         "handler_class",
         "handler_path",
+        "found",
     )
     list_editable = (
         "handler_class",
@@ -397,9 +400,63 @@ class DeviceHandlerAdmin(admin.ModelAdmin):
     list_display_links = ("name",)
     save_as = True
     save_as_continue = True
+    readonly_fields = [
+        "content",
+    ]
 
     def has_module_permission(self, request):
         return False
+
+    @admin.display(boolean=True)
+    def found(self, instance):
+        try:
+            if instance.handler_path is not None:
+                sys.path.append(instance.handler_path)
+            mod = __import__(instance.handler_class, fromlist=["Handler"])
+            return True
+        except ModuleNotFoundError:
+            return False
+        except Exception as e:
+            logger.error(f"Handler {self} failed to be found : {e}")
+            return False
+
+    def content(self, instance):
+        try:
+            if instance.handler_path is not None:
+                sys.path.append(instance.handler_path)
+            if instance.handler_class in sys.modules:
+                del sys.modules[instance.handler_class]
+            mod = __import__(instance.handler_class, fromlist=["Handler"])
+            if hasattr(mod, "pyscada_admin_content"):
+                return mark_safe(getattr(mod, "pyscada_admin_content"))
+            with open(mod.__file__) as f:
+                return f.read()
+        except ModuleNotFoundError:
+            return "Handler file not found."
+        except Exception as e:
+            return f"Handler reading failed : {e}"
+
+    def get_form(self, request, obj=None, **kwargs):
+        if kwargs.get("fields", False) and "content" in kwargs["fields"]:
+            help_texts = kwargs.get("help_texts", {})
+            help_texts.update(
+                {
+                    "content": "Return the content of 'pyscada_admin_content' variable if defined in the handler file, otherwise return the whole file content."
+                }
+            )
+            kwargs.update({"help_texts": help_texts})
+        return super().get_form(request, obj, **kwargs)
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj == None:
+            return []
+        return super().get_readonly_fields(request, obj)
+
+    class Media:
+        js = (
+            # show the contet as preformatted code
+            "pyscada/js/admin/handler_content_as_pre.js",
+        )
 
 
 class VariableAdmin(admin.ModelAdmin):

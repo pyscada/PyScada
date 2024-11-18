@@ -761,6 +761,7 @@ class Process(object):
         self.label = ""
         self.dwt_received = False
         self.drt_received = False
+        self.next_message = "running.."
         # register signals
         self.SIG_QUEUE = []
         self.SIGNALS = [signal.SIGTERM, signal.SIGUSR1, signal.SIGHUP, signal.SIGUSR2]
@@ -801,7 +802,7 @@ class Process(object):
 
     def run(self):
         BackgroundProcess.objects.filter(pk=self.process_id).update(
-            last_update=now(), message="running.."
+            last_update=now(), message=self.next_message
         )
         exec_loop = True
         try:
@@ -815,7 +816,7 @@ class Process(object):
 
                 # update progress
                 BackgroundProcess.objects.filter(pk=self.process_id).update(
-                    last_update=now()
+                    last_update=now(), message=self.next_message
                 )
                 if sig is None and exec_loop:
                     # run loop action
@@ -1378,6 +1379,10 @@ class SingleDeviceDAQProcess(Process):
         return True
 
     def loop(self):
+        # reset all cached values to write before checking device write and read tasks
+        for v in self.device.variables.values():
+            v.erase_cache()
+
         # data from a write
         data = []
         # process write tasks
@@ -1613,6 +1618,10 @@ class MultiDeviceDAQProcess(Process):
     def loop(self):
         data = [[]]
         for device_id, device in self.devices.items():
+            # reset all cached values to write before checking device write and read tasks
+            for v in device.variables.values():
+                v.erase_cache()
+
             # process write tasks
 
             variable_as_decimal = {}

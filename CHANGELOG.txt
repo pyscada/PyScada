@@ -535,3 +535,13 @@
     - Look at the new way to save read data from GenericDevice and GenericDeviceHandler in pyscada/device.py and in the pyscada.operations plugin.
   - Delete CalculatedVariable (moved to the pyscada.operations plugin) in order to not loose your calculated variables you should install pyscada.operations plugin before running the pyscada migration 108.
   - log ProgrammingError and OperationalError while populating models
+
+0.8.3
+  - add view timedelta option to change de default time delta
+  - add control item offset option: to choose how to display or not data before the time range
+  - generic function to populate inlines for device, variable, variablestate
+  -  RecordedData: store uint64 as int64 shifted - unknown class as float: uint64 are shifted by -9223372036854775808 = 2**63 to be stored as a django BigIntegerField
+  - handler: add erase cache option in read data all: in order to call various times read data all in a handler, allow to not erase the cached results
+  - upgrade flot to 4.2.6
+  - limit legend max height to the chart height
+  - fixes and other small updates
