@@ -2206,6 +2206,12 @@ class Variable(models.Model):
             return (bool(value),)
         else:
             return (value,)
+
+        if source_format not in ["f", "d"]:
+            if value != float(int(value)):
+                logger.info(f"Variable ({self.__str__()}) : the read value ({value}) is not an integer, but the value class ({self.value_class.upper()}) represents an integer. The decimal part will be lost.")
+            value = int(value)
+
         output = unpack(target_format, pack(source_format, value))
         #
         if self.byte_order == "default":
