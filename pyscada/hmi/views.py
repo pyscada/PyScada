@@ -832,9 +832,9 @@ def get_cache_data(request):
     else:
         init = False
     active_variables = []
-    if "variables[]" in request.POST:
-        active_variables = request.POST.getlist("variables[]")
-        active_variables = list(int_filter(active_variables))
+    if "variables" in request.POST:
+        active_variables = request.POST.get("variables")
+        active_variables = list(int_filter(active_variables.split(",")))
     """
     else:
         active_variables = list(
@@ -850,8 +850,9 @@ def get_cache_data(request):
     """
 
     active_variable_properties = []
-    if "variable_properties[]" in request.POST:
-        active_variable_properties = request.POST.getlist("variable_properties[]")
+    if "variable_properties" in request.POST:
+        active_variable_properties = request.POST.get("variable_properties")
+        active_variable_properties = list(int_filter(active_variable_properties.split(",")))
 
     timestamp_from = time.time()
     if "timestamp_from" in request.POST:
