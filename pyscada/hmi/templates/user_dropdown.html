@@ -1,0 +1,52 @@
+{% if user.pk %}
+    <li class="dropdown">
+        <!-- User -->
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon  glyphicon-user"></span>
+            {% if user.first_name %}
+                {{ user.first_name }} {{ user.last_name }}
+            {% else %}
+                {{ user.username }}
+            {% endif %}
+            <b class="caret"></b></a>
+        <ul class="dropdown-menu" style="min-width: 0px;">
+            {% if user.is_staff %}
+                <li>
+                    <a href="{% url 'pyscada_admin:index' %}" target="{{ link_target }}">Admin</a>
+                </li>
+                <li class="divider"></li>
+            {% endif %}
+            <li role="presentation" class="disabled">
+                <a role="menuitem" tabindex="-1" href="#">{{ user.first_name }} {{ user.last_name }}</a>
+            </li>
+            <li role="presentation" class="disabled">
+                <a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a>
+            </li>
+            <li role="presentation" class="disabled">
+                <a role="menuitem" tabindex="-1" href="#">change user info</a>
+            </li>
+            <li class="divider"></li>
+            <li role="presentation" class="refresh-rate-li hidden">
+                <div style="padding: 3px 20px;">
+                    <span>Data refresh rate:</span>
+                    <span class="refresh-rate-output"></span>
+                    <span>ms</span>
+                    <input class="refresh-rate-input"
+                           type="range"
+                           min="100"
+                           max="5000"
+                           step="100"
+                           value="2500">
+                </div>
+            </li>
+            <li class="refresh-rate-divider divider hidden"></li>
+            <li>
+                <a href="/accounts/password_change" target="{{ link_target }}">Change password</a>
+            </li>
+            <li class="divider"></li>
+            <li><a><form action="/accounts/logout/" method="post">
+                {% csrf_token %}
+                <input type="submit" name="Logout" value="Logout" style="border: none; background: none; padding: 0;" />
+            </form></a></li>
+        </ul>
+    </li>
+{% endif %}
