@@ -81,7 +81,10 @@ class ExportProcess(BaseProcess):
         if bp:
             bp.done = True
             bp.last_update = now()
-            bp.message = "stopped"
+
+            if not bp.failed:
+                bp.message = "stopped"
+
             bp.save()
 
         return 0, None
