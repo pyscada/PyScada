@@ -48,33 +48,9 @@
                         </ul>
                         <ul class="nav navbar-right navbar-nav">
                             {% block top_menu_right %}{% endblock %}
-                            {% if user.pk %}
-                            <li class="dropdown"><!-- User -->
-                                <a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon  glyphicon-user"></span> {% if user.first_name %}{{ user.first_name }} {{ user.last_name }}{% else %}{{ user.username }}{% endif %}<b class="caret"></b></a>
-                                <ul class="dropdown-menu" style="min-width: 0px;">
-                                    {% if user.is_staff %}
-                                    <li><a href="{% url 'pyscada_admin:index' %}" target="{{ link_target }}">Admin</a></li>
-                                    <li class="divider"></li>
-                                    {% endif %}
-                                    <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.first_name }} {{ user.last_name }}</a></li>
-                                    <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">{{ user.email }}</a></li>
-                                    <li role="presentation" class="disabled"><a role="menuitem" tabindex="-1" href="#">Change user info</a></li>
-                                    <li class="divider"></li>
-                                    <li role="presentation" class="refresh-rate-li hidden">
-                                        <div style="padding: 3px 20px;">
-                                            <span>Data refresh rate: </span>
-                                            <span class="refresh-rate-output"></span>
-                                            <span> ms</span>
-                                            <input class="refresh-rate-input" type="range" min="100" max="5000" step="100" value="2500">
-                                        </div>
-                                    </li>
-                                    <li class="refresh-rate-divider divider hidden"></li>
-                                    <li><a href="/accounts/password_change" target="{{ link_target }}"> Change password</a></li>
-                                    <li class="divider"></li>
-                                    <li><a href="/accounts/logout"> Logout</a></li>
-                                </ul>
-                            </li>
-                            {% endif %}
+                            {% block user_dropdown %}
+                                {% include "user_dropdown.html" %}
+                            {% endblock %}
                             <!--<li><a href="#page-help">Help</a></li>-->
                             <li>
                                 <a href="javascript:;" style="padding-left:0px; padding-right:0px;width:40px;height:30px;display: none;"><img class="loadingAnimation" style="display: inline-block; height: 14px;" src="/static/pyscada/img/load.gif" alt="loading" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Initialisation"></a>
