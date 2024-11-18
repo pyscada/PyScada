@@ -1379,6 +1379,10 @@ class SingleDeviceDAQProcess(Process):
         return True
 
     def loop(self):
+        # reset all cached values to write before checking device write and read tasks
+        for v in self.device.variables.values():
+            v.erase_cache()
+
         # data from a write
         data = []
         # process write tasks
@@ -1614,6 +1618,10 @@ class MultiDeviceDAQProcess(Process):
     def loop(self):
         data = [[]]
         for device_id, device in self.devices.items():
+            # reset all cached values to write before checking device write and read tasks
+            for v in device.variables.values():
+                v.erase_cache()
+
             # process write tasks
 
             variable_as_decimal = {}

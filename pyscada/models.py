@@ -1814,13 +1814,20 @@ class Variable(models.Model):
         max_length=15, default="default", choices=byte_order_choices
     )
 
-    # for RecodedVariable
-    value = None
-    prev_value = None
-    store_value = False
-    timestamp_old = None
-    timestamp = None
-    cached_values_to_write = []
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # for RecodedVariable
+        self.value = None
+        self.prev_value = None
+        self.store_value = False
+        self.timestamp_old = None
+        self.timestamp = None
+
+        self.erase_cache()
+
+    def erase_cache(self):
+        # for read values
+        self.cached_values_to_write = []
 
     def __str__(self):
         return str(self.id) + " - " + self.name
@@ -1974,9 +1981,10 @@ class Variable(models.Model):
         self.prev_value = self.value
         return self.store_value
 
-    def update_values(self, value_list, timestamp_list, erase_cache=True):
+    def update_values(self, value_list, timestamp_list, erase_cache=False):
         if erase_cache:
-            self.cached_values_to_write = []
+            self.erase_cache()
+
         has_value = False
         if not isinstance(value_list, list):
             if isinstance(value_list, bool) or isinstance(value_list, int) or isinstance(value_list, float) or isinstance(value_list, str):
