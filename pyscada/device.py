@@ -98,7 +98,7 @@ class GenericHandlerDevice:
 
         return self.read_data(variable_instance), self.time()
 
-    def read_data_all(self, variables_dict, erase_cache=True):
+    def read_data_all(self, variables_dict, erase_cache=False):
         output = []
 
         if self.before_read():
