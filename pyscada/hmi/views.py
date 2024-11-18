@@ -27,6 +27,7 @@ from django.template.response import TemplateResponse
 from django.shortcuts import redirect
 from django.contrib.auth import logout
 from django.views.decorators.csrf import requires_csrf_token
+from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.db.models.fields.related import OneToOneRel
@@ -37,23 +38,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-UNAUTHENTICATED_REDIRECT = (
-    settings.UNAUTHENTICATED_REDIRECT
-    if hasattr(settings, "UNAUTHENTICATED_REDIRECT")
-    else "/accounts/login/"
-)
 
-
-def unauthenticated_redirect(func):
-    def wrapper(*args, **kwargs):
-        if not args[0].user.is_authenticated:
-            return redirect("%s?next=%s" % (UNAUTHENTICATED_REDIRECT, args[0].path))
-        return func(*args, **kwargs)
-
-    return wrapper
-
-
-@unauthenticated_redirect
+@login_required
 def index(request):
     if GroupDisplayPermission.objects.count() == 0:
         view_list = View.objects.all()
@@ -75,7 +61,7 @@ def index(request):
     )  # HttpResponse(t.render(c))
 
 
-@unauthenticated_redirect
+@login_required
 def get_hidden_config2(request, link_title):
     try:
         v = (
@@ -224,7 +210,7 @@ def get_hidden_config2(request, link_title):
     return HttpResponse(hidden_globalConfig_html, content_type="text/plain")
 
 
-@unauthenticated_redirect
+@login_required
 @requires_csrf_token
 def view(request, link_title):
     base_template = "base.html"
@@ -624,7 +610,7 @@ def view(request, link_title):
     return TemplateResponse(request, view_template, context)
 
 
-@unauthenticated_redirect
+@login_required
 def log_data(request):
     if "timestamp" in request.POST:
         timestamp = float(request.POST["timestamp"])
@@ -649,7 +635,7 @@ def log_data(request):
     return HttpResponse(jdata, content_type="application/json")
 
 
-@unauthenticated_redirect
+@login_required
 def form_read_all_task(request):
     crts = []
     for device in Device.objects.all():
@@ -659,7 +645,7 @@ def form_read_all_task(request):
     return HttpResponse(status=200)
 
 
-@unauthenticated_redirect
+@login_required
 def form_read_task(request):
     if "key" in request.POST and "type" in request.POST:
         key = int(request.POST["key"])
@@ -729,7 +715,7 @@ def form_read_task(request):
     return HttpResponse(status=404)
 
 
-@unauthenticated_redirect
+@login_required
 def form_write_task(request):
     if "key" in request.POST and "value" in request.POST:
         key = int(request.POST["key"])
@@ -804,7 +790,7 @@ def form_write_task(request):
     return HttpResponse(status=404)
 
 
-@unauthenticated_redirect
+@login_required
 def form_write_property2(request):
     if "variable_property" in request.POST and "value" in request.POST:
         value = request.POST["value"]
@@ -839,7 +825,7 @@ def int_filter(someList):
             continue  # Skip these
 
 
-@unauthenticated_redirect
+@login_required
 def get_cache_data(request):
     if "init" in request.POST:
         init = bool(float(request.POST["init"]))
@@ -928,14 +914,3 @@ def get_cache_data(request):
 
     data["server_time"] = time.time() * 1000
     return HttpResponse(json.dumps(data), content_type="application/json")
-
-
-def logout_view(request):
-    logger.info("logout %s" % request.user)
-    logout(request)
-    # Redirect to a success page.
-    return redirect("%s?next=%s" % (UNAUTHENTICATED_REDIRECT, "/"))
-
-
-def user_profile_change(request):
-    return redirect("%s?next=%s" % (UNAUTHENTICATED_REDIRECT, request.path))
