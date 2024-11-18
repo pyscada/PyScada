@@ -101,7 +101,7 @@ if importlib.util.find_spec("django_cas_ng") is not None:
         "timeout": 5,
     }
 
-    UNAUTHENTICATED_REDIRECT = "/accounts/choose_login/"
+    LOGIN_URL = "/accounts/choose_login/"
 
 ROOT_URLCONF = "PyScadaServer.urls"
 
