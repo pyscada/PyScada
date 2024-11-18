@@ -1339,7 +1339,7 @@ class VariableProperty(models.Model):
         verbose_name_plural = "variable properties"
 
     def __str__(self):
-        return self.get_property_class_display() + ": " + self.name
+        return f"{self.variable}-{self.get_property_class_display()} : {self.name}"
 
     def value(self):
         value_class = self.value_class
