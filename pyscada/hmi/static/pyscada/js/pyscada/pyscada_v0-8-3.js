@@ -1289,7 +1289,7 @@ function createOffset(date) {
      // update data timestamp
      if(DATA_TO_TIMESTAMP==0){
          //DATA_TO_TIMESTAMP = DATA_FROM_TIMESTAMP = SERVER_TIME;
-         DEFAULT_TIME_DELTA = document.querySelector("body").getAttribute("data-view-time-delta") == null ? 7200 : document.querySelector("body").getAttribute("data-view-time-delta");
+         DEFAULT_TIME_DELTA = document.querySelector("body").getAttribute("data-view-time-delta") == null ? 7200 : parseFloat(document.querySelector("body").getAttribute("data-view-time-delta"));
          DATA_TO_TIMESTAMP = SERVER_TIME;
          DATA_FROM_TIMESTAMP = SERVER_TIME - DEFAULT_TIME_DELTA * 1000;
      }else{
