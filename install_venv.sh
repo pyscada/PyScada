@@ -173,7 +173,7 @@ function questions_clean_install_setup(){
   fi
 
   while true; do
-    read -p "Auto add pyscada plugins ? [True/False]: " answer_auto_add_apps
+    read -p "Auto load pyscada plugins installed ? If False, you need to edit the settings.py file manually to load a plugin. [True/False]: " answer_auto_add_apps
     if [[ "$answer_auto_add_apps" == "True" ]]; then
       echo 'You need to restart pyscada and gunicorn after (un)installing any pyscada plugin.'
       break;

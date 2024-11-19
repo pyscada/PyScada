@@ -8,7 +8,8 @@ PyScada plugin installation
   .. code-block:: shell
 
       sudo apt install git
-      git clone https://github.com/pyscada/PyScada-Modbus.git
+      cd /home/pyscada
+      sudo -u pyscada git clone https://github.com/pyscada/PyScada-Modbus.git
       cd PyScada-Modbus
 
 
@@ -17,10 +18,11 @@ PyScada plugin installation
   .. code-block:: shell
 
       sudo apt install wget
-      wget https://github.com/pyscada/PyScada-Modbus/archive/refs/heads/main.zip -O PyScada-Modbus-main.zip
+      cd /home/pyscada
+      sudo -u pyscada wget https://github.com/pyscada/PyScada-Modbus/archive/refs/heads/main.zip -O PyScada-Modbus-main.zip
       sudo apt install unzip
-      unzip ./PyScada-Modbus-main.zip
-      rm ./PyScada-Modbus-main.zip
+      sudo -u pyscada unzip ./PyScada-Modbus-main.zip
+      sudo -u pyscada rm ./PyScada-Modbus-main.zip
       cd PyScada-Modbus-main
 
 2. Install the PyScada plugin
@@ -57,5 +59,5 @@ Uninstall a plugin
 To uninstall a plugin
 
 .. code-block:: shell
-    
+
     sudo -u pyscada -E env PATH=${PATH} pip uninstall yourPlugin
