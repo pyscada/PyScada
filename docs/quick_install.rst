@@ -20,7 +20,7 @@ Then it call the script ``install_system.sh`` or ``install_docker.sh`` depending
 Automatic installation on Debian and derivatives
 ------------------------------------------------
 
-1. Choose a method to download PyScada :
+1. Choose a method to download PyScada (you need write rights in the current directory) :
 
   - by cloning the repository :
 
@@ -58,7 +58,7 @@ Automatic installation on Debian and derivatives
     * the DB name, user and password
     * admin name and mail to send error logs (need further django email configuration in settings.py)
     * the first pyscada user credentials
-    * if you want that pyscada plugins are automatically added in INSTALLED_APPS
+    * if you want installed pyscada plugins to be automatically loaded
 
   Run :
 

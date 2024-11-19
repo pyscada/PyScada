@@ -181,7 +181,7 @@ class GenericDevice:
         output = []
 
         if not self.driver_ok or not self.driver_handler_ok:
-            logger.info("Cannot request data. Driver or handler not working.")
+            logger.info(f"Cannot request data for {self.device}. Driver is {self.driver_ok}. Handler is {self.driver_handler_ok}.")
             return output
 
         output = self._h.read_data_all(self.variables)
