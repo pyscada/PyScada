@@ -12,6 +12,7 @@ from django.utils.timezone import now, make_aware, is_naive
 from django.db.models.signals import post_save
 from django.db.models.fields.related import OneToOneRel
 from django.forms.models import BaseInlineFormSet
+from django.apps import apps
 
 from pyscada.utils import blow_up_data, timestamp_to_datetime
 from pyscada.utils import _get_objects_for_html as get_objects_for_html
@@ -1503,13 +1504,15 @@ class DataSource(models.Model):
         :param value:
         :return:
         """
-        try:
-            pass
-        except:
-            logger.error(
-                f"{self.name}, unhandled exception in COV Receiver application",
-                exc_info=True,
-            )
+        for app_config in apps.get_app_configs():
+            if hasattr(app_config, "pyscada_send_cov_notification") and callable(app_config.pyscada_send_cov_notification):
+                try:
+                    app_config.pyscada_send_cov_notification(variable)
+                except:
+                    logger.error(
+                        f"{self}, unhandled exception in COV Receiver application",
+                        exc_info=True,
+                    )
 
     def last_value(self, **kwargs):
         if self.get_related_datasource() is not None:
@@ -1529,9 +1532,11 @@ class DataSource(models.Model):
         )
 
     def write_multiple(self, **kwargs):
+        for item in kwargs.get("items", []):
+            if len(item.cached_values_to_write):
+                self._send_cov_notification(item)
         if self.get_related_datasource() is not None:
             self.get_related_datasource().write_multiple(**kwargs)
-            items = kwargs.pop("items") if "items" in kwargs else []
             return True
         logger.warning(
             f"{self._meta.object_name} class needs to override the write_multiple function."
