@@ -20,6 +20,8 @@ class PyScadaConfig(AppConfig):
     def ready(self):
         import pyscada.signals
 
+    def pyscada_app_init(self):
+        logger.debug("Core init app")
         try:
             from .hmi.models import Theme
 
