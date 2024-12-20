@@ -138,6 +138,12 @@ Licensed under the AGPL.
  var AUTO_UPDATE_ACTIVE = true;
 
  /**
+  * Use synchronous data handling
+  * @type {boolean}
+  */
+ var SYNC_HANDLING_DATA = true;
+
+ /**
   * Previous auto chart's data update button active
   * @type {boolean}
   */
@@ -1334,7 +1340,7 @@ function createOffset(date) {
      }
      UPDATE_STATUS_COUNT = 0;
      //hide_update_status();
-     if(request_data.init===1){
+     if(typeof request_data != "undefined" && request_data.init===1){
          hide_init_status();
      }
      //FETCH_DATA_PENDING--;
@@ -1370,7 +1376,7 @@ function createOffset(date) {
          }
      }
      //hide_update_status();
-     if(request_data.init===1){
+     if(typeof request_data != "undefined" && request_data.init===1){
          for (key in request_data.variables){
              key = request_data.variables[key];
              if (typeof(CHART_VARIABLE_KEYS[key]) === 'number'){
@@ -4442,7 +4448,10 @@ function init_pyscada_content() {
          set_chart_selection_mode();
      });
 
-     PYSCADA_TIMEOUTS["data_handler"] = setTimeout(function() {data_handler();}, 5000);
+
+     if (SYNC_HANDLING_DATA) {
+        PYSCADA_TIMEOUTS["data_handler"] = setTimeout(function() {data_handler();}, 5000);
+     }
      set_chart_selection_mode();
 
 
