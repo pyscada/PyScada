@@ -66,6 +66,7 @@ from django.db.transaction import TransactionManagementError
 from django.db.models import Q
 from django.db.utils import IntegrityError
 from django.utils.timezone import now
+from django.apps import apps
 
 from pyscada.models import (
     BackgroundProcess,
@@ -417,6 +418,17 @@ class Scheduler(object):
         self.delete_pid()
         sys.exit(0)
 
+    def init_apps(self):
+        for app_config in apps.get_app_configs():
+            if hasattr(app_config, "pyscada_app_init") and callable(app_config.pyscada_app_init):
+                try:
+                    app_config.pyscada_app_init()
+                except:
+                    logger.error(
+                        f"{app_config}, unhandled exception in application initialization",
+                        exc_info=True,
+                    )
+
     def run(self):
         """
         the main loop
@@ -425,16 +437,23 @@ class Scheduler(object):
             master_process = BackgroundProcess.objects.filter(
                 pk=self.process_id
             ).first()
-            if master_process:
-                master_process.last_update = now()
-                master_process.message = "init child processes"
-                master_process.save()
-            else:
+
+            if not master_process:
                 self.delete_pid(force_del=True)
-                self.stderr.write("no such process in BackgroundProcesses")
+                self.stderr.write("No such scheduler process in BackgroundProcesses")
                 sys.exit(0)
 
+            master_process.last_update=now()
+            master_process.message="init apps"
+            master_process.save(update_fields=["last_update", "message"])
+            self.init_apps()
+
+            master_process.last_update=now()
+            master_process.message="init child processes"
+            master_process.save(update_fields=["last_update", "message"])
+
             self.manage_processes()
+
             while True:
                 # handle signals
                 sig = self.SIG_QUEUE.pop(0) if len(self.SIG_QUEUE) else None
@@ -443,9 +462,9 @@ class Scheduler(object):
                 check_db_connection()
 
                 # update the Process
-                BackgroundProcess.objects.filter(pk=self.process_id).update(
-                    last_update=now(), message="running.."
-                )
+                master_process.last_update=now()
+                master_process.message="running.."
+                master_process.save(update_fields=["last_update", "message"])
                 if sig is None:
                     self.manage_processes()
                 elif sig not in self.SIGNALS:

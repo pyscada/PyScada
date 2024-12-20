@@ -19,6 +19,8 @@ class PyScadaHMIConfig(AppConfig):
     def ready(self):
         import pyscada.hmi.signals
 
+    def pyscada_app_init(self):
+        logger.debug("HMI init app")
         try:
             from .models import TransformData
 
