@@ -364,7 +364,7 @@ class Scheduler(object):
         self.pid = getpid()
         if not master_process:
             self.delete_pid(force_del=True)
-            logger.debug("no such process in BackgroundProcesses\n")
+            logger.error("No such scheduler process in BackgroundProcesses")
             sys.exit(0)
 
         # kill all the sub processes
@@ -372,7 +372,7 @@ class Scheduler(object):
             try:
                 kill(process.pid, 9)
             except Exception as e:
-                logger.debug(f"{e} for pid {process.pid}")
+                logger.debug(f"{e} for pid {process.pid} {process.label}")
         # Init the DB
         if not self.init_db():
             logger.debug("Init DB failed\n")
