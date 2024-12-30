@@ -45,4 +45,7 @@ urlpatterns = [
         views.get_hidden_config2,
         name="get-hidden-config2",
     ),
+    path(
+        "<link_title>/", views.index, name="view-overview-link"
+    ),  # this is used to add special links to the view-overview
 ]
