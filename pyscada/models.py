@@ -851,10 +851,12 @@ class VariablePropertyManager(models.Manager):
             for key, value in kwargs.items():
                 setattr(vp, key, value)
             vp.save()
+            self._send_cov_notification(vp)
         else:
             # create
             vp = VariableProperty(**kwargs)
             vp.save()
+            self._send_cov_notification(vp)
 
         return vp
 
@@ -941,11 +943,23 @@ class VariablePropertyManager(models.Manager):
             vp.last_modified = now()
             try:
                 vp.save()
+                self._send_cov_notification(vp)
             except ValueError as e:
                 logger.error("Error while saving VP value : " + str(e), exc_info=True)
             return vp
         else:
             return None
+
+    def _send_cov_notification(self, vp):
+        for app_config in apps.get_app_configs():
+            if hasattr(app_config, "pyscada_send_cov_notification") and callable(app_config.pyscada_send_cov_notification):
+                try:
+                    app_config.pyscada_send_cov_notification(variable_property=vp)
+                except:
+                    logger.error(
+                        f"{self}, unhandled exception in COV Receiver application",
+                        exc_info=True,
+                    )
 
 
 #
@@ -1507,7 +1521,7 @@ class DataSource(models.Model):
         for app_config in apps.get_app_configs():
             if hasattr(app_config, "pyscada_send_cov_notification") and callable(app_config.pyscada_send_cov_notification):
                 try:
-                    app_config.pyscada_send_cov_notification(variable)
+                    app_config.pyscada_send_cov_notification(variable=variable)
                 except:
                     logger.error(
                         f"{self}, unhandled exception in COV Receiver application",
