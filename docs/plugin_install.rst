@@ -36,9 +36,9 @@ PyScada plugin installation
       # install the plugin
       sudo -u pyscada -E env PATH=${PATH} pip3 install .
       # run migrations
-      python /var/www/pyscada/PyScadaServer/manage.py migrate
+      sudo -u pyscada -E env PATH=${PATH} python3 /var/www/pyscada/PyScadaServer/manage.py migrate
       # copy static files
-      python /var/www/pyscada/PyScadaServer/manage.py collectstatic --no-input
+      sudo -u pyscada -E env PATH=${PATH} python3 /var/www/pyscada/PyScadaServer/manage.py collectstatic --no-input
       # restart gunicorn and PyScada
       sudo systemctl restart gunicorn pyscada
 
@@ -60,4 +60,4 @@ To uninstall a plugin
 
 .. code-block:: shell
 
-    sudo -u pyscada -E env PATH=${PATH} pip uninstall yourPlugin
+    sudo -u pyscada -E env PATH=${PATH} pip3 uninstall yourPlugin
