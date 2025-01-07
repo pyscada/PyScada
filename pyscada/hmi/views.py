@@ -735,14 +735,38 @@ def form_write_task(request):
                 cwt.create_and_notificate(cwt)
                 return HttpResponse(status=200)
         else:
+
+            if "view_id" in request.POST:
+                # for a view, get the list of variables and variable properties for which the user can retrieve and write data
+                view_id = int(request.POST["view_id"])
+                vdo = View.objects.get(id=view_id).data_objects(request.user)
+            else:
+                vdo = None  # should it get data objets for all views ?
+
             if item_type == "variable":
-                if (
-                    get_group_display_permission_list(
-                        ControlItem.objects, request.user.groups.all()
-                    )
-                    .filter(type=0, variable_id=key)
-                    .exists()
-                ):
+                can_write = False
+                if vdo is not None:
+                    # filter active_variables using variables from which the user can write data
+                    if "variable_write" in vdo and int(key) in vdo["variable_write"]:
+                        can_write = True
+                    else:
+                        logger.info(f"variable {key} not allowed to write in view {view_id} for user {request.user}")
+                else:
+                    # keeping old check, remove it later
+                    if (
+                        get_group_display_permission_list(
+                            ControlItem.objects, request.user.groups.all()
+                        )
+                        .filter(type=0, variable_id=key)
+                        .exists()
+                    ):
+                        can_write = True
+                    else:
+                        logger.debug(
+                            "Missing group display permission for write task (variable %s)"
+                            % key
+                        )
+                if can_write:
                     cwt = DeviceWriteTask(
                         variable_id=key,
                         value=value,
@@ -751,19 +775,29 @@ def form_write_task(request):
                     )
                     cwt.create_and_notificate(cwt)
                     return HttpResponse(status=200)
-                else:
-                    logger.debug(
-                        "Missing group display permission for write task (variable %s)"
-                        % key
-                    )
             elif item_type == "variable_property":
-                if (
-                    get_group_display_permission_list(
-                        ControlItem.objects, request.user.groups.all()
-                    )
-                    .filter(type=0, variable_property_id=key)
-                    .exists()
-                ):
+                can_write = False
+                if vdo is not None:
+                    # filter active_variables using variables from which the user can write data
+                    if "variable_property_write" in vdo and int(key) in vdo["variable_property_write"]:
+                        can_write = True
+                    else:
+                        logger.info(f"variable property {key} not allowed to write in view {view_id} for user {request.user}")
+                else:
+                    # keeping old check, remove it later
+                    if (
+                        get_group_display_permission_list(
+                            ControlItem.objects, request.user.groups.all()
+                        )
+                        .filter(type=0, variable_property_id=key)
+                        .exists()
+                    ):
+                        can_write = True
+                    else:
+                        logger.debug(
+                            "Missing group display permission for write task (VP %s)" % key
+                        )
+                if can_write:
                     cwt = DeviceWriteTask(
                         variable_property_id=key,
                         value=value,
@@ -772,10 +806,6 @@ def form_write_task(request):
                     )
                     cwt.create_and_notificate(cwt)
                     return HttpResponse(status=200)
-                else:
-                    logger.debug(
-                        "Missing group display permission for write task (VP %s)" % key
-                    )
     else:
         logger.debug("key or value missing in request : %s" % request.POST)
     return HttpResponse(status=404)
@@ -818,6 +848,14 @@ def int_filter(someList):
 
 @login_required
 def get_cache_data(request):
+
+    if "view_id" in request.POST:
+        # for a view, get the list of variables and variable properties for which the user can retrieve and write data
+        view_id = int(request.POST["view_id"])
+        vdo = View.objects.get(id=view_id).data_objects(request.user)
+    else:
+        vdo = None  # should it get data objets for all views ?
+
     if "init" in request.POST:
         init = bool(float(request.POST["init"]))
     else:
@@ -826,6 +864,16 @@ def get_cache_data(request):
     if "variables" in request.POST:
         active_variables = request.POST.get("variables")
         active_variables = list(int_filter(active_variables.split(",")))
+        if vdo is not None:
+            # filter active_variables using variables from which the user can retrieve data
+            variables_filtered = []
+            for var_pk in active_variables:
+                if "variable" in vdo and int(var_pk) in vdo["variable"]:
+                    variables_filtered.append(var_pk)
+                else:
+                    logger.info(f"variable {var_pk} not allowed in view {view_id} for user {request.user}")
+            active_variables = variables_filtered
+
     """
     else:
         active_variables = list(
@@ -844,6 +892,15 @@ def get_cache_data(request):
     if "variable_properties" in request.POST:
         active_variable_properties = request.POST.get("variable_properties")
         active_variable_properties = list(int_filter(active_variable_properties.split(",")))
+        if vdo is not None:
+            # filter active_variable_properties using variables from which the user can retrieve data
+            variable_properties_filtered = []
+            for var_pk in active_variable_properties:
+                if "variable_property" in vdo and int(var_pk) in vdo["variable_property"]:
+                    variable_properties_filtered.append(var_pk)
+                else:
+                    logger.info(f"variable property {var_pk} not allowed in view {view_id} for user {request.user}")
+            active_variable_properties = variable_properties_filtered
 
     timestamp_from = time.time()
     if "timestamp_from" in request.POST:

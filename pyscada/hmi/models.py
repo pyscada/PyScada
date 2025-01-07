@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 from pyscada.models import Device, Variable, VariableProperty, Color
-from pyscada.utils import _get_objects_for_html as get_objects_for_html
+from pyscada.utils import _get_objects_for_html as get_objects_for_html, get_group_display_permission_list
 
 from django.template.exceptions import TemplateDoesNotExist, TemplateSyntaxError
 from django.db import models
@@ -186,6 +186,11 @@ class WidgetContentModel(models.Model):
         if type(visible_list) == QuerySet and self.pk in visible_list:
             return True
         return False
+
+    def data_objects(self, user):
+        # used to get all objects which need to retrive data
+        logger.info(f"data_objects function of {self} model should be overwritten")
+        return {}
 
     class Meta:
         abstract = True
@@ -746,12 +751,15 @@ class Chart(WidgetContentModel):
     def visible(self):
         return True
 
-    def variables_list(self, exclude_list=[]):
-        list = []
-        for axe in self.chart_set.all():
-            for item in axe.variables.exclude(pk__in=exclude_list):
-                list.append(item)
-        return list
+    def data_objects(self, user):
+        # used to get all objects which need to retrive data
+        objects = {}
+        for axe in self.chartaxis_set.all():
+            for item in axe.variables.all():
+                if "variable" not in objects:
+                    objects["variable"] = []
+                objects["variable"].append(item.pk)
+        return objects
 
     def gen_html(self, **kwargs):
         """
@@ -861,8 +869,18 @@ class Pie(WidgetContentModel):
     def visible(self):
         return True
 
-    def variables_list(self, exclude_list=[]):
-        return [item.pk for item in self.variables.exclude(pk__in=exclude_list)]
+    def data_objects(self, user):
+        # used to get all objects which need to retrive data
+        objects = {}
+        for item in self.variables.all():
+            if "variable" not in objects:
+                objects["variable"] = []
+            objects["variable"].append(item.pk)
+        for item in self.variable_properties.all():
+            if "variable_property" not in objects:
+                objects["variable_property"] = []
+            objects["variable_property"].append(item.pk)
+        return objects
 
     def gen_html(self, **kwargs):
         """
@@ -979,6 +997,16 @@ class Page(models.Model):
     def __str__(self):
         return self.link_title.replace(" ", "_")
 
+    def data_objects(self, user):
+        # used to get all objects which need to retrive data
+        objects = {}
+        for w in get_group_display_permission_list(self.widget_set.filter(visible=True), user.groups.all()):
+            wdo = w.data_objects(user)
+            for o in wdo.keys():
+                if o not in objects:
+                    objects[o] = []
+                objects[o] = list(set(objects[o] + wdo.get(o,[])))
+        return objects
 
 class ControlPanel(WidgetContentModel):
     id = models.AutoField(primary_key=True)
@@ -988,6 +1016,39 @@ class ControlPanel(WidgetContentModel):
 
     def __str__(self):
         return str(self.id) + ": " + self.title
+
+    def data_objects(self, user):
+        # used to get all objects which need to retrive data
+        objects = {}
+        for ci in get_group_display_permission_list(self.items.all(), user.groups.all()):
+            if ci.item_type() not in objects:
+                objects[ci.item_type()] = []
+            objects[ci.item_type()].append(ci.key())
+            if ci.type == 0:
+                # accessible in writing
+                if "{ci.item_type()}_write" not in objects:
+                    objects[f"{ci.item_type()}_write"] = []
+                objects[f"{ci.item_type()}_write"].append(ci.key())
+        for form in get_group_display_permission_list(self.forms.all(), user.groups.all()):
+            for ci in get_group_display_permission_list(form.control_items.all(), user.groups.all()):
+                if ci.item_type() not in objects:
+                    objects[ci.item_type()] = []
+                objects[ci.item_type()].append(ci.key())
+                if ci.type == 0:
+                    # accessible in writing
+                    if "{ci.item_type()}_write" not in objects:
+                        objects[f"{ci.item_type()}_write"] = []
+                    objects[f"{ci.item_type()}_write"].append(ci.key())
+            for ci in get_group_display_permission_list(form.hidden_control_items_to_true.all(), user.groups.all()):
+                if ci.item_type() not in objects:
+                    objects[ci.item_type()] = []
+                objects[ci.item_type()].append(ci.key())
+                if ci.type == 0:
+                    # accessible in writing
+                    if "{ci.item_type()}_write" not in objects:
+                        objects[f"{ci.item_type()}_write"] = []
+                    objects[f"{ci.item_type()}_write"].append(ci.key())
+        return objects
 
     def gen_html(self, **kwargs):
         """
@@ -1076,6 +1137,19 @@ class CustomHTMLPanel(WidgetContentModel):
     def __str__(self):
         return str(self.id) + ": " + self.title
 
+    def data_objects(self, user):
+        # used to get all objects which need to retrive data
+        objects = {}
+        for variable in self.variables.all():
+            if "variable" not in objects:
+                objects["variable"] = []
+            objects["variable"].append(variable.pk)
+        for variable_property in self.variable_properties.all():
+            if "variable_property" not in objects:
+                objects["variable_property"] = []
+            objects["variable_property"].append(variable_property.pk)
+        return objects
+
     def gen_html(self, **kwargs):
         """
 
@@ -1160,6 +1234,22 @@ class ProcessFlowDiagram(WidgetContentModel):
         else:
             return str(self.id) + ": " + self.background_image.name
 
+    def data_objects(self, user):
+        # used to get all objects which need to retrive data
+        objects = {}
+        for pfdi in self.process_flow_diagram_items.all():
+            if pfdi.control_item is not None and pfdi.visible and pfdi.control_item in get_group_display_permission_list(ControlItem
+            .objects.all(), user.groups.all()):
+                if pfdi.control_item.item_type() not in objects:
+                    objects[pfdi.control_item.item_type()] = []
+                objects[pfdi.control_item.item_type()].append(pfdi.control_item.key())
+                if pfdi.control_item.type == 0:
+                    # accessible in writing
+                    if f"{pfdi.control_item.item_type()}_write" not in objects:
+                        objects[f"{pfdi.control_item.item_type()}_write"] = []
+                    objects[f"{pfdi.control_item.item_type()}_write"].append(pfdi.control_item.key())
+        return objects
+
     def gen_html(self, **kwargs):
         """
 
@@ -1216,6 +1306,12 @@ class SlidingPanelMenu(models.Model):
 
     def __str__(self):
         return self.title
+
+    def data_objects(self, user):
+        # used to get all objects which need to retrive data
+        if self.control_panel is not None:
+            return self.control_panel.data_objects(user)
+        return {}
 
 
 class WidgetContent(models.Model):
@@ -1347,6 +1443,13 @@ class Widget(models.Model):
         else:
             return str(self.id) + ": " + "None, None"
 
+    def data_objects(self, user):
+        # used to get all objects which need to retrive data
+        content_model = self.content._import_content_model()
+        if content_model is not None and hasattr(content_model, "data_objects") and (not hasattr(content_model, "groupdisplaypermission") or content_model in get_group_display_permission_list(content_model.__class__.objects.all(), user.groups.all())):
+            return content_model.data_objects(user)
+        return {}
+
     def css_class(self):
         widget_size = "col-xs-12 col-sm-12 col-md-12 col-lg-12"
         widgets = Widget.objects.filter(
@@ -1404,6 +1507,24 @@ class View(models.Model):
 
     def __str__(self):
         return self.title
+
+    def data_objects(self, user):
+        # used to get all objects which need to retrive data
+        objects = {}
+        if self.visible:
+            for w in get_group_display_permission_list(self.sliding_panel_menus.all(), user.groups.all()):
+                wdo = w.data_objects(user)
+                for o in wdo.keys():
+                    if o not in objects:
+                        objects[o] = []
+                    objects[o] = list(set(objects[o] + wdo.get(o,[])))
+            for w in get_group_display_permission_list(self.pages.all(), user.groups.all()):
+                wdo = w.data_objects(user)
+                for o in wdo.keys():
+                    if o not in objects:
+                        objects[o] = []
+                    objects[o] = list(set(objects[o] + wdo.get(o,[])))
+        return objects
 
     class Meta:
         ordering = ["position"]

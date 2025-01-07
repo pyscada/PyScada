@@ -186,6 +186,12 @@ Licensed under the AGPL.
 */
 var ONBEFORERELOAD_ASK = true;
 
+  /**
+  * View id
+  * @type {number}
+  */
+ var VIEW_ID = document.querySelector("body").dataset["viewId"];
+
  //                             -----------------------------------------------------------
  //                                                      Objects
  //                             -----------------------------------------------------------
@@ -1190,7 +1196,7 @@ function set_config_from_hidden_config(type,filter_data,val,get_data,value){
      show_update_status();
      FETCH_DATA_PENDING++;
      if(init){show_init_status();}
-     request_data = {timestamp_from:timestamp_from, variables: variable_keys, init: init, variable_properties:variable_property_keys};
+     request_data = {timestamp_from:timestamp_from, variables: variable_keys, init: init, variable_properties:variable_property_keys, view_id: VIEW_ID};
      if (typeof(timestamp_to) !== 'undefined'){request_data['timestamp_to']=timestamp_to};
      //if (!init){request_data['timestamp_from'] = request_data['timestamp_from'] - REFRESH_RATE;};
      const formData = new FormData();
@@ -4030,7 +4036,7 @@ function getCookie(name) {
                      PYSCADA_XHR = $.ajax({
                          type: 'post',
                          url: ROOT_URL+'form/write_property2/',
-                         data: {variable_property:key, value:value},
+                         data: {variable_property:key, value:value, view_id: VIEW_ID},
                          success: function (data) {
 
                          },
@@ -4048,7 +4054,7 @@ function getCookie(name) {
                  PYSCADA_XHR = $.ajax({
                      type: 'post',
                      url: ROOT_URL+'form/write_task/',
-                     data: {key:key, value:value, item_type:item_type},
+                     data: {key:key, value:value, item_type:item_type, view_id: VIEW_ID},
                      success: function (data) {
 
                      },
@@ -4082,7 +4088,7 @@ function getCookie(name) {
              PYSCADA_XHR = $.ajax({
                  type: 'post',
                  url: ROOT_URL+'form/write_task/',
-                 data: {key:key,value:1,item_type:item_type},
+                 data: {key:key,value:1,item_type:item_type, view_id: VIEW_ID},
                  success: function (data) {
                  },
                  error: function(data) {
@@ -4095,7 +4101,7 @@ function getCookie(name) {
              PYSCADA_XHR = $.ajax({
                  type: 'post',
                  url: ROOT_URL+'form/write_task/',
-                 data: {key:key,value:0,item_type:item_type},
+                 data: {key:key,value:0,item_type:item_type, view_id: VIEW_ID},
                  success: function (data) {
                  },
                  error: function(data) {
@@ -4106,7 +4112,7 @@ function getCookie(name) {
              PYSCADA_XHR = $.ajax({
                  type: 'post',
                  url: ROOT_URL+'form/write_task/',
-                 data: {key:key, value:value, item_type:item_type},
+                 data: {key:key, value:value, item_type:item_type, view_id: VIEW_ID},
                  success: function (data) {
 
                  },
@@ -4129,7 +4135,7 @@ function getCookie(name) {
                  PYSCADA_XHR = $.ajax({
                      type: 'post',
                      url: ROOT_URL+'form/write_property2/',
-                     data: {variable_property:var_name, value:value},
+                     data: {variable_property:var_name, value:value, view_id: VIEW_ID},
                      success: function (data) {
 
                      },
@@ -4144,7 +4150,7 @@ function getCookie(name) {
              PYSCADA_XHR = $.ajax({
                  type: 'post',
                  url: ROOT_URL+'form/write_task/',
-                 data: {key:key, value:value, item_type:item_type},
+                 data: {key:key, value:value, item_type:item_type, view_id: VIEW_ID},
                  success: function (data) {
 
                  },
@@ -4188,7 +4194,7 @@ function getCookie(name) {
          PYSCADA_XHR = $.ajax({
              type: 'post',
              url: ROOT_URL+'form/write_task/',
-             data: {key:key,value:1,item_type:item_type},
+             data: {key:key,value:1,item_type:item_type, view_id: VIEW_ID},
              success: function (data) {
                  $('#'+id).removeClass('btn-default')
                  $('#'+id).addClass('btn-success');
@@ -4201,7 +4207,7 @@ function getCookie(name) {
          PYSCADA_XHR = $.ajax({
              type: 'post',
              url: ROOT_URL+'form/write_task/',
-             data: {key:key,value:0,item_type:item_type},
+             data: {key:key,value:0,item_type:item_type, view_id: VIEW_ID},
              success: function (data) {
                  $('#'+id).addClass('btn-default')
                  $('#'+id).removeClass('btn-success');
