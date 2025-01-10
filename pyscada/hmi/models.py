@@ -1026,7 +1026,7 @@ class ControlPanel(WidgetContentModel):
             objects[ci.item_type()].append(ci.key())
             if ci.type == 0:
                 # accessible in writing
-                if "{ci.item_type()}_write" not in objects:
+                if f"{ci.item_type()}_write" not in objects:
                     objects[f"{ci.item_type()}_write"] = []
                 objects[f"{ci.item_type()}_write"].append(ci.key())
         for form in get_group_display_permission_list(self.forms.all(), user.groups.all()):
@@ -1036,7 +1036,7 @@ class ControlPanel(WidgetContentModel):
                 objects[ci.item_type()].append(ci.key())
                 if ci.type == 0:
                     # accessible in writing
-                    if "{ci.item_type()}_write" not in objects:
+                    if f"{ci.item_type()}_write" not in objects:
                         objects[f"{ci.item_type()}_write"] = []
                     objects[f"{ci.item_type()}_write"].append(ci.key())
             for ci in get_group_display_permission_list(form.hidden_control_items_to_true.all(), user.groups.all()):
@@ -1045,7 +1045,7 @@ class ControlPanel(WidgetContentModel):
                 objects[ci.item_type()].append(ci.key())
                 if ci.type == 0:
                     # accessible in writing
-                    if "{ci.item_type()}_write" not in objects:
+                    if f"{ci.item_type()}_write" not in objects:
                         objects[f"{ci.item_type()}_write"] = []
                     objects[f"{ci.item_type()}_write"].append(ci.key())
         return objects
