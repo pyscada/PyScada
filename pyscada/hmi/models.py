@@ -2,7 +2,10 @@
 from __future__ import unicode_literals
 
 from pyscada.models import Device, Variable, VariableProperty, Color
-from pyscada.utils import _get_objects_for_html as get_objects_for_html, get_group_display_permission_list
+from pyscada.utils import (
+    _get_objects_for_html as get_objects_for_html,
+    get_group_display_permission_list,
+)
 
 from django.template.exceptions import TemplateDoesNotExist, TemplateSyntaxError
 from django.db import models
@@ -223,9 +226,13 @@ class Theme(models.Model):
                 theme.delete()
             else:
                 try:
-                    get_template(theme.view_filename + ".html").render({"base_html":theme.base_filename + ".html"})
+                    get_template(theme.view_filename + ".html").render(
+                        {"base_html": theme.base_filename + ".html"}
+                    )
                 except TemplateDoesNotExist as e:
-                    logger.info(f"Template {e} used in the view as base_html not found. {self} will be delete.")
+                    logger.info(
+                        f"Template {e} used in the view as base_html not found. {self} will be delete."
+                    )
                     theme.delete()
                 except TemplateSyntaxError as e:
                     logger.info(e)
@@ -380,7 +387,9 @@ class DisplayValueOption(models.Model):
     )
 
     from_timestamp_offset = models.PositiveSmallIntegerField(
-        default=None, blank=True, null=True,
+        default=None,
+        blank=True,
+        null=True,
         help_text="Manage the value to be displayed if there is no data within the specified time interval.<br>"
         "If the field is empty, the last known data before the specified time interval will be displayed.<br>"
         "Set a value to add an offset in milliseconds before the start of the specified time interval.",
@@ -1000,13 +1009,16 @@ class Page(models.Model):
     def data_objects(self, user):
         # used to get all objects which need to retrive data
         objects = {}
-        for w in get_group_display_permission_list(self.widget_set.filter(visible=True), user.groups.all()):
+        for w in get_group_display_permission_list(
+            self.widget_set.filter(visible=True), user.groups.all()
+        ):
             wdo = w.data_objects(user)
             for o in wdo.keys():
                 if o not in objects:
                     objects[o] = []
-                objects[o] = list(set(objects[o] + wdo.get(o,[])))
+                objects[o] = list(set(objects[o] + wdo.get(o, [])))
         return objects
+
 
 class ControlPanel(WidgetContentModel):
     id = models.AutoField(primary_key=True)
@@ -1020,7 +1032,9 @@ class ControlPanel(WidgetContentModel):
     def data_objects(self, user):
         # used to get all objects which need to retrive data
         objects = {}
-        for ci in get_group_display_permission_list(self.items.all(), user.groups.all()):
+        for ci in get_group_display_permission_list(
+            self.items.all(), user.groups.all()
+        ):
             if ci.item_type() not in objects:
                 objects[ci.item_type()] = []
             objects[ci.item_type()].append(ci.key())
@@ -1029,8 +1043,12 @@ class ControlPanel(WidgetContentModel):
                 if f"{ci.item_type()}_write" not in objects:
                     objects[f"{ci.item_type()}_write"] = []
                 objects[f"{ci.item_type()}_write"].append(ci.key())
-        for form in get_group_display_permission_list(self.forms.all(), user.groups.all()):
-            for ci in get_group_display_permission_list(form.control_items.all(), user.groups.all()):
+        for form in get_group_display_permission_list(
+            self.forms.all(), user.groups.all()
+        ):
+            for ci in get_group_display_permission_list(
+                form.control_items.all(), user.groups.all()
+            ):
                 if ci.item_type() not in objects:
                     objects[ci.item_type()] = []
                 objects[ci.item_type()].append(ci.key())
@@ -1039,7 +1057,9 @@ class ControlPanel(WidgetContentModel):
                     if f"{ci.item_type()}_write" not in objects:
                         objects[f"{ci.item_type()}_write"] = []
                     objects[f"{ci.item_type()}_write"].append(ci.key())
-            for ci in get_group_display_permission_list(form.hidden_control_items_to_true.all(), user.groups.all()):
+            for ci in get_group_display_permission_list(
+                form.hidden_control_items_to_true.all(), user.groups.all()
+            ):
                 if ci.item_type() not in objects:
                     objects[ci.item_type()] = []
                 objects[ci.item_type()].append(ci.key())
@@ -1238,8 +1258,14 @@ class ProcessFlowDiagram(WidgetContentModel):
         # used to get all objects which need to retrive data
         objects = {}
         for pfdi in self.process_flow_diagram_items.all():
-            if pfdi.control_item is not None and pfdi.visible and pfdi.control_item in get_group_display_permission_list(ControlItem
-            .objects.all(), user.groups.all()):
+            if (
+                pfdi.control_item is not None
+                and pfdi.visible
+                and pfdi.control_item
+                in get_group_display_permission_list(
+                    ControlItem.objects.all(), user.groups.all()
+                )
+            ):
                 if pfdi.control_item.item_type() not in objects:
                     objects[pfdi.control_item.item_type()] = []
                 objects[pfdi.control_item.item_type()].append(pfdi.control_item.key())
@@ -1247,7 +1273,9 @@ class ProcessFlowDiagram(WidgetContentModel):
                     # accessible in writing
                     if f"{pfdi.control_item.item_type()}_write" not in objects:
                         objects[f"{pfdi.control_item.item_type()}_write"] = []
-                    objects[f"{pfdi.control_item.item_type()}_write"].append(pfdi.control_item.key())
+                    objects[f"{pfdi.control_item.item_type()}_write"].append(
+                        pfdi.control_item.key()
+                    )
         return objects
 
     def gen_html(self, **kwargs):
@@ -1279,13 +1307,9 @@ class ProcessFlowDiagram(WidgetContentModel):
                     )
                 )
         except ValueError:
-            logger.info(
-                f"ProcessFlowDiagram {self} has no background image defined"
-            )
+            logger.info(f"ProcessFlowDiagram {self} has no background image defined")
         except FileNotFoundError as e:
-            logger.info(
-                f"ProcessFlowDiagram {self} : {e}"
-            )
+            logger.info(f"ProcessFlowDiagram {self} : {e}")
         sidebar_content = None
         opts = dict()
         # opts["object_config_list"] = set()
@@ -1446,7 +1470,17 @@ class Widget(models.Model):
     def data_objects(self, user):
         # used to get all objects which need to retrive data
         content_model = self.content._import_content_model()
-        if content_model is not None and hasattr(content_model, "data_objects") and (not hasattr(content_model, "groupdisplaypermission") or content_model in get_group_display_permission_list(content_model.__class__.objects.all(), user.groups.all())):
+        if (
+            content_model is not None
+            and hasattr(content_model, "data_objects")
+            and (
+                not hasattr(content_model, "groupdisplaypermission")
+                or content_model
+                in get_group_display_permission_list(
+                    content_model.__class__.objects.all(), user.groups.all()
+                )
+            )
+        ):
             return content_model.data_objects(user)
         return {}
 
@@ -1512,18 +1546,22 @@ class View(models.Model):
         # used to get all objects which need to retrive data
         objects = {}
         if self.visible:
-            for w in get_group_display_permission_list(self.sliding_panel_menus.all(), user.groups.all()):
+            for w in get_group_display_permission_list(
+                self.sliding_panel_menus.all(), user.groups.all()
+            ):
                 wdo = w.data_objects(user)
                 for o in wdo.keys():
                     if o not in objects:
                         objects[o] = []
-                    objects[o] = list(set(objects[o] + wdo.get(o,[])))
-            for w in get_group_display_permission_list(self.pages.all(), user.groups.all()):
+                    objects[o] = list(set(objects[o] + wdo.get(o, [])))
+            for w in get_group_display_permission_list(
+                self.pages.all(), user.groups.all()
+            ):
                 wdo = w.data_objects(user)
                 for o in wdo.keys():
                     if o not in objects:
                         objects[o] = []
-                    objects[o] = list(set(objects[o] + wdo.get(o,[])))
+                    objects[o] = list(set(objects[o] + wdo.get(o, [])))
         return objects
 
     class Meta:

@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
                 default="base",
                 help_text="Enter the filename without '.html'",
                 max_length=400,
-                #validators=[pyscada.hmi.models.validate_tempalte],
+                # validators=[pyscada.hmi.models.validate_tempalte],
             ),
         ),
         migrations.AlterField(
@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
                 default="view",
                 help_text="Enter the filename without '.html'",
                 max_length=400,
-                #validators=[pyscada.hmi.models.validate_tempalte],
+                # validators=[pyscada.hmi.models.validate_tempalte],
             ),
         ),
     ]

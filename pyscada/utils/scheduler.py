@@ -420,7 +420,9 @@ class Scheduler(object):
 
     def init_apps(self):
         for app_config in apps.get_app_configs():
-            if hasattr(app_config, "pyscada_app_init") and callable(app_config.pyscada_app_init):
+            if hasattr(app_config, "pyscada_app_init") and callable(
+                app_config.pyscada_app_init
+            ):
                 try:
                     app_config.pyscada_app_init()
                 except:
@@ -443,13 +445,13 @@ class Scheduler(object):
                 self.stderr.write("No such scheduler process in BackgroundProcesses")
                 sys.exit(0)
 
-            master_process.last_update=now()
-            master_process.message="init apps"
+            master_process.last_update = now()
+            master_process.message = "init apps"
             master_process.save(update_fields=["last_update", "message"])
             self.init_apps()
 
-            master_process.last_update=now()
-            master_process.message="init child processes"
+            master_process.last_update = now()
+            master_process.message = "init child processes"
             master_process.save(update_fields=["last_update", "message"])
 
             self.manage_processes()
@@ -462,8 +464,8 @@ class Scheduler(object):
                 check_db_connection()
 
                 # update the Process
-                master_process.last_update=now()
-                master_process.message="running.."
+                master_process.last_update = now()
+                master_process.message = "running.."
                 master_process.save(update_fields=["last_update", "message"])
                 if sig is None:
                     self.manage_processes()

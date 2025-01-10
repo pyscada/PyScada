@@ -635,7 +635,6 @@ class ProcessFlowDiagramAdmin(admin.ModelAdmin):
 
 
 class ThemeForm(forms.ModelForm):
-
     def clean(self):
         super().clean()
         try:
@@ -643,7 +642,9 @@ class ThemeForm(forms.ModelForm):
         except TemplateDoesNotExist as e:
             raise ValidationError(f"Template {e} not found.")
         try:
-            get_template(self.cleaned_data["view_filename"] + ".html").render({"base_html":self.cleaned_data.get("base_filename", "base") + ".html"})
+            get_template(self.cleaned_data["view_filename"] + ".html").render(
+                {"base_html": self.cleaned_data.get("base_filename", "base") + ".html"}
+            )
         except TemplateDoesNotExist as e:
             raise ValidationError(f"Template {e} not found.")
 
