@@ -112,7 +112,7 @@ class RecordedDataManager(models.Manager):
                 else now()
             )
             return RecordedData(
-                timestamp=timestamp/1000,
+                timestamp=timestamp / 1000,
                 variable=variable,
                 value=value,
                 date_saved=date_saved,
@@ -952,7 +952,9 @@ class VariablePropertyManager(models.Manager):
 
     def _send_cov_notification(self, vp):
         for app_config in apps.get_app_configs():
-            if hasattr(app_config, "pyscada_send_cov_notification") and callable(app_config.pyscada_send_cov_notification):
+            if hasattr(app_config, "pyscada_send_cov_notification") and callable(
+                app_config.pyscada_send_cov_notification
+            ):
                 try:
                     app_config.pyscada_send_cov_notification(variable_property=vp)
                 except:
@@ -1190,7 +1192,9 @@ class Dictionary(models.Model):
                 logger.warning(
                     f"MultipleObjectsReturned for label={label}, value={value}, dictionary={self}. Keep the first one."
                 )
-                for di in DictionaryItem.objects.filter(label=label, value=value, dictionary=self)[1:]:
+                for di in DictionaryItem.objects.filter(
+                    label=label, value=value, dictionary=self
+                )[1:]:
                     di.delete()
         elif update == "label":
             try:
@@ -1205,7 +1209,9 @@ class Dictionary(models.Model):
                 logger.warning(
                     f"MultipleObjectsReturned for value={value}, dictionary={self}. Keep the first one."
                 )
-                for di in DictionaryItem.objects.filter(value=value, dictionary=self)[1:]:
+                for di in DictionaryItem.objects.filter(value=value, dictionary=self)[
+                    1:
+                ]:
                     di.delete()
                 DictionaryItem.objects.update_or_create(
                     value=value,
@@ -1227,7 +1233,9 @@ class Dictionary(models.Model):
                 logger.warning(
                     f"MultipleObjectsReturned for label={label}, dictionary={self}. Keep the first one."
                 )
-                for di in DictionaryItem.objects.filter(label=label, dictionary=self)[1:]:
+                for di in DictionaryItem.objects.filter(label=label, dictionary=self)[
+                    1:
+                ]:
                     di.delete()
                 DictionaryItem.objects.update_or_create(
                     label=label,
@@ -1519,7 +1527,9 @@ class DataSource(models.Model):
         :return:
         """
         for app_config in apps.get_app_configs():
-            if hasattr(app_config, "pyscada_send_cov_notification") and callable(app_config.pyscada_send_cov_notification):
+            if hasattr(app_config, "pyscada_send_cov_notification") and callable(
+                app_config.pyscada_send_cov_notification
+            ):
                 try:
                     app_config.pyscada_send_cov_notification(variable=variable)
                 except:
@@ -2006,15 +2016,23 @@ class Variable(models.Model):
 
         has_value = False
         if not isinstance(value_list, list):
-            if isinstance(value_list, bool) or isinstance(value_list, int) or isinstance(value_list, float) or isinstance(value_list, str):
+            if (
+                isinstance(value_list, bool)
+                or isinstance(value_list, int)
+                or isinstance(value_list, float)
+                or isinstance(value_list, str)
+            ):
                 value_list = [value_list]
             else:
-                logger.warning(
-                    f"{self} - Value list wrong type : {type(value_list)}"
-                )
+                logger.warning(f"{self} - Value list wrong type : {type(value_list)}")
                 return False
         if not isinstance(timestamp_list, list):
-            if isinstance(timestamp_list, bool) or isinstance(timestamp_list, int) or isinstance(timestamp_list, float) or isinstance(timestamp_list, str):
+            if (
+                isinstance(timestamp_list, bool)
+                or isinstance(timestamp_list, int)
+                or isinstance(timestamp_list, float)
+                or isinstance(timestamp_list, str)
+            ):
                 try:
                     timestamp_list = [float(timestamp_list)]
                 except ValueError as e:
@@ -2034,7 +2052,7 @@ class Variable(models.Model):
         update_false_count = 0
         for i in range(0, len(value_list)):
             if self._update_value(value_list[i], timestamp_list[i]):
-                self.cached_values_to_write.append((self.timestamp*1000, self.value))
+                self.cached_values_to_write.append((self.timestamp * 1000, self.value))
             else:
                 update_false_count += 1
             has_value = True
@@ -2228,7 +2246,9 @@ class Variable(models.Model):
 
         if source_format not in ["f", "d"]:
             if value != float(int(value)):
-                logger.info(f"Variable ({self.__str__()}) : the read value ({value}) is not an integer, but the value class ({self.value_class.upper()}) represents an integer. The decimal part will be lost.")
+                logger.info(
+                    f"Variable ({self.__str__()}) : the read value ({value}) is not an integer, but the value class ({self.value_class.upper()}) represents an integer. The decimal part will be lost."
+                )
             value = int(value)
 
         output = unpack(target_format, pack(source_format, value))
@@ -2700,15 +2720,21 @@ class RecordedData(models.Model):
             try:
                 kwargs["variable"] = Variable.objects.get(id=variable_id)
             except Variable.DoesNotExist:
-                raise ValidationError(f"Variable with id {variable_id} not found. Cannot save data.")
+                raise ValidationError(
+                    f"Variable with id {variable_id} not found. Cannot save data."
+                )
         else:
             variable_id = None
 
         if variable_id is not None and "id" not in kwargs:
             try:
-                kwargs["id"] = int(int(int(float(timestamp) * 1000) * 2097152) + variable_id)
-            except (TypeError , ValueError)as e:
-                raise ValidationError(f"Cannot save data for variable {kwargs['variable']}, timestamp error : {e}")
+                kwargs["id"] = int(
+                    int(int(float(timestamp) * 1000) * 2097152) + variable_id
+                )
+            except (TypeError, ValueError) as e:
+                raise ValidationError(
+                    f"Cannot save data for variable {kwargs['variable']}, timestamp error : {e}"
+                )
         if "variable" in kwargs and "value" in kwargs:
             if kwargs["variable"].value_class.upper() in [
                 "FLOAT",
@@ -2780,7 +2806,9 @@ class RecordedData(models.Model):
             elif kwargs["variable"].value_class.upper() in ["BOOL", "BOOLEAN"]:
                 kwargs["value_boolean"] = bool(kwargs.pop("value"))
             else:
-                logger.warning(f"The {kwargs['variable'].value_class.upper()} variable value class is not defined in RecordedData __init__ function. Default storing value as float.")
+                logger.warning(
+                    f"The {kwargs['variable'].value_class.upper()} variable value class is not defined in RecordedData __init__ function. Default storing value as float."
+                )
                 kwargs["value_float64"] = float(kwargs.pop("value"))
 
         # call the django model __init__
@@ -2846,7 +2874,9 @@ class RecordedData(models.Model):
         elif value_class.upper() in ["BOOL", "BOOLEAN"]:
             return self.value_boolean
         else:
-            logger.warning(f"The {value_class.upper()} variable value class is not defined in RecordedData value function. Default reading value as float.")
+            logger.warning(
+                f"The {value_class.upper()} variable value class is not defined in RecordedData value function. Default reading value as float."
+            )
             return self.value_float64
 
     def save(self, *args, **kwargs):

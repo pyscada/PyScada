@@ -304,12 +304,12 @@ def export_recordeddata_to_file(
 
                     continue
                 # init mean value vars
-                tmp = 0.0    # sum
+                tmp = 0.0  # sum
                 tmp_i = 0.0  # count
 
-                if data[var.pk][ii][0]/1000.0 < timevalues[i]:
+                if data[var.pk][ii][0] / 1000.0 < timevalues[i]:
                     # skip elements that are befor current time step
-                    while data[var.pk][ii][0]/1000.0 < timevalues[i] and ii < max_ii:
+                    while data[var.pk][ii][0] / 1000.0 < timevalues[i] and ii < max_ii:
                         last_value = data[var.pk][ii][1]
                         ii += 1
 
@@ -319,18 +319,16 @@ def export_recordeddata_to_file(
 
                     continue
 
-
-
                 # calc mean value
                 if (
                     timevalues[i]
-                    <= data[var.pk][ii][0]/1000.0
+                    <= data[var.pk][ii][0] / 1000.0
                     < timevalues[i] + mean_value_period
                 ):
                     # there is data in time range
                     while (
                         timevalues[i]
-                        <= data[var.pk][ii][0]/1000.0
+                        <= data[var.pk][ii][0] / 1000.0
                         < timevalues[i] + mean_value_period
                         and ii < max_ii
                     ):
@@ -357,7 +355,7 @@ def export_recordeddata_to_file(
 
             # write data
             if file_extension == ".h5" or file_extension == ".mat":
-                var_name = var.name.replace("/", "_") # escape / character,
+                var_name = var.name.replace("/", "_")  # escape / character,
             else:
                 var_name = var.name
 
