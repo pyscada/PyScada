@@ -1655,7 +1655,6 @@ class DjangoDatabase(models.Model):
         for item in items:
             logger.debug(f"{item} has {len(item.cached_values_to_write)} to write.")
             if len(item.cached_values_to_write):
-                self.datasource._send_cov_notification(item)
                 for cached_value in item.cached_values_to_write:
                     # add date saved if not exist in variable object, if date_saved is in kwargs it will be used instead of the variable.date_saved (see the create_data_element_from_variable function)
                     if not hasattr(item, "date_saved") or item.date_saved is None:
