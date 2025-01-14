@@ -1453,6 +1453,7 @@ class SingleDeviceDAQProcess(Process):
                 task.save(update_fields=["done", "finished"])
 
         # Get and change the variable value which has bit VP
+        start = time()
         for var, item in variable_as_decimal.items():
             if var.query_prev_value():
                 prev_value = var.prev_value
@@ -1461,7 +1462,7 @@ class SingleDeviceDAQProcess(Process):
             for bit, value in item.items():
                 prev_value = set_bit(int(prev_value), int(bit), bool(value))
             # Create a new device write task for this varaible with the new value
-            dwt = DeviceWriteTask(variable=var, value=prev_value)
+            dwt = DeviceWriteTask(variable=var, value=prev_value, start=start)
             dwt.save()
 
         # Do all the variable write task for this device starting with the oldest
