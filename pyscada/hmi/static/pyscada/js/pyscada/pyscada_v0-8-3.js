@@ -3965,11 +3965,12 @@ function getCookie(name) {
      id = $(this).attr('id');
      value = $("#"+id+"-value").val();
      item_type = $(this).data('type');
-     min = $(this).data('min');
-     max = $(this).data('max');
-     value_class = $(this).data('value-class');
-     min_type = $(this).data('min-type');
-     max_type = $(this).data('max-type');
+     val=$('.variable-config[data-id='+id.replace('-value', '')+']');
+     min = $(val).data('min');
+     max = $(val).data('max');
+     value_class = $(val).data('value-class');
+     min_type = $(val).data('min-type');
+     max_type = $(val).data('max-type');
      if (min_type == 'lte') {min_type_char = ">=";} else {min_type_char = ">";}
      if (max_type == 'gte') {max_type_char = "<=";} else {max_type_char = "<";}
      if (value == "" || value == null) {
