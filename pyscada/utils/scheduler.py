@@ -1409,6 +1409,7 @@ class SingleDeviceDAQProcess(Process):
         # process write tasks
 
         variable_as_decimal = {}
+        vp_tasks_done = []
         # iterate on VPs write tasks
         for task in DeviceWriteTask.objects.filter(
             done=False,
@@ -1431,6 +1432,8 @@ class SingleDeviceDAQProcess(Process):
             ):
                 if task.variable_property.variable not in variable_as_decimal:
                     variable_as_decimal[task.variable_property.variable] = {}
+                if task.variable_property.id not in vp_tasks_done:
+                    vp_tasks_done.append(task.variable_property.id)
                 variable_as_decimal[task.variable_property.variable][
                     task.variable_property.name.split("bit")[1]
                 ] = task.value
@@ -1567,6 +1570,7 @@ class SingleDeviceDAQProcess(Process):
                                 and vp.name.split("bit")[1].isdigit()
                                 and int(vp.name.split("bit")[1])
                                 < vp.variable.get_bits_by_class()
+                                and vp.id not in vp_tasks_done
                             ):
                                 bit = (
                                     int(var.prev_value) >> int(vp.name.split("bit")[1])
@@ -1638,6 +1642,7 @@ class MultiDeviceDAQProcess(Process):
 
     def loop(self):
         data = [[]]
+        vp_tasks_done = []
         for device_id, device in self.devices.items():
             # reset all cached values to write before checking device write and read tasks
             for v in device.variables.values():
@@ -1670,6 +1675,8 @@ class MultiDeviceDAQProcess(Process):
                 ):
                     if task.variable_property.variable not in variable_as_decimal:
                         variable_as_decimal[task.variable_property.variable] = {}
+                    if task.variable_property.id not in vp_tasks_done:
+                        vp_tasks_done.append(task.variable_property.id)
                     variable_as_decimal[task.variable_property.variable][
                         task.variable_property.name.split("bit")[1]
                     ] = task.value
@@ -1822,6 +1829,7 @@ class MultiDeviceDAQProcess(Process):
                                 and vp.name.split("bit")[1].isdigit()
                                 and int(vp.name.split("bit")[1])
                                 < vp.variable.get_bits_by_class()
+                                and vp.id not in vp_tasks_done
                             ):
                                 bit = (
                                     int(var.prev_value) >> int(vp.name.split("bit")[1])
