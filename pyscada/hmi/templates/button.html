@@ -5,7 +5,11 @@
         </div>
     {% else %}
         <div class="input-group control_button">
-            <button type="button" class="btn btn-default update-able write-task-btn type-bool {{ item.web_class_str }}" id="{{ item.web_id }}-{{ uuid }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}">{{ item.label }}</button>
+            <button type="button" class="btn btn-default update-able write-task-btn type-bool {{ item.web_class_str }}" id="{{ item.web_id }}-{{ uuid }}" data-key="{{ item.key }}" data-type="{{ item.item_type}}">
+                <span class="boolean-value">
+                    {{ item.label }}
+                </span>
+            </button>
         </div>
     {% endif %}
 {% elif item.type == 1 %}<!-- display value -->
