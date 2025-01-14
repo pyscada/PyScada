@@ -2456,6 +2456,49 @@ class DeviceWriteTask(models.Model):
                 ) as e:
                     logger.debug(e)
 
+    async def acreate_and_notificate(self, dwts):
+        if type(dwts) != list:
+            dwts = [dwts]
+        await DeviceWriteTask.objects.abulk_create(dwts)
+        if channels_driver:
+            scheduler = BackgroundProcess.objects.filter(id=1)
+            if len(scheduler):
+                scheduler_pid = (await scheduler.afirst()).pid
+            else:
+                logger.warning("No PID found for the scheduler")
+                scheduler_pid = None
+            for dwt in dwts:
+                try:
+                    device_id = dwt.get_device_id
+                    for bp in BackgroundProcess.objects.all():
+                        _device_id = bp.get_device_id()
+                        if (
+                            type(_device_id) == list
+                            and len(_device_id) > 0
+                            and dwt.get_device_id in _device_id
+                        ):
+                            device_id = _device_id[0]
+                            logger.debug(device_id)
+                    channel_layer = channels.layers.get_channel_layer()
+                    channel_layer.capacity = 1
+                    await channel_layer.send(
+                        str(scheduler_pid) + "_DeviceAction_for_" + str(device_id),
+                        {"DeviceWriteTask": str(dwt.get_device_id)},
+                    )
+                except ChannelFull:
+                    logger.info(
+                        "Channel full : "
+                        + str(scheduler_pid)
+                        + "_DeviceAction_for_"
+                        + str(dwt.get_device_id)
+                    )
+                except (
+                    AttributeError,
+                    ConnectionRefusedError,
+                    InvalidChannelLayerError,
+                ) as e:
+                    logger.debug(e)
+
 
 class DeviceReadTask(models.Model):
     id = models.AutoField(primary_key=True)
