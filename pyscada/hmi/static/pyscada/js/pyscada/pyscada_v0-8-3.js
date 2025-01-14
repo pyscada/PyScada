@@ -1289,19 +1289,14 @@ function createOffset(date) {
      }
 
      if (typeof(fetched_data['variable_properties'])==="object"){
-         //VARIABLE_PROPERTIES_DATA = fetched_data['variable_properties'];
          for (vp_key in fetched_data['variable_properties']){
             VARIABLE_PROPERTIES_DATA[vp_key] = fetched_data['variable_properties'][vp_key]
          }
          delete fetched_data['variable_properties'];
-         //VARIABLE_PROPERTIES_LAST_MODIFIED = fetched_data['variable_properties_last_modified'];
          for (vp_key in fetched_data['variable_properties_last_modified']){
             VARIABLE_PROPERTIES_LAST_MODIFIED[vp_key] = fetched_data['variable_properties_last_modified'][vp_key]
          }
          delete fetched_data['variable_properties_last_modified'];
-     }else{
-         VARIABLE_PROPERTIES_DATA = {};
-         VARIABLE_PROPERTIES_LAST_MODIFIED = {};
      }
 
      // update data timestamp
