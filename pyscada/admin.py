@@ -337,18 +337,6 @@ class DeviceAdmin(admin.ModelAdmin):
         devices, DeviceForm, output=[], stacked=admin.StackedInline
     )
 
-    # List only activated protocols
-    protocol_list = list()
-    protocol_list.append("generic")
-    if hasattr(settings, "INSTALLED_APPS"):
-        try:
-            for protocol in DeviceProtocol.objects.filter(
-                app_name__in=settings.INSTALLED_APPS
-            ):
-                protocol_list.append(protocol.protocol)
-        except (ProgrammingError, OperationalError) as e:
-            logger.debug(e)
-
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         # For new device, show all the protocols from the installed apps in settings.py
         # For existing device, show only the selected protocol to avoid changing
@@ -369,8 +357,20 @@ class DeviceAdmin(admin.ModelAdmin):
                     ]
                 )
             else:
+                # List only activated protocols
+                protocol_list = list()
+                protocol_list.append("generic")
+                if hasattr(settings, "INSTALLED_APPS"):
+                    try:
+                        for protocol in DeviceProtocol.objects.filter(
+                            app_name__in=settings.INSTALLED_APPS
+                        ):
+                            protocol_list.append(protocol.protocol)
+                    except (ProgrammingError, OperationalError) as e:
+                        logger.debug(e)
+
                 kwargs["queryset"] = DeviceProtocol.objects.filter(
-                    protocol__in=self.protocol_list
+                    protocol__in=protocol_list
                 )
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 

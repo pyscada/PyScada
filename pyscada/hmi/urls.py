@@ -38,7 +38,6 @@ urlpatterns = [
     path("form/write_task/", views.form_write_task),
     path("form/read_task/", views.form_read_task),
     path("form/read_all_task/", views.form_read_all_task),
-    path("form/write_property2/", views.form_write_property2),
     path("view/<link_title>/", views.view, name="main-view"),
     path(
         "getHiddenConfig2/<link_title>/",
