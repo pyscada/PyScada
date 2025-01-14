@@ -708,7 +708,27 @@ def form_write_task(request):
         try:
             float(value)
         except ValueError:
-            logger.debug("form_write_task input is not a float")
+            try:
+                vp = VariableProperty.objects.get(id=key)
+                if item_type == "variable_property" and vp.value_class.upper() in [
+                    "STRING"
+                ]:
+                    VariableProperty.objects.update_property(
+                        variable_property=vp,
+                        value=value,
+                    )
+                    # TODO: write string
+                    # cwt = DeviceWriteTask(
+                    #    variable_property_id=key,
+                    #    value=value,
+                    #    start=time.time(),
+                    #    user=request.user,
+                    # )
+                    # cwt.create_and_notificate(cwt)
+                    return HttpResponse(status=200)
+            except VariableProperty.DoesNotExist:
+                pass
+            logger.info(f"Cannot write STRING '{value}' to {item_type} {key}")
             return HttpResponse(status=403)
         if GroupDisplayPermission.objects.count() == 0:
             if item_type == "variable":
@@ -807,32 +827,6 @@ def form_write_task(request):
                     return HttpResponse(status=200)
     else:
         logger.debug("key or value missing in request : %s" % request.POST)
-    return HttpResponse(status=404)
-
-
-@login_required
-def form_write_property2(request):
-    if "variable_property" in request.POST and "value" in request.POST:
-        value = request.POST["value"]
-        try:
-            variable_property = int(request.POST["variable_property"])
-            VariableProperty.objects.update_property(
-                variable_property=variable_property, value=value
-            )
-        except ValueError:
-            variable_property = str(request.POST["variable_property"])
-            if VariableProperty.objects.get(
-                name=variable_property
-            ).value_class.upper() in ["STRING"]:
-                VariableProperty.objects.update_property(
-                    variable_property=VariableProperty.objects.get(
-                        name=variable_property
-                    ),
-                    value=value,
-                )
-            else:
-                return HttpResponse(status=404)
-        return HttpResponse(status=200)
     return HttpResponse(status=404)
 
 

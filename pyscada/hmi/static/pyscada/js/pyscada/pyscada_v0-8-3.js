@@ -144,6 +144,30 @@ Licensed under the AGPL.
  var SYNC_HANDLING_DATA = true;
 
  /**
+  * Write task URL
+  * @type {string}
+  */
+ var WRITE_TASK_URL = "form/write_task/";
+
+ /**
+  * Read task URL
+  * @type {string}
+  */
+ var READ_TASK_URL = "form/read_task/";
+
+ /**
+  * Read all task URL
+  * @type {string}
+  */
+ var READ_ALL_TASK_URL = "form/read_all_task/";
+
+ /**
+  * Get cache data URL
+  * @type {string}
+  */
+ var CACHE_DATA_URL = "json/cache_data/";
+
+ /**
   * Previous auto chart's data update button active
   * @type {boolean}
   */
@@ -1148,7 +1172,7 @@ function set_config_from_hidden_config(type,filter_data,val,get_data,value){
      const signal = controller.signal;
      FETCH_CONTROLLERS["data_handler_ajax"] = controller
      fetch(
-         ROOT_URL+'json/cache_data/', {
+         ROOT_URL+CACHE_DATA_URL, {
          method: "POST",
          headers: {'X-CSRFToken': CSRFTOKEN},
          body:formData,
@@ -3923,7 +3947,7 @@ function getCookie(name) {
      $(this)[0].disabled = true;
      PYSCADA_XHR = $.ajax({
          type: 'post',
-         url: ROOT_URL+'form/read_task/',
+         url: ROOT_URL+READ_TASK_URL,
          data: {key:key, type:data_type},
          success: function (data) {
 
@@ -3969,8 +3993,8 @@ function getCookie(name) {
                      refresh_logo(key, item_type);
                      PYSCADA_XHR = $.ajax({
                          type: 'post',
-                         url: ROOT_URL+'form/write_property2/',
-                         data: {variable_property:key, value:value, view_id: VIEW_ID},
+                         url: ROOT_URL+WRITE_TASK_URL,
+                         data: {key:key, value:value, item_type:item_type, view_id: VIEW_ID},
                          success: function (data) {
 
                          },
@@ -3987,7 +4011,7 @@ function getCookie(name) {
                  refresh_logo(key, item_type);
                  PYSCADA_XHR = $.ajax({
                      type: 'post',
-                     url: ROOT_URL+'form/write_task/',
+                     url: ROOT_URL+WRITE_TASK_URL,
                      data: {key:key, value:value, item_type:item_type, view_id: VIEW_ID},
                      success: function (data) {
 
@@ -4021,7 +4045,7 @@ function getCookie(name) {
              //$('#'+id).removeClass('update-able');
              PYSCADA_XHR = $.ajax({
                  type: 'post',
-                 url: ROOT_URL+'form/write_task/',
+                 url: ROOT_URL+WRITE_TASK_URL,
                  data: {key:key,value:1,item_type:item_type, view_id: VIEW_ID},
                  success: function (data) {
                  },
@@ -4034,7 +4058,7 @@ function getCookie(name) {
              //$('#'+id).removeClass('update-able');
              PYSCADA_XHR = $.ajax({
                  type: 'post',
-                 url: ROOT_URL+'form/write_task/',
+                 url: ROOT_URL+WRITE_TASK_URL,
                  data: {key:key,value:0,item_type:item_type, view_id: VIEW_ID},
                  success: function (data) {
                  },
@@ -4045,7 +4069,7 @@ function getCookie(name) {
          }else{
              PYSCADA_XHR = $.ajax({
                  type: 'post',
-                 url: ROOT_URL+'form/write_task/',
+                 url: ROOT_URL+WRITE_TASK_URL,
                  data: {key:key, value:value, item_type:item_type, view_id: VIEW_ID},
                  success: function (data) {
 
@@ -4068,8 +4092,8 @@ function getCookie(name) {
              if (item_type == "variable_property"){
                  PYSCADA_XHR = $.ajax({
                      type: 'post',
-                     url: ROOT_URL+'form/write_property2/',
-                     data: {variable_property:var_name, value:value, view_id: VIEW_ID},
+                     url: ROOT_URL+WRITE_TASK_URL,
+                     data: {key:key, value:value, item_type:item_type, view_id: VIEW_ID},
                      success: function (data) {
 
                      },
@@ -4083,7 +4107,7 @@ function getCookie(name) {
          }else {
              PYSCADA_XHR = $.ajax({
                  type: 'post',
-                 url: ROOT_URL+'form/write_task/',
+                 url: ROOT_URL+WRITE_TASK_URL,
                  data: {key:key, value:value, item_type:item_type, view_id: VIEW_ID},
                  success: function (data) {
 
@@ -4127,7 +4151,7 @@ function getCookie(name) {
      if($(this).hasClass('btn-default')){
          PYSCADA_XHR = $.ajax({
              type: 'post',
-             url: ROOT_URL+'form/write_task/',
+             url: ROOT_URL+WRITE_TASK_URL,
              data: {key:key,value:1,item_type:item_type, view_id: VIEW_ID},
              success: function (data) {
                  $('#'+id).removeClass('btn-default')
@@ -4140,7 +4164,7 @@ function getCookie(name) {
      }else if ($(this).hasClass('btn-success')){
          PYSCADA_XHR = $.ajax({
              type: 'post',
-             url: ROOT_URL+'form/write_task/',
+             url: ROOT_URL+WRITE_TASK_URL,
              data: {key:key,value:0,item_type:item_type, view_id: VIEW_ID},
              success: function (data) {
                  $('#'+id).addClass('btn-default')
@@ -4424,7 +4448,7 @@ function init_pyscada_content() {
      // Send request data to all devices
      $('.ReadAllTask').click(function(e) {
        PYSCADA_XHR = $.ajax({
-           url: ROOT_URL+'form/read_all_task/',
+           url: ROOT_URL+READ_ALL_TASK_URL,
            type: "POST",
            data:{},
            success: function (data) {
