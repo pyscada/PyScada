@@ -1469,19 +1469,20 @@ class Widget(models.Model):
 
     def data_objects(self, user):
         # used to get all objects which need to retrive data
-        content_model = self.content._import_content_model()
-        if (
-            content_model is not None
-            and hasattr(content_model, "data_objects")
-            and (
-                not hasattr(content_model, "groupdisplaypermission")
-                or content_model
-                in get_group_display_permission_list(
-                    content_model.__class__.objects.all(), user.groups.all()
+        if self.content is not None:
+            content_model = self.content._import_content_model()
+            if (
+                content_model is not None
+                and hasattr(content_model, "data_objects")
+                and (
+                    not hasattr(content_model, "groupdisplaypermission")
+                    or content_model
+                    in get_group_display_permission_list(
+                        content_model.__class__.objects.all(), user.groups.all()
+                    )
                 )
-            )
-        ):
-            return content_model.data_objects(user)
+            ):
+                return content_model.data_objects(user)
         return {}
 
     def css_class(self):
