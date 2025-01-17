@@ -350,8 +350,9 @@ def view(request, link_title):
             mc, sbc, opts = widget.content.create_panel_html(
                 widget_pk=widget.pk,
                 widget_extra_css_class=widget_extra_css_class,
-                user=request.user,
                 visible_objects_lists=visible_objects_lists,
+                request=request,
+                view=v,
             )
             # main content
             if mc is None:
