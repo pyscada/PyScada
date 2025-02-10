@@ -105,7 +105,7 @@ def _reinit_daq_daemons(sender, instance, **kwargs):
                 bp = BackgroundProcess.objects.get(
                     done=False,
                     failed=False,
-                    label__startswith=f"pyscada.{instance.protocol.protocol}-{instance.id}",
+                    label__startswith=f"pyscada.{instance.protocol.protocol}-{instance.id}-",
                 )
             except BackgroundProcess.DoesNotExist:
                 # new device, add it to the parent process list
