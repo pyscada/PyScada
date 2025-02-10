@@ -634,7 +634,6 @@ def form_read_task(request):
     if "key" in request.POST and "type" in request.POST:
         key = int(request.POST["key"])
         item_type = request.POST["type"]
-        # check if float as DeviceWriteTask doesn't support string values
         if GroupDisplayPermission.objects.count() == 0:
             if item_type == "variable":
                 crt = DeviceReadTask(
