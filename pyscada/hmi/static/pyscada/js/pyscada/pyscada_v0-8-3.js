@@ -591,6 +591,31 @@ var store_temp_ajax_data = null;
      return val;
  }
 
+function colorToRgb(color_id) {
+    if (color_id == -1) {return [92, 200, 92];}
+    else if (color_id == 0) {return [210, 210, 210];}
+    var r = get_config_from_hidden_config("color", 'id', color_id, 'r');
+    var g = get_config_from_hidden_config("color", 'id', color_id, 'g');
+    var b = get_config_from_hidden_config("color", 'id', color_id, 'b');
+    return [parseInt(r), parseInt(g), parseInt(b)]
+}
+
+function rgbToHex(rgb) {
+
+     function componentToHex(c) {
+         var hex = c.toString(16);
+         return hex.length == 1 ? "0" + hex : hex;
+     }
+
+    if (typeof rgb != "object" || rgb.constructor != Array || rgb.length != 3) {
+    console.log("PyScada HMI : cannot update data colors, rgb to hex error :", typeof rgb, rgb.constructor, rgb.length, rgb);
+    return;
+    }
+    r = rgb[0]
+    g = rgb[1]
+    b = rgb[2]
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
 
  /**
   * Return control item color
@@ -601,31 +626,6 @@ var store_temp_ajax_data = null;
  function update_data_colors(id,val){
      if (typeof id == 'undefined' || id.split("-").length < 2) {return;}
      id = id.split("-")[1]
-
-     function componentToHex(c) {
-         var hex = c.toString(16);
-         return hex.length == 1 ? "0" + hex : hex;
-     }
-
-     function rgbToHex(rgb) {
-         if (typeof rgb != "object" || rgb.constructor != Array || rgb.length != 3) {
-           console.log("PyScada HMI : cannot update data colors, rgb to hex error :", typeof rgb, rgb.constructor, rgb.length, rgb);
-           return;
-         }
-         r = rgb[0]
-         g = rgb[1]
-         b = rgb[2]
-         return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
-     }
-
-     function colorToRgb(color_id) {
-        if (color_id == -1) {return [92, 200, 92];}
-        else if (color_id == 0) {return [210, 210, 210];}
-        var r = get_config_from_hidden_config("color", 'id', color_id, 'r');
-        var g = get_config_from_hidden_config("color", 'id', color_id, 'g');
-        var b = get_config_from_hidden_config("color", 'id', color_id, 'b');
-        return [parseInt(r), parseInt(g), parseInt(b)]
-     }
 
      var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', id, 'display-value-options');
      // variable colors
@@ -859,13 +859,31 @@ function transform_data(control_item_id, val, key) {
         if (display_value_option_id != 'None'){
             // Change background color
             if (e.classList.contains("process-flow-diagram-item")) {
-                e.style.fill = update_data_colors(control_item_id,temp_val);
+                var old_color = e.style.fill;
             }else {
-                e.style.backgroundColor = update_data_colors(control_item_id,temp_val);
+                var old_color = e.style.backgroundColor;
             }
-            // create event to announce color change for a control item
-            var event = new CustomEvent("changePyScadaControlItemColor_" + control_item_id.split('-')[1], { detail: update_data_colors(control_item_id,val) });
-            window.dispatchEvent(event);
+            if (old_color != "") {
+                if (old_color.startsWith("rgb(") && old_color.endsWith(")")) {
+                    old_color_temp = []
+                    old_color = old_color.replace("rgb(", "").replace(")", "").split(",");
+                    for (c in old_color) {old_color_temp.push(parseInt(old_color[c]))}
+                    old_color = rgbToHex(old_color_temp);
+                }else {
+                    old_color = "";
+                }
+            }
+            var color = update_data_colors(control_item_id,temp_val);
+            if (old_color != color) {
+                if (e.classList.contains("process-flow-diagram-item")) {
+                    e.style.fill = color;
+                }else {
+                    e.style.backgroundColor = color;
+                }
+                // create event to announce color change for a control item
+                var event = new CustomEvent("changePyScadaControlItemColor_" + control_item_id.split('-')[1], { detail: color });
+                window.dispatchEvent(event);
+            };
         }
     }else {
         console.log("Invalid data format for " + control_item_id + " : " + typeof(val) + " : " + val);
