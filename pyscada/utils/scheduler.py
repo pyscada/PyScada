@@ -1400,6 +1400,8 @@ class SingleDeviceDAQProcess(Process):
         return True
 
     def loop(self):
+        if self.device is None:
+            return -1, None
         # reset all cached values to write before checking device write and read tasks
         for v in self.device.variables.values():
             v.erase_cache()
