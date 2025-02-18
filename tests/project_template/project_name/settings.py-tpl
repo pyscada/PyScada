@@ -11,9 +11,7 @@ https://docs.djangoproject.com/en/{{ docs_version }}/ref/settings/
 """
 
 import os
-import importlib.util
-import pkg_resources
-
+from importlib import util, metadata
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -49,11 +47,11 @@ INSTALLED_APPS = [
 
 # Auto add pyscada plugin
 if {{ auto_add_apps }}:
-    installed_packages = pkg_resources.working_set
-    for i in installed_packages:
-        if 'pyscada-' in str(i):
-            lib = str(i).split(" ")[0].split("-")[1]
-            if importlib.util.find_spec('pyscada.' + str(lib)) is not None:
+    distributions = metadata.distributions()
+    for dist in distributions:
+        if 'pyscada-' in dist.metadata['Name']:
+            lib = dist.metadata['Name'].split("-")[1]
+            if util.find_spec('pyscada.' + str(lib)) is not None:
                 INSTALLED_APPS += [
                     'pyscada.' + str(lib),
                 ]
@@ -64,7 +62,7 @@ if {{ auto_add_apps }}:
                             app,
                         ]
 
-if importlib.util.find_spec('channels') is not None:
+if util.find_spec('channels') is not None:
     INSTALLED_APPS += [
         'channels',
     ]
