@@ -224,7 +224,7 @@ def view(request, link_title):
     try:
         v = (
             get_group_display_permission_list(View.objects, request.user.groups.all())
-            .filter(link_title=link_title)
+            .filter(link_title=link_title, visible=True)
             .first()
         )
         if v is None:
