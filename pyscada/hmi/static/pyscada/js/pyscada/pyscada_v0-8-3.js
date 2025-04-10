@@ -838,6 +838,14 @@ function transform_data(control_item_id, val, key) {
     var temp_val = transform_data(control_item_id.split("-")[1], val, key);
     var r_val = dictionary(var_id, temp_val, type.replace('-', ''));
 
+    if(typeof(r_val)==="boolean") {
+            r_val = r_val;
+    }else if(Math.abs(r_val) < 1) {
+            r_val = r_val.toExponential(2);
+    }else if(r_val >= 0) {
+            r_val = r_val.toPrecision(4);
+    };
+
     if (typeof(val)==="number" || typeof(val)==="boolean" || typeof(val)==="string"){
 
         // value update, dictionary, timestamp convertion
