@@ -235,8 +235,8 @@ function install_dependences(){
   # Install prerequisites
   DEB_TO_INSTALL="
     libatlas-base-dev
+    libopenblas-dev
     libffi-dev
-    libhdf5-103
     libhdf5-dev
     libjpeg-dev
     libmariadb-dev
