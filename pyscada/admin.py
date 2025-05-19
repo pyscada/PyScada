@@ -152,6 +152,23 @@ class BackgroundProcessFilter(admin.SimpleListFilter):
 
 
 # Admin models
+class VariableInlineAdminFrom(forms.ModelForm):
+    def has_changed(self):
+        # Force save inline for the good protocol if selected device and protocol_id exists
+        if (
+            self.data.get("device", None) != ""
+            and self.data.get("device", None) is not None
+        ):
+            d = Device.objects.get(id=int(self.data.get("device", None)))
+            if (
+                hasattr(self.instance, "protocol_id")
+                and d is not None
+                and d.protocol.id == self.instance.protocol_id
+            ):
+                return True
+        return False
+
+
 class VariableAdminFrom(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(VariableAdminFrom, self).__init__(*args, **kwargs)
@@ -199,40 +216,6 @@ class VariableAdminFrom(forms.ModelForm):
                     "backgroundColor;this.style.color=this.options[this.selectedIndex].style.color"
                 }
 
-    def has_changed(self):
-        # Force save inline for the good protocol if selected device and protocol_id exists
-        # todo : try it with all the protocol, it seems to be not working
-        if (
-            self.data.get("device", None) != ""
-            and self.data.get("device", None) is not None
-        ):
-            d = Device.objects.get(id=int(self.data.get("device", None)))
-            if (
-                hasattr(self.instance, "protocol_id")
-                and d is not None
-                and d.protocol.id == self.instance.protocol_id
-            ):
-                return True
-        return super().has_changed()
-
-    def clean(self):
-        super().clean()
-        # on device change, delete protocol variable that doesn't correspond
-        if self.has_changed() and self.instance.pk and "device" in self.changed_data:
-            related_variables = [
-                field
-                for field in Variable._meta.get_fields()
-                if issubclass(type(field), OneToOneRel)
-            ]
-            for v in related_variables:
-                if (
-                    hasattr(self.instance, v.name)
-                    and hasattr(self, "device")
-                    and getattr(self.instance, v.name).protocol_id
-                    != self.cleaned_data["device"].protocol.id
-                ):
-                    getattr(self.instance, v.name).delete()
-
 
 class VariableState(Variable):
     class Meta:
@@ -255,7 +238,7 @@ class VariableStateAdmin(admin.ModelAdmin):
         if issubclass(type(field), OneToOneRel)
     ]
     inlines = populate_inline(
-        related_variables, VariableAdminFrom, output=[], stacked=admin.StackedInline
+        related_variables, VariableInlineAdminFrom, output=[], stacked=admin.StackedInline
     )
 
     class Media:
@@ -484,7 +467,7 @@ class VariableAdmin(admin.ModelAdmin):
         if issubclass(type(field), OneToOneRel)
     ]
     inlines = populate_inline(
-        related_variables, VariableAdminFrom, output=[], stacked=admin.StackedInline
+        related_variables, VariableInlineAdminFrom, output=[], stacked=admin.StackedInline
     )
 
     # Add JS file to display the right inline

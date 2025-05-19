@@ -1805,6 +1805,23 @@ class Variable(models.Model):
 
     objects = VariableManager()
 
+    def save(self, *args, **kwargs):
+        # delete related protocol models if it doesn't correspond to the device protocol.
+        # it should be done when changing the device of a variable if the device protocol changes.
+        related_variables = [
+            field
+            for field in Variable._meta.get_fields()
+            if issubclass(type(field), OneToOneRel)
+        ]
+        for v in related_variables:
+            if (
+                hasattr(self, v.name)
+                and getattr(self, v.name).protocol_id
+                != self.device.protocol.id
+            ):
+                getattr(self, v.name).delete()
+        return super().save(*args, **kwargs)
+
     def import_datasource_object(self):
         return self.datasource.get_related_datasource()
 
