@@ -29,6 +29,13 @@ Licensed under the AGPL.
   */
  var daterange_format = "DD/MM/YYYY HH:mm:ss";
 
+ /**
+  * PyScada JavaScript tests
+  * Run using : for (test in PYSCADA_TESTS) {PYSCADA_TESTS[test]();}
+  * @type {Array<object>}
+  */
+ var PYSCADA_TESTS = [];
+
  //                             -----------------------------------------------------------
  //                                             Client-Server's Variables
  //                             -----------------------------------------------------------
@@ -446,17 +453,19 @@ var store_temp_ajax_data = null;
                          // append, most likely
                          DATA[key] = DATA[key].concat(value);
                          document.dispatchEvent(event);
-                     } else if (v_t_min == d_t_max && value.length > 1){
-                         // append, drop first element of value
-                         DATA[key] = DATA[key].concat(value.slice(1));
-                         document.dispatchEvent(event);
+                     } else if (v_t_min == d_t_max){
+                         if (value.length > 1){
+                            // append, drop first element of value
+                            DATA[key] = DATA[key].concat(value.slice(1));
+                            document.dispatchEvent(event);
+                         };
                      } else if (v_t_max < d_t_min){
                          // prepend,
                          DATA[key] = value.concat(DATA[key]);
                          document.dispatchEvent(event);
                      } else if (v_t_max == d_t_min){
                          // prepend, drop last element of value
-                         DATA[key] = value.slice(0,value.length-1).concat(DATA[key]);
+                         DATA[key] = value.slice(0,-1).concat(DATA[key]);
                          document.dispatchEvent(event);
                      } else if (v_t_max >= d_t_max && v_t_min <= d_t_min){
                          // data and value overlapping, value has older and newer elements than data, prepend and append
@@ -477,6 +486,7 @@ var store_temp_ajax_data = null;
                      else if (v_t_max > d_t_min && v_t_min < d_t_min){
                          // data and value overlapping, value has older elements than data, prepend
                          stop_id = find_index_sub_lte(value,DATA[key][0][0],0);
+                         if (value[stop_id][0] != DATA[key][0][0]) {stop_id += 1;};
                          if (typeof(stop_id) === "number" ){
                              DATA[key] = value.slice(0,stop_id).concat(DATA[key]);
                              document.dispatchEvent(event);
@@ -493,14 +503,28 @@ var store_temp_ajax_data = null;
                              console.log("PyScada HMI : var" , key, ": dropped data, stop_id not found.", value, DATA[key][DATA[key].length-1][0]);
                          }
                      } else{
-                         // data and value overlapping, data has older and newer elements than value, prepend and append
-                         start_id = find_index_sub_lte(DATA[key],value[0][0],0);
-                         stop_id = find_index_sub_gte(DATA[key],value[value.length-1][0],0);
-                         if (typeof(stop_id) === "number" && typeof(start_id) === "number" ){
-                             DATA[key] = DATA[key].slice(0, start_id).concat(value).concat(DATA[key].slice(stop_id));
-                             document.dispatchEvent(event);
+                         // data and value overlapping, data has older and newer elements than value, prepend and append only if value is not overlapping one element of data
+                         start_id = find_index_sub_lt(DATA[key],value[0][0],0);
+                         stop_id = find_index_sub_gt(DATA[key],value[value.length-1][0],0);
+                         if (stop_id == start_id +1) {
+                            if (value.length > 1) {
+                                if (DATA[key][start_id][0] == value[0][0]) {value=value.slice(1);}; // keep the element from DATA
+                                //start_id += 1;
+                            };
+                            start_id += 1;
+                            if (value.length > 0) {
+                                if (DATA[key][stop_id][0] == value[value.length-1][0]) {value=value.slice(0,-1);};
+                                if (value.length > 0) {
+                                    if (typeof(stop_id) === "number" && typeof(start_id) === "number" ){
+                                        DATA[key] = DATA[key].slice(0, start_id).concat(value).concat(DATA[key].slice(stop_id));
+                                        document.dispatchEvent(event);
+                                    }else{
+                                        console.log("PyScada HMI : var" , key, ": dropped data, stop_id or start_id not found.", start_id, stop_id, value[0][0], value[value.length-1][0], DATA[key][0][0], DATA[key][DATA[key].length-1][0]);
+                                    }
+                                }
+                            }
                          }else{
-                             console.log("PyScada HMI : var" , key, ": dropped data, stop_id or start_id not found.", start_id, stop_id, value[0][0], value[value.length-1][0], DATA[key][0][0], DATA[key][DATA[key].length-1][0]);
+                             console.log("PyScada HMI : var" , key, ": dropped data, value is not between 2 existing data.");
                          }
                      }
                  }
@@ -842,7 +866,7 @@ function transform_data(control_item_id, val, key) {
             r_val = r_val;
     }else if(Math.abs(r_val) < 1) {
             r_val = r_val.toExponential(2);
-    }else if(r_val >= 0) {
+    }else if(r_val > 0) {
             r_val = r_val.toPrecision(4);
     };
 
@@ -1437,6 +1461,37 @@ function createOffset(date) {
      var i = 0; //or 10
      while(i < a.length){
          if (a[i][d]>=t){
+             return i;
+         }
+         i++;
+     }
+ }
+ /**
+  * Return index 'i' where a value in 'd' is lower or equal to value 't'
+  * @param {Array} a The array
+  * @param {number} t The value
+  * @param {number} d Sub index
+  * @returns {number} The index where a value lower than 't' where found
+  */
+ function find_index_sub_lt(a,t,d){
+     var i = a.length; //or 10
+     while(i--){
+         if (a[i][d]<t){
+             return i;
+         }
+     }
+ }
+ /**
+  * Return index 'i' where a value in 'd' is superior or equal to value 't'
+  * @param {Array} a The array
+  * @param {number} t The value
+  * @param {number} d Sub index
+  * @returns {number} The index where a value superior than 't' where found
+  */
+ function find_index_sub_gt(a,t,d){
+     var i = 0; //or 10
+     while(i < a.length){
+         if (a[i][d]>t){
              return i;
          }
          i++;
