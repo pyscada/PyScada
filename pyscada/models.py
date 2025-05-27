@@ -669,28 +669,34 @@ class RecordedDataManager(models.Manager):
                 if pk not in values:
                     values[pk] = []
                 time_max_last_value = time_max
+                time_max_excluded = False
                 if pk in times:
                     time_max_last_value = times[pk]["time_min"]
+                    time_max_excluded = True
                 last_element = self.last_element(
                     use_date_saved=False,
                     time_min=0,
                     time_max=time_max_last_value,
+                    time_max_excluded=time_max_excluded,
                     variable_id=pk,
                 )
                 if last_element is not None:
+                    tmp_time = last_element.time_value()
                     values[pk].insert(
                         0,
                         [
-                            (
-                                float(last_element.pk - last_element.variable_id)
-                                / (2097152.0 * 1000)
-                            )
-                            * f_time_scale,
+                            tmp_time * f_time_scale,
                             last_element.value(),
                         ],
                     )
+                    date_saved_max = max(
+                        date_saved_max,
+                        time.mktime(last_element.date_saved.utctimetuple()) + last_element.date_saved.microsecond / 1e6,
+                    )
+                    tmp_time_max = max(tmp_time, tmp_time_max)
 
-        values["timestamp"] = max(tmp_time_max, time_min) * f_time_scale
+        #values["timestamp"] = max(tmp_time_max, time_min) * f_time_scale
+        values["timestamp"] = tmp_time_max * f_time_scale
         values["date_saved_max"] = date_saved_max * f_time_scale
 
         return values
@@ -725,7 +731,12 @@ class VariableManager(models.Manager):
             if datasource.get_related_datasource() is not None:
                 # use only the variable ids for this datasource
                 kwargs["variable_ids"] = [v.id for v in datasource_dict[datasource]]
-                data = data | datasource.read_multiple(**kwargs)
+                data_temp = datasource.read_multiple(**kwargs)
+                timestamp = max(data.get("timestamp", 0), data_temp.get("timestamp", 0))
+                date_saved_max = max(data.get("date_saved_max", 0), data_temp.get("date_saved_max", 0))
+                data = data | data_temp
+                data["timestamp"] = timestamp
+                data["date_saved_max"] = date_saved_max
             else:
                 data = data
                 logger.info(
@@ -1683,6 +1694,8 @@ class DjangoDatabase(models.Model):
             data_model.objects.bulk_create(
                 recorded_datas, ignore_conflicts=True, **kwargs
             )
+        for item in items:
+            item.date_saved = None
 
     def get_first_element_timestamp(self, **kwargs):
         first = self._import_model().objects.filter(variable__isnull=False)
