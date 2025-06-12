@@ -25,6 +25,7 @@ import json
 import signal
 from os import kill, waitpid
 import os
+import sys
 
 if os.name != "nt":
     from os import WNOHANG
@@ -691,11 +692,12 @@ class RecordedDataManager(models.Manager):
                     )
                     date_saved_max = max(
                         date_saved_max,
-                        time.mktime(last_element.date_saved.utctimetuple()) + last_element.date_saved.microsecond / 1e6,
+                        time.mktime(last_element.date_saved.utctimetuple())
+                        + last_element.date_saved.microsecond / 1e6,
                     )
                     tmp_time_max = max(tmp_time, tmp_time_max)
 
-        #values["timestamp"] = max(tmp_time_max, time_min) * f_time_scale
+        # values["timestamp"] = max(tmp_time_max, time_min) * f_time_scale
         values["timestamp"] = tmp_time_max * f_time_scale
         values["date_saved_max"] = date_saved_max * f_time_scale
 
@@ -733,7 +735,9 @@ class VariableManager(models.Manager):
                 kwargs["variable_ids"] = [v.id for v in datasource_dict[datasource]]
                 data_temp = datasource.read_multiple(**kwargs)
                 timestamp = max(data.get("timestamp", 0), data_temp.get("timestamp", 0))
-                date_saved_max = max(data.get("date_saved_max", 0), data_temp.get("date_saved_max", 0))
+                date_saved_max = max(
+                    data.get("date_saved_max", 0), data_temp.get("date_saved_max", 0)
+                )
                 data = data | data_temp
                 data["timestamp"] = timestamp
                 data["date_saved_max"] = date_saved_max
@@ -1041,6 +1045,38 @@ class DeviceHandler(models.Model):
         post_save.send_robust(sender=DeviceHandler, instance=Device.objects.first())
         super(DeviceHandler, self).save(*args, **kwargs)
 
+    def get_device_parameters(self):
+        parameters = {}
+        try:
+            if self.handler_path is not None:
+                sys.path.append(self.handler_path)
+            if self.handler_class in sys.modules:
+                del sys.modules[self.handler_class]
+            mod = __import__(self.handler_class, fromlist=["Handler"])
+            if hasattr(mod, "pyscada_device_parameters"):
+                parameters = getattr(mod, "pyscada_device_parameters")
+        except ModuleNotFoundError as e:
+            logger.info(e)
+        except Exception as e:
+            logger.info(e)
+        return parameters
+
+    def get_variable_parameters(self):
+        parameters = {}
+        try:
+            if self.handler_path is not None:
+                sys.path.append(self.handler_path)
+            if self.handler_class in sys.modules:
+                del sys.modules[self.handler_class]
+            mod = __import__(self.handler_class, fromlist=["Handler"])
+            if hasattr(mod, "pyscada_variable_parameters"):
+                parameters = getattr(mod, "pyscada_variable_parameters")
+        except ModuleNotFoundError as e:
+            logger.info(e)
+        except Exception as e:
+            logger.info(e)
+        return parameters
+
 
 class Device(models.Model):
     id = models.AutoField(primary_key=True)
@@ -1102,6 +1138,24 @@ class Device(models.Model):
                 f"{self.short_name}({getpid()}), unhandled exception", exc_info=True
             )
             return None
+
+    def save(self, *args, **kwargs):
+        result = super().save(*args, **kwargs)
+        parameters = self.instrument_handler.get_device_parameters()
+        for parameter in parameters:
+            dhp, created = DeviceHandlerParameter.objects.update_or_create(
+                name=parameter, instrument=self
+            )
+        return result
+
+
+class DeviceHandlerParameter(models.Model):
+    name = models.CharField(max_length=255)
+    value = models.CharField(max_length=255, null=True, blank=True)
+    instrument = models.ForeignKey(Device, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
 
 
 class Unit(models.Model):
@@ -1829,11 +1883,17 @@ class Variable(models.Model):
         for v in related_variables:
             if (
                 hasattr(self, v.name)
-                and getattr(self, v.name).protocol_id
-                != self.device.protocol.id
+                and getattr(self, v.name).protocol_id != self.device.protocol.id
             ):
                 getattr(self, v.name).delete()
-        return super().save(*args, **kwargs)
+        result = super().save(*args, **kwargs)
+
+        parameters = self.device.instrument_handler.get_variable_parameters()
+        for parameter in parameters:
+            vhp, created = VariableHandlerParameter.objects.update_or_create(
+                name=parameter, variable=self
+            )
+        return result
 
     def import_datasource_object(self):
         return self.datasource.get_related_datasource()
@@ -2405,6 +2465,15 @@ class Variable(models.Model):
             except (ProgrammingError, OperationalError) as e:
                 logger.debug(e)
         return None
+
+
+class VariableHandlerParameter(models.Model):
+    name = models.CharField(max_length=255)
+    value = models.CharField(max_length=255, null=True, blank=True)
+    variable = models.ForeignKey(Variable, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
 
 
 class DeviceWriteTask(models.Model):
