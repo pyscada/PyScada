@@ -1141,11 +1141,12 @@ class Device(models.Model):
 
     def save(self, *args, **kwargs):
         result = super().save(*args, **kwargs)
-        parameters = self.instrument_handler.get_device_parameters()
-        for parameter in parameters:
-            dhp, created = DeviceHandlerParameter.objects.update_or_create(
-                name=parameter, instrument=self
-            )
+        if self.instrument_handler is not None:
+            parameters = self.instrument_handler.get_device_parameters()
+            for parameter in parameters:
+                dhp, created = DeviceHandlerParameter.objects.update_or_create(
+                    name=parameter, instrument=self
+                )
         return result
 
 
@@ -1888,11 +1889,12 @@ class Variable(models.Model):
                 getattr(self, v.name).delete()
         result = super().save(*args, **kwargs)
 
-        parameters = self.device.instrument_handler.get_variable_parameters()
-        for parameter in parameters:
-            vhp, created = VariableHandlerParameter.objects.update_or_create(
-                name=parameter, variable=self
-            )
+        if self.device.instrument_handler is not None:
+            parameters = self.device.instrument_handler.get_variable_parameters()
+            for parameter in parameters:
+                vhp, created = VariableHandlerParameter.objects.update_or_create(
+                    name=parameter, variable=self
+                )
         return result
 
     def import_datasource_object(self):
