@@ -1151,7 +1151,7 @@ class Device(models.Model):
 
 class DeviceHandlerParameter(models.Model):
     name = models.CharField(max_length=255)
-    value = models.CharField(max_length=255, null=True, blank=True)
+    value = models.CharField(max_length=255, default="", blank=True)
     instrument = models.ForeignKey(Device, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -2469,7 +2469,7 @@ class Variable(models.Model):
 
 class VariableHandlerParameter(models.Model):
     name = models.CharField(max_length=255)
-    value = models.CharField(max_length=255, null=True, blank=True)
+    value = models.CharField(max_length=255, default="", blank=True)
     variable = models.ForeignKey(Variable, on_delete=models.CASCADE)
 
     def __str__(self):
