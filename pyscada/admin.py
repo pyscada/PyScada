@@ -301,7 +301,10 @@ class DeviceHandlerParameterInlineFormSet(BaseInlineFormSet):
     def clean(self):
         super().clean()
         raise_error = []
-        parameters = self.instance.instrument_handler.get_device_parameters()
+        if self.instance.instrument_handler is not None:
+            parameters = self.instance.instrument_handler.get_device_parameters()
+        else:
+            parameters = {}
         for parameter in parameters:
             parameters[parameter]["found"] = False
         result_forms = []
@@ -524,7 +527,10 @@ class VariableHandlerParameterInlineFormSet(BaseInlineFormSet):
     def clean(self):
         super().clean()
         raise_error = []
-        parameters = self.instance.device.instrument_handler.get_variable_parameters()
+        if self.instance.device.instrument_handler is not None:
+            parameters = self.instance.device.instrument_handler.get_variable_parameters()
+        else:
+            parameters = {}
         for parameter in parameters:
             parameters[parameter]["found"] = False
         result_forms = []
