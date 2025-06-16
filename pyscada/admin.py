@@ -314,7 +314,7 @@ class DeviceHandlerParameterInlineFormSet(BaseInlineFormSet):
                     parameters[form.instance.name]["found"] = True
                     if (
                         not parameters[form.instance.name].get("null", True)
-                        and form.instance.value == None
+                        and form.instance.value == ""
                     ):
                         # value is needed
                         raise_error.append(form.instance.name)
