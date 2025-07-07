@@ -393,7 +393,7 @@ class RecordedDataManager(models.Manager):
                 tmp_time = tmp_time * f_time_scale
                 date_saved_max = max(
                     date_saved_max,
-                    time.mktime(item[7].utctimetuple()) + item[7].microsecond / 1e6,
+                    item[7].timestamp(),
                 )
                 if item[2] is not None:  # float64
                     values[item[0]].append([tmp_time, item[2]])  # time, value
@@ -624,7 +624,7 @@ class RecordedDataManager(models.Manager):
 
         values = dict()
         times = dict()
-        date_saved_max = 0
+        date_saved_max = time_min
         tmp_time_max = 0
         tmp_time_min = time_max
 
@@ -654,7 +654,7 @@ class RecordedDataManager(models.Manager):
             )  # calc the timestamp in seconds
             date_saved_max = max(
                 date_saved_max,
-                time.mktime(item[7].utctimetuple()) + item[7].microsecond / 1e6,
+                item[7].timestamp(),
             )
             tmp_time_max = max(tmp_time, tmp_time_max)
             tmp_time_min = min(tmp_time, tmp_time_min)
@@ -2036,6 +2036,11 @@ class Variable(models.Model):
             # value has changed
             self.store_value = True
             self.timestamp_old = self.timestamp
+
+        if hasattr(
+            self, "date_saved"
+        ):  # FIXME check if right place to update date_saved
+            self.date_saved = now()
         self.prev_value = self.value
         return self.store_value
 
