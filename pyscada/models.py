@@ -2143,6 +2143,8 @@ class Variable(models.Model):
         update_false_count = 0
         for i in range(0, len(value_list)):
             if self._update_value(value_list[i], timestamp_list[i]):
+                if self.value_class.upper() == "BOOLEAN":
+                    self.value = bool(self.value)
                 self.cached_values_to_write.append((self.timestamp * 1000, self.value))
             else:
                 update_false_count += 1
