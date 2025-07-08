@@ -528,7 +528,9 @@ class VariableHandlerParameterInlineFormSet(BaseInlineFormSet):
         super().clean()
         raise_error = []
         if self.instance.device.instrument_handler is not None:
-            parameters = self.instance.device.instrument_handler.get_variable_parameters()
+            parameters = (
+                self.instance.device.instrument_handler.get_variable_parameters()
+            )
         else:
             parameters = {}
         for parameter in parameters:
