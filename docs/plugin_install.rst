@@ -8,7 +8,8 @@ PyScada plugin installation
   .. code-block:: shell
 
       sudo apt install git
-      git clone https://github.com/pyscada/PyScada-Modbus.git
+      cd /home/pyscada
+      sudo -u pyscada git clone https://github.com/pyscada/PyScada-Modbus.git
       cd PyScada-Modbus
 
 
@@ -17,10 +18,11 @@ PyScada plugin installation
   .. code-block:: shell
 
       sudo apt install wget
-      wget https://github.com/pyscada/PyScada-Modbus/archive/refs/heads/main.zip -O PyScada-Modbus-main.zip
+      cd /home/pyscada
+      sudo -u pyscada wget https://github.com/pyscada/PyScada-Modbus/archive/refs/heads/main.zip -O PyScada-Modbus-main.zip
       sudo apt install unzip
-      unzip ./PyScada-Modbus-main.zip
-      rm ./PyScada-Modbus-main.zip
+      sudo -u pyscada unzip ./PyScada-Modbus-main.zip
+      sudo -u pyscada rm ./PyScada-Modbus-main.zip
       cd PyScada-Modbus-main
 
 2. Install the PyScada plugin
@@ -34,9 +36,9 @@ PyScada plugin installation
       # install the plugin
       sudo -u pyscada -E env PATH=${PATH} pip3 install .
       # run migrations
-      python /var/www/pyscada/PyScadaServer/manage.py migrate
+      sudo -u pyscada -E env PATH=${PATH} python3 /var/www/pyscada/PyScadaServer/manage.py migrate
       # copy static files
-      python /var/www/pyscada/PyScadaServer/manage.py collectstatic --no-input
+      sudo -u pyscada -E env PATH=${PATH} python3 /var/www/pyscada/PyScadaServer/manage.py collectstatic --no-input
       # restart gunicorn and PyScada
       sudo systemctl restart gunicorn pyscada
 
@@ -57,5 +59,5 @@ Uninstall a plugin
 To uninstall a plugin
 
 .. code-block:: shell
-    
-    sudo -u pyscada -E env PATH=${PATH} pip uninstall yourPlugin
+
+    sudo -u pyscada -E env PATH=${PATH} pip3 uninstall yourPlugin

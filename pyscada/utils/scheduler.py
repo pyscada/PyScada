@@ -65,6 +65,8 @@ from django.db.utils import OperationalError
 from django.db.transaction import TransactionManagementError
 from django.db.models import Q
 from django.db.utils import IntegrityError
+from django.utils.timezone import now
+from django.apps import apps
 
 from pyscada.models import (
     BackgroundProcess,
@@ -75,7 +77,6 @@ from pyscada.models import (
     VariableProperty,
 )
 from pyscada.utils import set_bit
-from django.utils.timezone import now
 import logging
 
 logger = logging.getLogger(__name__)
@@ -364,7 +365,7 @@ class Scheduler(object):
         self.pid = getpid()
         if not master_process:
             self.delete_pid(force_del=True)
-            logger.debug("no such process in BackgroundProcesses\n")
+            logger.error("No such scheduler process in BackgroundProcesses")
             sys.exit(0)
 
         # kill all the sub processes
@@ -372,7 +373,7 @@ class Scheduler(object):
             try:
                 kill(process.pid, 9)
             except Exception as e:
-                logger.debug(f"{e} for pid {process.pid}")
+                logger.debug(f"{e} for pid {process.pid} {process.label}")
         # Init the DB
         if not self.init_db():
             logger.debug("Init DB failed\n")
@@ -417,6 +418,19 @@ class Scheduler(object):
         self.delete_pid()
         sys.exit(0)
 
+    def init_apps(self):
+        for app_config in apps.get_app_configs():
+            if hasattr(app_config, "pyscada_app_init") and callable(
+                app_config.pyscada_app_init
+            ):
+                try:
+                    app_config.pyscada_app_init()
+                except:
+                    logger.error(
+                        f"{app_config}, unhandled exception in application initialization",
+                        exc_info=True,
+                    )
+
     def run(self):
         """
         the main loop
@@ -425,16 +439,23 @@ class Scheduler(object):
             master_process = BackgroundProcess.objects.filter(
                 pk=self.process_id
             ).first()
-            if master_process:
-                master_process.last_update = now()
-                master_process.message = "init child processes"
-                master_process.save()
-            else:
+
+            if not master_process:
                 self.delete_pid(force_del=True)
-                self.stderr.write("no such process in BackgroundProcesses")
+                self.stderr.write("No such scheduler process in BackgroundProcesses")
                 sys.exit(0)
 
+            master_process.last_update = now()
+            master_process.message = "init apps"
+            master_process.save(update_fields=["last_update", "message"])
+            self.init_apps()
+
+            master_process.last_update = now()
+            master_process.message = "init child processes"
+            master_process.save(update_fields=["last_update", "message"])
+
             self.manage_processes()
+
             while True:
                 # handle signals
                 sig = self.SIG_QUEUE.pop(0) if len(self.SIG_QUEUE) else None
@@ -443,9 +464,9 @@ class Scheduler(object):
                 check_db_connection()
 
                 # update the Process
-                BackgroundProcess.objects.filter(pk=self.process_id).update(
-                    last_update=now(), message="running.."
-                )
+                master_process.last_update = now()
+                master_process.message = "running.."
+                master_process.save(update_fields=["last_update", "message"])
                 if sig is None:
                     self.manage_processes()
                 elif sig not in self.SIGNALS:
@@ -1379,6 +1400,8 @@ class SingleDeviceDAQProcess(Process):
         return True
 
     def loop(self):
+        if self.device is None:
+            return -1, None
         # reset all cached values to write before checking device write and read tasks
         for v in self.device.variables.values():
             v.erase_cache()
@@ -1388,6 +1411,7 @@ class SingleDeviceDAQProcess(Process):
         # process write tasks
 
         variable_as_decimal = {}
+        vp_tasks_done = []
         # iterate on VPs write tasks
         for task in DeviceWriteTask.objects.filter(
             done=False,
@@ -1410,6 +1434,8 @@ class SingleDeviceDAQProcess(Process):
             ):
                 if task.variable_property.variable not in variable_as_decimal:
                     variable_as_decimal[task.variable_property.variable] = {}
+                if task.variable_property.id not in vp_tasks_done:
+                    vp_tasks_done.append(task.variable_property.id)
                 variable_as_decimal[task.variable_property.variable][
                     task.variable_property.name.split("bit")[1]
                 ] = task.value
@@ -1429,6 +1455,7 @@ class SingleDeviceDAQProcess(Process):
                 task.save(update_fields=["done", "finished"])
 
         # Get and change the variable value which has bit VP
+        start = time()
         for var, item in variable_as_decimal.items():
             if var.query_prev_value():
                 prev_value = var.prev_value
@@ -1437,7 +1464,7 @@ class SingleDeviceDAQProcess(Process):
             for bit, value in item.items():
                 prev_value = set_bit(int(prev_value), int(bit), bool(value))
             # Create a new device write task for this varaible with the new value
-            dwt = DeviceWriteTask(variable=var, value=prev_value)
+            dwt = DeviceWriteTask(variable=var, value=prev_value, start=start)
             dwt.save()
 
         # Do all the variable write task for this device starting with the oldest
@@ -1546,6 +1573,7 @@ class SingleDeviceDAQProcess(Process):
                                 and vp.name.split("bit")[1].isdigit()
                                 and int(vp.name.split("bit")[1])
                                 < vp.variable.get_bits_by_class()
+                                and vp.id not in vp_tasks_done
                             ):
                                 bit = (
                                     int(var.prev_value) >> int(vp.name.split("bit")[1])
@@ -1617,6 +1645,7 @@ class MultiDeviceDAQProcess(Process):
 
     def loop(self):
         data = [[]]
+        vp_tasks_done = []
         for device_id, device in self.devices.items():
             # reset all cached values to write before checking device write and read tasks
             for v in device.variables.values():
@@ -1649,6 +1678,8 @@ class MultiDeviceDAQProcess(Process):
                 ):
                     if task.variable_property.variable not in variable_as_decimal:
                         variable_as_decimal[task.variable_property.variable] = {}
+                    if task.variable_property.id not in vp_tasks_done:
+                        vp_tasks_done.append(task.variable_property.id)
                     variable_as_decimal[task.variable_property.variable][
                         task.variable_property.name.split("bit")[1]
                     ] = task.value
@@ -1801,6 +1832,7 @@ class MultiDeviceDAQProcess(Process):
                                 and vp.name.split("bit")[1].isdigit()
                                 and int(vp.name.split("bit")[1])
                                 < vp.variable.get_bits_by_class()
+                                and vp.id not in vp_tasks_done
                             ):
                                 bit = (
                                     int(var.prev_value) >> int(vp.name.split("bit")[1])

@@ -29,6 +29,13 @@ Licensed under the AGPL.
   */
  var daterange_format = "DD/MM/YYYY HH:mm:ss";
 
+ /**
+  * PyScada JavaScript tests
+  * Run using : for (test in PYSCADA_TESTS) {PYSCADA_TESTS[test]();}
+  * @type {Array<object>}
+  */
+ var PYSCADA_TESTS = [];
+
  //                             -----------------------------------------------------------
  //                                             Client-Server's Variables
  //                             -----------------------------------------------------------
@@ -85,7 +92,7 @@ Licensed under the AGPL.
   * Token used for the ajax setup
   * @type {string}
   */
- var CSRFTOKEN = $.cookie('csrftoken');
+ var CSRFTOKEN = getCookie('csrftoken');
 
  /**
   * Refresh rate in milliseconds - used to update data
@@ -138,6 +145,36 @@ Licensed under the AGPL.
  var AUTO_UPDATE_ACTIVE = true;
 
  /**
+  * Use synchronous data handling
+  * @type {boolean}
+  */
+ var SYNC_HANDLING_DATA = true;
+
+ /**
+  * Write task URL
+  * @type {string}
+  */
+ var WRITE_TASK_URL = "form/write_task/";
+
+ /**
+  * Read task URL
+  * @type {string}
+  */
+ var READ_TASK_URL = "form/read_task/";
+
+ /**
+  * Read all task URL
+  * @type {string}
+  */
+ var READ_ALL_TASK_URL = "form/read_all_task/";
+
+ /**
+  * Get cache data URL
+  * @type {string}
+  */
+ var CACHE_DATA_URL = "json/cache_data/";
+
+ /**
   * Previous auto chart's data update button active
   * @type {boolean}
   */
@@ -179,6 +216,12 @@ Licensed under the AGPL.
 * Ask before leaving the page
 */
 var ONBEFORERELOAD_ASK = true;
+
+  /**
+  * View id
+  * @type {number}
+  */
+ var VIEW_ID = document.querySelector("body").dataset["viewId"];
 
  //                             -----------------------------------------------------------
  //                                                      Objects
@@ -357,6 +400,8 @@ var store_temp_ajax_data = null;
    */
   var PYSCADA_XHR = null;
 
+  var FETCH_CONTROLLERS = {}
+
  //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -402,23 +447,27 @@ var store_temp_ajax_data = null;
 
                      // CHECKING 'value' and 'DATA' :
 
-                     if (v_t_min > d_t_max){
+                     if (v_t_min == d_t_min && v_t_max == d_t_max){
+                         // value and data seem equals, nothing to do
+                     } else if (v_t_min > d_t_max){
                          // append, most likely
                          DATA[key] = DATA[key].concat(value);
                          document.dispatchEvent(event);
-                     } else if (v_t_min == d_t_max && value.length > 1){
-                         // append, drop first element of value
-                         DATA[key] = DATA[key].concat(value.slice(1));
-                         document.dispatchEvent(event);
+                     } else if (v_t_min == d_t_max){
+                         if (value.length > 1){
+                            // append, drop first element of value
+                            DATA[key] = DATA[key].concat(value.slice(1));
+                            document.dispatchEvent(event);
+                         };
                      } else if (v_t_max < d_t_min){
                          // prepend,
                          DATA[key] = value.concat(DATA[key]);
                          document.dispatchEvent(event);
                      } else if (v_t_max == d_t_min){
                          // prepend, drop last element of value
-                         DATA[key] = value.slice(0,value.length-1).concat(DATA[key]);
+                         DATA[key] = value.slice(0,-1).concat(DATA[key]);
                          document.dispatchEvent(event);
-                     } else if (v_t_max > d_t_max && v_t_min < d_t_min){
+                     } else if (v_t_max >= d_t_max && v_t_min <= d_t_min){
                          // data and value overlapping, value has older and newer elements than data, prepend and append
                          start_id = find_index_sub_lte(value,DATA[key][0][0],0);
                          stop_id = find_index_sub_gte(value,DATA[key][DATA[key].length-1][0],0);
@@ -434,11 +483,10 @@ var store_temp_ajax_data = null;
                              console.log("PyScada HMI : var" , key, ": dropped data, stop_id not found.", value, DATA[key][DATA[key].length-1][0]);
                          }
                      }
-
-                     // data and value overlapping, data has older elements than value, append
                      else if (v_t_max > d_t_min && v_t_min < d_t_min){
                          // data and value overlapping, value has older elements than data, prepend
                          stop_id = find_index_sub_lte(value,DATA[key][0][0],0);
+                         if (value[stop_id][0] != DATA[key][0][0]) {stop_id += 1;};
                          if (typeof(stop_id) === "number" ){
                              DATA[key] = value.slice(0,stop_id).concat(DATA[key]);
                              document.dispatchEvent(event);
@@ -455,8 +503,29 @@ var store_temp_ajax_data = null;
                              console.log("PyScada HMI : var" , key, ": dropped data, stop_id not found.", value, DATA[key][DATA[key].length-1][0]);
                          }
                      } else{
-                         // value should already be in data, pass
-//                         console.log("PyScada HMI : var" , key, ' : no new data, drop.');
+                         // data and value overlapping, data has older and newer elements than value, prepend and append only if value is not overlapping one element of data
+                         start_id = find_index_sub_lt(DATA[key],value[0][0],0);
+                         stop_id = find_index_sub_gt(DATA[key],value[value.length-1][0],0);
+                         if (stop_id == start_id +1) {
+                            if (value.length > 1) {
+                                if (DATA[key][start_id][0] == value[0][0]) {value=value.slice(1);}; // keep the element from DATA
+                                //start_id += 1;
+                            };
+                            start_id += 1;
+                            if (value.length > 0) {
+                                if (DATA[key][stop_id][0] == value[value.length-1][0]) {value=value.slice(0,-1);};
+                                if (value.length > 0) {
+                                    if (typeof(stop_id) === "number" && typeof(start_id) === "number" ){
+                                        DATA[key] = DATA[key].slice(0, start_id).concat(value).concat(DATA[key].slice(stop_id));
+                                        document.dispatchEvent(event);
+                                    }else{
+                                        console.log("PyScada HMI : var" , key, ": dropped data, stop_id or start_id not found.", start_id, stop_id, value[0][0], value[value.length-1][0], DATA[key][0][0], DATA[key][DATA[key].length-1][0]);
+                                    }
+                                }
+                            }
+                         }else{
+                             console.log("PyScada HMI : var" , key, ": dropped data, value is not between 2 existing data.");
+                         }
                      }
                  }
              }
@@ -553,6 +622,31 @@ var store_temp_ajax_data = null;
      return val;
  }
 
+function colorToRgb(color_id) {
+    if (color_id == -1) {return [92, 200, 92];}
+    else if (color_id == 0) {return [210, 210, 210];}
+    var r = get_config_from_hidden_config("color", 'id', color_id, 'r');
+    var g = get_config_from_hidden_config("color", 'id', color_id, 'g');
+    var b = get_config_from_hidden_config("color", 'id', color_id, 'b');
+    return [parseInt(r), parseInt(g), parseInt(b)]
+}
+
+function rgbToHex(rgb) {
+
+     function componentToHex(c) {
+         var hex = c.toString(16);
+         return hex.length == 1 ? "0" + hex : hex;
+     }
+
+    if (typeof rgb != "object" || rgb.constructor != Array || rgb.length != 3) {
+    console.log("PyScada HMI : cannot update data colors, rgb to hex error :", typeof rgb, rgb.constructor, rgb.length, rgb);
+    return;
+    }
+    r = rgb[0]
+    g = rgb[1]
+    b = rgb[2]
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
 
  /**
   * Return control item color
@@ -563,31 +657,6 @@ var store_temp_ajax_data = null;
  function update_data_colors(id,val){
      if (typeof id == 'undefined' || id.split("-").length < 2) {return;}
      id = id.split("-")[1]
-
-     function componentToHex(c) {
-         var hex = c.toString(16);
-         return hex.length == 1 ? "0" + hex : hex;
-     }
-
-     function rgbToHex(rgb) {
-         if (typeof rgb != "object" || rgb.constructor != Array || rgb.length != 3) {
-           console.log("PyScada HMI : cannot update data colors, rgb to hex error :", typeof rgb, rgb.constructor, rgb.length, rgb);
-           return;
-         }
-         r = rgb[0]
-         g = rgb[1]
-         b = rgb[2]
-         return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
-     }
-
-     function colorToRgb(color_id) {
-        if (color_id == -1) {return [92, 200, 92];}
-        else if (color_id == 0) {return [210, 210, 210];}
-        var r = get_config_from_hidden_config("color", 'id', color_id, 'r');
-        var g = get_config_from_hidden_config("color", 'id', color_id, 'g');
-        var b = get_config_from_hidden_config("color", 'id', color_id, 'b');
-        return [parseInt(r), parseInt(g), parseInt(b)]
-     }
 
      var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', id, 'display-value-options');
      // variable colors
@@ -724,224 +793,190 @@ function transform_data(control_item_id, val, key) {
 
      // TYPE OF 'val' :
      // NUMBER and BOOLEAN :
-     if (typeof(data)==="object" && data !== null){
-         // timestamp, dictionary and color
-         document.querySelectorAll(".control-item.type-numeric." + key + ", button.write-task-btn." + key).forEach(function(e) {
-             var control_item_id = e.id;
-             var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'display-value-options');
-             var from_timestamp_offset = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'from-timestamp-offset');
-             var var_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], type);
-             var var_readable = get_config_from_hidden_config("variable", 'id', var_id, "readable");
-             var glyphicon_alert = e.parentElement.querySelector('.glyphicon-alert')
-             var glyphicon_exclamation = e.parentElement.querySelector('.glyphicon-exclamation-sign')
+    // timestamp, dictionary and color
+    document.querySelectorAll(".control-item.type-numeric." + key + ", button.write-task-btn." + key).forEach(function(e) {
+        var control_item_id = e.id;
+        var ci_label = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'label');
+        var display_value_option_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'display-value-options');
+        var from_timestamp_offset = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'from-timestamp-offset');
+        var var_id = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], type);
+        var var_readable = get_config_from_hidden_config("variable", 'id', var_id, "readable");
+        var var_class = get_config_from_hidden_config("variable", 'id', var_id, "valueClass");
+        var glyphicon_alert = e.parentElement.querySelector('.glyphicon-alert')
+        var glyphicon_exclamation = e.parentElement.querySelector('.glyphicon-exclamation-sign')
 
-            // get time and value depending on date range picker, timeline and control item option
-            if (data.length){
-                from_timestamp_offset = parseFloat(from_timestamp_offset);
-                if (isNaN(from_timestamp_offset)){
-                    var data_temp = data;
-                }else {
-                    var data_temp = sliceDATAusingTimestamps(data, display_from=DATA_DISPLAY_FROM_TIMESTAMP-from_timestamp_offset);
-                }
-                if (data_temp.length){
-                    var val = data_temp[data_temp.length-1][1];
-                    var time = data_temp[data_temp.length-1][0];
-                }else {
-                    var val = "No data";
-                    var time = null;
-                }
-            }else {
-                var val = "No data";
-                var time = null;
-            }
-
-            // TIME UPDATE :
-            if (time != null) {
-                var t_last_update = SERVER_TIME - time;
-                var t_next_update = 1000 * device_polling_interval - t_last_update;
-                var t_next_update_string = ((t_next_update < 1000) ? '< 1 sec' : msToTime(t_next_update));
-                var tooltip_text = 'Current value: ' + val + ' ' + unit + '<br>Last update: ' + msToTime(t_last_update) + ' ago';
-                if (var_readable === "True") {
-                    tooltip_text += '<br>Next update: ' + t_next_update_string;
-
-                    // Show and hide warning or alert icons left the the variable name when data is old in comparison of the device polling interval
-                    if (time < SERVER_TIME - 10 * Math.max(1000 * device_polling_interval, REFRESH_RATE)) {
-                        glyphicon_alert !== null ? glyphicon_alert.classList.remove("hidden") : null;
-                        glyphicon_exclamation !== null ? glyphicon_exclamation.classList.add("hidden") : null;
-                    }else if (time < SERVER_TIME - 3 * Math.max(1000 * device_polling_interval, REFRESH_RATE)) {
-                        glyphicon_alert !== null ? glyphicon_alert.classList.add("hidden") : null;
-                        glyphicon_exclamation !== null ? glyphicon_exclamation.classList.remove("hidden") : null;
-                    }else {
-                        glyphicon_alert !== null ? glyphicon_alert.classList.add("hidden") : null;
-                        glyphicon_exclamation !== null ? glyphicon_exclamation.classList.add("hidden") : null;
-                    }
-                }
-
-                e.setAttribute('data-original-title', tooltip_text);
-                set_config_from_hidden_config(type, 'id', key.split("-")[1], 'value-timestamp', time)
-
-
-            }
-
-            // Quit if the value is not newer than the last read request
-            var refresh_requested_timestamp = get_config_from_hidden_config(type, 'id', key.split("-")[1], 'refresh-requested-timestamp');
-            if (refresh_requested_timestamp != null && time != null && time <= refresh_requested_timestamp) {
-                return;
-            }
-
-            if (typeof(val)==="number" || typeof(val)==="boolean"){
-
-                // value update, dictionary, timestamp convertion
-                var color_only = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-only');
-                var timestamp_conversion_value = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'timestamp-conversion');
-                var ci_label = get_config_from_hidden_config("controlitem", 'id', control_item_id.split('-')[1], 'label');
-                var temp_val = transform_data(control_item_id.split("-")[1], val, key);
-
-                if (typeof(temp_val)==="number") {
-                    var r_val = Number(temp_val);
-
-                    // adjusting r_val
-                    if(Math.abs(r_val) == 0 ){
-                        r_val = 0;
-                    }else if(Math.abs(r_val) < 0.001) {
-                        r_val = r_val.toExponential(2);
-                    }else if (Math.abs(r_val) < 0.01) {
-                        r_val = r_val.toPrecision(1);
-                    }else if(Math.abs(r_val) < 0.1) {
-                        r_val = r_val.toPrecision(2);
-                    }else if(Math.abs(r_val) < 1) {
-                        r_val = r_val.toPrecision(3);
-                    }else if(r_val > 100) {
-                        r_val = r_val.toPrecision(4);
-                    }else{
-                        r_val = r_val.toPrecision(4);
-                    }
-                }else {
-                    var r_val = val;
-                    // set button colors
-                    if (r_val === 0 | r_val == false) {
-                        $('button.btn-success.write-task-btn.' + key).addClass("update-able");
-                        $('button.update-able.write-task-btn.' + key).addClass("btn-default");
-                        $('button.update-able.write-task-btn.' + key).removeClass("btn-success");
-
-                        r_val = 0;
-
-                        //$(".type-numeric." + key).html(0);
-                        if ($('input.'+ key).attr("placeholder") == "") {
-                            $('input.'+ key).attr("placeholder",0);
-                        }
-                    } else if (typeof(temp_val)==="boolean"){
-                        r_val = 1;
-
-                        $('button.btn-default.write-task-btn.' + key).addClass("update-able");
-                        $('button.update-able.write-task-btn.' + key).removeClass("btn-default");
-                        $('button.update-able.write-task-btn.' + key).addClass("btn-success");
-
-                        //$(".type-numeric." + key).html(1);
-                        if ($('input.'+ key).attr("placeholder") == "") {
-                            $('input.'+ key).attr("placeholder",1);
-                        }
-                    }
-                }
-
-                if (typeof(color_only)=="undefined" || color_only != 'True') {
-                    if (typeof(val)==="number") {
-                        if (timestamp_conversion_value != null && timestamp_conversion_value != 0 && typeof(timestamp_conversion_value) != "undefined"){
-                            // Transform timestamps
-                            r_val=dictionary(var_id, temp_val, type.replace('-', ''));
-                            r_val=timestamp_conversion(timestamp_conversion_value,r_val);
-                        }else {
-                            // Transform value in dictionaries
-                            r_val=dictionary(var_id, temp_val, type.replace('-', ''));
-                        }
-                        // Set the text value
-                        e.innerHTML = r_val + " " + unit;
-                    }else if(typeof(temp_val)==="boolean" && e.querySelector('.boolean-value') != null){
-                        // Set the text value
-                        e.querySelector('.boolean-value').innerHTML = ci_label + " : " + dictionary(var_id, temp_val, type.replace('-', '')) + " " + unit;
-                    }
-                }
-                if (display_value_option_id != 'None'){
-                    // Change background color
-                    if (e.classList.contains("process-flow-diagram-item")) {
-                        e.style.fill = update_data_colors(control_item_id,temp_val);
-                    }else {
-                        e.style.backgroundColor = update_data_colors(control_item_id,temp_val);
-                    }
-                    // create event to announce color change for a control item
-                    var event = new CustomEvent("changePyScadaControlItemColor_" + control_item_id.split('-')[1], { detail: update_data_colors(control_item_id,val) });
-                    window.dispatchEvent(event);
-                }
-            }else if (typeof(val)==="string"){
-            // STRING :
-                e.innerHTML = val;
-                // indicative text
-                if (e.getAttribute("placeholder") != null) {
-                    e.setAttribute("placeholder",val);
-                }
-                glyphicon_alert !== null ? glyphicon_alert.classList.add("hidden") : null;
-                glyphicon_exclamation !== null ? glyphicon_exclamation.classList.add("hidden") : null;
-                e.style.backgroundColor = null;
-            }else {
-                console.log("Invalid data format for " + control_item_id + " : " + typeof(val) + " : " + val);
-            }
-         })
-
-        // prepare
-        if (data.length){
-            var val = data[data.length-1][1];
-            var time = data[data.length-1][0];
+    // get time and value depending on date range picker, timeline and control item option
+    if (typeof(data) !=="undefined" && data !== null && data.length){
+        from_timestamp_offset = parseFloat(from_timestamp_offset);
+        if (isNaN(from_timestamp_offset)){
+            var data_temp = data;
+        }else {
+            var data_temp = sliceDATAusingTimestamps(data, display_from=DATA_DISPLAY_FROM_TIMESTAMP-from_timestamp_offset, display_to=DATA_DISPLAY_TO_TIMESTAMP, from=DATA_FROM_TIMESTAMP-from_timestamp_offset, to=DATA_TO_TIMESTAMP);
+        }
+        if (data_temp.length){
+            var val = data_temp[data_temp.length-1][1];
+            var time = data_temp[data_temp.length-1][0];
         }else {
             var val = "No data";
             var time = null;
-            console.log("no data");
         }
-         if (typeof(val)==="number") {
-             var r_val = Number(val);
+    }else {
+        var val = "No data";
+        var time = null;
+    }
 
-             // adjusting r_val
-             if(Math.abs(r_val) == 0 ){
-                 r_val = 0;
-             }else if(Math.abs(r_val) < 0.001) {
-                 r_val = r_val.toExponential(2);
-             }else if (Math.abs(r_val) < 0.01) {
-                 r_val = r_val.toPrecision(1);
-             }else if(Math.abs(r_val) < 0.1) {
-                 r_val = r_val.toPrecision(2);
-             }else if(Math.abs(r_val) < 1) {
-                 r_val = r_val.toPrecision(3);
-             }else if(r_val > 100) {
-                 r_val = r_val.toPrecision(4);
-             }else{
-                 r_val = r_val.toPrecision(4);
-             }
-         }else if (typeof(val)==="boolean"){
-             var r_val = val;
-             if (r_val === 0 | r_val == false) {
-                 r_val = 0;
-             } else {
-                 r_val = 1;
-             }
-         }
+    // TIME UPDATE :
+    if (time != null) {
+        var t_last_update = SERVER_TIME - time;
+        var t_next_update = 1000 * device_polling_interval - t_last_update;
+        var t_next_update_string = ((t_next_update < 1000) ? '< 1 sec' : msToTime(t_next_update));
+        var tooltip_text = 'Current value: ' + val + ' ' + unit + '<br>Last update: ' + msToTime(t_last_update) + ' ago';
+        if (var_readable === "True") {
+            tooltip_text += '<br>Next update: ' + t_next_update_string;
 
-         // update chart legend variable value
-         if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && time < DATA_DISPLAY_FROM_TIMESTAMP) {
-         }else if (DATA_DISPLAY_TO_TIMESTAMP > 0 && time > DATA_DISPLAY_TO_TIMESTAMP) {
-         }else if (DATA_FROM_TIMESTAMP > 0 && time < DATA_FROM_TIMESTAMP) {
-         }else if (DATA_TO_TIMESTAMP > 0 && time > DATA_TO_TIMESTAMP) {
-         }else {
-             $(".legendValue.type-numeric." + key).html(r_val);
-         }
+            // Show and hide warning or alert icons left the the variable name when data is old in comparison of the device polling interval
+            if (time < SERVER_TIME - 10 * Math.max(1000 * device_polling_interval, REFRESH_RATE)) {
+                glyphicon_alert !== null ? glyphicon_alert.classList.remove("hidden") : null;
+                glyphicon_exclamation !== null ? glyphicon_exclamation.classList.add("hidden") : null;
+            }else if (time < SERVER_TIME - 3 * Math.max(1000 * device_polling_interval, REFRESH_RATE)) {
+                glyphicon_alert !== null ? glyphicon_alert.classList.add("hidden") : null;
+                glyphicon_exclamation !== null ? glyphicon_exclamation.classList.remove("hidden") : null;
+            }else {
+                glyphicon_alert !== null ? glyphicon_alert.classList.add("hidden") : null;
+                glyphicon_exclamation !== null ? glyphicon_exclamation.classList.add("hidden") : null;
+            }
+        }
 
-     }
+        e.setAttribute('data-original-title', tooltip_text);
+        set_config_from_hidden_config(type.replace('-', ''), 'id', key.split("-")[1], 'value-timestamp', time)
 
-     // null OBJECT :
-     if (typeof(data)==="object" && data === null){
-         $(".type-numeric." + key).html(data);
-         if ($('input.'+ key).attr("placeholder") == "") {
-             $('input.'+ key).attr("placeholder",data);
-         }
-     }
+
+    }
+
+    // Quit if the value is not newer than the last read request
+    var refresh_requested_timestamp = parseFloat(get_config_from_hidden_config(type.replace('-', ''), 'id', key.split("-")[1], 'refresh-requested-timestamp'));
+    if (refresh_requested_timestamp != null && time != null && time <= refresh_requested_timestamp) {
+        return;
+    }
+
+    var temp_val = transform_data(control_item_id.split("-")[1], val, key);
+    var r_val = dictionary(var_id, temp_val, type.replace('-', ''));
+
+    if(typeof(r_val)==="boolean" || Math.abs(r_val) == 0) {
+        // don't change the rendering for boolean or 0
+        r_val = r_val;
+    }else if(Math.abs(r_val) < 1) {
+        r_val = r_val.toExponential(2);
+    }else if(r_val > 0) {
+        r_val = r_val.toPrecision(4);
+    };
+
+    if (typeof(val)==="number" || typeof(val)==="boolean" || typeof(val)==="string"){
+
+        // value update, dictionary, timestamp convertion
+        var color_only = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'color-only');
+        var timestamp_conversion_value = get_config_from_hidden_config("displayvalueoption", 'id', display_value_option_id, 'timestamp-conversion');
+
+        // if element is a button, update it according to the value
+        if (!Boolean(val) && e.classList.contains("btn-success")) {e.classList.add("update-able"); e.classList.add("btn-default"); e.classList.remove("btn-success")};
+        if (Boolean(val) && e.classList.contains("btn-default")) {e.classList.add("update-able"); e.classList.add("btn-success"); e.classList.remove("btn-default")};
+        // update input placeholder
+        document.querySelectorAll(".form-control." + key).forEach(e => {e.placeholder = val + " " + unit});
+
+        if (typeof(color_only)=="undefined" || color_only != 'True') {
+                if (e.querySelector('.boolean-value') != null){
+                // Set the text value
+                e.querySelector('.boolean-value').innerHTML = ci_label + " : " + r_val + " " + unit;
+                }else {
+                if (timestamp_conversion_value != null && timestamp_conversion_value != 0 && typeof(timestamp_conversion_value) != "undefined"){
+                    // Transform timestamps
+                    r_val=timestamp_conversion(timestamp_conversion_value,r_val);
+                }
+                // Set the text value
+                e.innerHTML = r_val + " " + unit;
+            }
+        }
+        if (display_value_option_id != 'None'){
+            // Change background color
+            if (e.classList.contains("process-flow-diagram-item")) {
+                var old_color = e.style.fill;
+            }else {
+                var old_color = e.style.backgroundColor;
+            }
+            if (old_color != "") {
+                if (old_color.startsWith("rgb(") && old_color.endsWith(")")) {
+                    old_color_temp = []
+                    old_color = old_color.replace("rgb(", "").replace(")", "").split(",");
+                    for (c in old_color) {old_color_temp.push(parseInt(old_color[c]))}
+                    old_color = rgbToHex(old_color_temp);
+                }else {
+                    old_color = "";
+                }
+            }
+            var color = update_data_colors(control_item_id,temp_val);
+            if (old_color != color) {
+                if (e.classList.contains("process-flow-diagram-item")) {
+                    e.style.fill = color;
+                }else {
+                    e.style.backgroundColor = color;
+                }
+                // create event to announce color change for a control item
+                var event = new CustomEvent("changePyScadaControlItemColor_" + control_item_id.split('-')[1], { detail: color });
+                window.dispatchEvent(event);
+            };
+        }
+    }else {
+        console.log("Invalid data format for " + control_item_id + " : " + typeof(val) + " : " + val);
+    }
+    })
+
+    // update chart legend
+    if (typeof(data) !=="undefined" && data !== null && data.length){
+        var val = data[data.length-1][1];
+        var time = data[data.length-1][0];
+    }else {
+        var val = "";
+        var time = null;
+    }
+    if (typeof(val)==="number") {
+        var r_val = Number(val);
+
+        // adjusting r_val
+        if(Math.abs(r_val) == 0 ){
+            r_val = 0;
+        }else if(Math.abs(r_val) < 0.001) {
+            r_val = r_val.toExponential(2);
+        }else if (Math.abs(r_val) < 0.01) {
+            r_val = r_val.toExponential(2);
+        }else if(Math.abs(r_val) < 0.1) {
+            r_val = r_val.toExponential(2);
+        }else if(Math.abs(r_val) < 1) {
+            r_val = r_val.toExponential(2);
+        }else if(r_val > 100) {
+            r_val = r_val.toPrecision(4);
+        }else{
+            r_val = r_val.toPrecision(4);
+        }
+    }else if (typeof(val)==="boolean"){
+        var r_val = val;
+        if (r_val === 0 | r_val == false) {
+            r_val = 0;
+        } else {
+            r_val = 1;
+        }
+    }else {var r_val = val;}
+
+    if (DATA_DISPLAY_FROM_TIMESTAMP > 0 && time < DATA_DISPLAY_FROM_TIMESTAMP) {
+        r_val = "";
+    }else if (DATA_DISPLAY_TO_TIMESTAMP > 0 && time > DATA_DISPLAY_TO_TIMESTAMP) {
+        r_val = "";
+    }else if (DATA_FROM_TIMESTAMP > 0 && time < DATA_FROM_TIMESTAMP) {
+        r_val = "";
+    }else if (DATA_TO_TIMESTAMP > 0 && time > DATA_TO_TIMESTAMP) {
+        r_val = "";
+    }else {
+    }
+    document.querySelectorAll(".legendValue.type-numeric." + key).forEach(e => e.innerHTML = r_val);
 
      refresh_logo(key.split("-")[1], type);
  }
@@ -1182,18 +1217,52 @@ function set_config_from_hidden_config(type,filter_data,val,get_data,value){
      show_update_status();
      FETCH_DATA_PENDING++;
      if(init){show_init_status();}
-     request_data = {timestamp_from:timestamp_from, variables: variable_keys, init: init, variable_properties:variable_property_keys};
-     if (typeof(timestamp_to !== 'undefined')){request_data['timestamp_to']=timestamp_to};
+     request_data = {timestamp_from:timestamp_from, variables: variable_keys, init: init, variable_properties:variable_property_keys, view_id: VIEW_ID};
+     if (typeof(timestamp_to) !== 'undefined'){request_data['timestamp_to']=timestamp_to};
      //if (!init){request_data['timestamp_from'] = request_data['timestamp_from'] - REFRESH_RATE;};
-     PYSCADA_XHR = $.ajax({
-         url: ROOT_URL+'json/cache_data/',
-         dataType: "json",
-         timeout: ((init == 1) ? FETCH_DATA_TIMEOUT*5: FETCH_DATA_TIMEOUT),
-         type: "POST",
-         data:request_data,
-         dataType:"json"
-         }).done(data_handler_done).fail(data_handler_fail);
- }
+     const formData = new FormData();
+     for ( var key in request_data ) {
+         formData.append(key, request_data[key]);
+     }
+     var controller = new AbortController();
+     var timeout = ((init == 1) ? FETCH_DATA_TIMEOUT*5: FETCH_DATA_TIMEOUT);
+     var timer = setTimeout(() => {add_notification("Timeout while fetching data", 3, 0.9*5*REFRESH_RATE);controller.abort();}, timeout);
+     const signal = controller.signal;
+     FETCH_CONTROLLERS["data_handler_ajax"] = controller
+     fetch(
+         ROOT_URL+CACHE_DATA_URL, {
+         method: "POST",
+         headers: {'X-CSRFToken': CSRFTOKEN},
+         body:formData,
+         signal: signal,
+         redirect: "follow",
+         })
+     .then((response) => {
+        clearTimeout(timer);
+        timer = null;
+        if (response.redirected) {
+            var next = "?next=";
+            var url_redirect = response.url;
+            if (response.url.includes(next)) {url_redirect = url_redirect.split(next)[0] + next + window.location.href;};
+            if (AUTO_UPDATE_ACTIVE){auto_update_click();}
+            add_notification("Authentication issue, please log-in <a href='" + url_redirect + "'>here</a>", 3, 0, 0);
+            //window.location.href = response.url;
+        }else {
+            if (!response.ok || response.status != 200) {
+                data_handler_fail(response);
+            } else {
+                return response.json();
+            }
+        }
+     }).then((json) => {data_handler_done(json);})
+     .catch((error) => {
+        if (timer === null){add_notification("data_handler_ajax : " + error, 3, 0.9*REFRESH_RATE);};
+        increase_error_count();
+     }).then(() => {
+        hide_update_status();
+        FETCH_DATA_PENDING--;
+     });
+}
 
 function pad(value) {
     return value < 10 ? '0' + value : value;
@@ -1211,6 +1280,8 @@ function createOffset(date) {
   * @param {Array<*>} fetched_data
   */
  function data_handler_done(fetched_data){
+
+    if (typeof(fetched_data) === "undefined") {console.log("PyScada HMI : fetched data undefined"); return;}
 
      update_charts = true;
 
@@ -1239,19 +1310,20 @@ function createOffset(date) {
      }
 
      if (typeof(fetched_data['variable_properties'])==="object"){
-         VARIABLE_PROPERTIES_DATA = fetched_data['variable_properties'];
+         for (vp_key in fetched_data['variable_properties']){
+            VARIABLE_PROPERTIES_DATA[vp_key] = fetched_data['variable_properties'][vp_key]
+         }
          delete fetched_data['variable_properties'];
-         VARIABLE_PROPERTIES_LAST_MODIFIED = fetched_data['variable_properties_last_modified'];
+         for (vp_key in fetched_data['variable_properties_last_modified']){
+            VARIABLE_PROPERTIES_LAST_MODIFIED[vp_key] = fetched_data['variable_properties_last_modified'][vp_key]
+         }
          delete fetched_data['variable_properties_last_modified'];
-     }else{
-         VARIABLE_PROPERTIES_DATA = {};
-         VARIABLE_PROPERTIES_LAST_MODIFIED = {};
      }
 
      // update data timestamp
      if(DATA_TO_TIMESTAMP==0){
          //DATA_TO_TIMESTAMP = DATA_FROM_TIMESTAMP = SERVER_TIME;
-         DEFAULT_TIME_DELTA = document.querySelector("body").getAttribute("data-view-time-delta") == null ? 7200 : document.querySelector("body").getAttribute("data-view-time-delta");
+         DEFAULT_TIME_DELTA = document.querySelector("body").getAttribute("data-view-time-delta") == null ? 7200 : parseFloat(document.querySelector("body").getAttribute("data-view-time-delta"));
          DATA_TO_TIMESTAMP = SERVER_TIME;
          DATA_FROM_TIMESTAMP = SERVER_TIME - DEFAULT_TIME_DELTA * 1000;
      }else{
@@ -1295,11 +1367,12 @@ function createOffset(date) {
          JSON_ERROR_COUNT = JSON_ERROR_COUNT - 1;
      }
      UPDATE_STATUS_COUNT = 0;
-     hide_update_status();
-     if(request_data.init===1){
+     //hide_update_status();
+     if(typeof request_data != "undefined" && request_data.init===1){
          hide_init_status();
      }
-     FETCH_DATA_PENDING--;
+     //FETCH_DATA_PENDING--;
+
  }
 
 
@@ -1309,17 +1382,15 @@ function createOffset(date) {
   * @param {*} t
   * @param {*} m
   */
- function data_handler_fail(x, t, m) {
-     //check if we are unauthenticated
-     if (x.status !== 0 && x.getResponseHeader("content-type") !== null && x.getResponseHeader("content-type").indexOf("text/html") !== -1) {
-         add_notification("Authentication failed, please reload the page", 2, 0);
-         //location.reload();
-     }
-
+ function data_handler_fail(response) {
      // error notifications
-     if(JSON_ERROR_COUNT % 5 == 0)
-         add_notification("Fetching data failed", 3);
+     if(JSON_ERROR_COUNT % 5 == 0) {
+         add_notification("Fetching data failed (" + response.status + ")", 3, 0.95*5*REFRESH_RATE);
+     }
+     increase_error_count();
+}
 
+  function increase_error_count() {
      JSON_ERROR_COUNT = JSON_ERROR_COUNT + 1;
      if (JSON_ERROR_COUNT > 15) {
          $(".AutoUpdateStatus").css("color", "red");
@@ -1333,7 +1404,7 @@ function createOffset(date) {
          }
      }
      //hide_update_status();
-     if(request_data.init===1){
+     if(typeof request_data != "undefined" && request_data.init===1){
          for (key in request_data.variables){
              key = request_data.variables[key];
              if (typeof(CHART_VARIABLE_KEYS[key]) === 'number'){
@@ -1344,7 +1415,8 @@ function createOffset(date) {
          }
          hide_init_status();
      }
-     FETCH_DATA_PENDING--;
+     //FETCH_DATA_PENDING--;
+
  }
 
 
@@ -1390,6 +1462,37 @@ function createOffset(date) {
      var i = 0; //or 10
      while(i < a.length){
          if (a[i][d]>=t){
+             return i;
+         }
+         i++;
+     }
+ }
+ /**
+  * Return index 'i' where a value in 'd' is lower or equal to value 't'
+  * @param {Array} a The array
+  * @param {number} t The value
+  * @param {number} d Sub index
+  * @returns {number} The index where a value lower than 't' where found
+  */
+ function find_index_sub_lt(a,t,d){
+     var i = a.length; //or 10
+     while(i--){
+         if (a[i][d]<t){
+             return i;
+         }
+     }
+ }
+ /**
+  * Return index 'i' where a value in 'd' is superior or equal to value 't'
+  * @param {Array} a The array
+  * @param {number} t The value
+  * @param {number} d Sub index
+  * @returns {number} The index where a value superior than 't' where found
+  */
+ function find_index_sub_gt(a,t,d){
+     var i = 0; //or 10
+     while(i < a.length){
+         if (a[i][d]>t){
              return i;
          }
          i++;
@@ -3765,7 +3868,7 @@ function fix_page_anchor() {
          type_short = "prop";
          if (key in VARIABLE_PROPERTIES_LAST_MODIFIED) {last_time = VARIABLE_PROPERTIES_LAST_MODIFIED[key]};
      }
-     if (type == "variable_property") {type="variableproperty";}
+     type = type.replace("_", "").replace("-", "")
      document.querySelectorAll(".control-item.type-numeric." + type_short + "-" + key + " img, button.write-task-btn." + type_short + "-" + key + " img, button.write-task-set." + type_short + "-" + key + " img").forEach(item => {
          item.remove();
      });
@@ -3869,6 +3972,22 @@ function fix_page_anchor() {
      }
  });
 
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 
  //                             -----------------------------------------------------------
  //                                             Client-Server's Functions
@@ -3917,7 +4036,7 @@ function fix_page_anchor() {
      $(this)[0].disabled = true;
      PYSCADA_XHR = $.ajax({
          type: 'post',
-         url: ROOT_URL+'form/read_task/',
+         url: ROOT_URL+READ_TASK_URL,
          data: {key:key, type:data_type},
          success: function (data) {
 
@@ -3935,11 +4054,12 @@ function fix_page_anchor() {
      id = $(this).attr('id');
      value = $("#"+id+"-value").val();
      item_type = $(this).data('type');
-     min = $(this).data('min');
-     max = $(this).data('max');
-     value_class = $(this).data('value-class');
-     min_type = $(this).data('min-type');
-     max_type = $(this).data('max-type');
+     val=$('.variable-config[data-id='+id.replace('-value', '')+']');
+     min = $(val).data('min');
+     max = $(val).data('max');
+     value_class = $(val).data('value-class');
+     min_type = $(val).data('min-type');
+     max_type = $(val).data('max-type');
      if (min_type == 'lte') {min_type_char = ">=";} else {min_type_char = ">";}
      if (max_type == 'gte') {max_type_char = "<=";} else {max_type_char = "<";}
      if (value == "" || value == null) {
@@ -3963,8 +4083,8 @@ function fix_page_anchor() {
                      refresh_logo(key, item_type);
                      PYSCADA_XHR = $.ajax({
                          type: 'post',
-                         url: ROOT_URL+'form/write_property2/',
-                         data: {variable_property:key, value:value},
+                         url: ROOT_URL+WRITE_TASK_URL,
+                         data: {key:key, value:value, item_type:item_type, view_id: VIEW_ID},
                          success: function (data) {
 
                          },
@@ -3981,8 +4101,8 @@ function fix_page_anchor() {
                  refresh_logo(key, item_type);
                  PYSCADA_XHR = $.ajax({
                      type: 'post',
-                     url: ROOT_URL+'form/write_task/',
-                     data: {key:key, value:value, item_type:item_type},
+                     url: ROOT_URL+WRITE_TASK_URL,
+                     data: {key:key, value:value, item_type:item_type, view_id: VIEW_ID},
                      success: function (data) {
 
                      },
@@ -4015,8 +4135,8 @@ function fix_page_anchor() {
              //$('#'+id).removeClass('update-able');
              PYSCADA_XHR = $.ajax({
                  type: 'post',
-                 url: ROOT_URL+'form/write_task/',
-                 data: {key:key,value:1,item_type:item_type},
+                 url: ROOT_URL+WRITE_TASK_URL,
+                 data: {key:key,value:1,item_type:item_type, view_id: VIEW_ID},
                  success: function (data) {
                  },
                  error: function(data) {
@@ -4028,8 +4148,8 @@ function fix_page_anchor() {
              //$('#'+id).removeClass('update-able');
              PYSCADA_XHR = $.ajax({
                  type: 'post',
-                 url: ROOT_URL+'form/write_task/',
-                 data: {key:key,value:0,item_type:item_type},
+                 url: ROOT_URL+WRITE_TASK_URL,
+                 data: {key:key,value:0,item_type:item_type, view_id: VIEW_ID},
                  success: function (data) {
                  },
                  error: function(data) {
@@ -4039,8 +4159,8 @@ function fix_page_anchor() {
          }else{
              PYSCADA_XHR = $.ajax({
                  type: 'post',
-                 url: ROOT_URL+'form/write_task/',
-                 data: {key:key, value:value, item_type:item_type},
+                 url: ROOT_URL+WRITE_TASK_URL,
+                 data: {key:key, value:value, item_type:item_type, view_id: VIEW_ID},
                  success: function (data) {
 
                  },
@@ -4062,8 +4182,8 @@ function fix_page_anchor() {
              if (item_type == "variable_property"){
                  PYSCADA_XHR = $.ajax({
                      type: 'post',
-                     url: ROOT_URL+'form/write_property2/',
-                     data: {variable_property:var_name, value:value},
+                     url: ROOT_URL+WRITE_TASK_URL,
+                     data: {key:key, value:value, item_type:item_type, view_id: VIEW_ID},
                      success: function (data) {
 
                      },
@@ -4077,8 +4197,8 @@ function fix_page_anchor() {
          }else {
              PYSCADA_XHR = $.ajax({
                  type: 'post',
-                 url: ROOT_URL+'form/write_task/',
-                 data: {key:key, value:value, item_type:item_type},
+                 url: ROOT_URL+WRITE_TASK_URL,
+                 data: {key:key, value:value, item_type:item_type, view_id: VIEW_ID},
                  success: function (data) {
 
                  },
@@ -4121,8 +4241,8 @@ function fix_page_anchor() {
      if($(this).hasClass('btn-default')){
          PYSCADA_XHR = $.ajax({
              type: 'post',
-             url: ROOT_URL+'form/write_task/',
-             data: {key:key,value:1,item_type:item_type},
+             url: ROOT_URL+WRITE_TASK_URL,
+             data: {key:key,value:1,item_type:item_type, view_id: VIEW_ID},
              success: function (data) {
                  $('#'+id).removeClass('btn-default')
                  $('#'+id).addClass('btn-success');
@@ -4134,8 +4254,8 @@ function fix_page_anchor() {
      }else if ($(this).hasClass('btn-success')){
          PYSCADA_XHR = $.ajax({
              type: 'post',
-             url: ROOT_URL+'form/write_task/',
-             data: {key:key,value:0,item_type:item_type},
+             url: ROOT_URL+WRITE_TASK_URL,
+             data: {key:key,value:0,item_type:item_type, view_id: VIEW_ID},
              success: function (data) {
                  $('#'+id).addClass('btn-default')
                  $('#'+id).removeClass('btn-success');
@@ -4239,7 +4359,8 @@ function init_pyscada_content() {
          for (t in PYSCADA_TIMEOUTS) {clearTimeout(PYSCADA_TIMEOUTS[t]);console.log("PyScada HMI : clearing timeout", t);}
          if(PYSCADA_XHR != null && PYSCADA_XHR.readyState != 4){
              PYSCADA_XHR.abort();
-             console.log("PyScada HMI : aborting xhr")
+             for (c in FETCH_CONTROLLERS) {FETCH_CONTROLLERS[c].abort();}
+             console.log("PyScada HMI : aborting xhr and fetch requests")
          }
      };
      $(window).on('hashchange', function() {
@@ -4387,7 +4508,10 @@ function init_pyscada_content() {
          set_chart_selection_mode();
      });
 
-     PYSCADA_TIMEOUTS["data_handler"] = setTimeout(function() {data_handler();}, 5000);
+
+     if (SYNC_HANDLING_DATA) {
+        PYSCADA_TIMEOUTS["data_handler"] = setTimeout(function() {data_handler();}, 5000);
+     }
      set_chart_selection_mode();
 
 
@@ -4414,7 +4538,7 @@ function init_pyscada_content() {
      // Send request data to all devices
      $('.ReadAllTask').click(function(e) {
        PYSCADA_XHR = $.ajax({
-           url: ROOT_URL+'form/read_all_task/',
+           url: ROOT_URL+READ_ALL_TASK_URL,
            type: "POST",
            data:{},
            success: function (data) {

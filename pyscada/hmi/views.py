@@ -268,7 +268,7 @@ def view(request, link_title):
     try:
         v = (
             get_group_display_permission_list(View.objects, request.user.groups.all())
-            .filter(link_title=link_title)
+            .filter(link_title=link_title, visible=True)
             .first()
         )
         if v is None:
@@ -394,8 +394,9 @@ def view(request, link_title):
             mc, sbc, opts = widget.content.create_panel_html(
                 widget_pk=widget.pk,
                 widget_extra_css_class=widget_extra_css_class,
-                user=request.user,
                 visible_objects_lists=visible_objects_lists,
+                request=request,
+                view=v,
             )
             # main content
             if mc is None:
@@ -404,7 +405,7 @@ def view(request, link_title):
                 )
             else:
                 main_content.append(dict(html=mc, widget=widget, topbar=sbc))
-            #sidebar content
+            # sidebar content
             if sbc is not None:
                 sidebar_content.append(dict(html=sbc, widget=widget))
             # options
@@ -417,10 +418,7 @@ def view(request, link_title):
                 ):
                     show_daterangepicker = True
                     show_daterangepicker_temp = True
-                if (
-                    "show_timeline" in opts
-                    and opts["show_timeline"] == True
-                ):
+                if "show_timeline" in opts and opts["show_timeline"] == True:
                     show_timeline_temp = True
                 if "flot" in opts and opts["flot"]:
                     has_flot_chart = True
@@ -438,9 +436,8 @@ def view(request, link_title):
                     for file_src in opts["css_files_list"]:
                         if {"src": file_src} not in css_files_list:
                             css_files_list.append({"src": file_src})
-                if (
-                    "object_config_list" in opts
-                    and type(opts["object_config_list"] == list)
+                if "object_config_list" in opts and type(
+                    opts["object_config_list"] == list
                 ):
                     for obj in opts["object_config_list"]:
                         model_name = str(obj._meta.model_name).lower()
@@ -448,27 +445,23 @@ def view(request, link_title):
                             object_config_list[model_name] = list()
                         if obj not in object_config_list[model_name]:
                             object_config_list[model_name].append(obj)
-                if (
-                    "custom_fields_list" in opts
-                    and type(opts["custom_fields_list"] == list)
+                if "custom_fields_list" in opts and type(
+                    opts["custom_fields_list"] == list
                 ):
                     for model in opts["custom_fields_list"]:
-                        custom_fields_list[str(model).lower()] = opts["custom_fields_list"][
-                            model
-                        ]
+                        custom_fields_list[str(model).lower()] = opts[
+                            "custom_fields_list"
+                        ][model]
 
-                if (
-                    "exclude_fields_list" in opts
-                    and type(opts["exclude_fields_list"] == list)
+                if "exclude_fields_list" in opts and type(
+                    opts["exclude_fields_list"] == list
                 ):
                     for model in opts["exclude_fields_list"]:
                         exclude_fields_list[str(model).lower()] = opts[
                             "exclude_fields_list"
                         ][model]
             else:
-                logger.info(
-                    f"Widget {widget} options is not a dict, it is {opts}"
-                )
+                logger.info(f"Widget {widget} options is not a dict, it is {opts}")
         widget_rows_html += widget_row_template.render(
             {
                 "row": current_row,
@@ -610,17 +603,8 @@ def view(request, link_title):
                     object_config_list[obj._meta.model_name] = list()
                 if obj not in object_config_list[obj._meta.model_name]:
                     object_config_list[obj._meta.model_name].append(obj)
-    # Generate html object hidden config
+    # Add html object hidden config div so that it can be filled in later
     pages_html += '<div class="hidden globalConfig2">'
-    for model, val in sorted(object_config_list.items(), key=lambda ele: ele[0]):
-        pages_html += '<div class="hidden ' + str(model) + 'Config2">'
-        for obj in val:
-            pages_html += gen_hiddenConfigHtml(
-                obj,
-                custom_fields_list.get(model, None),
-                exclude_fields_list.get(model, None),
-            )
-        pages_html += "</div>"
     pages_html += "</div>"
 
     context = {
@@ -641,7 +625,7 @@ def view(request, link_title):
         "view_title": v.title,
         "view_link_title": link_title,
         "view_show_timeline": v.show_timeline,
-        "view_time_delta" : v.default_time_delta.total_seconds(),
+        "view_time_delta": v.default_time_delta.total_seconds(),
         "version_string": core_version,
         "link_target": settings.LINK_TARGET
         if hasattr(settings, "LINK_TARGET")
@@ -694,7 +678,6 @@ def form_read_task(request):
     if "key" in request.POST and "type" in request.POST:
         key = int(request.POST["key"])
         item_type = request.POST["type"]
-        # check if float as DeviceWriteTask doesn't support string values
         if GroupDisplayPermission.objects.count() == 0:
             if item_type == "variable":
                 crt = DeviceReadTask(
@@ -769,7 +752,27 @@ def form_write_task(request):
         try:
             float(value)
         except ValueError:
-            logger.debug("form_write_task input is not a float")
+            try:
+                vp = VariableProperty.objects.get(id=key)
+                if item_type == "variable_property" and vp.value_class.upper() in [
+                    "STRING"
+                ]:
+                    VariableProperty.objects.update_property(
+                        variable_property=vp,
+                        value=value,
+                    )
+                    # TODO: write string
+                    # cwt = DeviceWriteTask(
+                    #    variable_property_id=key,
+                    #    value=value,
+                    #    start=time.time(),
+                    #    user=request.user,
+                    # )
+                    # cwt.create_and_notificate(cwt)
+                    return HttpResponse(status=200)
+            except VariableProperty.DoesNotExist:
+                pass
+            logger.info(f"Cannot write STRING '{value}' to {item_type} {key}")
             return HttpResponse(status=403)
         if GroupDisplayPermission.objects.count() == 0:
             if item_type == "variable":
@@ -788,14 +791,39 @@ def form_write_task(request):
                 cwt.create_and_notificate(cwt)
                 return HttpResponse(status=200)
         else:
+            if "view_id" in request.POST:
+                # for a view, get the list of variables and variable properties for which the user can retrieve and write data
+                view_id = int(request.POST["view_id"])
+                vdo = View.objects.get(id=view_id).data_objects(request.user)
+            else:
+                vdo = None  # should it get data objets for all views ?
+
             if item_type == "variable":
-                if (
-                    get_group_display_permission_list(
-                        ControlItem.objects, request.user.groups.all()
-                    )
-                    .filter(type=0, variable_id=key)
-                    .exists()
-                ):
+                can_write = False
+                if vdo is not None:
+                    # filter active_variables using variables from which the user can write data
+                    if "variable_write" in vdo and int(key) in vdo["variable_write"]:
+                        can_write = True
+                    else:
+                        logger.info(
+                            f"variable {key} not allowed to write in view {view_id} for user {request.user}"
+                        )
+                else:
+                    # keeping old check, remove it later
+                    if (
+                        get_group_display_permission_list(
+                            ControlItem.objects, request.user.groups.all()
+                        )
+                        .filter(type=0, variable_id=key)
+                        .exists()
+                    ):
+                        can_write = True
+                    else:
+                        logger.debug(
+                            "Missing group display permission for write task (variable %s)"
+                            % key
+                        )
+                if can_write:
                     cwt = DeviceWriteTask(
                         variable_id=key,
                         value=value,
@@ -804,19 +832,35 @@ def form_write_task(request):
                     )
                     cwt.create_and_notificate(cwt)
                     return HttpResponse(status=200)
-                else:
-                    logger.debug(
-                        "Missing group display permission for write task (variable %s)"
-                        % key
-                    )
             elif item_type == "variable_property":
-                if (
-                    get_group_display_permission_list(
-                        ControlItem.objects, request.user.groups.all()
-                    )
-                    .filter(type=0, variable_property_id=key)
-                    .exists()
-                ):
+                can_write = False
+                if vdo is not None:
+                    # filter active_variables using variables from which the user can write data
+                    if (
+                        "variable_property_write" in vdo
+                        and int(key) in vdo["variable_property_write"]
+                    ):
+                        can_write = True
+                    else:
+                        logger.info(
+                            f"variable property {key} not allowed to write in view {view_id} for user {request.user}"
+                        )
+                else:
+                    # keeping old check, remove it later
+                    if (
+                        get_group_display_permission_list(
+                            ControlItem.objects, request.user.groups.all()
+                        )
+                        .filter(type=0, variable_property_id=key)
+                        .exists()
+                    ):
+                        can_write = True
+                    else:
+                        logger.debug(
+                            "Missing group display permission for write task (VP %s)"
+                            % key
+                        )
+                if can_write:
                     cwt = DeviceWriteTask(
                         variable_property_id=key,
                         value=value,
@@ -825,38 +869,8 @@ def form_write_task(request):
                     )
                     cwt.create_and_notificate(cwt)
                     return HttpResponse(status=200)
-                else:
-                    logger.debug(
-                        "Missing group display permission for write task (VP %s)" % key
-                    )
     else:
         logger.debug("key or value missing in request : %s" % request.POST)
-    return HttpResponse(status=404)
-
-
-@login_required
-def form_write_property2(request):
-    if "variable_property" in request.POST and "value" in request.POST:
-        value = request.POST["value"]
-        try:
-            variable_property = int(request.POST["variable_property"])
-            VariableProperty.objects.update_property(
-                variable_property=variable_property, value=value
-            )
-        except ValueError:
-            variable_property = str(request.POST["variable_property"])
-            if VariableProperty.objects.get(
-                name=variable_property
-            ).value_class.upper() in ["STRING"]:
-                VariableProperty.objects.update_property(
-                    variable_property=VariableProperty.objects.get(
-                        name=variable_property
-                    ),
-                    value=value,
-                )
-            else:
-                return HttpResponse(status=404)
-        return HttpResponse(status=200)
     return HttpResponse(status=404)
 
 
@@ -871,14 +885,33 @@ def int_filter(someList):
 
 @login_required
 def get_cache_data(request):
+    if "view_id" in request.POST:
+        # for a view, get the list of variables and variable properties for which the user can retrieve and write data
+        view_id = int(request.POST["view_id"])
+        vdo = View.objects.get(id=view_id).data_objects(request.user)
+    else:
+        vdo = None  # should it get data objets for all views ?
+
     if "init" in request.POST:
         init = bool(float(request.POST["init"]))
     else:
         init = False
     active_variables = []
-    if "variables[]" in request.POST:
-        active_variables = request.POST.getlist("variables[]")
-        active_variables = list(int_filter(active_variables))
+    if "variables" in request.POST:
+        active_variables = request.POST.get("variables")
+        active_variables = list(int_filter(active_variables.split(",")))
+        if vdo is not None:
+            # filter active_variables using variables from which the user can retrieve data
+            variables_filtered = []
+            for var_pk in active_variables:
+                if "variable" in vdo and int(var_pk) in vdo["variable"]:
+                    variables_filtered.append(var_pk)
+                else:
+                    logger.info(
+                        f"variable {var_pk} not allowed in view {view_id} for user {request.user}"
+                    )
+            active_variables = variables_filtered
+
     """
     else:
         active_variables = list(
@@ -894,8 +927,25 @@ def get_cache_data(request):
     """
 
     active_variable_properties = []
-    if "variable_properties[]" in request.POST:
-        active_variable_properties = request.POST.getlist("variable_properties[]")
+    if "variable_properties" in request.POST:
+        active_variable_properties = request.POST.get("variable_properties")
+        active_variable_properties = list(
+            int_filter(active_variable_properties.split(","))
+        )
+        if vdo is not None:
+            # filter active_variable_properties using variables from which the user can retrieve data
+            variable_properties_filtered = []
+            for var_pk in active_variable_properties:
+                if (
+                    "variable_property" in vdo
+                    and int(var_pk) in vdo["variable_property"]
+                ):
+                    variable_properties_filtered.append(var_pk)
+                else:
+                    logger.info(
+                        f"variable property {var_pk} not allowed in view {view_id} for user {request.user}"
+                    )
+            active_variable_properties = variable_properties_filtered
 
     timestamp_from = time.time()
     if "timestamp_from" in request.POST:

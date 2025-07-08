@@ -17,6 +17,7 @@ from pyscada.models import (
 from pyscada.models import Event
 from pyscada.models import RecordedEvent, RecordedData
 from pyscada.models import Mail
+from pyscada.models import DeviceHandlerParameter, VariableHandlerParameter
 
 from django.contrib import messages
 from django.contrib import admin
@@ -27,6 +28,8 @@ from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.utils.translation import gettext_lazy as _
 from django.db.models.fields.related import OneToOneRel
 from django.utils.html import mark_safe
+from django.forms import BaseInlineFormSet
+from django.core.exceptions import ValidationError
 
 from django import forms
 from django.db.utils import ProgrammingError, OperationalError
@@ -152,6 +155,23 @@ class BackgroundProcessFilter(admin.SimpleListFilter):
 
 
 # Admin models
+class VariableInlineAdminFrom(forms.ModelForm):
+    def has_changed(self):
+        # Force save inline for the good protocol if selected device and protocol_id exists
+        if (
+            self.data.get("device", None) != ""
+            and self.data.get("device", None) is not None
+        ):
+            d = Device.objects.get(id=int(self.data.get("device", None)))
+            if (
+                hasattr(self.instance, "protocol_id")
+                and d is not None
+                and d.protocol.id == self.instance.protocol_id
+            ):
+                return True
+        return False
+
+
 class VariableAdminFrom(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(VariableAdminFrom, self).__init__(*args, **kwargs)
@@ -199,40 +219,6 @@ class VariableAdminFrom(forms.ModelForm):
                     "backgroundColor;this.style.color=this.options[this.selectedIndex].style.color"
                 }
 
-    def has_changed(self):
-        # Force save inline for the good protocol if selected device and protocol_id exists
-        # todo : try it with all the protocol, it seems to be not working
-        if (
-            self.data.get("device", None) != ""
-            and self.data.get("device", None) is not None
-        ):
-            d = Device.objects.get(id=int(self.data.get("device", None)))
-            if (
-                hasattr(self.instance, "protocol_id")
-                and d is not None
-                and d.protocol.id == self.instance.protocol_id
-            ):
-                return True
-        return super().has_changed()
-
-    def clean(self):
-        super().clean()
-        # on device change, delete protocol variable that doesn't correspond
-        if self.has_changed() and self.instance.pk and "device" in self.changed_data:
-            related_variables = [
-                field
-                for field in Variable._meta.get_fields()
-                if issubclass(type(field), OneToOneRel)
-            ]
-            for v in related_variables:
-                if (
-                    hasattr(self.instance, v.name)
-                    and hasattr(self, "device")
-                    and getattr(self.instance, v.name).protocol_id
-                    != self.cleaned_data["device"].protocol.id
-                ):
-                    getattr(self.instance, v.name).delete()
-
 
 class VariableState(Variable):
     class Meta:
@@ -255,7 +241,10 @@ class VariableStateAdmin(admin.ModelAdmin):
         if issubclass(type(field), OneToOneRel)
     ]
     inlines = populate_inline(
-        related_variables, VariableAdminFrom, output=[], stacked=admin.StackedInline
+        related_variables,
+        VariableInlineAdminFrom,
+        output=[],
+        stacked=admin.StackedInline,
     )
 
     class Media:
@@ -302,6 +291,51 @@ class DeviceForm(forms.ModelForm):
         return super().has_changed()
 
 
+class DeviceHandlerParameterInlineForm(forms.ModelForm):
+    class Meta:
+        model = DeviceHandlerParameter
+        fields = ("value",)
+
+
+class DeviceHandlerParameterInlineFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        raise_error = []
+        if self.instance.instrument_handler is not None:
+            parameters = self.instance.instrument_handler.get_device_parameters()
+        else:
+            parameters = {}
+        for parameter in parameters:
+            parameters[parameter]["found"] = False
+        result_forms = []
+        for form in self.forms:
+            if form.instance.name in parameters.keys():
+                if parameters[form.instance.name]["found"]:
+                    # DeviceHandlerParameter already found, delete duplicate
+                    form.instance.delete()
+                else:
+                    parameters[form.instance.name]["found"] = True
+                    if (
+                        not parameters[form.instance.name].get("null", True)
+                        and form.instance.value == ""
+                    ):
+                        # value is needed
+                        raise_error.append(form.instance.name)
+                result_forms.append(form)
+            else:
+                # DeviceHandlerParameter not needed
+                try:
+                    form.instance.delete()
+                except ValueError:
+                    pass
+        self.forms = result_forms
+        # TODO : redirect to a specific page if parameters was missing on the add/change page, in order to create these parameters
+        if len(raise_error):
+            raise ValidationError(
+                f"Value is required for parameters {','.join([str(x) for x in raise_error])}"
+            )
+
+
 class DeviceAdmin(admin.ModelAdmin):
     list_display = (
         "id",
@@ -337,17 +371,29 @@ class DeviceAdmin(admin.ModelAdmin):
         devices, DeviceForm, output=[], stacked=admin.StackedInline
     )
 
-    # List only activated protocols
-    protocol_list = list()
-    protocol_list.append("generic")
-    if hasattr(settings, "INSTALLED_APPS"):
-        try:
-            for protocol in DeviceProtocol.objects.filter(
-                app_name__in=settings.INSTALLED_APPS
-            ):
-                protocol_list.append(protocol.protocol)
-        except (ProgrammingError, OperationalError) as e:
-            logger.debug(e)
+    item_dict = dict(
+        model=DeviceHandlerParameter,
+        max_num=0,
+        can_delete=False,
+        formset=DeviceHandlerParameterInlineFormSet,
+        form=DeviceHandlerParameterInlineForm,
+    )
+    inlines.append(type("DeviceHandlerParameter", (admin.StackedInline,), item_dict))
+
+    def get_form(self, request, obj=None, **kwargs):
+        if (
+            kwargs.get("fields", False)
+            and "instrument_handler" in kwargs["fields"]
+            and obj is None
+        ):
+            help_texts = kwargs.get("help_texts", {})
+            help_texts.update(
+                {
+                    "instrument_handler": "If the handler needs specific configuration, save the device and you will add the config next."
+                }
+            )
+            kwargs.update({"help_texts": help_texts})
+        return super().get_form(request, obj, **kwargs)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         # For new device, show all the protocols from the installed apps in settings.py
@@ -369,8 +415,20 @@ class DeviceAdmin(admin.ModelAdmin):
                     ]
                 )
             else:
+                # List only activated protocols
+                protocol_list = list()
+                protocol_list.append("generic")
+                if hasattr(settings, "INSTALLED_APPS"):
+                    try:
+                        for protocol in DeviceProtocol.objects.filter(
+                            app_name__in=settings.INSTALLED_APPS
+                        ):
+                            protocol_list.append(protocol.protocol)
+                    except (ProgrammingError, OperationalError) as e:
+                        logger.debug(e)
+
                 kwargs["queryset"] = DeviceProtocol.objects.filter(
-                    protocol__in=self.protocol_list
+                    protocol__in=protocol_list
                 )
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
@@ -459,6 +517,54 @@ class DeviceHandlerAdmin(admin.ModelAdmin):
         )
 
 
+class VariableHandlerParameterInlineForm(forms.ModelForm):
+    class Meta:
+        model = VariableHandlerParameter
+        fields = ("value",)
+
+
+class VariableHandlerParameterInlineFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        raise_error = []
+        if self.instance.device.instrument_handler is not None:
+            parameters = (
+                self.instance.device.instrument_handler.get_variable_parameters()
+            )
+        else:
+            parameters = {}
+        for parameter in parameters:
+            parameters[parameter]["found"] = False
+        result_forms = []
+        for form in self.forms:
+            if form.instance.name in parameters.keys():
+                if parameters[form.instance.name]["found"]:
+                    # VariableHandlerParameter already found, delete duplicate
+                    form.instance.delete()
+                else:
+                    parameters[form.instance.name]["found"] = True
+                    if (
+                        not parameters[form.instance.name].get("null", True)
+                        and form.instance.value == None
+                    ):
+                        # value is needed
+                        raise_error.append(form.instance.name)
+                result_forms.append(form)
+            else:
+                # VariableHandlerParameter not needed
+                try:
+                    form.instance.delete()
+                except ValueError:
+                    pass
+            # your custom formset validation
+        self.forms = result_forms
+        # TODO : redirect to a specific page if parameters was missing on the add/change page, in order to create these parameters
+        if len(raise_error):
+            raise ValidationError(
+                f"Value is required for parameters {','.join([str(x) for x in raise_error])}"
+            )
+
+
 class VariableAdmin(admin.ModelAdmin):
     list_filter = (
         "device__protocol",
@@ -484,8 +590,30 @@ class VariableAdmin(admin.ModelAdmin):
         if issubclass(type(field), OneToOneRel)
     ]
     inlines = populate_inline(
-        related_variables, VariableAdminFrom, output=[], stacked=admin.StackedInline
+        related_variables,
+        VariableInlineAdminFrom,
+        output=[],
+        stacked=admin.StackedInline,
     )
+    item_dict = dict(
+        model=VariableHandlerParameter,
+        max_num=0,
+        can_delete=False,
+        formset=VariableHandlerParameterInlineFormSet,
+        form=VariableHandlerParameterInlineForm,
+    )
+    inlines.append(type("VariableHandlerParameter", (admin.StackedInline,), item_dict))
+
+    def get_form(self, request, obj=None, **kwargs):
+        if kwargs.get("fields", False) and "device" in kwargs["fields"] and obj is None:
+            help_texts = kwargs.get("help_texts", {})
+            help_texts.update(
+                {
+                    "device": "If the device handler needs specific configuration, save the variable and you will add the config next."
+                }
+            )
+            kwargs.update({"help_texts": help_texts})
+        return super().get_form(request, obj, **kwargs)
 
     # Add JS file to display the right inline
     class Media:

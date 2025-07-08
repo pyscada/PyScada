@@ -105,7 +105,13 @@ class GenericHandlerDevice:
             for item in variables_dict.values():
                 if item.readable:
                     value, read_time = self.read_data_and_time(item)
-                    if value is not None and read_time is not None and item.update_values(value, read_time, erase_cache=erase_cache):
+                    if (
+                        value is not None
+                        and read_time is not None
+                        and item.update_values(
+                            value, read_time, erase_cache=erase_cache
+                        )
+                    ):
                         output.append(item)
         self.after_read()
         return output
@@ -181,7 +187,9 @@ class GenericDevice:
         output = []
 
         if not self.driver_ok or not self.driver_handler_ok:
-            logger.info("Cannot request data. Driver or handler not working.")
+            logger.info(
+                f"Cannot request data for {self.device}. Driver is {self.driver_ok}. Handler is {self.driver_handler_ok}."
+            )
             return output
 
         output = self._h.read_data_all(self.variables)

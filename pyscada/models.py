@@ -12,6 +12,7 @@ from django.utils.timezone import now, make_aware, is_naive
 from django.db.models.signals import post_save
 from django.db.models.fields.related import OneToOneRel
 from django.forms.models import BaseInlineFormSet
+from django.apps import apps
 
 from pyscada.utils import blow_up_data, timestamp_to_datetime
 from pyscada.utils import _get_objects_for_html as get_objects_for_html
@@ -24,6 +25,7 @@ import json
 import signal
 from os import kill, waitpid
 import os
+import sys
 
 if os.name != "nt":
     from os import WNOHANG
@@ -111,7 +113,7 @@ class RecordedDataManager(models.Manager):
                 else now()
             )
             return RecordedData(
-                timestamp=timestamp,
+                timestamp=timestamp / 1000,
                 variable=variable,
                 value=value,
                 date_saved=date_saved,
@@ -667,29 +669,36 @@ class RecordedDataManager(models.Manager):
             for pk in variable_ids:
                 if pk not in values:
                     values[pk] = []
-                time_max_last_value = time.time()
+                time_max_last_value = time_max
+                time_max_excluded = False
                 if pk in times:
                     time_max_last_value = times[pk]["time_min"]
+                    time_max_excluded = True
                 last_element = self.last_element(
                     use_date_saved=False,
                     time_min=0,
                     time_max=time_max_last_value,
+                    time_max_excluded=time_max_excluded,
                     variable_id=pk,
                 )
                 if last_element is not None:
+                    tmp_time = last_element.time_value()
                     values[pk].insert(
                         0,
                         [
-                            (
-                                float(last_element.pk - last_element.variable_id)
-                                / (2097152.0 * 1000)
-                            )
-                            * f_time_scale,
+                            tmp_time * f_time_scale,
                             last_element.value(),
                         ],
                     )
+                    date_saved_max = max(
+                        date_saved_max,
+                        time.mktime(last_element.date_saved.utctimetuple())
+                        + last_element.date_saved.microsecond / 1e6,
+                    )
+                    tmp_time_max = max(tmp_time, tmp_time_max)
 
-        values["timestamp"] = max(tmp_time_max, time_min) * f_time_scale
+        # values["timestamp"] = max(tmp_time_max, time_min) * f_time_scale
+        values["timestamp"] = tmp_time_max * f_time_scale
         values["date_saved_max"] = date_saved_max * f_time_scale
 
         return values
@@ -724,7 +733,14 @@ class VariableManager(models.Manager):
             if datasource.get_related_datasource() is not None:
                 # use only the variable ids for this datasource
                 kwargs["variable_ids"] = [v.id for v in datasource_dict[datasource]]
-                data = data | datasource.read_multiple(**kwargs)
+                data_temp = datasource.read_multiple(**kwargs)
+                timestamp = max(data.get("timestamp", 0), data_temp.get("timestamp", 0))
+                date_saved_max = max(
+                    data.get("date_saved_max", 0), data_temp.get("date_saved_max", 0)
+                )
+                data = data | data_temp
+                data["timestamp"] = timestamp
+                data["date_saved_max"] = date_saved_max
             else:
                 data = data
                 logger.info(
@@ -850,10 +866,12 @@ class VariablePropertyManager(models.Manager):
             for key, value in kwargs.items():
                 setattr(vp, key, value)
             vp.save()
+            self._send_cov_notification(vp)
         else:
             # create
             vp = VariableProperty(**kwargs)
             vp.save()
+            self._send_cov_notification(vp)
 
         return vp
 
@@ -940,11 +958,25 @@ class VariablePropertyManager(models.Manager):
             vp.last_modified = now()
             try:
                 vp.save()
+                self._send_cov_notification(vp)
             except ValueError as e:
                 logger.error("Error while saving VP value : " + str(e), exc_info=True)
             return vp
         else:
             return None
+
+    def _send_cov_notification(self, vp):
+        for app_config in apps.get_app_configs():
+            if hasattr(app_config, "pyscada_send_cov_notification") and callable(
+                app_config.pyscada_send_cov_notification
+            ):
+                try:
+                    app_config.pyscada_send_cov_notification(variable_property=vp)
+                except:
+                    logger.error(
+                        f"{self}, unhandled exception in COV Receiver application",
+                        exc_info=True,
+                    )
 
 
 #
@@ -1013,6 +1045,38 @@ class DeviceHandler(models.Model):
         post_save.send_robust(sender=DeviceHandler, instance=Device.objects.first())
         super(DeviceHandler, self).save(*args, **kwargs)
 
+    def get_device_parameters(self):
+        parameters = {}
+        try:
+            if self.handler_path is not None:
+                sys.path.append(self.handler_path)
+            if self.handler_class in sys.modules:
+                del sys.modules[self.handler_class]
+            mod = __import__(self.handler_class, fromlist=["Handler"])
+            if hasattr(mod, "pyscada_device_parameters"):
+                parameters = getattr(mod, "pyscada_device_parameters")
+        except ModuleNotFoundError as e:
+            logger.info(e)
+        except Exception as e:
+            logger.info(e)
+        return parameters
+
+    def get_variable_parameters(self):
+        parameters = {}
+        try:
+            if self.handler_path is not None:
+                sys.path.append(self.handler_path)
+            if self.handler_class in sys.modules:
+                del sys.modules[self.handler_class]
+            mod = __import__(self.handler_class, fromlist=["Handler"])
+            if hasattr(mod, "pyscada_variable_parameters"):
+                parameters = getattr(mod, "pyscada_variable_parameters")
+        except ModuleNotFoundError as e:
+            logger.info(e)
+        except Exception as e:
+            logger.info(e)
+        return parameters
+
 
 class Device(models.Model):
     id = models.AutoField(primary_key=True)
@@ -1074,6 +1138,25 @@ class Device(models.Model):
                 f"{self.short_name}({getpid()}), unhandled exception", exc_info=True
             )
             return None
+
+    def save(self, *args, **kwargs):
+        result = super().save(*args, **kwargs)
+        if self.instrument_handler is not None:
+            parameters = self.instrument_handler.get_device_parameters()
+            for parameter in parameters:
+                dhp, created = DeviceHandlerParameter.objects.update_or_create(
+                    name=parameter, instrument=self
+                )
+        return result
+
+
+class DeviceHandlerParameter(models.Model):
+    name = models.CharField(max_length=255)
+    value = models.CharField(max_length=255, default="", blank=True)
+    instrument = models.ForeignKey(Device, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
 
 
 class Unit(models.Model):
@@ -1175,7 +1258,9 @@ class Dictionary(models.Model):
                 logger.warning(
                     f"MultipleObjectsReturned for label={label}, value={value}, dictionary={self}. Keep the first one."
                 )
-                for di in DictionaryItem.objects.filter(label=label, value=value, dictionary=self)[1:]:
+                for di in DictionaryItem.objects.filter(
+                    label=label, value=value, dictionary=self
+                )[1:]:
                     di.delete()
         elif update == "label":
             try:
@@ -1190,7 +1275,9 @@ class Dictionary(models.Model):
                 logger.warning(
                     f"MultipleObjectsReturned for value={value}, dictionary={self}. Keep the first one."
                 )
-                for di in DictionaryItem.objects.filter(value=value, dictionary=self)[1:]:
+                for di in DictionaryItem.objects.filter(value=value, dictionary=self)[
+                    1:
+                ]:
                     di.delete()
                 DictionaryItem.objects.update_or_create(
                     value=value,
@@ -1212,7 +1299,9 @@ class Dictionary(models.Model):
                 logger.warning(
                     f"MultipleObjectsReturned for label={label}, dictionary={self}. Keep the first one."
                 )
-                for di in DictionaryItem.objects.filter(label=label, dictionary=self)[1:]:
+                for di in DictionaryItem.objects.filter(label=label, dictionary=self)[
+                    1:
+                ]:
                     di.delete()
                 DictionaryItem.objects.update_or_create(
                     label=label,
@@ -1503,13 +1592,17 @@ class DataSource(models.Model):
         :param value:
         :return:
         """
-        try:
-            pass
-        except:
-            logger.error(
-                f"{self.name}, unhandled exception in COV Receiver application",
-                exc_info=True,
-            )
+        for app_config in apps.get_app_configs():
+            if hasattr(app_config, "pyscada_send_cov_notification") and callable(
+                app_config.pyscada_send_cov_notification
+            ):
+                try:
+                    app_config.pyscada_send_cov_notification(variable=variable)
+                except:
+                    logger.error(
+                        f"{self}, unhandled exception in COV Receiver application",
+                        exc_info=True,
+                    )
 
     def last_value(self, **kwargs):
         if self.get_related_datasource() is not None:
@@ -1529,9 +1622,11 @@ class DataSource(models.Model):
         )
 
     def write_multiple(self, **kwargs):
+        for item in kwargs.get("items", []):
+            if len(item.cached_values_to_write):
+                self._send_cov_notification(item)
         if self.get_related_datasource() is not None:
             self.get_related_datasource().write_multiple(**kwargs)
-            items = kwargs.pop("items") if "items" in kwargs else []
             return True
         logger.warning(
             f"{self._meta.object_name} class needs to override the write_multiple function."
@@ -1626,14 +1721,13 @@ class DjangoDatabase(models.Model):
         for item in items:
             logger.debug(f"{item} has {len(item.cached_values_to_write)} to write.")
             if len(item.cached_values_to_write):
-                self.datasource._send_cov_notification(item)
                 for cached_value in item.cached_values_to_write:
                     # add date saved if not exist in variable object, if date_saved is in kwargs it will be used instead of the variable.date_saved (see the create_data_element_from_variable function)
                     if not hasattr(item, "date_saved") or item.date_saved is None:
                         item.date_saved = date_saved
                     # create the recorded data object
                     rc = data_model.objects.create_data_element_from_variable(
-                        item, cached_value[0], cached_value[1], **kwargs
+                        item, cached_value[1], cached_value[0], **kwargs
                     )
                     # append the object to the elements to save
                     if rc is not None:
@@ -1655,6 +1749,8 @@ class DjangoDatabase(models.Model):
             data_model.objects.bulk_create(
                 recorded_datas, ignore_conflicts=True, **kwargs
             )
+        for item in items:
+            item.date_saved = None
 
     def get_first_element_timestamp(self, **kwargs):
         first = self._import_model().objects.filter(variable__isnull=False)
@@ -1776,6 +1872,30 @@ class Variable(models.Model):
     )
 
     objects = VariableManager()
+
+    def save(self, *args, **kwargs):
+        # delete related protocol models if it doesn't correspond to the device protocol.
+        # it should be done when changing the device of a variable if the device protocol changes.
+        related_variables = [
+            field
+            for field in Variable._meta.get_fields()
+            if issubclass(type(field), OneToOneRel)
+        ]
+        for v in related_variables:
+            if (
+                hasattr(self, v.name)
+                and getattr(self, v.name).protocol_id != self.device.protocol.id
+            ):
+                getattr(self, v.name).delete()
+        result = super().save(*args, **kwargs)
+
+        if self.device.instrument_handler is not None:
+            parameters = self.device.instrument_handler.get_variable_parameters()
+            for parameter in parameters:
+                vhp, created = VariableHandlerParameter.objects.update_or_create(
+                    name=parameter, variable=self
+                )
+        return result
 
     def import_datasource_object(self):
         return self.datasource.get_related_datasource()
@@ -1987,15 +2107,23 @@ class Variable(models.Model):
 
         has_value = False
         if not isinstance(value_list, list):
-            if isinstance(value_list, bool) or isinstance(value_list, int) or isinstance(value_list, float) or isinstance(value_list, str):
+            if (
+                isinstance(value_list, bool)
+                or isinstance(value_list, int)
+                or isinstance(value_list, float)
+                or isinstance(value_list, str)
+            ):
                 value_list = [value_list]
             else:
-                logger.warning(
-                    f"{self} - Value list wrong type : {type(value_list)}"
-                )
+                logger.warning(f"{self} - Value list wrong type : {type(value_list)}")
                 return False
         if not isinstance(timestamp_list, list):
-            if isinstance(timestamp_list, bool) or isinstance(timestamp_list, int) or isinstance(timestamp_list, float) or isinstance(timestamp_list, str):
+            if (
+                isinstance(timestamp_list, bool)
+                or isinstance(timestamp_list, int)
+                or isinstance(timestamp_list, float)
+                or isinstance(timestamp_list, str)
+            ):
                 try:
                     timestamp_list = [float(timestamp_list)]
                 except ValueError as e:
@@ -2015,7 +2143,9 @@ class Variable(models.Model):
         update_false_count = 0
         for i in range(0, len(value_list)):
             if self._update_value(value_list[i], timestamp_list[i]):
-                self.cached_values_to_write.append((self.value, self.timestamp))
+                if self.value_class.upper() == "BOOLEAN":
+                    self.value = bool(self.value)
+                self.cached_values_to_write.append((self.timestamp * 1000, self.value))
             else:
                 update_false_count += 1
             has_value = True
@@ -2206,6 +2336,14 @@ class Variable(models.Model):
             return (bool(value),)
         else:
             return (value,)
+
+        if source_format not in ["f", "d"]:
+            if value != float(int(value)):
+                logger.info(
+                    f"Variable ({self.__str__()}) : the read value ({value}) is not an integer, but the value class ({self.value_class.upper()}) represents an integer. The decimal part will be lost."
+                )
+            value = int(value)
+
         output = unpack(target_format, pack(source_format, value))
         #
         if self.byte_order == "default":
@@ -2333,6 +2471,15 @@ class Variable(models.Model):
         return None
 
 
+class VariableHandlerParameter(models.Model):
+    name = models.CharField(max_length=255)
+    value = models.CharField(max_length=255, default="", blank=True)
+    variable = models.ForeignKey(Variable, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name
+
+
 class DeviceWriteTask(models.Model):
     id = models.AutoField(primary_key=True)
     variable = models.ForeignKey(
@@ -2395,6 +2542,49 @@ class DeviceWriteTask(models.Model):
                     channel_layer = channels.layers.get_channel_layer()
                     channel_layer.capacity = 1
                     async_to_sync(channel_layer.send)(
+                        str(scheduler_pid) + "_DeviceAction_for_" + str(device_id),
+                        {"DeviceWriteTask": str(dwt.get_device_id)},
+                    )
+                except ChannelFull:
+                    logger.info(
+                        "Channel full : "
+                        + str(scheduler_pid)
+                        + "_DeviceAction_for_"
+                        + str(dwt.get_device_id)
+                    )
+                except (
+                    AttributeError,
+                    ConnectionRefusedError,
+                    InvalidChannelLayerError,
+                ) as e:
+                    logger.debug(e)
+
+    async def acreate_and_notificate(self, dwts):
+        if type(dwts) != list:
+            dwts = [dwts]
+        await DeviceWriteTask.objects.abulk_create(dwts)
+        if channels_driver:
+            scheduler = BackgroundProcess.objects.filter(id=1)
+            if len(scheduler):
+                scheduler_pid = (await scheduler.afirst()).pid
+            else:
+                logger.warning("No PID found for the scheduler")
+                scheduler_pid = None
+            for dwt in dwts:
+                try:
+                    device_id = dwt.get_device_id
+                    for bp in BackgroundProcess.objects.all():
+                        _device_id = bp.get_device_id()
+                        if (
+                            type(_device_id) == list
+                            and len(_device_id) > 0
+                            and dwt.get_device_id in _device_id
+                        ):
+                            device_id = _device_id[0]
+                            logger.debug(device_id)
+                    channel_layer = channels.layers.get_channel_layer()
+                    channel_layer.capacity = 1
+                    await channel_layer.send(
                         str(scheduler_pid) + "_DeviceAction_for_" + str(device_id),
                         {"DeviceWriteTask": str(dwt.get_device_id)},
                     )
@@ -2675,15 +2865,21 @@ class RecordedData(models.Model):
             try:
                 kwargs["variable"] = Variable.objects.get(id=variable_id)
             except Variable.DoesNotExist:
-                raise ValidationError(f"Variable with id {variable_id} not found. Cannot save data.")
+                raise ValidationError(
+                    f"Variable with id {variable_id} not found. Cannot save data."
+                )
         else:
             variable_id = None
 
         if variable_id is not None and "id" not in kwargs:
             try:
-                kwargs["id"] = int(int(int(float(timestamp) * 1000) * 2097152) + variable_id)
-            except (TypeError , ValueError)as e:
-                raise ValidationError(f"Cannot save data for variable {kwargs['variable']}, timestamp error : {e}")
+                kwargs["id"] = int(
+                    int(int(float(timestamp) * 1000) * 2097152) + variable_id
+                )
+            except (TypeError, ValueError) as e:
+                raise ValidationError(
+                    f"Cannot save data for variable {kwargs['variable']}, timestamp error : {e}"
+                )
         if "variable" in kwargs and "value" in kwargs:
             if kwargs["variable"].value_class.upper() in [
                 "FLOAT",
@@ -2755,7 +2951,9 @@ class RecordedData(models.Model):
             elif kwargs["variable"].value_class.upper() in ["BOOL", "BOOLEAN"]:
                 kwargs["value_boolean"] = bool(kwargs.pop("value"))
             else:
-                logger.warning(f"The {kwargs['variable'].value_class.upper()} variable value class is not defined in RecordedData __init__ function. Default storing value as float.")
+                logger.warning(
+                    f"The {kwargs['variable'].value_class.upper()} variable value class is not defined in RecordedData __init__ function. Default storing value as float."
+                )
                 kwargs["value_float64"] = float(kwargs.pop("value"))
 
         # call the django model __init__
@@ -2821,7 +3019,9 @@ class RecordedData(models.Model):
         elif value_class.upper() in ["BOOL", "BOOLEAN"]:
             return self.value_boolean
         else:
-            logger.warning(f"The {value_class.upper()} variable value class is not defined in RecordedData value function. Default reading value as float.")
+            logger.warning(
+                f"The {value_class.upper()} variable value class is not defined in RecordedData value function. Default reading value as float."
+            )
             return self.value_float64
 
     def save(self, *args, **kwargs):
