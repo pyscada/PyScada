@@ -76,7 +76,7 @@ def populate_inline(items, form_model=None, output=[], stacked=admin.StackedInli
 
 
 ## admin actions
-def restart_process(modeladmin, request, queryset):
+def restart_process(_modeladmin, request, queryset):
     """
     restarts a dedicated process
     :return:
@@ -88,7 +88,7 @@ def restart_process(modeladmin, request, queryset):
 restart_process.short_description = "Restart Processes"
 
 
-def stop_process(modeladmin, request, queryset):
+def stop_process(_modeladmin, request, queryset):
     """
     restarts a dedicated process
     :return:
@@ -100,7 +100,7 @@ def stop_process(modeladmin, request, queryset):
 stop_process.short_description = "Terminate Processes"
 
 
-def kill_process(modeladmin, request, queryset):
+def kill_process(_modeladmin, request, queryset):
     """
     restarts a dedicated process
     :return:
@@ -112,7 +112,7 @@ def kill_process(modeladmin, request, queryset):
 kill_process.short_description = "Kill Processes"
 
 
-def silent_delete(self, request, queryset):
+def silent_delete(self, _request, queryset):
     queryset.delete()
 
 
