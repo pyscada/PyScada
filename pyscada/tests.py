@@ -38,7 +38,7 @@ class ReadVariableTest(TestCase):
             name="var", description="var", device=d, unit=unit
         )
         self.v.update_values([1, 10, 100, 1000], [0, 1, 2, 3])
-        Variable.objects.write_multiple(
+        Variable.objects.write_datapoints(
             items=[
                 self.v,
             ],
@@ -46,11 +46,11 @@ class ReadVariableTest(TestCase):
         )
 
     def test_variable_read(self):
-        """Variable read multiple test"""
+        """Variable query datapoints test"""
         self.assertEqual(self.v.query_prev_value(), True)
 
         logger.debug("test_variable_read 1")
-        result = Variable.objects.read_multiple(
+        result = Variable.objects.query_datapoints(
             variable=self.v,
             time_min=self.v.timestamp_old,
             time_max=self.v.timestamp_old,
@@ -63,7 +63,7 @@ class ReadVariableTest(TestCase):
         )
 
         logger.debug("test_variable_read 2")
-        result = Variable.objects.read_multiple(
+        result = Variable.objects.query_datapoints(
             variable=self.v,
             time_min=self.v.timestamp_old,
             time_max=self.v.timestamp_old,
@@ -74,7 +74,7 @@ class ReadVariableTest(TestCase):
         self.assertEqual(result, {"timestamp": 0, "date_saved_max": 0})
 
         logger.debug("test_variable_read 3")
-        result = Variable.objects.read_multiple(
+        result = Variable.objects.query_datapoints(
             variable=self.v,
             time_min=self.v.timestamp_old,
             time_max=self.v.timestamp_old,
@@ -92,7 +92,7 @@ class ReadVariableTest(TestCase):
         )
 
         logger.debug("test_variable_read 4")
-        result = Variable.objects.read_multiple(
+        result = Variable.objects.query_datapoints(
             variable=self.v,
             time_min=self.v.timestamp_old,
             time_max=self.v.timestamp_old,

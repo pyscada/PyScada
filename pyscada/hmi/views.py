@@ -927,7 +927,7 @@ def get_cache_data(request):
             "time_in_ms": True,
             "query_first_value": init,
         }
-        data = Variable.objects.read_multiple(**kwargs)
+        data = Variable.objects.query_datapoints(**kwargs)
     else:
         data = None
 
