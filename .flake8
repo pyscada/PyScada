@@ -1,0 +1,10 @@
+[flake8]
+exclude = 
+    build,
+    .git,
+    .tox,
+    tests/.env,
+    */migrations/*
+    
+extend-ignore = E203
+max-line-length = 88
