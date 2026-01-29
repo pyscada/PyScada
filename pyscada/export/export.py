@@ -244,7 +244,7 @@ def export_recordeddata_to_file(
             tp.save()
         # query data
         var_slice = active_vars[var_idx : var_idx + 10]
-        data = Variable.objects.read_multiple(
+        data = Variable.objects.query_datapoints(
             variable_ids=list(var_slice.values_list("pk", flat=True)),
             time_min=time_min,
             time_max=time_max,
