@@ -24,8 +24,6 @@ from pyscada.utils import gen_hiddenConfigHtml, get_group_display_permission_lis
 from django.http import HttpResponse
 from django.template.loader import get_template
 from django.template.response import TemplateResponse
-from django.shortcuts import redirect
-from django.contrib.auth import logout
 from django.views.decorators.csrf import requires_csrf_token
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
