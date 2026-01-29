@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=61.0.0,<69.3.0"]
+build-backend = "setuptools.build_meta:__legacy__"
+
+[project]
+name = "PyScada"
+dynamic = ["version"]
+requires-python = ">= 3.10"
+dependencies = [
+    "django>=5.2,<5.3",
+    "numpy>=1.6.0",
+    "h5py>=2.2.1",
+    "pillow",
+    "python-daemon>=2.0.0",
+    "pytz",
+    "python-dateutil",
+    # 'channels',
+    # 'channels-redis',
+    "asgiref",
+    "monthdelta",
+    "six",
+    "concurrent-log-handler",  # rotating logs for multiprocess
+    "scipy",
+]
+authors = [
+  {name = "Martin Schröder", email = "team@pyscada.org"},
+  {name = "Camille Lavayssiere", email = "team@pyscada.org"}
+]
+description="A Python and Django based Open Source SCADA System"
+readme = "README.rst"
+license = {text = "AGPLv3"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "Environment :: Console",
+    "Framework :: Django",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python",
+    "Programming Language :: JavaScript",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+
+
+[project.urls]
+Homepage = "https://www.pyscada.org/"
+Documentation = "https://pyscada.readthedocs.io"
+Source = "https://github.com/pyscada/PyScada"
+Tracker = "https://github.com/pyscada/PyScada/issues"
+
+[tool.black]
+target-version = ["py310"]
+force-exclude = "tests/test_runner_apps/tagged/tests_syntax_error.py"
+
+[tool.isort]
+profile = "black"
+default_section = "THIRDPARTY"
+known_first_party = "pyscada"
+
+[tool.setuptools.packages.find]
+include = ["pyscada*"]
