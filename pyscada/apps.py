@@ -31,7 +31,8 @@ class PyScadaConfig(AppConfig):
             logger.debug(e)
 
         try:
-            from .models import DataSourceModel, DataSource, DjangoDatabase
+            from .models import DataSourceModel, DataSource
+            from .django_datasource.models import DjangoDatabase
 
             # create the default data source model
             # only one data source linked to the RecordedData table can exist
@@ -54,14 +55,15 @@ class PyScadaConfig(AppConfig):
             dd, _ = DjangoDatabase.objects.get_or_create(
                 datasource=ds,
                 defaults={
-                    "data_model_app_name": "pyscada",
+                    "data_model_app_name": "pyscada.django_datasource",
                     "data_model_name": "RecordedData",
                 },
             )
 
             # For RecordedDataOld, hidden by default
             # set can_select to True to show it in the admin panel.
-            # TODO : test read and write, test how it appears in the variable admin panel config if mannualy added (using shell)
+            # TODO : test read and write, test how it appears in the variable admin
+            # panel config if mannualy added (using shell)
             dsm, _ = DataSourceModel.objects.get_or_create(
                 inline_model_name="DjangoDatabase",
                 name="Django database hidden",
@@ -78,10 +80,14 @@ class PyScadaConfig(AppConfig):
             dd, _ = DjangoDatabase.objects.get_or_create(
                 datasource=ds,
                 defaults={
-                    "data_model_app_name": "pyscada",
+                    "data_model_app_name": "pyscada.django_datasource",
                     "data_model_name": "RecordedDataOld",
                 },
             )
+            DjangoDatabase.objects.filter(
+                data_model_app_name="pyscada",
+                pk__lte=2).update(data_model_app_name="pyscada.django_datasource")
+
 
         except (ProgrammingError, OperationalError) as e:
             logger.debug(e)

@@ -44,6 +44,9 @@ class ReadVariableTest(TestCase):
             ],
             date_saved=datetime.fromtimestamp(5, UTC),
         )
+        #self.v.update_values([2, 20, 200, 2000], [4, 5, 6, 7], erase_cache=True)
+        #self.v.write_datapoints(date_saved=datetime.fromtimestamp(8, UTC),)
+
 
     def test_variable_read(self):
         """Variable query datapoints test"""
@@ -58,7 +61,7 @@ class ReadVariableTest(TestCase):
             query_first_value=True,
             time_max_excluded=True,
         )
-        self.assertEqual(
+        self.assertDictEqual(
             result, {"timestamp": 2.0, self.v.id: [[2.0, 100.0]], "date_saved_max": 5.0}
         )
 
@@ -82,7 +85,7 @@ class ReadVariableTest(TestCase):
             query_first_value=True,
             time_max_excluded=False,
         )
-        self.assertEqual(
+        self.assertDictEqual(
             result,
             {
                 "timestamp": 3.0,
@@ -100,7 +103,20 @@ class ReadVariableTest(TestCase):
             query_first_value=False,
             time_max_excluded=False,
         )
-        self.assertEqual(
+        self.assertDictEqual(
             result,
             {"timestamp": 3.0, self.v.id: [[3.0, 1000.0]], "date_saved_max": 5.0},
+        )
+
+        logger.debug("test_variable_read 5")
+        result = self.v.query_datapoints(
+            time_min=self.v.timestamp_old,
+            time_max=self.v.timestamp_old,
+            time_in_ms=False,
+            query_first_value=False,
+            time_max_excluded=False,
+        )
+        self.assertEqual(
+            result,
+            ([[3.0, 1000.0]], 3.0, 5.0)
         )
