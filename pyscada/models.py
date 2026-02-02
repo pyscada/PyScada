@@ -167,6 +167,18 @@ class VariableManager(models.Manager):
                 )
         return True
 
+    def write_raw_datapoints(self, datapoints={}, **kwargs):
+        datasource_dict = self._get_variables_by_datasource(variable_ids=datapoints.keys(), **kwargs)
+        for datasource in datasource_dict:
+            if datasource.get_related_datasource() is not None:
+                # use only the variable for this datasource
+                datapoints_out = {datapoints[v.pk] for v in datasource_dict[datasource]}
+                datasource.write_raw_datapoints(datapoints=datapoints_out, **kwargs)
+            else:
+                logger.info(
+                    f"Cannot write values for variables using {datasource} datasource. No related data source defined."
+                )
+        return True
 
 class VariablePropertyManager(models.Manager):
     """ """
@@ -901,6 +913,7 @@ class DataSource(models.Model):
     - last_datapoints,
     - query_datapoints,
     - write_datapoints,
+    - write_raw_datapoints,
     """
 
     datasource_model = models.ForeignKey(DataSourceModel, on_delete=models.CASCADE)
@@ -1020,6 +1033,19 @@ class DataSource(models.Model):
             f"{self._meta.object_name} class needs to override the write_datapoints function."
         )
 
+    def write_raw_datapoints(self, datapoints, **kwargs):
+        """writes raw datapoints to the database in the form
+        { "variable_id": [[timestamp, value, date_saved]] }
+        """
+        if self.get_related_datasource() is not None:
+            for variable_id in datapoints.keys():
+            # if date_saved is missing add it
+                for point in datapoints[variable_id]:
+                    if len(point)==2 or (len(point)==3 and point[2] is None):
+                        point.append(now())
+                return self.get_related_datasource().write_raw_datapoints(datapoints=datapoints, **kwargs)
+        logger.warning(
+            f"{self._meta.object_name} class needs to override the write_raw_datapoints function."
         )
 
 
@@ -1268,6 +1294,18 @@ class Variable(models.Model):
             items = [self]
         datasource_object = self.import_datasource_object()
         return datasource_object.write_datapoints(items=items,**kwargs)
+
+    def write_raw_datapoints(self, datapoints=[]):
+        """consumes a list of [timestamp, value, (date_saved)] items to be written to
+        the database.
+        the value must be already in the right form, no checks on the timestamps or
+        values are performt. If the date_saved value is missing it will be substituted
+        by now()
+        """
+        datapoints_out = {}
+        datapoints_out[self.pk] = datapoints
+        datasource_object = self.import_datasource_object()
+        return datasource_object.write_datapoints(datapoints=datapoints_out,**kwargs)
 
     def query_datapoints(self, **kwargs):
         """returns a dict with datapoints from the DB"""
