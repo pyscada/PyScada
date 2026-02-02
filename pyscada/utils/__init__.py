@@ -7,8 +7,11 @@ from datetime import datetime
 from pytz import UTC
 import numpy as np
 from django.utils.timezone import now
+from django.db.utils import ProgrammingError
 from django.template.loader import get_template
 from django.contrib.auth.models import Group
+from django.conf import settings
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -53,31 +56,33 @@ def _get_objects_for_html(list_to_append=None, obj=None, exclude_model_names=Non
                         )
         # Related OneToOne
         for field in obj._meta.related_objects:
-            if (
-                field.one_to_one
-                and hasattr(obj, field.name)
-                and field.name not in exclude_model_names
-                and getattr(obj, field.name) not in list_to_append
-            ):
-                name = field.field.name
-                field = getattr(obj, field.name)
-                if hasattr(field, "_get_objects_for_html"):
-                    list_to_append.update(
-                        field._get_objects_for_html(
-                            list_to_append, exclude_model_names=[name]
+            try:
+                if (
+                    field.one_to_one
+                    and hasattr(obj, field.name)
+                    and field.name not in exclude_model_names
+                    and getattr(obj, field.name) not in list_to_append
+                ):
+                    name = field.field.name
+                    field = getattr(obj, field.name)
+                    if hasattr(field, "_get_objects_for_html"):
+                        list_to_append.update(
+                            field._get_objects_for_html(
+                                list_to_append, exclude_model_names=[name]
+                            )
                         )
-                    )
-                else:
-                    list_to_append.update(
-                        _get_objects_for_html(
-                            list_to_append, field, exclude_model_names=[name]
+                    else:
+                        list_to_append.update(
+                            _get_objects_for_html(
+                                list_to_append, field, exclude_model_names=[name]
+                            )
                         )
-                    )
-
+            except ProgrammingError as e:
+                logger.info(f"{e} A module is not installed ?")
     return list_to_append
 
 
-def get_group_display_permission_list(items, groups):
+def get_group_display_permission_list(items, groups, authenticated=True):
     """
     @params:
         items: QuerySet of items to filter
@@ -85,13 +90,50 @@ def get_group_display_permission_list(items, groups):
     @return:
         QuerySet of items filtered
     """
-    if len(groups) == 0:
+    if not authenticated:
+        if (
+            not hasattr(settings, "PYSCADA_ALLOW_ANONYMOUS")
+            or not settings.PYSCADA_ALLOW_ANONYMOUS
+        ):
+            return items.none()
+        from pyscada.hmi.models import GroupDisplayPermission
+
+        if not GroupDisplayPermission.objects.filter(
+            unauthenticated_users=True
+        ).count():
+            # unauthenticated GroupDisplayPermission is missing
+            return items.none()
+
+        result = items.filter(
+            groupdisplaypermission__group_display_permission__hmi_group__isnull=True,
+            groupdisplaypermission__type=0,
+            groupdisplaypermission__group_display_permission__unauthenticated_users=True,
+        ).distinct()
+        if (
+            items.exists()
+            and items.first()
+            .groupdisplaypermission.model.objects.filter(
+                type=1,
+                group_display_permission__hmi_group=None,
+                group_display_permission__unauthenticated_users=True,
+            )
+            .exists()
+        ):
+            result = (
+                result
+                | items.exclude(
+                    groupdisplaypermission__group_display_permission__hmi_group__isnull=True,
+                    groupdisplaypermission__type=1,
+                    groupdisplaypermission__group_display_permission__unauthenticated_users=True,
+                ).distinct()
+            )
+    elif len(groups) == 0:
         result = items.filter(
             groupdisplaypermission__group_display_permission__hmi_group__isnull=True,
             groupdisplaypermission__type=0,
         ).distinct()
         if (
-            items.first() is not None
+            items.exists()
             and items.first()
             .groupdisplaypermission.model.objects.filter(
                 type=1, group_display_permission__hmi_group=None
@@ -111,7 +153,7 @@ def get_group_display_permission_list(items, groups):
             groupdisplaypermission__type=0,
         ).distinct()
         if (
-            items.first() is not None
+            items.exists()
             and items.first()
             .groupdisplaypermission.model.objects.filter(
                 type=1, group_display_permission__hmi_group__in=groups

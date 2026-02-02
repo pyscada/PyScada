@@ -26,7 +26,6 @@ from django.template.loader import get_template
 from django.template.response import TemplateResponse
 from django.shortcuts import redirect
 from django.contrib.auth import logout
-from django.views.decorators.csrf import requires_csrf_token
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
@@ -39,33 +38,65 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@login_required
 def index(request):
+    if hasattr(settings, "PYSCADA_HOME"):
+        return redirect(settings.PYSCADA_HOME)
+    return redirect(f"view-overview/")
+
+
+def check_anonymous(request):
+    if not request.user.is_authenticated and (
+        not hasattr(settings, "PYSCADA_ALLOW_ANONYMOUS")
+        or not settings.PYSCADA_ALLOW_ANONYMOUS
+    ):
+        return False
+    return True
+
+
+def check_anonymous_write(request):
+    if not request.user.is_authenticated and (
+        not hasattr(settings, "PYSCADA_ALLOW_ANONYMOUS_WRITE")
+        or not settings.PYSCADA_ALLOW_ANONYMOUS_WRITE
+    ):
+        return False
+    return True
+
+
+def view_overview(request):
+    if not check_anonymous(request):
+        redirect(f"{settings.LOGIN_URL}?next={request.path}")
     if GroupDisplayPermission.objects.count() == 0:
         view_list = View.objects.all()
     else:
         view_list = get_group_display_permission_list(
-            View.objects, request.user.groups.all()
+            View.objects, request.user.groups.all(), request.user.is_authenticated
         )
+
+    if not view_list.count() and not request.user.is_authenticated:
+        return redirect(f"{settings.LOGIN_URL}?next={request.path}")
 
     c = {
         "user": request.user,
         "view_list": view_list,
         "version_string": core_version,
-        "link_target": settings.LINK_TARGET
-        if hasattr(settings, "LINK_TARGET")
-        else "_blank",
+        "link_target": (
+            settings.LINK_TARGET if hasattr(settings, "LINK_TARGET") else "_blank"
+        ),
     }
     return TemplateResponse(
         request, "view_overview.html", c
     )  # HttpResponse(t.render(c))
 
 
-@login_required
 def get_hidden_config2(request, link_title):
+    if not check_anonymous(request):
+        raise PermissionDenied("You don't have access to this view.")
+
     try:
         v = (
-            get_group_display_permission_list(View.objects, request.user.groups.all())
+            get_group_display_permission_list(
+                View.objects, request.user.groups.all(), request.user.is_authenticated
+            )
             .filter(link_title=link_title)
             .first()
         )
@@ -102,30 +133,29 @@ def get_hidden_config2(request, link_title):
         visible_objects_lists["visible_page_list"] = v.pages.all().values_list(
             "pk", flat=True
         )
-        visible_objects_lists[
-            "visible_slidingpanelmenu_list"
-        ] = v.sliding_panel_menus.all().values_list("pk", flat=True)
+        visible_objects_lists["visible_slidingpanelmenu_list"] = (
+            v.sliding_panel_menus.all().values_list("pk", flat=True)
+        )
     else:
         for item in items:
             item_str = item.related_model.m2m_related_model._meta.object_name.lower()
-            visible_objects_lists[
-                f"visible_{item_str}_list"
-            ] = get_group_display_permission_list(
-                item.related_model.m2m_related_model.objects, request.user.groups.all()
-            ).values_list(
-                "pk", flat=True
+            visible_objects_lists[f"visible_{item_str}_list"] = (
+                get_group_display_permission_list(
+                    item.related_model.m2m_related_model.objects,
+                    request.user.groups.all(),
+                    request.user.is_authenticated,
+                ).values_list("pk", flat=True)
             )
         visible_objects_lists["visible_page_list"] = get_group_display_permission_list(
-            v.pages, request.user.groups.all()
+            v.pages, request.user.groups.all(), request.user.is_authenticated
         ).values_list("pk", flat=True)
-        visible_objects_lists[
-            "visible_slidingpanelmenu_list"
-        ] = get_group_display_permission_list(
-            v.sliding_panel_menus, request.user.groups.all()
-        ).values_list(
-            "pk", flat=True
+        visible_objects_lists["visible_slidingpanelmenu_list"] = (
+            get_group_display_permission_list(
+                v.sliding_panel_menus,
+                request.user.groups.all(),
+                request.user.is_authenticated,
+            ).values_list("pk", flat=True)
         )
-
     panel_list = SlidingPanelMenu.objects.filter(
         id__in=visible_objects_lists["visible_slidingpanelmenu_list"]
     ).filter(
@@ -210,9 +240,10 @@ def get_hidden_config2(request, link_title):
     return HttpResponse(hidden_globalConfig_html, content_type="text/plain")
 
 
-@login_required
-@requires_csrf_token
 def view(request, link_title):
+    if not check_anonymous(request):
+        redirect(f"{settings.LOGIN_URL}?next={request.path}")
+
     base_template = "base.html"
     view_template = "view.html"
     page_template = get_template("content_page.html")
@@ -223,7 +254,9 @@ def view(request, link_title):
 
     try:
         v = (
-            get_group_display_permission_list(View.objects, request.user.groups.all())
+            get_group_display_permission_list(
+                View.objects, request.user.groups.all(), request.user.is_authenticated
+            )
             .filter(link_title=link_title, visible=True)
             .first()
         )
@@ -232,11 +265,14 @@ def view(request, link_title):
         # v = View.objects.get(link_title=link_title)
     except View.DoesNotExist as e:
         logger.warning(f"{request.user} has no permission for view {link_title}")
-        raise PermissionDenied("You don't have access to this view.")
+        return redirect(
+            f"{settings.LOGIN_URL}?next={request.path}&message=You don't have access to this view."
+        )
     except View.MultipleObjectsReturned as e:
         logger.error(f"{e} for view link_title", exc_info=True)
-        raise PermissionDenied(f"Multiples views with this link : {link_title}")
-        # return HttpResponse(status=404)
+        return redirect(
+            f"{settings.LOGIN_URL}?next={request.path}&message=Multiples views with this link : {link_title}"
+        )
 
     if v.theme is not None:
         base_template = str(v.theme.base_filename) + ".html"
@@ -260,28 +296,28 @@ def view(request, link_title):
         visible_objects_lists["visible_page_list"] = v.pages.all().values_list(
             "pk", flat=True
         )
-        visible_objects_lists[
-            "visible_slidingpanelmenu_list"
-        ] = v.sliding_panel_menus.all().values_list("pk", flat=True)
+        visible_objects_lists["visible_slidingpanelmenu_list"] = (
+            v.sliding_panel_menus.all().values_list("pk", flat=True)
+        )
     else:
         for item in items:
             item_str = item.related_model.m2m_related_model._meta.object_name.lower()
-            visible_objects_lists[
-                f"visible_{item_str}_list"
-            ] = get_group_display_permission_list(
-                item.related_model.m2m_related_model.objects, request.user.groups.all()
-            ).values_list(
-                "pk", flat=True
+            visible_objects_lists[f"visible_{item_str}_list"] = (
+                get_group_display_permission_list(
+                    item.related_model.m2m_related_model.objects,
+                    request.user.groups.all(),
+                    request.user.is_authenticated,
+                ).values_list("pk", flat=True)
             )
         visible_objects_lists["visible_page_list"] = get_group_display_permission_list(
-            v.pages, request.user.groups.all()
+            v.pages, request.user.groups.all(), request.user.is_authenticated
         ).values_list("pk", flat=True)
-        visible_objects_lists[
-            "visible_slidingpanelmenu_list"
-        ] = get_group_display_permission_list(
-            v.sliding_panel_menus, request.user.groups.all()
-        ).values_list(
-            "pk", flat=True
+        visible_objects_lists["visible_slidingpanelmenu_list"] = (
+            get_group_display_permission_list(
+                v.sliding_panel_menus,
+                request.user.groups.all(),
+                request.user.is_authenticated,
+            ).values_list("pk", flat=True)
         )
 
     panel_list = SlidingPanelMenu.objects.filter(
@@ -583,9 +619,9 @@ def view(request, link_title):
         "view_show_timeline": v.show_timeline,
         "view_time_delta": v.default_time_delta.total_seconds(),
         "version_string": core_version,
-        "link_target": settings.LINK_TARGET
-        if hasattr(settings, "LINK_TARGET")
-        else "_blank",
+        "link_target": (
+            settings.LINK_TARGET if hasattr(settings, "LINK_TARGET") else "_blank"
+        ),
         "javascript_files_list": javascript_files_list,
         "css_files_list": css_files_list,
     }
@@ -594,8 +630,9 @@ def view(request, link_title):
     return TemplateResponse(request, view_template, context)
 
 
-@login_required
 def log_data(request):
+    if not check_anonymous(request):
+        raise PermissionDenied("You don't have access to this view.")
     if "timestamp" in request.POST:
         timestamp = float(request.POST["timestamp"])
     else:
@@ -619,18 +656,26 @@ def log_data(request):
     return HttpResponse(jdata, content_type="application/json")
 
 
-@login_required
 def form_read_all_task(request):
+    if not check_anonymous(request):
+        return HttpResponse(status=401)
     crts = []
     for device in Device.objects.all():
-        crts.append(DeviceReadTask(device=device, start=time.time(), user=request.user))
+        crts.append(
+            DeviceReadTask(
+                device=device,
+                start=time.time(),
+                user=request.user if request.user.is_authenticated else None,
+            )
+        )
     if len(crts) > 0:
         crts[0].create_and_notificate(crts)
     return HttpResponse(status=200)
 
 
-@login_required
 def form_read_task(request):
+    if not check_anonymous(request):
+        return HttpResponse(status=401)
     if "key" in request.POST and "type" in request.POST:
         key = int(request.POST["key"])
         item_type = request.POST["type"]
@@ -639,7 +684,7 @@ def form_read_task(request):
                 crt = DeviceReadTask(
                     device=Variable.objects.get(pk=key).device,
                     start=time.time(),
-                    user=request.user,
+                    user=request.user if request.user.is_authenticated else None,
                 )
                 crt.create_and_notificate(crt)
                 return HttpResponse(status=200)
@@ -647,7 +692,7 @@ def form_read_task(request):
                 crt = DeviceReadTask(
                     device=VariableProperty.objects.get(pk=key).variable.device,
                     start=time.time(),
-                    user=request.user,
+                    user=request.user if request.user.is_authenticated else None,
                 )
                 crt.create_and_notificate(crt)
                 return HttpResponse(status=200)
@@ -655,7 +700,9 @@ def form_read_task(request):
             if item_type == "variable":
                 if (
                     get_group_display_permission_list(
-                        ControlItem.objects, request.user.groups.all()
+                        ControlItem.objects,
+                        request.user.groups.all(),
+                        request.user.is_authenticated,
                     )
                     .filter(type=1, variable_id=key)
                     .exists()
@@ -663,7 +710,7 @@ def form_read_task(request):
                     crt = DeviceReadTask(
                         device=Variable.objects.get(pk=key).device,
                         start=time.time(),
-                        user=request.user,
+                        user=request.user if request.user.is_authenticated else None,
                     )
                     crt.create_and_notificate(crt)
                     return HttpResponse(status=200)
@@ -676,7 +723,9 @@ def form_read_task(request):
             elif item_type == "variable_property":
                 if (
                     get_group_display_permission_list(
-                        ControlItem.objects, request.user.groups.all()
+                        ControlItem.objects,
+                        request.user.groups.all(),
+                        request.user.is_authenticated,
                     )
                     .filter(type=1, variable_property_id=key)
                     .exists()
@@ -684,7 +733,7 @@ def form_read_task(request):
                     crt = DeviceReadTask(
                         device=VariableProperty.objects.get(pk=key).variable.device,
                         start=time.time(),
-                        user=request.user,
+                        user=request.user if request.user.is_authenticated else None,
                     )
                     crt.create_and_notificate(crt)
                     return HttpResponse(status=200)
@@ -698,8 +747,10 @@ def form_read_task(request):
     return HttpResponse(status=404)
 
 
-@login_required
 def form_write_task(request):
+    if not check_anonymous_write(request):
+        HttpResponse(status=401)
+
     if "key" in request.POST and "value" in request.POST:
         key = int(request.POST["key"])
         item_type = request.POST["item_type"]
@@ -722,7 +773,7 @@ def form_write_task(request):
                     #    variable_property_id=key,
                     #    value=value,
                     #    start=time.time(),
-                    #    user=request.user,
+                    #    user=request.user if request.user.is_authenticated else None,
                     # )
                     # cwt.create_and_notificate(cwt)
                     return HttpResponse(status=200)
@@ -733,7 +784,10 @@ def form_write_task(request):
         if GroupDisplayPermission.objects.count() == 0:
             if item_type == "variable":
                 cwt = DeviceWriteTask(
-                    variable_id=key, value=value, start=time.time(), user=request.user
+                    variable_id=key,
+                    value=value,
+                    start=time.time(),
+                    user=request.user if request.user.is_authenticated else None,
                 )
                 cwt.create_and_notificate(cwt)
                 return HttpResponse(status=200)
@@ -742,7 +796,7 @@ def form_write_task(request):
                     variable_property_id=key,
                     value=value,
                     start=time.time(),
-                    user=request.user,
+                    user=request.user if request.user.is_authenticated else None,
                 )
                 cwt.create_and_notificate(cwt)
                 return HttpResponse(status=200)
@@ -768,7 +822,9 @@ def form_write_task(request):
                     # keeping old check, remove it later
                     if (
                         get_group_display_permission_list(
-                            ControlItem.objects, request.user.groups.all()
+                            ControlItem.objects,
+                            request.user.groups.all(),
+                            request.user.is_authenticated,
                         )
                         .filter(type=0, variable_id=key)
                         .exists()
@@ -784,7 +840,7 @@ def form_write_task(request):
                         variable_id=key,
                         value=value,
                         start=time.time(),
-                        user=request.user,
+                        user=request.user if request.user.is_authenticated else None,
                     )
                     cwt.create_and_notificate(cwt)
                     return HttpResponse(status=200)
@@ -805,7 +861,9 @@ def form_write_task(request):
                     # keeping old check, remove it later
                     if (
                         get_group_display_permission_list(
-                            ControlItem.objects, request.user.groups.all()
+                            ControlItem.objects,
+                            request.user.groups.all(),
+                            request.user.is_authenticated,
                         )
                         .filter(type=0, variable_property_id=key)
                         .exists()
@@ -821,7 +879,7 @@ def form_write_task(request):
                         variable_property_id=key,
                         value=value,
                         start=time.time(),
-                        user=request.user,
+                        user=request.user if request.user.is_authenticated else None,
                     )
                     cwt.create_and_notificate(cwt)
                     return HttpResponse(status=200)
@@ -839,8 +897,9 @@ def int_filter(someList):
             continue  # Skip these
 
 
-@login_required
 def get_cache_data(request):
+    if not check_anonymous(request):
+        return HttpResponse(status=401)
     if "view_id" in request.POST:
         # for a view, get the list of variables and variable properties for which the user can retrieve and write data
         view_id = int(request.POST["view_id"])

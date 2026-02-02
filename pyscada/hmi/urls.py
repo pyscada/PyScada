@@ -44,4 +44,5 @@ urlpatterns = [
         views.get_hidden_config2,
         name="get-hidden-config2",
     ),
+    path("view-overview/", views.view_overview, name="view-overview"),
 ]

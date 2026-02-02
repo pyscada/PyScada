@@ -1,4 +1,5 @@
 {% load i18n static %}
+{% csrf_token %}
 <!DOCTYPE html>
 <html xmlns="html://www.w3.org/1999/xhtml" lang="en" dir="ltr" xml:lang="en">
     <head>
@@ -51,6 +52,11 @@
                             {% block user_dropdown %}
                                 {% include "user_dropdown.html" %}
                             {% endblock %}
+                            {% if not user.is_authenticated %}
+                                <li>
+                                    <a href="/accounts/login" class="sign_in_link" target="_self">Sign in</a>
+                                </li>
+                            {% endif %}
                             <!--<li><a href="#page-help">Help</a></li>-->
                             <li>
                                 <a href="javascript:;" style="padding-left:0px; padding-right:0px;width:40px;height:30px;display: none;"><img class="loadingAnimation" style="display: inline-block; height: 14px;" src="/static/pyscada/img/load.gif" alt="loading" data-toggle="tooltip" data-placement="bottom" title="" data-original-title="Initialisation"></a>

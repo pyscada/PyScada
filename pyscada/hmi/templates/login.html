@@ -2,7 +2,7 @@
 
 {% block content %}
 
-
+{{ request.GET.message }}
 
 {% if form.errors %}
 <p>Your username and password didn't match. Please try again.</p>

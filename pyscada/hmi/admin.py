@@ -507,10 +507,11 @@ class WidgetAdmin(admin.ModelAdmin):
 class GroupDisplayPermissionForm(forms.ModelForm):
     def clean(self):
         super().clean()
-        hmi_group = self.cleaned_data["hmi_group"]
+        hmi_group = self.cleaned_data.get("hmi_group", None)
         id = self.instance.pk
+        unauthenticated_users = self.instance.unauthenticated_users
         if len(
-            GroupDisplayPermission.objects.filter(hmi_group=hmi_group).exclude(id=id)
+            GroupDisplayPermission.objects.filter(hmi_group=hmi_group, unauthenticated_users=unauthenticated_users).exclude(id=id)
         ):
             raise ValidationError("This group display permission already exist.")
 
@@ -520,6 +521,14 @@ class GroupDisplayPermissionAdmin(admin.ModelAdmin):
     save_as = True
     save_as_continue = True
     form = GroupDisplayPermissionForm
+    readonly_fields = ["unauthenticated_users"]
+
+    def get_fields(self, request, obj=None):
+        # show unauthenticated_users field only for the GroupDisplayPermission used for unauthenticated users and hide hmi_group
+        # show hmi_group field in other cases and hide the unauthenticated_users field
+        if obj is not None and obj.unauthenticated_users:
+            return ("unauthenticated_users",)
+        return ('hmi_group',)
 
     def get_inlines(self, request, obj=None):
         # Add inlines for any model with OneToOne relation with Device

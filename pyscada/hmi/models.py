@@ -15,9 +15,11 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.db.models.query import QuerySet
+from django.db.utils import ProgrammingError
 from django.conf import settings
 from django.forms.models import BaseInlineFormSet
 
+from asgiref.sync import sync_to_async
 from datetime import timedelta
 from six import text_type
 import traceback
@@ -1009,8 +1011,10 @@ class Page(models.Model):
     def data_objects(self, user):
         # used to get all objects which need to retrive data
         objects = {}
+        groups = user.groups.all() if user is not None else []
+        authenticated = True if user is not None else False
         for w in get_group_display_permission_list(
-            self.widget_set.filter(visible=True), user.groups.all()
+            self.widget_set.filter(visible=True), groups, authenticated
         ):
             wdo = w.data_objects(user)
             for o in wdo.keys():
@@ -1032,8 +1036,10 @@ class ControlPanel(WidgetContentModel):
     def data_objects(self, user):
         # used to get all objects which need to retrive data
         objects = {}
+        groups = user.groups.all() if user is not None else []
+        authenticated = True if user is not None else False
         for ci in get_group_display_permission_list(
-            self.items.all(), user.groups.all()
+            self.items.all(), groups, authenticated
         ):
             if ci.item_type() not in objects:
                 objects[ci.item_type()] = []
@@ -1044,10 +1050,10 @@ class ControlPanel(WidgetContentModel):
                     objects[f"{ci.item_type()}_write"] = []
                 objects[f"{ci.item_type()}_write"].append(ci.key())
         for form in get_group_display_permission_list(
-            self.forms.all(), user.groups.all()
+            self.forms.all(), groups, authenticated
         ):
             for ci in get_group_display_permission_list(
-                form.control_items.all(), user.groups.all()
+                form.control_items.all(), groups, authenticated
             ):
                 if ci.item_type() not in objects:
                     objects[ci.item_type()] = []
@@ -1058,7 +1064,7 @@ class ControlPanel(WidgetContentModel):
                         objects[f"{ci.item_type()}_write"] = []
                     objects[f"{ci.item_type()}_write"].append(ci.key())
             for ci in get_group_display_permission_list(
-                form.hidden_control_items_to_true.all(), user.groups.all()
+                form.hidden_control_items_to_true.all(), groups, authenticated
             ):
                 if ci.item_type() not in objects:
                     objects[ci.item_type()] = []
@@ -1257,13 +1263,15 @@ class ProcessFlowDiagram(WidgetContentModel):
     def data_objects(self, user):
         # used to get all objects which need to retrive data
         objects = {}
+        groups = user.groups.all() if user is not None else []
+        authenticated = True if user is not None else False
         for pfdi in self.process_flow_diagram_items.all():
             if (
                 pfdi.control_item is not None
                 and pfdi.visible
                 and pfdi.control_item
                 in get_group_display_permission_list(
-                    ControlItem.objects.all(), user.groups.all()
+                    ControlItem.objects.all(), groups, authenticated
                 )
             ):
                 if pfdi.control_item.item_type() not in objects:
@@ -1396,6 +1404,10 @@ class WidgetContent(models.Model):
             logger.info(
                 f"{class_name} of {class_path} not found. A module is not installed ?"
             )
+        except ProgrammingError as e:
+            logger.info(
+                f"{e} A module is not installed ?"
+            )
         except:
             logger.error(f"{class_path} unhandled exception", exc_info=True)
         return None
@@ -1471,6 +1483,8 @@ class Widget(models.Model):
         # used to get all objects which need to retrive data
         if self.content is not None:
             content_model = self.content._import_content_model()
+            groups = user.groups.all() if user is not None else []
+            authenticated = True if user is not None else False
             if (
                 content_model is not None
                 and hasattr(content_model, "data_objects")
@@ -1478,7 +1492,7 @@ class Widget(models.Model):
                     not hasattr(content_model, "groupdisplaypermission")
                     or content_model
                     in get_group_display_permission_list(
-                        content_model.__class__.objects.all(), user.groups.all()
+                        content_model.__class__.objects.all(), groups, authenticated
                     )
                 )
             ):
@@ -1547,8 +1561,10 @@ class View(models.Model):
         # used to get all objects which need to retrive data
         objects = {}
         if self.visible:
+            groups = user.groups.all() if user is not None else []
+            authenticated = True if user is not None else False
             for w in get_group_display_permission_list(
-                self.sliding_panel_menus.all(), user.groups.all()
+                self.sliding_panel_menus.all(), groups, authenticated
             ):
                 wdo = w.data_objects(user)
                 for o in wdo.keys():
@@ -1556,7 +1572,7 @@ class View(models.Model):
                         objects[o] = []
                     objects[o] = list(set(objects[o] + wdo.get(o, [])))
             for w in get_group_display_permission_list(
-                self.pages.all(), user.groups.all()
+                self.pages.all(), groups, authenticated
             ):
                 wdo = w.data_objects(user)
                 for o in wdo.keys():
@@ -1573,6 +1589,7 @@ class GroupDisplayPermission(models.Model):
     hmi_group = models.OneToOneField(
         Group, blank=True, null=True, on_delete=models.CASCADE
     )
+    unauthenticated_users = models.BooleanField(default=False)
     type_choices = (
         (0, "allow"),
         (1, "exclude"),
@@ -1581,8 +1598,10 @@ class GroupDisplayPermission(models.Model):
     def __str__(self):
         if self.hmi_group is not None:
             return self.hmi_group.name
-        else:
+        elif not self.unauthenticated_users:
             return "Users without any group"
+        else:
+            return "Unauthenticated users"
 
 
 class PieGroupDisplayPermission(models.Model):
