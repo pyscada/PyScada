@@ -17,6 +17,7 @@ from django.apps import apps
 from pyscada.utils import blow_up_data, timestamp_to_datetime
 from pyscada.utils import _get_objects_for_html as get_objects_for_html
 
+from asgiref.sync import sync_to_async
 from six import text_type
 import traceback
 import time
@@ -65,6 +66,8 @@ try:
                     channels.layers.get_channel_layer().receive("test"), timeout=0.1
                 )
 
+            # TODO : should we remove async_to_sync when using asgi ?
+            # I get this error : RuntimeError: You cannot use AsyncToSync in the same thread as an async event loop - just await the async function directly.
             async_to_sync(channels_test)()
             channels_driver = True
         except ConnectionError as e:
@@ -108,9 +111,7 @@ class RecordedDataManager(models.Manager):
             date_saved = (
                 kwargs["date_saved"]
                 if "date_saved" in kwargs
-                else variable.date_saved
-                if hasattr(variable, "date_saved")
-                else now()
+                else variable.date_saved if hasattr(variable, "date_saved") else now()
             )
             return RecordedData(
                 timestamp=timestamp / 1000,
@@ -1567,7 +1568,10 @@ class DataSource(models.Model):
             items_to_check = items
 
         for item in items_to_check:
-            if self.get_related_datasource() is None:
+            if (
+                self.get_related_datasource() is None
+                or item.import_datasource_object() is None
+            ):
                 logger.info(
                     f"Cannot check datasource for variable {item} because not related datasource is defined."
                 )
@@ -2020,6 +2024,8 @@ class Variable(models.Model):
         """
         datasource_object = self.import_datasource_object()
         kwargs["variable"] = self
+        if datasource_object is None:
+            return False
         val = datasource_object.last_value(**kwargs)
         time_min_excluded = kwargs.get("time_min_excluded", False)
         time_min = kwargs.get("time_min", None)
@@ -2560,19 +2566,20 @@ class DeviceWriteTask(models.Model):
                     logger.debug(e)
 
     async def acreate_and_notificate(self, dwts):
+        return await sync_to_async(self.create_and_notificate)(dwts)
         if type(dwts) != list:
             dwts = [dwts]
         await DeviceWriteTask.objects.abulk_create(dwts)
         if channels_driver:
             scheduler = BackgroundProcess.objects.filter(id=1)
-            if len(scheduler):
+            if await scheduler.acount():
                 scheduler_pid = (await scheduler.afirst()).pid
             else:
                 logger.warning("No PID found for the scheduler")
                 scheduler_pid = None
-            for dwt in dwts:
+            async for dwt in dwts:
+                device_id = dwt.get_device_id
                 try:
-                    device_id = dwt.get_device_id
                     for bp in BackgroundProcess.objects.all():
                         _device_id = bp.get_device_id()
                         if (
@@ -2586,14 +2593,14 @@ class DeviceWriteTask(models.Model):
                     channel_layer.capacity = 1
                     await channel_layer.send(
                         str(scheduler_pid) + "_DeviceAction_for_" + str(device_id),
-                        {"DeviceWriteTask": str(dwt.get_device_id)},
+                        {"DeviceWriteTask": str(device_id)},
                     )
                 except ChannelFull:
                     logger.info(
                         "Channel full : "
                         + str(scheduler_pid)
                         + "_DeviceAction_for_"
-                        + str(dwt.get_device_id)
+                        + str(device_id)
                     )
                 except (
                     AttributeError,
