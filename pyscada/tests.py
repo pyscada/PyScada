@@ -58,7 +58,7 @@ class ReadVariableTest(TestCase):
             query_first_value=True,
             time_max_excluded=True,
         )
-        self.assertEqual(
+        self.assertDictEqual(
             result, {"timestamp": 2.0, self.v.id: [[2.0, 100.0]], "date_saved_max": 5.0}
         )
 
@@ -82,7 +82,7 @@ class ReadVariableTest(TestCase):
             query_first_value=True,
             time_max_excluded=False,
         )
-        self.assertEqual(
+        self.assertDictEqual(
             result,
             {
                 "timestamp": 3.0,
