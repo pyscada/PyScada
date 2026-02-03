@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from pyscada.utils import validate_value_class
 
-from pyscada.models import Variable, RecordedData, BackgroundProcess
+from pyscada.models import Variable, BackgroundProcess
 from pyscada.export.hdf5_file import MatCompatibleH5
 from pyscada.export.hdf5_file import unix_time_stamp_to_matlab_datenum
 from pyscada.export.csv_file import ExcelCompatibleCSV
@@ -244,7 +244,7 @@ def export_recordeddata_to_file(
             tp.save()
         # query data
         var_slice = active_vars[var_idx : var_idx + 10]
-        data = Variable.objects.read_multiple(
+        data = Variable.objects.query_datapoints(
             variable_ids=list(var_slice.values_list("pk", flat=True)),
             time_min=time_min,
             time_max=time_max,
