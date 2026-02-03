@@ -843,7 +843,7 @@ class Process(object):
                                 logger.debug(
                                     f"{self.label} write multiple variables : {item}"
                                 )
-                                Variable.objects.write_multiple(items=item)
+                                Variable.objects.write_datapoints(items=item)
                     if status == 1:  # Process OK
                         pass
                     elif status == -1:
