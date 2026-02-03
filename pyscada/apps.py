@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.apps import AppConfig
-from django.utils.translation import gettext_lazy as _
-from django.db.utils import ProgrammingError, OperationalError
 import os
 import logging
 
-logger = logging.getLogger(__name__)
+from django.apps import AppConfig
+from django.utils.translation import gettext_lazy as _
+from django.db.utils import ProgrammingError, OperationalError
+from django.conf import settings
 
+
+logger = logging.getLogger(__name__)
 
 class PyScadaConfig(AppConfig):
     name = "pyscada"
@@ -19,6 +21,11 @@ class PyScadaConfig(AppConfig):
 
     def ready(self):
         import pyscada.signals
+        from pyscada.core import additional_installed_app 
+        for app_name in additional_installed_app:
+            if app_name not in settings.INSTALLED_APPS:
+                logger.error(f"{app_name} missing in INSTALLED_APPS")
+
 
     def pyscada_app_init(self):
         logger.debug("Core init app")
@@ -31,7 +38,8 @@ class PyScadaConfig(AppConfig):
             logger.debug(e)
 
         try:
-            from .models import DataSourceModel, DataSource, DjangoDatabase
+            from .models import DataSourceModel, DataSource
+            from .django_datasource.models import DjangoDatabase
 
             # create the default data source model
             # only one data source linked to the RecordedData table can exist
@@ -54,14 +62,15 @@ class PyScadaConfig(AppConfig):
             dd, _ = DjangoDatabase.objects.get_or_create(
                 datasource=ds,
                 defaults={
-                    "data_model_app_name": "pyscada",
+                    "data_model_app_name": "pyscada.django_datasource",
                     "data_model_name": "RecordedData",
                 },
             )
 
             # For RecordedDataOld, hidden by default
             # set can_select to True to show it in the admin panel.
-            # TODO : test read and write, test how it appears in the variable admin panel config if mannualy added (using shell)
+            # TODO : test read and write, test how it appears in the variable admin
+            # panel config if mannualy added (using shell)
             dsm, _ = DataSourceModel.objects.get_or_create(
                 inline_model_name="DjangoDatabase",
                 name="Django database hidden",
@@ -78,10 +87,14 @@ class PyScadaConfig(AppConfig):
             dd, _ = DjangoDatabase.objects.get_or_create(
                 datasource=ds,
                 defaults={
-                    "data_model_app_name": "pyscada",
+                    "data_model_app_name": "pyscada.django_datasource",
                     "data_model_name": "RecordedDataOld",
                 },
             )
+            DjangoDatabase.objects.filter(
+                data_model_app_name="pyscada",
+                pk__lte=2).update(data_model_app_name="pyscada.django_datasource")
+
 
         except (ProgrammingError, OperationalError) as e:
             logger.debug(e)
