@@ -258,7 +258,7 @@ class VariableStateAdmin(admin.ModelAdmin):
     def last_value(self, instance):
         try:
             v = Variable.objects.get(id=instance.pk)
-            if v.query_prev_value(timeout=10):
+            if v.check_last_datapoint():
                 try:
                     return f"{datetime.datetime.fromtimestamp(v.timestamp_old).strftime('%Y-%m-%d %H:%M:%S')} : {v.prev_value.__str__()} {instance.unit.unit}"
                 except ValueError as e:
