@@ -54,7 +54,6 @@ class ReadVariableTest(TestCase):
             variable_ids=[self.v.pk],
             time_min=self.v.timestamp_old,
             time_max=self.v.timestamp_old,
-            time_in_ms=False,
             query_first_value=True,
             time_max_excluded=True,
         )
@@ -67,7 +66,6 @@ class ReadVariableTest(TestCase):
             variable_ids=[self.v.pk],
             time_min=self.v.timestamp_old,
             time_max=self.v.timestamp_old,
-            time_in_ms=False,
             query_first_value=False,
             time_max_excluded=True,
         )
@@ -78,7 +76,6 @@ class ReadVariableTest(TestCase):
             variable_ids=[self.v.pk],
             time_min=self.v.timestamp_old,
             time_max=self.v.timestamp_old,
-            time_in_ms=False,
             query_first_value=True,
             time_max_excluded=False,
         )
@@ -96,7 +93,6 @@ class ReadVariableTest(TestCase):
             variable_ids=[self.v.pk],
             time_min=self.v.timestamp_old,
             time_max=self.v.timestamp_old,
-            time_in_ms=False,
             query_first_value=False,
             time_max_excluded=False,
         )
@@ -109,7 +105,6 @@ class ReadVariableTest(TestCase):
         result = self.v.query_datapoints(
             time_min=self.v.timestamp_old,
             time_max=self.v.timestamp_old,
-            time_in_ms=False,
             query_first_value=False,
             time_max_excluded=False,
         )
@@ -143,8 +138,7 @@ class WriteRawVariableTest(TestCase):
     def test_variable_method_write_1(self):
         logger.debug("test_variable_method_write 1")
         self.v.write_raw_datapoints([[0, 1], [1, 10], [2, 100], [3, 1000]], date_saved=datetime.fromtimestamp(5, UTC))
-
-        result = self.v.query_datapoints(time_in_ms=False)
+        result = self.v.query_datapoints()
         self.assertEqual(
             result, ([[0.0, 1.0], [1.0, 10.0], [2.0, 100.0], [3.0, 1000.0]], 3.0, 5.0)
         )
@@ -159,7 +153,7 @@ class WriteRawVariableTest(TestCase):
             [3, 1000, datetime.fromtimestamp(8, UTC)]
         ])
 
-        result = self.v.query_datapoints(time_in_ms=False)
+        result = self.v.query_datapoints()
         self.assertEqual(
             result, ([[0.0, 1.0], [1.0, 10.0], [2.0, 100.0], [3.0, 1000.0]], 3.0, 8.0)
         )
@@ -171,7 +165,7 @@ class WriteRawVariableTest(TestCase):
             date_saved=datetime.fromtimestamp(8, UTC)
         )
 
-        result = self.v.query_datapoints(time_in_ms=False)
+        result = self.v.query_datapoints()
         self.assertEqual(
             result, ([[0.0, 1.0], [1.0, 10.0], [2.0, 100.0], [3.0, 1000.0]], 3.0, 8.0)
         )
@@ -180,7 +174,7 @@ class WriteRawVariableTest(TestCase):
         logger.debug("test_variable_method_write 4")
         self.v.write_raw_datapoints([[0, 1, 5], [1, 10, 6], [2, 100, 7], [3, 1000, 8]])
 
-        result = self.v.query_datapoints(time_in_ms=False)
+        result = self.v.query_datapoints()
         self.assertEqual(
             result, ([[0.0, 1.0], [1.0, 10.0], [2.0, 100.0], [3.0, 1000.0]], 3.0, 8.0)
         )
@@ -192,7 +186,7 @@ class WriteRawVariableTest(TestCase):
                 },
             date_saved=datetime.fromtimestamp(5, UTC),
         )
-        result = self.v.query_datapoints(time_in_ms=False,)
+        result = self.v.query_datapoints()
         self.assertEqual(
             result, ([[4.0, 2.0], [5.0, 20.0], [6.0, 200.0], [7.0, 2000.0]], 7.0, 5.0)
         )
