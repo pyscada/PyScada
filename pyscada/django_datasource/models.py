@@ -28,7 +28,7 @@ class RecordedDataManager(models.Manager):
             )
 
         return RecordedData(
-            timestamp=timestamp / 1000,
+            timestamp=timestamp,
             variable=variable,
             value=value,
             date_saved=date_saved,
@@ -99,7 +99,6 @@ class RecordedDataManager(models.Manager):
         variable_ids,
         time_min,
         time_max,
-        time_in_ms=True,
         query_first_value=False,
         **kwargs,
     ):
@@ -142,11 +141,6 @@ class RecordedDataManager(models.Manager):
             )
         )
 
-        if time_in_ms:
-            f_time_scale = 1000
-        else:
-            f_time_scale = 1
-
         values = dict()
         times = dict()
         date_saved_max = 0
@@ -185,7 +179,7 @@ class RecordedDataManager(models.Manager):
             )
             tmp_time_max = max(tmp_time, tmp_time_max)
             tmp_time_min = min(tmp_time, tmp_time_min)
-            values[item[0]].append([tmp_time * f_time_scale, get_rd_value(item)])
+            values[item[0]].append([tmp_time, get_rd_value(item)])
             if tmp_time < times[item[0]]["time_min"]:
                 times[item[0]]["time_min"] = tmp_time
             if tmp_time > times[item[0]]["time_max"]:
@@ -212,7 +206,7 @@ class RecordedDataManager(models.Manager):
                     values[pk].insert(
                         0,
                         [
-                            tmp_time * f_time_scale,
+                            tmp_time,
                             last_element.value(),
                         ],
                     )
@@ -223,9 +217,9 @@ class RecordedDataManager(models.Manager):
                     )
                     tmp_time_max = max(tmp_time, tmp_time_max)
 
-        # values["timestamp"] = max(tmp_time_max, time_min) * f_time_scale
-        values["timestamp"] = tmp_time_max * f_time_scale
-        values["date_saved_max"] = date_saved_max * f_time_scale
+        # values["timestamp"] = max(tmp_time_max, time_min)
+        values["timestamp"] = tmp_time_max
+        values["date_saved_max"] = date_saved_max
 
         return values
 
@@ -290,7 +284,6 @@ class DjangoDatabase(models.Model):
         variable_ids=[],
         time_min=0,
         time_max=None,
-        time_in_ms=True,
         query_first_value=False,
         **kwargs,
     ):
@@ -304,7 +297,6 @@ class DjangoDatabase(models.Model):
             variable_ids=variable_ids,
             time_min=time_min,
             time_max=time_max,
-            time_in_ms=time_in_ms,
             query_first_value=query_first_value,
             **kwargs,
         )
@@ -395,6 +387,8 @@ class DjangoDatabase(models.Model):
 
                     elif (type(datapoint[2]) is int or type(datapoint[2]) is float):
                         datapoint[2]=timestamp_to_datetime(datapoint[2])
+
+                #datapoint[0] *= 1000 # convert timestamp from s to ms
 
                 rc = data_model.objects.create_data_element_from_variable(
                     variable=variable,
