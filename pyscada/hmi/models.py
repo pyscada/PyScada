@@ -1584,6 +1584,23 @@ class View(models.Model):
     class Meta:
         ordering = ["position"]
 
+class ExternalView(models.Model):
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=400, default="")
+    description = models.TextField(default="", verbose_name="Description", null=True)
+    url = models.URLField()
+    logo = models.ImageField(
+        upload_to="img/", verbose_name="Overview Picture", blank=True
+    )
+    visible = models.BooleanField(default=True)
+    position = models.PositiveSmallIntegerField(default=0)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        ordering = ["position"]
+
 
 class GroupDisplayPermission(models.Model):
     hmi_group = models.OneToOneField(
