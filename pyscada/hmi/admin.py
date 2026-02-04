@@ -20,7 +20,7 @@ from pyscada.hmi.models import (
 )
 from pyscada.hmi.models import CustomHTMLPanel
 from pyscada.hmi.models import Widget
-from pyscada.hmi.models import View
+from pyscada.hmi.models import View, ExternalView
 from pyscada.hmi.models import ProcessFlowDiagram
 from pyscada.hmi.models import ProcessFlowDiagramItem
 from pyscada.hmi.models import Pie
@@ -576,6 +576,9 @@ class ViewAdmin(admin.ModelAdmin):
     save_as = True
     save_as_continue = True
 
+class ExternalViewAdmin(admin.ModelAdmin):
+    save_as = True
+    save_as_continue = True
 
 class CustomHTMLPanelAdmin(admin.ModelAdmin):
     filter_horizontal = ("variables", "variable_properties")
@@ -688,6 +691,7 @@ admin_site.register(ControlPanel, ControlPanelAdmin)
 admin_site.register(CustomHTMLPanel, CustomHTMLPanelAdmin)
 admin_site.register(Widget, WidgetAdmin)
 admin_site.register(View, ViewAdmin)
+admin_site.register(ExternalView, ExternalViewAdmin)
 admin_site.register(ProcessFlowDiagram, ProcessFlowDiagramAdmin)
 admin_site.register(ProcessFlowDiagramItem, ProcessFlowDiagramItemAdmin)
 admin_site.register(Theme, ThemeAdmin)
