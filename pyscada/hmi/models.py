@@ -1584,6 +1584,23 @@ class View(models.Model):
     class Meta:
         ordering = ["position"]
 
+class ExternalView(models.Model):
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=400, default="")
+    description = models.TextField(default="", verbose_name="Description", null=True)
+    url = models.URLField()
+    logo = models.ImageField(
+        upload_to="img/", verbose_name="Overview Picture", blank=True
+    )
+    visible = models.BooleanField(default=True)
+    position = models.PositiveSmallIntegerField(default=0)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        ordering = ["position"]
+
 
 class GroupDisplayPermission(models.Model):
     hmi_group = models.OneToOneField(
@@ -1770,6 +1787,24 @@ class ViewGroupDisplayPermission(models.Model):
         View, blank=True, related_name="groupdisplaypermission"
     )
     m2m_related_model = View
+
+    def __str__(self):
+        return str(self.group_display_permission)
+
+class ExternalViewGroupDisplayPermission(models.Model):
+    group_display_permission = models.OneToOneField(
+        GroupDisplayPermission, null=True, on_delete=models.CASCADE
+    )
+    type = models.PositiveSmallIntegerField(
+        default=0,
+        choices=GroupDisplayPermission.type_choices,
+        help_text="If allow: only selected items can be seen by the group."
+        "<br>If exclude: allows all items except the selected ones.",
+    )
+    external_view = models.ManyToManyField(
+        ExternalView, blank=True, related_name="groupdisplaypermission"
+    )
+    m2m_related_model = ExternalView
 
     def __str__(self):
         return str(self.group_display_permission)

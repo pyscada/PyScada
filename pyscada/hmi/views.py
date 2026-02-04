@@ -14,7 +14,7 @@ from pyscada.hmi.models import GroupDisplayPermission
 from pyscada.hmi.models import Widget
 from pyscada.hmi.models import CustomHTMLPanel
 from pyscada.hmi.models import Chart
-from pyscada.hmi.models import View
+from pyscada.hmi.models import View, ExternalView
 from pyscada.hmi.models import ProcessFlowDiagram
 from pyscada.hmi.models import Pie
 from pyscada.hmi.models import Page
@@ -66,13 +66,22 @@ def view_overview(request):
         redirect(f"{settings.LOGIN_URL}?next={request.path}")
     if GroupDisplayPermission.objects.count() == 0:
         view_list = View.objects.all()
+        ext_view_list = ExternalView.objects.all()
     else:
         view_list = get_group_display_permission_list(
             View.objects, request.user.groups.all(), request.user.is_authenticated
         )
+        ext_view_list = get_group_display_permission_list(
+            ExternalView.objects, request.user.groups.all(), request.user.is_authenticated
+        )
 
     if not view_list.count() and not request.user.is_authenticated:
         return redirect(f"{settings.LOGIN_URL}?next={request.path}")
+
+    view_list = sorted(
+            list(view_list)+list(ext_view_list),
+            key=lambda instance: instance.position
+        )
 
     c = {
         "user": request.user,
