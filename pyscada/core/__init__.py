@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-__version__ = "0.8.3"
+__version__ = "0.9.0"
 __author__ = "Martin Schröder, Camille Lavayssiere"
 __email__ = "team@pyscada.org"
 __description__ = "PyScada a Python and Django based Open Source SCADA System"
