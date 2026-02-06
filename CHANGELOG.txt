@@ -545,3 +545,52 @@
   - upgrade flot to 4.2.6
   - limit legend max height to the chart height
   - fixes and other small updates
+
+0.9.0
+  - fix glyficon alert and excalamation sign
+  - fix append dictionary item if multiple items : keep the first item and delete the others
+  - device handler found and content : show if handlers are found in the handler list, show the content of a handler or the pyscada_admin_content variable content if it exists in the handler file
+  - JS: check if moment exist before daterangepicker init
+  - added option to set a custom message for processes : run by the background-process scheduler, this is e.g. useful for kepping track of the state of single shot tasks.
+  - JS: update control-item type-numeric if no color_only option
+  - add view object to the template context
+  - use fetch api for data handling (#181) : remove use of ajax for data handling, better handle timeout, deauthenticate, use JS function instead of jQuery
+  - fixed all values=0 in, filename is None error, h5 timestamp format data export :
+    - export jobs will be markt as faild now
+    - the min and max time check is removed because it only checks the first variable
+    - fixed unit mismatch timestamps from read_multiple in ms, export expected them in s
+    - added more detailted status output to backgroundtask model
+    - changed timestamp format for h5 output from matlab to unix timestamps
+    - escape of "/" in variable name to prevent dataset generation in h5 and mat files
+  - fix time max to find previous last element
+  - add app init after scheduler start : in order to allow plugin to run code at start and not use the AppConfig.ready function
+  - allow a plugin to add a cov notification : a plugin can define a function to custom send cov notification add it in AppConfig as: def pyscada_send_cov_notification(self, variable)
+  - JS: variable to disable default data handling : Use to provide other data handling in a plugin
+  - check the rights of users in a view to read or write data : any model which has a group display permission or any WidgetContentModel subclass model shoud have a data_objects function. This function return a dict of:
+    - variable or variable_property the user is allowed to read data from
+    - variable_write and variable_property_write the user is allowed to write to
+  - add the view id to requests (get_cache_data, write_task and write_property)
+  - upgrade to django >= 5.2
+  - JS: compare new and old color before updating color and sending event
+  - remove pkg_resources import and setuptools dependency : replaced by importlib.metadata, see https://setuptools.pypa.io/en/latest/pkg_resources.html
+  - add numpy requirement and remove hdf5-103 which is in hdf5-dev
+  - remove access to not visible view
+  - fix variable protocol save and delete : when saving a variable, the related variable protocol (modbusvariable for example) should be saved , even if the modbus variable config is empty. When changing the device of a vaiable, if the protocol change, (modbus to visa for example), the related modbus variable should be deleted and the visa variable should be created.
+  - add tests for read values : fix timestamp and date_saved_max to pass the tests
+  - add js tests to add fetched data : fix fetched data fucntion to pass the tests
+  - Add device and variable handler parameters
+  - Allow anonymous access : use the anonymous group display permission to configure and allow in the settings using PYSCADA_ALLOW_ANONYMOUS and PYSCADA_ALLOW_ANONYMOUS_WRITE
+  - home page is set in settings using PYSCADA_HOME
+  - added option to add links to external urls in the view-overview
+  - renamed write_multible, read_multible, last_value to write_datapoints, query_datapoints and last_datapoint to make the funktion more clear
+  - added last_datapoint, query_datapoints, write_datapoints, write_raw_datapoints to Variable model as a shortcut to Variable.objects.METHOD(variable=self)
+  - consolidated unit of timestamps internaly to s in python and ms in JS code
+  - general code cleanup
+  - removed unused filter_time and get_values_in_time_range method from RecordedDataManager
+  - removed unused get_first_element_timestamp from DjangoDatabase datasource
+  - moved DjangoDatasource to separate sub app -> Update of settings.py is nessesary, see update.rst
+  - migrated from setup.py to pyproject.toml
+  - updated device_protocol list to include MQTT and Influxdb plugins
+  - added new datasource to store values only in the cache
+  - added new datasource to store only the most recent value in the database
+
