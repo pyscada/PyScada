@@ -18,6 +18,36 @@ Sorry a direct upgrade is not possible, you have to install 0.7.x from scratch.
     sudo -u pyscada python manage.py collectstatic
     sudo -u pyscada python manage.py pyscada_daemon init
 
+0.8.x to 0.9x
+-------------
+
+Befor the Upgrade:
+
+The folowing lines must be added to the `settings.py` after the `INSTALLED_APPS` section.
+
+::
+
+    pyscada = __import__("pyscada.core")
+    if hasattr(pyscada.core, "additional_installed_app"):
+        for app in getattr(pyscada.core, "additional_installed_app"):
+            INSTALLED_APPS += [
+                app,
+            ]
+
+After the Upgrade:
+
+- Remove `"pyscada.core"`, `"pyscada.hmi"`, `"pyscada.export"` from `INSTALLED_APPS` in `settings.py`
+- (optinal) choose a alternative home page by adding `PYSCADA_HOME = "/view/TEST/"` to the `settings.py`
+- (optinal) add `PYSCADA_ALLOW_ANONYMOUS = True` to allow access to the pyscada hmi without login or add `PYSCADA_ALLOW_ANONYMOUS_WRITE = True` to allow write access to the pyscada hmi without login
+	- Managing anonymous user display permission for IHM objects (view, page, widget, chart...) is done in the admin panel using the "Group Display Permission" -> "Unauthenticated users" configuration
+- Run the folowing command in your pyscada root (where `manage.py` is located) in the pyscada venv
+
+::
+
+    sudo -u pyscada python manage.py migrate
+    sudo -u pyscada python manage.py collectstatic
+    sudo -u pyscada python manage.py pyscada_daemon init
+
 
 systemd
 -------
