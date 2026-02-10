@@ -859,30 +859,42 @@ class Process(object):
                         BackgroundProcess.objects.filter(pk=self.process_id).update(
                             last_update=now(), done=True, message="done"
                         )
-                        # raise StopIteration
+                        logger.debug(f"{self.label} is done : stopping")
+                        raise StopIteration
                         exec_loop = False
                     else:
                         logger.info(f"Unknown {self.label} loop status : {status}")
                 elif sig is None:
-                    continue
+                    logger.debug(f"empty loop for {self.label} : stopping")
+                    raise StopIteration
                 elif sig not in self.SIGNALS:
                     logger.debug("%s, unhandled signal %d" % (self.label, sig))
                     continue
                 elif sig == signal.SIGTERM:
+                    logger.debug(
+                        f"PID {self.pid}, LABEL {self.label}, process SIGTERM ({sig}) signal"
+                    )
                     raise StopIteration
                 elif sig == signal.SIGHUP:
+                    logger.debug(
+                        f"PID {self.pid}, LABEL {self.label}, process SIGHUP ({sig}) signal"
+                    )
                     raise StopIteration
                 elif sig == signal.SIGUSR1:
                     logger.debug(
-                        "PID %d, LABEL %s, process SIGUSR1 (%d) signal"
-                        % (self.pid, self.label, sig)
+                        f"PID {self.pid}, LABEL {self.label}, process SIGUSR1 ({sig}) signal"
                     )
                     if not self.restart():
                         logger.debug("restart failed")
                         raise StopIteration
                 elif sig == signal.SIGUSR2:
+                    logger.debug(
+                        f"PID {self.pid}, LABEL {self.label}, process SIGUSR2 ({sig}) signal : passing"
+                    )
                     # todo handle restart
                     pass
+                else:
+                    logger.debug(f"signal {sig} not catched for {self.label}")
 
                 close_db_connection()
 
