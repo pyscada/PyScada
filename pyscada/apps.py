@@ -21,7 +21,7 @@ class PyScadaConfig(AppConfig):
 
     def ready(self):
         import pyscada.signals
-        from pyscada.core import additional_installed_app 
+        from pyscada.core import additional_installed_app
         for app_name in additional_installed_app:
             if app_name not in settings.INSTALLED_APPS:
                 logger.error(f"{app_name} missing in INSTALLED_APPS")
@@ -40,6 +40,7 @@ class PyScadaConfig(AppConfig):
         try:
             from .models import DataSourceModel, DataSource
             from .django_datasource.models import DjangoDatabase
+            from .cache_datasource.models import DjangoCache
 
             # create the default data source model
             # only one data source linked to the RecordedData table can exist
@@ -82,7 +83,10 @@ class PyScadaConfig(AppConfig):
                 },
             )
             ds, _ = DataSource.objects.get_or_create(
-                datasource_model=dsm,
+                id=2,
+                defaults={
+                    "datasource_model": dsm,
+                },
             )
             dd, _ = DjangoDatabase.objects.get_or_create(
                 datasource=ds,
@@ -91,9 +95,31 @@ class PyScadaConfig(AppConfig):
                     "data_model_name": "RecordedDataOld",
                 },
             )
+
+            # Update datasource name after move to subapp
             DjangoDatabase.objects.filter(
                 data_model_app_name="pyscada",
                 pk__lte=2).update(data_model_app_name="pyscada.django_datasource")
+
+            # Django Cache datastore
+            dsm, _ = DataSourceModel.objects.get_or_create(
+                inline_model_name="DjangoCache",
+                name="Django Cache",
+                defaults={
+                    "can_add": True,
+                    "can_change": True,
+                    "can_select": True,
+                },
+            )
+            ds, _ = DataSource.objects.get_or_create(
+                datasource_model=dsm
+                )
+            dd, _ = DjangoCache.objects.get_or_create(
+                datasource=ds,
+                defaults={
+                    "data_lifetime": 3600,
+                },
+            )
 
 
         except (ProgrammingError, OperationalError) as e:

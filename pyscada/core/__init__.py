@@ -9,7 +9,7 @@ __app_name__ = "PyScada"
 
 default_app_config = "pyscada.apps.PyScadaConfig"
 additional_installed_app = [
-    "pyscada.core", "pyscada.hmi", "pyscada.export", "pyscada.django_datasource"
+    "pyscada.core", "pyscada.hmi", "pyscada.export", "pyscada.django_datasource", "pyscada.cache_datasource"
     ]
 
 parent_process_list = [
