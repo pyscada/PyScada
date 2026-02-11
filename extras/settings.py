@@ -42,11 +42,15 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "pyscada",
-    "pyscada.core",
-    "pyscada.hmi",
-    "pyscada.export",
+    "pyscada"
 ]
+
+pyscada = __import__("pyscada.core")
+if hasattr(pyscada.core, "additional_installed_app"):
+    for app in getattr(pyscada.core, "additional_installed_app"):
+        INSTALLED_APPS += [
+            app,
+        ]
 
 installed_packages = pkg_resources.working_set
 for i in installed_packages:
@@ -69,6 +73,25 @@ if importlib.util.find_spec("channels") is not None:
                 "hosts": [("127.0.0.1", 6379)],
             },
         },
+    }
+
+if util.find_spec('django_redis') is not None:
+    # for cache_datasource
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": "redis://127.0.0.1:6379",
+        }
+    }
+else:
+    # as fallback setup file based cache
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+            "LOCATION": "{{ project_root }}",
+            "TIMEOUT": 3600,
+            "OPTIONS": {"MAX_ENTRIES": 1000},
+        }
     }
 
 LOGIN_REDIRECT_URL = "/"

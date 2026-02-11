@@ -80,6 +80,25 @@ if util.find_spec('channels') is not None:
         },
     }
 
+if util.find_spec('django_redis') is not None:
+    # for cache_datasource
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": "redis://127.0.0.1:6379",
+        }
+    }
+else:
+    # as fallback setup file based cache
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+            "LOCATION": "{{ project_root }}",
+            "TIMEOUT": 3600,
+            "OPTIONS": {"MAX_ENTRIES": 1000},
+        }
+    }
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
