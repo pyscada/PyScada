@@ -41,6 +41,7 @@ class PyScadaConfig(AppConfig):
             from .models import DataSourceModel, DataSource
             from .django_datasource.models import DjangoDatabase
             from .cache_datasource.models import DjangoCache
+            from .single_value_datasource.models import DjangoSingleValue
 
             # create the default data source model
             # only one data source linked to the RecordedData table can exist
@@ -79,7 +80,7 @@ class PyScadaConfig(AppConfig):
                     # "name": "Django database",
                     "can_add": False,
                     "can_change": False,
-                    "can_select": False,
+                    "can_select": True,
                 },
             )
             ds, _ = DataSource.objects.get_or_create(
@@ -119,6 +120,23 @@ class PyScadaConfig(AppConfig):
                 defaults={
                     "data_lifetime": 3600,
                 },
+            )
+
+            # Django Single Value datastore
+            dsm, _ = DataSourceModel.objects.get_or_create(
+                inline_model_name="DjangoSingleValue",
+                name="Django Single Value",
+                defaults={
+                    "can_add": False,
+                    "can_change": False,
+                    "can_select": False,
+                },
+            )
+            ds, _ = DataSource.objects.get_or_create(
+                datasource_model=dsm
+                )
+            dd, _ = DjangoSingleValue.objects.get_or_create(
+                datasource=ds,
             )
 
 
