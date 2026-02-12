@@ -1264,7 +1264,7 @@ class Variable(models.Model):
         ]
         for v in related_variables:
             if (
-                hasattr(self, v.name)
+                hasattr(self, v.name) and hasattr(getattr(self, v.name), "protocol_id")
                 and getattr(self, v.name).protocol_id != self.device.protocol.id
             ):
                 getattr(self, v.name).delete()
