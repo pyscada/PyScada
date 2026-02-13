@@ -54,6 +54,7 @@ class ReadVariableTest(TestCase):
             variable_ids=[self.v.pk],
             time_min=self.v.timestamp_old,
             time_max=self.v.timestamp_old,
+            time_in_ms=False,
             query_first_value=True,
             time_max_excluded=True,
         )
@@ -66,6 +67,7 @@ class ReadVariableTest(TestCase):
             variable_ids=[self.v.pk],
             time_min=self.v.timestamp_old,
             time_max=self.v.timestamp_old,
+            time_in_ms=False,
             query_first_value=False,
             time_max_excluded=True,
         )
@@ -76,6 +78,7 @@ class ReadVariableTest(TestCase):
             variable_ids=[self.v.pk],
             time_min=self.v.timestamp_old,
             time_max=self.v.timestamp_old,
+            time_in_ms=False,
             query_first_value=True,
             time_max_excluded=False,
         )
@@ -93,6 +96,7 @@ class ReadVariableTest(TestCase):
             variable_ids=[self.v.pk],
             time_min=self.v.timestamp_old,
             time_max=self.v.timestamp_old,
+            time_in_ms=False,
             query_first_value=False,
             time_max_excluded=False,
         )
@@ -105,6 +109,7 @@ class ReadVariableTest(TestCase):
         result = self.v.query_datapoints(
             time_min=self.v.timestamp_old,
             time_max=self.v.timestamp_old,
+            time_in_ms=False,
             query_first_value=False,
             time_max_excluded=False,
         )

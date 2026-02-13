@@ -1550,7 +1550,7 @@ class Variable(models.Model):
             if self._update_value(value_list[i], timestamp_list[i]):
                 if self.value_class.upper() == "BOOLEAN":
                     self.value = bool(self.value)
-                self.cached_values_to_write.append((self.timestamp, self.value))
+                self.cached_values_to_write.append((self.timestamp * 1000, self.value))
             else:
                 update_false_count += 1
             has_value = True
