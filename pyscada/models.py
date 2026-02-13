@@ -8,7 +8,7 @@ from django.conf import settings
 
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
-from django.utils.timezone import now, make_aware
+from django.utils.timezone import now, make_aware, is_naive
 from django.db.models.signals import post_save
 from django.db.models.fields.related import OneToOneRel
 from django.forms.models import BaseInlineFormSet
@@ -50,9 +50,11 @@ try:
 
     try:
         from asyncio.exceptions import TimeoutError as asyncioTimeoutError
+        from asyncio.exceptions import CancelledError as asyncioCancelledError
     except ModuleNotFoundError:
         # for python version < 3.8
         from asyncio import TimeoutError as asyncioTimeoutError
+        from asyncio import CancelledError as asyncioCancelledError
     if channels.layers.get_channel_layer() is None:
         logger.warning("Django Channels is not working. Missing config in settings ?")
         channels_driver = False
