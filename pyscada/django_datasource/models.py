@@ -352,6 +352,7 @@ class DjangoDatabase(models.Model):
             )
         for item in items:
             item.date_saved = None
+            item.erase_cache()
 
     def write_raw_datapoints(self, datapoints: dict, date_saved=None, batch_size=1000):
         """writes raw datapoints to the database in the form

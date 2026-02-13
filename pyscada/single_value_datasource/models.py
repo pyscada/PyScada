@@ -147,6 +147,7 @@ class DjangoSingleValue(models.Model):
                 recorded_data.save()
 
             item.date_saved = None
+            item.erase_cache()
 
     def write_raw_datapoints(self, datapoints: dict, date_saved=None):
         """writes raw datapoints to the database in the form
