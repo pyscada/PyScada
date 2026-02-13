@@ -15,7 +15,7 @@ from pyscada.models import (
     ComplexEventOutput,
 )
 from pyscada.models import Event
-from pyscada.models import RecordedEvent
+from pyscada.models import RecordedEvent, RecordedData
 from pyscada.models import Mail
 from pyscada.models import DeviceHandlerParameter, VariableHandlerParameter
 
