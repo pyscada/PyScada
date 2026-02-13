@@ -587,11 +587,11 @@ class Scheduler(object):
                         # delete grandchild process
                         BackgroundProcess.objects.filter(pk=process.process_id).delete()
 
-    def handle_chld(self, sig, _frame):
+    def handle_chld(self, sig, frame):
         """
         SIGCHLD handling
         :param sig:
-        :param _frame:
+        :param frame:
         :return:
         """
         try:
@@ -762,7 +762,7 @@ class Scheduler(object):
             )
             logger.debug("%s, process_id %d" % (process.label, process.pid))
 
-    def signal(self, signum=None, _frame=None):
+    def signal(self, signum=None, frame=None):
         """
         handle signals
         """
@@ -1009,7 +1009,7 @@ class Process(object):
         """
         pass
 
-    def signal(self, signum=None, _frame=None):
+    def signal(self, signum=None, frame=None):
         """
         receive signals
         """
@@ -1064,7 +1064,7 @@ class Process(object):
                         f"Failed to send {message} ProcessSignal {signum} : {e}"
                     )
 
-    def stop(self, signum=None, _frame=None):
+    def stop(self, signum=None, frame=None):
         """
         handel's a termination signal
         """
