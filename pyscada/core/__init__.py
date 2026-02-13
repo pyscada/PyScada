@@ -8,9 +8,6 @@ __description__ = "PyScada a Python and Django based Open Source SCADA System"
 __app_name__ = "PyScada"
 
 default_app_config = "pyscada.apps.PyScadaConfig"
-additional_installed_app = [
-    "pyscada.core", "pyscada.hmi", "pyscada.export", "pyscada.django_datasource"
-    ]
 
 parent_process_list = [
     {

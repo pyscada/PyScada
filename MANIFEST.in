@@ -8,7 +8,6 @@ recursive-include pyscada/hmi/fixtures *
 recursive-include pyscada/hmi/templates *
 recursive-include pyscada/hmi/static *
 recursive-include pyscada/core/*
-recursive-include pyscada/django_datasource/*
 recursive-include docs *
 recursive-exclude * *.pyc
 recursive-exclude pyscada/report *
