@@ -97,22 +97,6 @@ def start_from_default():
     )
 
 
-def check_datasource_method(func):
-    def wrapper(self, *args, **kwargs):
-        if self.get_related_datasource() is None:
-            logger.warning(
-                f"DataSource {self.datasource_model.inline_model_name} model not found."
-            )
-            return
-
-        if not hasattr(self.get_related_datasource(), func.__name__):
-            logger.warning(
-                f"{self.get_related_datasource()} class needs to have a {func.__name__} function."
-            )
-            return
-        return func(self, *args, **kwargs)
-    return wrapper
-
 #
 # Manager
 #
@@ -140,46 +124,13 @@ class VariableManager(models.Manager):
         return datasource_dict
 
     def read_multiple(self, **kwargs):
-        logger.info(
-            "the use of 'read_multiple' method is deprecated use 'query_datapoints' instead"
-        )
-        return self.query_datapoints(**kwargs)
-
-    def query_datapoints(self,
-        variable_ids:list,
-        time_min=0,
-        time_max=None,
-        query_first_value=False,
-        **kwargs):
-        """query data from the database
-        Args:
-            variable_ids: list of variable ids
-            time_min (float, optional):
-            time_max (float, optional):
-            query_first_value (bool, optional):
-
-        Returns:
-            dict: {
-                variable_id: [[],..],
-                "timestamp": max_timestamp_value,
-                "date_saved_max": max_date_saved_value
-                }
-        """
         data = {}
-        datasource_dict = self._get_variables_by_datasource(variable_ids=variable_ids)
+        datasource_dict = self._get_variables_by_datasource(**kwargs)
         for datasource in datasource_dict:
             if datasource.get_related_datasource() is not None:
                 # use only the variable ids for this datasource
-                variable_ids = [v.id for v in datasource_dict[datasource]]
-                data_temp = datasource.query_datapoints(
-                    variable_ids=variable_ids,
-                    time_min=time_min,
-                    time_max=time_max,
-                    query_first_value=query_first_value,
-                    **kwargs
-                    )
-                if data_temp is None:
-                    continue
+                kwargs["variable_ids"] = [v.id for v in datasource_dict[datasource]]
+                data_temp = datasource.read_multiple(**kwargs)
                 timestamp = max(data.get("timestamp", 0), data_temp.get("timestamp", 0))
                 date_saved_max = max(
                     data.get("date_saved_max", 0), data_temp.get("date_saved_max", 0)
@@ -195,65 +146,18 @@ class VariableManager(models.Manager):
         return data
 
     def write_multiple(self, **kwargs):
-        """writes cached datapoints to the database (deprecated)
-        """
-        logger.info(
-            "the use of 'write_multiple' method is deprecated use 'write_datapoints' instead"
-        )
-        return self.write_datapoints(**kwargs)
-
-    def write_datapoints(self, items: list, date_saved=None, **kwargs):
-        """writes cached datapoints to the database
-
-        Args:
-            items:  list of variable instances
-            date_saved (datetime, optional): time when the data was saved. Defaults to
-                now()
-            **kwargs: Arbitrary keyword arguments. Will be passed to the datasource
-                write_datapoints function call
-
-        Returns:
-            True
-        """
-        datasource_dict = self._get_variables_by_datasource(items=items, **kwargs)
+        datasource_dict = self._get_variables_by_datasource(**kwargs)
         for datasource in datasource_dict:
             if datasource.get_related_datasource() is not None:
                 # use only the variable for this datasource
-                items = [v for v in datasource_dict[datasource]]
-                datasource.write_datapoints(items=items, date_saved=date_saved, **kwargs)
+                kwargs["items"] = [v for v in datasource_dict[datasource]]
+                datasource.write_multiple(**kwargs)
             else:
                 logger.info(
                     f"Cannot write values for variables using {datasource} datasource. No related data source defined."
                 )
         return True
 
-    def write_raw_datapoints(self, datapoints, date_saved=None, **kwargs):
-        """writes raw datapoints to the database
-
-        Args:
-            datapoints:  {variable_id: [[timestamp, value, date_saved],...]} with
-                timestamp in s
-                value
-                date_saved as datetime, timestamp in s, None or ommited
-            date_saved (datetime, optional): time when the data was saved. Defaults to
-                now()
-            **kwargs: Arbitrary keyword arguments. Will be passed to the datasource
-                write_raw_datapoints function call
-
-        Returns:
-            True
-        """
-        datasource_dict = self._get_variables_by_datasource(variable_ids=datapoints.keys(), **kwargs)
-        for datasource in datasource_dict:
-            if datasource.get_related_datasource() is not None:
-                # use only the variable for this datasource
-                datapoints_out = {v.pk: datapoints[v.pk] for v in datasource_dict[datasource]}
-                datasource.write_raw_datapoints(datapoints=datapoints_out, date_saved=date_saved, **kwargs)
-            else:
-                logger.info(
-                    f"Cannot write values for variables using {datasource} datasource. No related data source defined."
-                )
-        return True
 
 class VariablePropertyManager(models.Manager):
     """ """
@@ -985,10 +889,9 @@ class DataSource(models.Model):
     """
     The base model for all the data sources.
     A data source needs to inherit from this class, and should have the basic functions :
-    - last_datapoint,
-    - query_datapoints,
-    - write_datapoints,
-    - write_raw_datapoints,
+    - last_value,
+    - read_multiple,
+    - write_multiple,
     """
 
     datasource_model = models.ForeignKey(DataSourceModel, on_delete=models.CASCADE)
@@ -1027,18 +930,18 @@ class DataSource(models.Model):
         for item in items_to_check:
             if (
                 self.get_related_datasource() is None
-                or item.get_related_datasource() is None
+                or item.import_datasource_object() is None
             ):
                 logger.info(
                     f"Cannot check datasource for variable {item} because not related datasource is defined."
                 )
                 continue
             if (
-                item.get_related_datasource().__class__
+                item.import_datasource_object().__class__
                 != self.get_related_datasource().__class__
             ):
                 logger.warning(
-                    f"{self.get_related_datasource().__class__} is not the data source of {item} : {item.get_related_datasource().__class__} - {self.datasource_model.inline_model_name.lower()} - {self.__dict__}"
+                    f"{self.get_related_datasource().__class__} is not the data source of {item} : {item.import_datasource_object().__class__} - {self.datasource_model.inline_model_name.lower()} - {self.__dict__}"
                 )
             else:
                 if items_as_id:
@@ -1066,65 +969,32 @@ class DataSource(models.Model):
                     )
 
     def last_value(self, **kwargs):
-        logger.info(
-            "the use of 'last_value' method is deprecated use 'last_datapoint' instead"
+        if self.get_related_datasource() is not None:
+            return self.get_related_datasource().last_value(**kwargs)
+        logger.warning(
+            f"{self._meta.object_name} class needs to override the lest_value function."
         )
-        return self.last_datapoint(**kwargs)
-
-    @check_datasource_method
-    def last_datapoint(self, variable, use_date_saved=False, **kwargs):
-        return self.get_related_datasource().last_datapoint(
-            variable=variable, use_date_saved=use_date_saved, **kwargs)
-
 
     def read_multiple(
         self,
         **kwargs,
     ):
-        logger.info(
-            "the use of 'read_multiple' method is deprecated use 'query_datapoints' instead"
+        if self.get_related_datasource() is not None:
+            return self.get_related_datasource().read_multiple(**kwargs)
+        logger.warning(
+            f"{self._meta.object_name} class needs to override the read_multiple function."
         )
-        return self.query_datapoints(**kwargs)
-
-    @check_datasource_method
-    def query_datapoints(self, **kwargs):
-        return self.get_related_datasource().query_datapoints(**kwargs)
-
 
     def write_multiple(self, **kwargs):
-        logger.info(
-            "the use of 'write_multiple' method is deprecated use 'write_datapoints' instead"
-        )
-        return self.write_datapoints(**kwargs)
-
-    @check_datasource_method
-    def write_datapoints(self, items: list, **kwargs):
-        for item in items:
+        for item in kwargs.get("items", []):
             if len(item.cached_values_to_write):
                 self._send_cov_notification(item)
-
-        self.get_related_datasource().write_datapoints(items=items, **kwargs)
-        return True
-
-    @check_datasource_method
-    def write_raw_datapoints(self, datapoints, date_saved=None, **kwargs):
-        """writes raw datapoints to the database in the form
-        Args:
-            datapoints:  {variable_id: [[timestamp, value, date_saved],...]} with
-                timestamp in s
-                value
-                date_saved as datetime, timestamp in s, None or ommited
-            date_saved (datetime, optional): time when the data was saved. Defaults to
-                now()
-            **kwargs: Arbitrary keyword arguments. Will be passed to the datasource
-                write_raw_datapoints function call
-
-        Returns:
-            None
-        """
-        return self.get_related_datasource().write_raw_datapoints(datapoints=datapoints, date_saved=date_saved, **kwargs)
-
-
+        if self.get_related_datasource() is not None:
+            self.get_related_datasource().write_multiple(**kwargs)
+            return True
+        logger.warning(
+            f"{self._meta.object_name} class needs to override the write_multiple function."
+        )
 
 
 class Variable(models.Model):
@@ -1239,11 +1109,7 @@ class Variable(models.Model):
                 )
         return result
 
-    @property
-    def datasource_model(self):
-        return self.datasource.datasource_model
-
-    def get_related_datasource(self):
+    def import_datasource_object(self):
         return self.datasource.get_related_datasource()
 
     def hmi_name(self):
@@ -1360,81 +1226,24 @@ class Variable(models.Model):
         else:
             return 16
 
-    @check_datasource_method
-    def last_datapoint(self, use_date_saved=False):
-        """returns the last datapoint from the database
-        as list in the form [timestamp, value]
+    def query_prev_value(self, **kwargs):
         """
-        datasource_object = self.get_related_datasource()
-        return datasource_object.last_datapoint(variable=self, use_date_saved=use_date_saved)
-
-    @check_datasource_method
-    def write_datapoints(self, **kwargs):
-        """writes the cached data to the database
-        Args:
-            **kwargs: Arbitrary keyword arguments. Will be passed to the datasource
-                write_raw_datapoints function call
+        get the last value and timestamp from the database
         """
-        datasource_object = self.get_related_datasource()
-        return datasource_object.write_datapoints(items=[self],**kwargs)
-
-    @check_datasource_method
-    def write_raw_datapoints(self, datapoints: list, date_saved=None, **kwargs):
-        """consumes a list of [timestamp, value, (date_saved)] items to be written to
-        the database.
-        the value must be already in the right form, no checks on the timestamps or
-        values are performt. If the date_saved value is missing it will be substituted
-        by now()
-
-        Args:
-            datapoints:  [[timestamp, value, date_saved],...] with
-                timestamp in s
-                value
-                date_saved as datetime, timestamp in s, None or ommited
-            date_saved (datetime, optional): time when the data was saved. Defaults to
-                now()
-            **kwargs: Arbitrary keyword arguments. Will be passed to the datasource
-                write_raw_datapoints function call
-
-        Returns:
-            None
-        """
-        datapoints_out = {}
-        datapoints_out[self.pk] = datapoints
-        datasource_object = self.get_related_datasource()
-        return datasource_object.write_raw_datapoints(datapoints=datapoints_out, date_saved=date_saved, **kwargs)
-
-    @check_datasource_method
-    def query_datapoints(self, **kwargs):
-        """returns a dict with datapoints from the DB"""
-        datasource_object = self.get_related_datasource()
+        datasource_object = self.import_datasource_object()
+        kwargs["variable"] = self
         if datasource_object is None:
-            logger.error("datasource not found")
-            return None
-        data = datasource_object.query_datapoints(variable_ids=[self.pk],**kwargs)
-        if self.pk not in data:
-            return None, None, None
-        return data[self.pk], data['timestamp'], data['date_saved_max']
-
-    def query_prev_value(self):
-        logger.info(
-            "the use of 'query_prev_value' method is deprecated use 'check_last_datapoint' instead"
-        )
-        return self.check_last_datapoint()
-
-    def check_last_datapoint(self):
-        """
-        get the last value and timestamp from the database and store it
-        in self.prev_value and self.timestamp_old
-        Args:
-            None
-
-        Returns:
-            status (bool): True if old value was updated, otherwise False
-        """
-
-        val = self.last_datapoint()
+            return False
+        val = datasource_object.last_value(**kwargs)
+        time_min_excluded = kwargs.get("time_min_excluded", False)
+        time_min = kwargs.get("time_min", None)
+        time_max_excluded = kwargs.get("time_max_excluded", False)
+        time_max = kwargs.get("time_max", None)
         if val:
+            if time_min_excluded and time_min is not None and val[0] == time_min:
+                return False
+            if time_max_excluded and time_max is not None and val[0] == time_max:
+                return False
             self.prev_value = val[1]
             self.timestamp_old = val[0]
             return True
@@ -2723,7 +2532,7 @@ class ComplexEventInput(models.Model):
         limit_high = None
 
         if self.variable is not None and self.variable.active:
-            if self.variable.check_last_datapoint():
+            if self.variable.query_prev_value():
                 item_value = self.variable.prev_value
                 item_date = self.variable.timestamp_old
             item_type = "variable"
@@ -2753,14 +2562,14 @@ class ComplexEventInput(models.Model):
 
         if item_value is not None:
             if self.variable_limit_low is not None:
-                if self.variable_limit_low.check_last_datapoint():
+                if self.variable_limit_low.query_prev_value():
                     limit_low = self.variable_limit_low.prev_value
                 else:
                     limit_low = None
             else:
                 limit_low = self.fixed_limit_low
             if self.variable_limit_high is not None:
-                if self.variable_limit_high.check_last_datapoint():
+                if self.variable_limit_high.query_prev_value():
                     limit_high = self.variable_limit_high.prev_value
                 else:
                     limit_high = None
@@ -2946,7 +2755,7 @@ class Event(models.Model):
             prev_value = False
         # get the actual value
         # actual_value = RecordedDataCache.objects.filter(variable=self.variable).last() # TODO change to RecordedData
-        if not self.variable.check_last_datapoint():
+        if not self.variable.query_prev_value():
             return False
         timestamp = self.variable.timestamp_old
         actual_value = self.variable.prev_value
@@ -2955,7 +2764,7 @@ class Event(models.Model):
             # item has a variable limit
             # get the limit value
             # limit_value = RecordedDataCache.objects.filter(variable=self.variable_limit) # TODO change to RecordedData
-            if not self.variable_limit.check_last_datapoint():
+            if not self.variable_limit.query_prev_value():
                 return False  # No previous value for this variable
             if timestamp < self.variable_limit.timestamp_old:
                 # when limit value has changed after the actual value take that time

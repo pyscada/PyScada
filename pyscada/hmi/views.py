@@ -26,6 +26,8 @@ from django.template.loader import get_template
 from django.template.response import TemplateResponse
 from django.shortcuts import redirect
 from django.contrib.auth import logout
+from django.views.decorators.csrf import requires_csrf_token
+from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.db.models.fields.related import OneToOneRel
@@ -963,14 +965,12 @@ def get_cache_data(request):
 
     timestamp_from = time.time()
     if "timestamp_from" in request.POST:
-        # JS Queries a in ms, convert to s
         timestamp_from = float(request.POST["timestamp_from"]) / 1000.0
     if timestamp_from == 0:
         timestamp_from = time.time() - 60
 
     timestamp_to = time.time()
     if "timestamp_to" in request.POST:
-        # JS Queries a in ms, convert to s
         timestamp_to = min(timestamp_to, float(request.POST["timestamp_to"]) / 1000.0)
     if timestamp_to == 0:
         timestamp_to = time.time()
@@ -982,38 +982,36 @@ def get_cache_data(request):
     # timestamp_to = min(timestamp_from + 30, timestamp_to)
 
     if len(active_variables) > 0:
-        data = Variable.objects.query_datapoints(
-            variable_ids=active_variables,
-            time_min=timestamp_from,
-            time_max=timestamp_to,
-            query_first_value=init,
-        )
+        kwargs = {
+            "variable_ids": active_variables,
+            "time_min": timestamp_from,
+            "time_max": timestamp_to,
+            "time_in_ms": True,
+            "query_first_value": init,
+        }
+        data = Variable.objects.read_multiple(**kwargs)
     else:
         data = None
 
     if data is None:
-        data = {"timestamp": 0, "date_saved_max":0}
+        data = {}
 
     # Add data for variable not logging to RecordedData model (as systemstat timestamps).
     for v_id in active_variables:
-        if int(v_id) in data:
-            for item in data[int(v_id)]:
-                item[0] *= 1000 # convert from s to ms
-        else:
+        if int(v_id) not in data:
             try:
                 v = Variable.objects.get(id=v_id)
-                v.check_last_datapoint()
+                v.query_prev_value(timestamp_from / 1000)
                 # add 5 seconds to let the request from the server to come
                 if (
                     v.timestamp_old is not None
                     and v.timestamp_old <= timestamp_to + 5
                     and v.prev_value is not None
                 ):
-                    # all website related data is in ms
                     data[int(v_id)] = [[v.timestamp_old * 1000, v.prev_value]]
             except:
-                logger.warning(traceback.format_exc())
-                #pass
+                # logger.warning(traceback.format_exc())
+                pass
 
     data["variable_properties"] = {}
     data["variable_properties_last_modified"] = {}
@@ -1021,9 +1019,8 @@ def get_cache_data(request):
     for item in VariableProperty.objects.filter(pk__in=active_variable_properties):
         data["variable_properties"][item.pk] = item.value()
         data["variable_properties_last_modified"][item.pk] = (
-            item.last_modified.timestamp() * 1000 # all website related data is in ms
+            item.last_modified.timestamp() * 1000
         )
-    data["timestamp"] *= 1000
-    data["date_saved_max"] *= 1000
-    data["server_time"] = time.time() * 1000 # all website related data is in ms
+
+    data["server_time"] = time.time() * 1000
     return HttpResponse(json.dumps(data), content_type="application/json")
