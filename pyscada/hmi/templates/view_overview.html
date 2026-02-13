@@ -5,31 +5,26 @@
 <div class="row">
     {% for view in view_list %}
         {% if view.visible %}
-            {% with link_url=view.url %}
-                {% if view.link_title %}
-                    {% url 'main-view' view.link_title as link_url %}
-                {% endif %}
         <div class="col-sm-3">
         <div class="panel panel-default">
                 <div class="panel-heading">
-                    <h3 class="panel-title"><a href="{{ link_url }}" target="{{ link_target }}" >{{ view.title }}</a></h3>
+                    <h3 class="panel-title"><a href="{% url 'main-view' view.link_title %}" target="{{ link_target }}" >{{ view.title }}</a></h3>
                 </div>
                 <div class="panel-body">
                 {% if view.logo %}
-                <a href="{{ link_url }}" class="thumbnail" target="{{ link_target }}" ><img src="{{ view.logo.url }}" alt="{{ view.description }}"  width="100%" ></a>
+                <a href="{% url 'main-view' view.link_title %}" class="thumbnail" target="{{ link_target }}" ><img src="{{ view.logo.url }}" alt="{{ view.description }}"  width="100%" ></a>
                 {% else %}
-                <a href="{{ link_url }}" class="thumbnail" target="{{ link_target }}" ><p style="min-height: 120px;">{{ view.description }}</p></a>
+                <a href="{% url 'main-view' view.link_title %}" class="thumbnail" target="{{ link_target }}" ><p style="min-height: 120px;">{{ view.description }}</p></a>
                 {% endif %}
             </div>
            </div>
         </div>
-            {% endwith %}
         {% endif %}
         {% if forloop.counter|divisibleby:4 %}
     </div><div class="row">
         {% endif %}
     {% endfor %}
-</div>
+    </div>
 {% endblock %}
 {% block script_bottom %}
         $( document ).ready(function() {
