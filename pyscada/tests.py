@@ -24,6 +24,37 @@ class SimpleTest(TestCase):
         self.assertEqual(1 + 1, 2)
 
 
+class VariableTest(TestCase):
+    def setUp(self):
+        apps.get_app_config("pyscada").pyscada_app_init()
+
+        d, created = Device.objects.get_or_create(
+            short_name="dev", description="dev", protocol_id=1
+        )
+        unit, created = Unit.objects.get_or_create(
+            unit="unit", description="unit", udunit="unit"
+        )
+        self.v, created = Variable.objects.get_or_create(
+            name="var", description="var", device=d, unit=unit
+        )
+
+
+    def test_variable_read_1(self):
+        result = Variable.objects.query_datapoints(variable_ids=[self.v.pk])
+        self.assertDictEqual(
+            result, {"timestamp": 0, "date_saved_max": 0}
+        )
+
+    def test_variable_read_2(self):
+        result = self.v.last_datapoint()
+        self.assertIsNone(result)
+
+    def test_variable_read_3(self):
+        result = self.v.query_datapoints()
+        self.assertTupleEqual(
+            result, (None,None,None,)
+        )
+
 class ReadVariableTest(TestCase):
     def setUp(self):
         apps.get_app_config("pyscada").pyscada_app_init()
@@ -189,6 +220,37 @@ class WriteRawVariableTest(TestCase):
         result = self.v.query_datapoints()
         self.assertEqual(
             result, ([[4.0, 2.0], [5.0, 20.0], [6.0, 200.0], [7.0, 2000.0]], 7.0, 5.0)
+        )
+
+class VariableCacheTest(TestCase):
+    def setUp(self):
+        apps.get_app_config("pyscada").pyscada_app_init()
+
+        d, created = Device.objects.get_or_create(
+            short_name="dev", description="dev", protocol_id=1
+        )
+        unit, created = Unit.objects.get_or_create(
+            unit="unit", description="unit", udunit="unit"
+        )
+        dts = DataSource.objects.filter(datasource_model__inline_model_name="DjangoCache").last()
+        self.v, created = Variable.objects.get_or_create(
+            name="var", description="var", device=d, unit=unit, datasource=dts
+        )
+
+    def test_variable_read_1(self):
+        result = Variable.objects.query_datapoints(variable_ids=[self.v.pk])
+        self.assertDictEqual(
+            result, {"timestamp": 0, "date_saved_max": 0}
+        )
+
+    def test_variable_read_2(self):
+        result = self.v.last_datapoint()
+        self.assertIsNone(result)
+
+    def test_variable_read_3(self):
+        result = self.v.query_datapoints()
+        self.assertTupleEqual(
+            result, (None,None,None,)
         )
 
 class WriteCacheVariableTest(TestCase):
@@ -528,6 +590,38 @@ class WriteSingleValueVariableTest(TestCase):
         result = self.v.query_datapoints()
         self.assertEqual(
             result, ([[self.time-5, 400000.0],], self.time-5, self.time-1)
+        )
+
+
+class VariableSingleValueTest(TestCase):
+    def setUp(self):
+        apps.get_app_config("pyscada").pyscada_app_init()
+
+        d, created = Device.objects.get_or_create(
+            short_name="dev", description="dev", protocol_id=1
+        )
+        unit, created = Unit.objects.get_or_create(
+            unit="unit", description="unit", udunit="unit"
+        )
+        dts = DataSource.objects.filter(datasource_model__inline_model_name="DjangoSingleValue").last()
+        self.v, created = Variable.objects.get_or_create(
+            name="var", description="var", device=d, unit=unit, datasource=dts
+        )
+
+    def test_variable_read_1(self):
+        result = Variable.objects.query_datapoints(variable_ids=[self.v.pk])
+        self.assertDictEqual(
+            result, {"timestamp": 0, "date_saved_max": 0}
+        )
+
+    def test_variable_read_2(self):
+        result = self.v.last_datapoint()
+        self.assertIsNone(result)
+
+    def test_variable_read_3(self):
+        result = self.v.query_datapoints()
+        self.assertTupleEqual(
+            result, (None,None,None,)
         )
 
 class ReadVariableSingleValueTest(TestCase):
