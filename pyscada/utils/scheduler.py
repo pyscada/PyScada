@@ -34,8 +34,10 @@
 """
 from __future__ import unicode_literals
 
+import atexit
 import errno
 from os import (
+    linesep,
     umask,
     access,
     W_OK,
@@ -58,6 +60,7 @@ import json
 
 from django.conf import settings
 from django.db import connection, connections
+from django.utils.termcolors import colorize
 from django.db.utils import OperationalError
 from django.db.transaction import TransactionManagementError
 from django.db.models import Q
@@ -88,9 +91,11 @@ try:
 
     try:
         from asyncio.exceptions import TimeoutError as asyncioTimeoutError
+        from asyncio.exceptions import CancelledError as asyncioCancelledError
     except ModuleNotFoundError:
         # for python version < 3.8
         from asyncio import TimeoutError as asyncioTimeoutError
+        from asyncio import CancelledError as asyncioCancelledError
     if channels.layers.get_channel_layer() is None:
         logger.warning("Django Channels is not working. Missing config in settings ?")
         raise ConnectionRefusedError
@@ -296,6 +301,7 @@ class Scheduler(object):
         # os.dup2(se.fileno(), sys.stderr.fileno())
 
         # Write the PID file
+        # atexit.register(self.delete_pid)
         self.write_pid()
         return True
 
