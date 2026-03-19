@@ -11,4 +11,4 @@ logger = logging.getLogger(__name__)
 class PyScadaDjangoDatasourceConfig(AppConfig):
     name = "pyscada.django_datasource"
     verbose_name = _("PyScada Django Datasource")
-    default_auto_field = "django.db.models.AutoField"
+    default_auto_field = "django.db.models.BigAutoField"
