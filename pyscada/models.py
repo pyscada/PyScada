@@ -1400,12 +1400,12 @@ class Variable(models.Model):
             return 16
 
     @check_datasource_method
-    def last_datapoint(self, use_date_saved=False):
+    def last_datapoint(self, use_date_saved=False, **kwargs):
         """returns the last datapoint from the database
         as list in the form [timestamp, value]
         """
         datasource_object = self.get_related_datasource()
-        return datasource_object.last_datapoint(variable=self, use_date_saved=use_date_saved)
+        return datasource_object.last_datapoint(variable=self, use_date_saved=use_date_saved, **kwargs)
 
     @check_datasource_method
     def write_datapoints(self, **kwargs):
@@ -1455,13 +1455,13 @@ class Variable(models.Model):
             return None, None, None
         return data[self.pk], data['timestamp'], data['date_saved_max']
 
-    def query_prev_value(self):
+    def query_prev_value(self, **kwargs):
         logger.info(
             "the use of 'query_prev_value' method is deprecated use 'check_last_datapoint' instead"
         )
-        return self.check_last_datapoint()
+        return self.check_last_datapoint(**kwargs)
 
-    def check_last_datapoint(self):
+    def check_last_datapoint(self, **kwargs):
         """
         get the last value and timestamp from the database and store it
         in self.prev_value and self.timestamp_old
@@ -1472,7 +1472,7 @@ class Variable(models.Model):
             status (bool): True if old value was updated, otherwise False
         """
 
-        val = self.last_datapoint()
+        val = self.last_datapoint(**kwargs)
         if val:
             self.prev_value = val[1]
             self.timestamp_old = val[0]
