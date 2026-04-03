@@ -63,7 +63,7 @@ def check_anonymous_write(request):
 
 def view_overview(request):
     if not check_anonymous(request):
-        redirect(f"{settings.LOGIN_URL}?next={request.path}")
+        return redirect(f"{settings.LOGIN_URL}?next={request.path}")
     if GroupDisplayPermission.objects.count() == 0:
         view_list = View.objects.all()
         ext_view_list = ExternalView.objects.all()
@@ -250,7 +250,7 @@ def get_hidden_config2(request, link_title):
 
 def view(request, link_title):
     if not check_anonymous(request):
-        redirect(f"{settings.LOGIN_URL}?next={request.path}")
+        return redirect(f"{settings.LOGIN_URL}?next={request.path}")
 
     base_template = "base.html"
     view_template = "view.html"
@@ -757,7 +757,7 @@ def form_read_task(request):
 
 def form_write_task(request):
     if not check_anonymous_write(request):
-        HttpResponse(status=401)
+        return HttpResponse(status=401)
 
     if "key" in request.POST and "value" in request.POST:
         key = int(request.POST["key"])
